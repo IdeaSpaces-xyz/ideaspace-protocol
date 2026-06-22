@@ -24,6 +24,7 @@
     "VERSION"
   ],
   "scripts": {
+    "prepare": "npm run build",
     "embed-skills": "node scripts/embed-skills.mjs",
     "build": "npm run embed-skills && tsc",
     "dev": "npm run embed-skills && tsc --watch",
