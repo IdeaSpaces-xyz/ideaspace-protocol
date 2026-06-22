@@ -41,6 +41,6 @@ A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.m
 
 ## Status
 
-**Scaffolding (v0.1, 2026-06).** Spec + skills are in place (graduated from the `ideaspace/` concept repo); the schema, reference library, and conformance kit are the next steps. The reference library will be the pure-shape modules currently living in `@ideaspaces/sdk`.
+**v0.1, 2026-06.** In place: spec + skills (graduated from the `ideaspace/` concept repo), the provisional `schema/`, and the **reference library** in `src/` (graduated from `@ideaspaces/sdk` — frontmatter, `_agent/` contract, awareness, git state, path walking, drift, skill catalog; builds + 97 tests green). Next: `@ideaspaces/sdk` re-exports this package, then the conformance kit.
 
 Philosophy — why shared understanding compounds — lives in the IdeaSpaces `core/` notes. This repo is only the shape.

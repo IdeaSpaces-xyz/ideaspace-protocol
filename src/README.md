@@ -1,12 +1,14 @@
 # src/
 
-The reference TypeScript implementation of the shape — what TS surfaces embed instead of re-implementing.
+The reference TypeScript implementation of the shape — what TS surfaces embed instead of re-implementing. Graduated wholesale from `@ideaspaces/sdk` (which was 100% shape logic).
 
-Planned (step 3): the pure-shape modules currently in `@ideaspaces/sdk` —
+Present:
 
-- frontmatter parse / compose / extract (Layer 1 + the `attached_to`/`tags` fields)
-- `_agent/` contract reader (`CONTRACT_FILES`, `findSpaceRoot`, `readContract`)
-- awareness assembly (`assembleAwareness`) and path walking
-- git state / recent-activity / stale-doc drift
+- `frontmatter.ts` — parse / compose / extract (Layer 1: `name`, `summary`, `attached_to`, `tags`)
+- `space.ts` — `_agent/` contract reader (`CONTRACT_FILES`, `findSpaceRoot`, `readContract`)
+- `awareness.ts` — awareness assembly (`assembleAwareness`); `path-context.ts` — path walking
+- `git.ts` — git state / recent activity; `stale-docs.ts` — drift signals
+- `skills.ts` + `skill-catalog.generated.ts` — the canonical skill catalog (generated from `../skills/` by `scripts/embed-skills.mjs`)
+- `types.ts` — the shape type contract
 
-`@ideaspaces/sdk` is already almost entirely this logic; step 3 graduates it here. `sdk` then becomes the platform layer (sync/auth/api) depending on `@ideaspaces/protocol`.
+`npm run build` (embed-skills + `tsc`), `npm test` (vitest — 97 tests). Next: `@ideaspaces/sdk` becomes a thin re-export of this package (step 3b), then the platform layer grows on top.

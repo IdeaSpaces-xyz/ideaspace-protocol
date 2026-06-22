@@ -17,19 +17,30 @@
   },
   "files": [
     "dist",
+    "skills",
     "SPEC.md",
     "SKILLS.md",
     "schema",
     "VERSION"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "node --test"
+    "embed-skills": "node scripts/embed-skills.mjs",
+    "build": "npm run embed-skills && tsc",
+    "dev": "npm run embed-skills && tsc --watch",
+    "pretest": "npm run embed-skills",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "yaml": "^2.8.4"
   },
   "devDependencies": {
-    "typescript": "^5.5.0"
+    "@types/node": "^25.5.2",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IdeaSpaces-xyz/ideaspace-protocol"
   }
 }
