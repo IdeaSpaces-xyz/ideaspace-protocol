@@ -1,23 +1,17 @@
 # CLAUDE.md — ideaspace-protocol
 
-> The platform-neutral **shape** of a knowledge repo. An inhabitation contract — shape + identity + conformance + the verbs to work a space — not a data format for retrieval.
+> This repo is a conformant **ideaspace** — it dogfoods the protocol it defines. The agent contract is in [`_agent/`](_agent/); read it first.
 
-See [README.md](README.md) for the layering and [SPEC.md](SPEC.md) for the normative shape.
+## Orient
 
-## What this repo is (and isn't)
+1. [`_agent/foundation.md`](_agent/foundation.md) — what this place is, the handshake (root only).
+2. [`_agent/purpose.md`](_agent/purpose.md) — why it exists.
+3. [`_agent/now.md`](_agent/now.md) — what's active.
+4. [`_agent/guide.md`](_agent/guide.md) — how to work here (design rules, build, git workflow).
 
-- **Is:** `SPEC.md` + `SKILLS.md` (normative), `schema/` (machine-readable contract), `src/` (reference TypeScript implementation), `conformance/` (reference space + validator).
-- **Is not:** a platform. **No sync, no auth, no API client, no transport code.** That is the open-core line — platform logic lives in `@ideaspaces/sdk`, which depends on this. A change that adds platform code here is wrong by construction.
+The normative shape itself is [`SPEC.md`](SPEC.md).
 
-## Principles
-
-- **Simple, Lovable, Complete.** Functional API over class wrappers; zero runtime deps beyond `yaml`; stdlib + Node primitives first.
-- **Spec ↔ schema ↔ impl stay coherent.** A change to the shape updates `SPEC.md`, `schema/`, and `src/` together — never let them drift.
-- **The schema is provisional + extensible.** `additionalProperties` stays true; nothing strictly required (an absent field is a drift signal, not an error); the `attached_to` attach-type namespace grows by deliberate, versioned change.
-- **Language-neutral core.** The spec + JSON Schema must let non-TS surfaces (the Python `sw_space` backend) conform. The TS lib is the *reference* implementation, not the only one.
-- **Read-only shape primitives** (`findSpaceRoot`, `assembleAwareness`, `stripFrontmatter` don't write). Cross-platform paths via `node:path`. Async by default for I/O.
-
-## Develop
+## Build
 
 ```bash
 npm ci
@@ -26,11 +20,6 @@ npm test           # vitest
 npx tsc --noEmit   # typecheck
 ```
 
-The skill catalog (`src/skill-catalog.generated.ts`) is generated from `skills/` by `scripts/embed-skills.mjs` (runs as part of `build`/`pretest`). Edit the `skills/*.md` sources, not the generated file.
+## The one rule to remember
 
-## Git workflow
-
-- **Feature branches + PRs only. Never push to `main` directly.** `main` is protected by CI.
-- CI (`.github/workflows/ci.yml`): typecheck + test + build must pass.
-- SLC review (`.github/workflows/claude-code-review.yml`): automated Simple/Lovable/Complete review on each PR.
-- Clear commit subjects (~50 chars); body explains *why*. End agent-driven commits with `Co-authored-by:`.
+**Pure shape, no platform code** — no sync, auth, API client, or transport. And keep `SPEC.md`, `schema/`, and `src/` coherent: a change to the shape touches all three. Full guidance in [`_agent/guide.md`](_agent/guide.md).

@@ -85,7 +85,7 @@ Don't conflate provenance with **subject**. *Who produced* a Note is git-borne (
 
 Attribution travels with the content in git history. Per-agent working records do not. Set the person's git identity when the space is created, not when it is published, so attribution is correct from the first commit. *Resolution* of these strings to accounts and profiles (login, identity providers) is a platform concern, outside this spec.
 
-**Traceability — see [Change](core/change.md).** Identity is the floor: who authored, who co-authored. The full record of *who did what, where, when, and why* — grouped by decision and queryable across repos — is the **Change** layer, carried in commit trailers:
+**Traceability — the Change layer.** Identity is the floor: who authored, who co-authored. The full record of *who did what, where, when, and why* — grouped by decision and queryable across repos — is the **Change** layer, carried in commit trailers:
 
 - `Op:` — what kind of change
 - `Conversation:` — why (the session that produced it)
@@ -127,4 +127,4 @@ A tool or agent that claims to inhabit ideaspaces:
 
 ---
 
-The philosophy behind the shape — why shared understanding, why agreements, why this compounds — lives in [`core/`](core/README.md). This document is only the shape. Check it when you need to.
+The philosophy behind the shape — why shared understanding, why agreements, why this compounds — is documented separately in the IdeaSpaces concept material. This document is only the shape.
