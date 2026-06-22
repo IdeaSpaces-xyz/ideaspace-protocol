@@ -1,0 +1,35 @@
+{
+  "name": "@ideaspaces/protocol",
+  "version": "0.1.0",
+  "description": "The Ideaspace Protocol — the platform-neutral shape of a knowledge repo. Spec, schema, reference library, and conformance kit.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema/frontmatter": "./schema/frontmatter.schema.json",
+    "./SPEC.md": "./SPEC.md",
+    "./SKILLS.md": "./SKILLS.md"
+  },
+  "files": [
+    "dist",
+    "SPEC.md",
+    "SKILLS.md",
+    "schema",
+    "VERSION"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "yaml": "^2.8.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
