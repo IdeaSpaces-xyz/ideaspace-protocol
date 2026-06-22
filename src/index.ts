@@ -60,3 +60,8 @@ export {
 } from "./frontmatter.js";
 export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
 
+// Conformance — check whether a directory is a conformant ideaspace. Read-only;
+// validates the shape against SPEC.md + the runtime-loaded frontmatter schema.
+export { validateSpace } from "./conformance.js";
+export type { ConformanceReport, ConformanceIssue } from "./conformance.js";
+
