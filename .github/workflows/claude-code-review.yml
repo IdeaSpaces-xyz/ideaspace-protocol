@@ -33,10 +33,10 @@ jobs:
 
             ## Context
             - This repo (`@ideaspaces/protocol`): the platform-neutral SHAPE of a knowledge repo — an inhabitation contract, not a data format. It holds: `SPEC.md` + `SKILLS.md` (normative), `schema/` (machine-readable: frontmatter JSON Schema + the `_agent/` contract), `src/` (the reference TypeScript implementation), and `conformance/` (reference space + validator).
-            - Open-core boundary: **the protocol holds NO platform code** — no sync, no auth, no API client. That logic belongs in `@ideaspaces/sdk` (which depends on this). A PR that adds platform/sync/transport code here is wrong by construction.
+            - Boundary: **the protocol holds NO platform code** — no sync, no auth, no API client, no transport. That logic belongs in a layer that depends on this package, not here. A PR that adds platform/sync/transport code here is wrong by construction.
             - The reference lib was graduated wholesale from `@ideaspaces/sdk` (which was 100% shape logic). Zero runtime deps beyond `yaml`; ESM-only via `tsc`; tests via vitest.
-            - The schema is PROVISIONAL and internal-use; the `attached_to` attach-type namespace is expected to grow. Changes to it should be deliberate and versioned.
-            - Reference: monorepo CLAUDE.md (root principles), this repo's `SPEC.md` (the normative shape).
+            - The schema is PROVISIONAL and expected to evolve; the `attached_to` attach-type namespace is expected to grow. Changes to it should be deliberate and versioned.
+            - Reference: this repo's `SPEC.md` (the normative shape) and `CLAUDE.md`.
 
             ## SLC label context
             - `slc:simple` / `slc:lovable` / `slc:complete`: quick validation for labeled dimensions, deeper review for unlabeled.
@@ -51,7 +51,7 @@ jobs:
 
             ### Lovable
             - Public API ergonomics: clear types, predictable defaults, error paths fail safely (filesystem absences, git failures degrade gracefully).
-            - Consumers (cli, pi-is-space, ideaspaces-plugin, mcp, desktop, web) compose the primitives without ceremony.
+            - Consuming tools and runtimes compose the primitives without ceremony.
             - `composeFrontmatter` replace-semantics: caller owns the fields they set.
 
             ### Complete
@@ -60,10 +60,10 @@ jobs:
             - The spec, the schema, and the reference implementation stay consistent — a change to one that should touch the others is flagged.
 
             ## Protocol-specific checks
-            - **Open-core line.** No platform/sync/auth/transport code. Pure shape only.
+            - **Platform boundary.** No platform/sync/auth/transport code. Pure shape only.
             - **Spec ↔ schema ↔ impl coherence.** If the PR changes the shape (frontmatter fields, the `_agent/` contract, conformance rules), it should update `SPEC.md`, `schema/`, and `src/` together — not let them drift.
             - **Schema is provisional + extensible.** Attach-type namespace changes are deliberate and versioned; `additionalProperties` stays true (the leaf is extensible); nothing is made strictly required (absence is a drift signal, not an error).
-            - **Cross-language neutrality.** The normative core (spec + JSON Schema) must remain language-neutral so non-TS surfaces (the Python `sw_space` backend) can conform. The TS lib is the reference impl, not the only one.
+            - **Cross-language neutrality.** The normative core (spec + JSON Schema) must remain language-neutral so non-TypeScript runtimes can conform. The TS lib is the reference impl, not the only one.
             - **Read-only shape primitives.** `findSpaceRoot`, `assembleAwareness`, `stripFrontmatter` do not write the filesystem.
             - **Cross-platform paths** via `node:path`; **async by default** for I/O.
 

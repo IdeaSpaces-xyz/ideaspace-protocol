@@ -24,7 +24,7 @@ A skill matches an intent, and intents follow a cycle — the per-session loop a
 | **Sync** | Align local and remote — push committed captures, integrate others'. |
 | **Reflect** | Check for drift: does `now`, the guide, the spec, or actual practice disagree? |
 
-This is **not** the knowledge loop. [`loop.md`](loop.md) describes how shared understanding advances over time, across people and conversations (capture → read → question → discuss). This is the **operating loop** — how one agent runs a single session. They meet at **Capture**, where working state becomes shared understanding. Keep them distinct.
+This is **not** the knowledge loop. The knowledge loop describes how shared understanding advances over time, across people and conversations (capture → read → question → discuss). This is the **operating loop** — how one agent runs a single session. They meet at **Capture**, where working state becomes shared understanding. Keep them distinct.
 
 ## Three layers: loop → skill → tool
 
@@ -76,4 +76,4 @@ When surface entrypoints carry substance by hand, they drift. The live example: 
 
 ---
 
-**Related:** [SPEC.md](SPEC.md) — the awareness layer this completes · [loop.md](loop.md) — the knowledge loop, distinct from the operating loop · [`_agent/skills/commit.md`](_agent/skills/commit.md) — the commit skill
+**Related:** [SPEC.md](SPEC.md) — the awareness layer this completes.

@@ -1,4 +1,4 @@
-// @ideaspaces/sdk
+// @ideaspaces/protocol — reference implementation of the ideaspace shape
 
 // Stable type contract; useful for both local and future remote primitives.
 export * from "./types.js";

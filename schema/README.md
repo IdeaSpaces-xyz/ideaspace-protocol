@@ -1,6 +1,6 @@
 # schema/
 
-The machine-readable, language-neutral contract — so non-TypeScript surfaces (e.g. the Python `sw_space` backend) can conform without importing the reference library.
+The machine-readable, language-neutral contract — so non-TypeScript runtimes can conform without importing the reference library.
 
 Present (v0.1, provisional):
 
