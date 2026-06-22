@@ -2,9 +2,9 @@
 
 The machine-readable, language-neutral contract — so non-TypeScript surfaces (e.g. the Python `sw_space` backend) can conform without importing the reference library.
 
-Planned (step 2):
+Present (v0.1, provisional):
 
-- `frontmatter.schema.json` — the Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (single, typed link), `tags`. Validates a Note's frontmatter.
-- `agent-contract.md` — the `_agent/` five-file contract (`foundation`/`guide`/`purpose`/`now`/`next`), the two-roles split, and the underscore extension rule, stated as a checkable contract.
+- [`frontmatter.schema.json`](frontmatter.schema.json) — the Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (single, typed link; provisional attach-type namespace), `tags`. Nothing strictly required (absent = drift, not error); `additionalProperties` allowed (extensible).
+- [`agent-contract.md`](agent-contract.md) — the `_agent/` five-file contract, two-roles split, fractal composition, underscore extension rule, and a conformance checklist.
 
-These mirror [`../SPEC.md`](../SPEC.md) in a form tooling can validate against.
+Both mirror [`../SPEC.md`](../SPEC.md) in a form tooling can validate against. **Provisional and internal-use** — the attach-type namespace especially is expected to grow; public timing is undecided.
