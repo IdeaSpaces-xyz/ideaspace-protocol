@@ -1,20 +1,27 @@
-name: SLC Review
+name: Claude Code Review
 
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
 
 jobs:
-  slc-review:
-    if: |
-      !github.event.pull_request.draft &&
-      !contains(github.event.pull_request.labels.*.name, 'skip-review') &&
-      !contains(github.event.pull_request.labels.*.name, 'tiny')
+  claude-review:
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: read
       issues: read
       id-token: write
 
@@ -24,71 +31,14 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Run SLC Review
+      - name: Run Claude Code Review
+        id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: |
-            Review this pull request using our SLC (Simple, Lovable, Complete) principles for the Ideaspace Protocol.
+          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
+          plugins: 'code-review@claude-code-plugins'
+          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          # or https://code.claude.com/docs/en/cli-reference for available options
 
-            ## Context
-            - This repo (`@ideaspaces/protocol`): the platform-neutral SHAPE of a knowledge repo — an inhabitation contract, not a data format. It holds: `SPEC.md` + `SKILLS.md` (normative), `schema/` (machine-readable: frontmatter JSON Schema + the `_agent/` contract), `src/` (the reference TypeScript implementation), and `conformance/` (reference space + validator).
-            - Open-core boundary: **the protocol holds NO platform code** — no sync, no auth, no API client. That logic belongs in `@ideaspaces/sdk` (which depends on this). A PR that adds platform/sync/transport code here is wrong by construction.
-            - The reference lib was graduated wholesale from `@ideaspaces/sdk` (which was 100% shape logic). Zero runtime deps beyond `yaml`; ESM-only via `tsc`; tests via vitest.
-            - The schema is PROVISIONAL and internal-use; the `attached_to` attach-type namespace is expected to grow. Changes to it should be deliberate and versioned.
-            - Reference: monorepo CLAUDE.md (root principles), this repo's `SPEC.md` (the normative shape).
-
-            ## SLC label context
-            - `slc:simple` / `slc:lovable` / `slc:complete`: quick validation for labeled dimensions, deeper review for unlabeled.
-            - `needs:slc-review`: deeper analysis. No SLC labels: standard full review.
-
-            ## SLC Framework Review
-
-            ### Simple
-            - Simplest implementation that solves the problem? Functional API over class wrappers unless lifecycle earns one.
-            - Avoids deps when stdlib + Node primitives would do (filesystem, child_process; no new YAML libs unless real semantic parsing is needed)?
-            - No unnecessary abstractions.
-
-            ### Lovable
-            - Public API ergonomics: clear types, predictable defaults, error paths fail safely (filesystem absences, git failures degrade gracefully).
-            - Consumers (cli, pi-is-space, ideaspaces-plugin, mcp, desktop, web) compose the primitives without ceremony.
-            - `composeFrontmatter` replace-semantics: caller owns the fields they set.
-
-            ### Complete
-            - Tests cover happy paths AND edge cases (vitest with tmpdir fixtures for fs-touching primitives)?
-            - `npx tsc --noEmit` clean; `npm test` passes; `npm run build` produces ESM in `dist/`.
-            - The spec, the schema, and the reference implementation stay consistent — a change to one that should touch the others is flagged.
-
-            ## Protocol-specific checks
-            - **Open-core line.** No platform/sync/auth/transport code. Pure shape only.
-            - **Spec ↔ schema ↔ impl coherence.** If the PR changes the shape (frontmatter fields, the `_agent/` contract, conformance rules), it should update `SPEC.md`, `schema/`, and `src/` together — not let them drift.
-            - **Schema is provisional + extensible.** Attach-type namespace changes are deliberate and versioned; `additionalProperties` stays true (the leaf is extensible); nothing is made strictly required (absence is a drift signal, not an error).
-            - **Cross-language neutrality.** The normative core (spec + JSON Schema) must remain language-neutral so non-TS surfaces (the Python `sw_space` backend) can conform. The TS lib is the reference impl, not the only one.
-            - **Read-only shape primitives.** `findSpaceRoot`, `assembleAwareness`, `stripFrontmatter` do not write the filesystem.
-            - **Cross-platform paths** via `node:path`; **async by default** for I/O.
-
-            ## Anti-pattern detection
-            - Platform/sync code leaking into the protocol.
-            - Spec/schema/impl drift (one changed without the others).
-            - Speculative API surface no consumer needs.
-            - Adding runtime deps without earning them (yaml is the only one).
-            - Test fixtures depending on this repo's own tree (use tmpdir).
-
-            ## Output format
-
-            **SLC Assessment:**
-            - Simple: [assessment]
-            - Lovable: [assessment]
-            - Complete: [assessment]
-
-            **Anti-Patterns Found:** [list or "None detected"]
-
-            **Protocol-Specific Issues:** [list or "None detected"]
-
-            **Detailed Feedback:** [specific issues and suggestions]
-
-            **Recommendation:** Approve / Request Changes / Comment
-
-            Use `gh pr comment` to post your review.
-
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
