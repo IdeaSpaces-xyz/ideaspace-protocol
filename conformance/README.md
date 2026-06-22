@@ -20,7 +20,7 @@ Makes "conforms to the protocol" testable rather than aspirational.
     single string matching the schema pattern). The schema is *read at runtime*,
     not bundled with a validator dependency.
   - **warn** — drift signals: a missing `foundation.md`, named-but-absent
-    contract files (`purpose.md`/`now.md`), and skipped underscore-prefixed infra
+    contract files (`guide.md`/`purpose.md`/`now.md`), and skipped underscore-prefixed infra
     folders. Drift never fails conformance.
 
   It dogfoods the library (`readContract`, `inspectFrontmatterSyntax`) and adds no

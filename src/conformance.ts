@@ -42,11 +42,13 @@ export interface ConformanceReport {
 }
 
 /** Root contract files whose absence is surfaced as a drift signal (not noise). */
-const DRIFT_CONTRACT_FILES = ["purpose", "now"] as const;
+const DRIFT_CONTRACT_FILES = ["guide", "purpose", "now"] as const;
 
 /** Loaded subset of the frontmatter schema's key constraints. */
 interface SchemaConstraints {
-  attachedToPattern: RegExp;
+  attachedToPattern: RegExp | null;
+  /** Set when the bundled schema could not be read — surfaced as an error issue. */
+  loadError: string | null;
 }
 
 /**
@@ -94,6 +96,14 @@ export async function validateSpace(root: string): Promise<ConformanceReport> {
 
   // 3. Knowledge `.md` frontmatter against the runtime-loaded schema.
   const constraints = await loadSchemaConstraints();
+  if (constraints.loadError) {
+    issues.push({
+      level: "error",
+      rule: "schema-unavailable",
+      path: ".",
+      detail: constraints.loadError,
+    });
+  }
   let notesChecked = 0;
   for await (const file of walkKnowledge(root, issues)) {
     notesChecked++;
@@ -104,20 +114,36 @@ export async function validateSpace(root: string): Promise<ConformanceReport> {
   return { ok, issues, notesChecked };
 }
 
-/** Read the frontmatter schema at runtime and extract the constraints we enforce. */
+/**
+ * Read the frontmatter schema at runtime and extract the constraints we enforce.
+ *
+ * Never throws: a missing or malformed bundled schema is returned as `loadError`
+ * so `validateSpace` always resolves with a report (surfacing it as an error
+ * issue) rather than rejecting — one consistent failure mode for callers.
+ */
 async function loadSchemaConstraints(): Promise<SchemaConstraints> {
   // Resolved relative to this module so it works from `src/` (dev) and `dist/`
   // (shipped) — both sit one level under the package root, next to `schema/`.
-  const schemaUrl = new URL("../schema/frontmatter.schema.json", import.meta.url);
-  const raw = await fs.readFile(schemaUrl, "utf-8");
-  const schema = JSON.parse(raw) as {
-    properties?: { attached_to?: { pattern?: string } };
-  };
-  const pattern = schema.properties?.attached_to?.pattern;
-  if (!pattern) {
-    throw new Error("frontmatter schema is missing properties.attached_to.pattern");
+  try {
+    const schemaUrl = new URL("../schema/frontmatter.schema.json", import.meta.url);
+    const raw = await fs.readFile(schemaUrl, "utf-8");
+    const schema = JSON.parse(raw) as {
+      properties?: { attached_to?: { pattern?: string } };
+    };
+    const pattern = schema.properties?.attached_to?.pattern;
+    if (!pattern) {
+      return {
+        attachedToPattern: null,
+        loadError: "frontmatter schema is missing properties.attached_to.pattern",
+      };
+    }
+    return { attachedToPattern: new RegExp(pattern), loadError: null };
+  } catch (err) {
+    return {
+      attachedToPattern: null,
+      loadError: `could not load frontmatter schema: ${(err as Error).message}`,
+    };
   }
-  return { attachedToPattern: new RegExp(pattern) };
 }
 
 /** Check one knowledge note's frontmatter syntax and schema-key constraints. */
@@ -180,7 +206,7 @@ async function checkNote(
         path: rel,
         detail: "`attached_to` must be a single string",
       });
-    } else if (!constraints.attachedToPattern.test(value)) {
+    } else if (constraints.attachedToPattern && !constraints.attachedToPattern.test(value)) {
       issues.push({
         level: "error",
         rule: "attached-to-pattern",
