@@ -5,12 +5,21 @@ export * from "./types.js";
 
 // Local primitives — filesystem-backed building blocks for the agent's
 // session-start orientation, Note authoring, and `_agent/` contract handling.
-export { findNearestAgent, findSpaceRoot, readContract, CONTRACT_FILES } from "./space.js";
+export {
+  findNearestAgent,
+  findSpaceRoot,
+  readContract,
+  composeContractAlongPath,
+  CONTRACT_FILES,
+} from "./space.js";
 export type {
   SpaceRoot,
   SpaceContract,
   ContractEntry,
   ContractFile,
+  ComposedSpace,
+  ComposedContract,
+  ComposedContractEntry,
 } from "./space.js";
 
 export { assembleAwareness } from "./awareness.js";

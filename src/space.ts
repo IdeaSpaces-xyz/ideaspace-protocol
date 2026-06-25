@@ -90,3 +90,89 @@ export async function readContract(agentDir: string): Promise<SpaceContract> {
   );
   return entries;
 }
+
+/** A composed contract entry, tagged with the `_agent/` level it resolved from. */
+export interface ComposedContractEntry extends ContractEntry {
+  /** Absolute path of the `_agent/` directory this entry came from. */
+  level: string;
+}
+
+/** The effective five-file contract composed along a path. */
+export type ComposedContract = Partial<Record<ContractFile, ComposedContractEntry>>;
+
+export interface ComposedSpace {
+  /** The position the composition was resolved for (absolute). */
+  position: string;
+  /**
+   * The space root — the nearest ancestor (inclusive of `position`) whose
+   * `_agent/` carries `foundation.md`. `null` if none was found up to the
+   * filesystem root (a space without a foundation).
+   */
+  spaceRoot: string | null;
+  /**
+   * The effective contract per the fractal rule: `foundation` from the space
+   * root; `guide`/`purpose`/`now`/`next` from the deepest level (closest to
+   * `position`) that carries each, with ancestors as fallback. Every entry is
+   * tagged with the `level` it resolved from.
+   */
+  contract: ComposedContract;
+  /** Every `_agent/` directory found from `position` up to the space root, deepest (position-most) first. */
+  levels: string[];
+}
+
+/**
+ * Compose the effective `_agent/` contract along the path from `position` up to
+ * its space root, per the spec's fractal rule: read the root, refine with each
+ * branch as specificity sharpens descending; a branch with no `_agent/` inherits
+ * its ancestors'. `foundation` is root-only and always loaded; the other files
+ * take the deepest-present value.
+ *
+ * The walk stops at the first ancestor (closest to `position`) whose `_agent/`
+ * carries `foundation.md` — that directory *is* the space root, so composition
+ * never crosses into a parent space. If no foundation is found up to the
+ * filesystem root, `spaceRoot` is `null` and the result is bounded by the
+ * outermost `_agent/` found.
+ */
+export async function composeContractAlongPath(position: string): Promise<ComposedSpace> {
+  const start = resolve(position);
+  const found: Array<{ dir: string; contract: SpaceContract }> = [];
+  let spaceRoot: string | null = null;
+
+  let dir = start;
+  while (true) {
+    const agentDir = join(dir, "_agent");
+    if (await isDirectory(agentDir)) {
+      const contract = await readContract(agentDir);
+      found.push({ dir, contract });
+      if (contract.foundation) {
+        // foundation marks the space root — stop, never cross into a parent space
+        spaceRoot = dir;
+        break;
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+
+  const contract: ComposedContract = {};
+
+  // foundation: from the space root only.
+  if (spaceRoot) {
+    const rootEntry = found.find((f) => f.dir === spaceRoot)?.contract.foundation;
+    if (rootEntry) contract.foundation = { ...rootEntry, level: spaceRoot };
+  }
+
+  // guide / purpose / now / next: deepest-present (`found` is deepest-first).
+  for (const name of ["guide", "purpose", "now", "next"] as const) {
+    for (const level of found) {
+      const entry = level.contract[name];
+      if (entry) {
+        contract[name] = { ...entry, level: level.dir };
+        break;
+      }
+    }
+  }
+
+  return { position: start, spaceRoot, contract, levels: found.map((f) => f.dir) };
+}
