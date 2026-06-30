@@ -89,11 +89,13 @@ Attribution travels with the content in git history. Per-agent working records d
 
 - `Op:` — what kind of change
 - `Conversation:` — why (the session that produced it)
-- `Change-Id:` — which decision; the **same value across every commit in every repo** it touched
+- `Change-Id:` — which decision; the **same value across every commit in every repo** it touched. Format `chg_<slug>-<suffix>`, minted locally and offline.
+
+The checkable form of all five trailers — keys, values, the `Change-Id` format, the not-a-superproject stance, and the MUST/SHOULD a tool stamps and reads — is [`schema/trailers.md`](schema/trailers.md).
 
 Plus a diff-as-Note: the interpretation of a change, captured as a searchable Note linked back by `Change-Id`. Like the underscore namespace, Change is **opt-in and additive** — `Change-Id` is just a trailer; repos that don't use it ignore it, and bare git still works. With it, `git log --grep="Change-Id: …"` traces one decision across a codebase, a docs repo, and a private context repo at once — including private repos, which the `Change-Id` links to shared outputs without exposing their content.
 
-**Status: designed, not yet wired (checked against the code 2026-06-04).** These trailers are a convention you can write by hand — the commit skill documents `Op:` — but no tooling writes or reads them yet: nothing in `sw_space` parses `Change-Id:` or `Conversation:`, and `Change-Id` itself is design-only (`change-id-implementation.md`). Treat the Change layer as the intended contract, not current behavior.
+**Status: format specified, wiring partial (checked against the code 2026-06-30).** The trailer *shape* is now pinned in [`schema/trailers.md`](schema/trailers.md). Wiring is uneven: `sw_space` stamps and reads `Op`/`Conversation`/`Turn` server-side, but the CLI/plugin path commits bare (no trailers), and `Change-Id` is wired nowhere — no minting, no stamping, no query. The reference lib (`src/trailers.ts`) that surfaces import is not yet built. Treat the Change layer as the contract; surfaces reach conformance incrementally.
 
 ---
 
