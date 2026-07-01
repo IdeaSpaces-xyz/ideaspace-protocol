@@ -1,0 +1,159 @@
+{
+  "_note": "Shared conformance vectors for the Change-layer trailer format (schema/trailers.md). Any implementation — TypeScript reference lib or a platform's own (e.g. Python) — loads this file and must produce these results. Language-neutral on purpose: the spec is the source of truth, not any one implementation.",
+
+  "changeId": {
+    "valid": [
+      "chg_token-bucket-a3f9",
+      "chg_a3f9",
+      "chg_x",
+      "chg_a-b-c",
+      "chg_fractal-awareness-00zz"
+    ],
+    "invalid": [
+      "",
+      "chg_",
+      "chg_-a",
+      "chg_a-",
+      "chg_a--b",
+      "chg_a_b",
+      "Chg_x",
+      "chg_UP",
+      "token-bucket",
+      "chg token"
+    ]
+  },
+
+  "slugify": [
+    { "in": "Token Bucket Rate Limiting", "out": "token-bucket-rate-limiting" },
+    { "in": "  Weird__Chars!! ", "out": "weird-chars" },
+    { "in": "already-kebab", "out": "already-kebab" },
+    { "in": "CamelCase", "out": "camelcase" },
+    { "in": "trailing---dashes--", "out": "trailing-dashes" },
+    { "in": "", "out": "" }
+  ],
+
+  "formatChangeId": [
+    { "slug": "token bucket", "suffix": "a3f9", "out": "chg_token-bucket-a3f9" },
+    { "slug": "", "suffix": "a3f9", "out": "chg_a3f9" },
+    { "slug": "Token Bucket", "suffix": "A3F9", "out": "chg_token-bucket-a3f9" }
+  ],
+
+  "parse": [
+    {
+      "name": "full trailer set with body",
+      "message": "Update rate limiting to token bucket\n\nSwitched to a token bucket.\n\nOp: update\nConversation: 96b44f50\nTurn: 3\nCo-authored-by: Keeper <agent:keeper@ideaspaces>\nChange-Id: chg_token-bucket-a3f9",
+      "expected": {
+        "op": "update",
+        "conversation": "96b44f50",
+        "turn": 3,
+        "coAuthoredBy": ["Keeper <agent:keeper@ideaspaces>"],
+        "changeId": "chg_token-bucket-a3f9"
+      }
+    },
+    {
+      "name": "trailers only, no body",
+      "message": "Op: capture\nChange-Id: chg_x",
+      "expected": { "op": "capture", "changeId": "chg_x" }
+    },
+    {
+      "name": "no trailers",
+      "message": "Just a subject\n\nA body paragraph with no trailers.",
+      "expected": {}
+    },
+    {
+      "name": "body colon line is not mistaken for a trailer",
+      "message": "Fix parser\n\nThe config uses key: value syntax here.\n\nOp: update\nChange-Id: chg_fix-a1b2",
+      "expected": { "op": "update", "changeId": "chg_fix-a1b2" }
+    },
+    {
+      "name": "case-insensitive keys and multiple co-authors",
+      "message": "Subject\n\nco-authored-by: A <agent:a@x>\nCO-AUTHORED-BY: B <agent:b@x>\nchange-id: chg_y",
+      "expected": {
+        "coAuthoredBy": ["A <agent:a@x>", "B <agent:b@x>"],
+        "changeId": "chg_y"
+      }
+    },
+    {
+      "name": "unknown trailers are ignored",
+      "message": "Subject\n\nSigned-off-by: Someone <s@x>\nOp: update",
+      "expected": { "op": "update" }
+    }
+  ],
+
+  "build": [
+    {
+      "name": "full set in canonical order",
+      "trailers": {
+        "op": "update",
+        "conversation": "96b44f50",
+        "turn": 3,
+        "coAuthoredBy": ["Keeper <agent:keeper@ideaspaces>"],
+        "changeId": "chg_token-bucket-a3f9"
+      },
+      "expected": "Op: update\nConversation: 96b44f50\nTurn: 3\nCo-authored-by: Keeper <agent:keeper@ideaspaces>\nChange-Id: chg_token-bucket-a3f9"
+    },
+    {
+      "name": "subset",
+      "trailers": { "op": "capture", "changeId": "chg_x" },
+      "expected": "Op: capture\nChange-Id: chg_x"
+    },
+    {
+      "name": "multiple co-authors",
+      "trailers": { "coAuthoredBy": ["A", "B"] },
+      "expected": "Co-authored-by: A\nCo-authored-by: B"
+    }
+  ],
+
+  "roundTrip": [
+    {
+      "op": "update",
+      "conversation": "c1",
+      "turn": 3,
+      "coAuthoredBy": ["X <agent:x@ideaspaces>"],
+      "changeId": "chg_a-b"
+    },
+    { "op": "capture" },
+    { "changeId": "chg_solo" },
+    { "conversation": "conv", "coAuthoredBy": ["A", "B"] }
+  ],
+
+  "append": [
+    {
+      "name": "into an existing block",
+      "message": "Subject\n\nOp: update",
+      "add": { "changeId": "chg_x" },
+      "expected": "Subject\n\nOp: update\nChange-Id: chg_x"
+    },
+    {
+      "name": "create a block when none exists",
+      "message": "Subject\n\nBody.",
+      "add": { "op": "capture", "changeId": "chg_y" },
+      "expected": "Subject\n\nBody.\n\nOp: capture\nChange-Id: chg_y"
+    },
+    {
+      "name": "dedup an existing co-author, append the new one",
+      "message": "S\n\nCo-authored-by: A",
+      "add": { "coAuthoredBy": ["A", "B"] },
+      "expected": "S\n\nCo-authored-by: A\nCo-authored-by: B"
+    },
+    {
+      "name": "same single value is a no-op",
+      "message": "S\n\nOp: update",
+      "add": { "op": "update" },
+      "expected": "S\n\nOp: update"
+    }
+  ],
+
+  "appendConflicts": [
+    {
+      "name": "differing single-valued trailer conflicts",
+      "message": "S\n\nOp: update",
+      "add": { "op": "delete" }
+    },
+    {
+      "name": "differing Change-Id conflicts",
+      "message": "S\n\nChange-Id: chg_a",
+      "add": { "changeId": "chg_b" }
+    }
+  ]
+}

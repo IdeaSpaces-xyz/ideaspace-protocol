@@ -74,3 +74,18 @@ export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
 export { validateSpace } from "./conformance.js";
 export type { ConformanceReport, ConformanceIssue } from "./conformance.js";
 
+// Change-layer commit trailers — the checkable form of schema/trailers.md.
+// Pure string in/out; never invokes git. Surfaces stamp; this builds/parses/mints.
+export {
+  isValidChangeId,
+  slugify,
+  formatChangeId,
+  mintChangeId,
+  changeIdGrep,
+  parseTrailers,
+  buildTrailers,
+  appendTrailers,
+  CHANGE_ID_PATTERN,
+} from "./trailers.js";
+export type { Op, Trailers } from "./trailers.js";
+
