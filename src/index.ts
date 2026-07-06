@@ -1,8 +1,5 @@
 // @ideaspaces/protocol — reference implementation of the ideaspace shape
 
-// Stable type contract; useful for both local and future remote primitives.
-export * from "./types.js";
-
 // Local primitives — filesystem-backed building blocks for the agent's
 // session-start orientation, Note authoring, and `_agent/` contract handling.
 export {
