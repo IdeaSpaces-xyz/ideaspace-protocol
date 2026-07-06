@@ -18,7 +18,14 @@ export interface ContractEntry {
   content: string;
 }
 
-/** The five-file `_agent/` contract. Any subset may be present. */
+/**
+ * The five-file `_agent/` contract. Any subset may be present.
+ *
+ * Optional `_agent/` files outside this narrative contract — `schema.md`
+ * (folder instance-shape guidance) and the `skills/`/`perspectives/`/`<agent-id>/`
+ * subfolders — are gracefully ignored here: they are shape the reader recognizes
+ * but does not parse into the contract. `schema.md` is guidance, never validation.
+ */
 export type SpaceContract = Partial<Record<ContractFile, ContractEntry>>;
 
 export interface SpaceRoot {

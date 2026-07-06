@@ -25,12 +25,14 @@ This is the **base layer**. Knowing the shape *is* awareness. Acting on it — c
 
 ## The Shape
 
-**1. Position.** Every directory is a position. It may carry a `README.md` — what this place is, for everyone (human and agent). Reading READMEs along a path is how you orient: general at the root, specific as you descend.
+**1. Position.** Every directory is a position, and every position presents the same way: **summary → surface → children.** The *surface* is the one Note that says what this place is, for everyone (human and agent) — a directory's surface is its `README.md`, a repo's is its root `README.md`, a lone `.md` file is its own surface. Reading surfaces along a path is how you orient: general at the root, specific as you descend.
+
+**Depth is elaboration.** A child answers *"what do you mean by that?"* about the surface above it. Grow a layer only when someone needs to ask — depth on demand, never scaffolded in advance. So "Note vs folder vs repo" names stages of one idea expanding, not three kinds of thing: a Note grows children into a folder; a folder earns its own sharing boundary as a repo. The shape is identical at every stage.
 
 **2. Two kinds of content** at every position:
 
 - **Knowledge** — regular `.md` files. What we know. This is what accumulates and travels.
-- **Agent context** — the `_agent/` folder. How to work here. Always read, never searched.
+- **Agent context** — the `_agent/` folder. How to work here. Read by position, never searched — its surface always, its depth on demand.
 
 Everything that is not underscore-prefixed is knowledge. `README.md` describes the position for everyone; `_agent/` instructs the agent.
 
@@ -44,13 +46,17 @@ Everything that is not underscore-prefixed is knowledge. `README.md` describes t
 | `now.md` | What's active. |
 | `next.md` | What's queued. |
 
-Optional: `skills/` (how to do), `perspectives/` (how to see), `<agent-id>/` (per-agent records).
+Optional: `schema.md` (the shape of Notes in this folder — guidance, not validation), `skills/` (how to do), `perspectives/` (how to see), `<agent-id>/` (per-agent records).
 
-Not every position needs all of them — a branch might carry only `now.md`. **Keep `_agent/` small.** It is always loaded; if it grows, "always loaded" breaks. Knowledge carries weight in `.md` files; `_agent/` carries only how-we-work.
+Not every position needs all of them — a branch might carry only `now.md`. **Give `_agent/` a good surface.** "Always loaded" means loaded at depth 0 — the surface — with depth disclosed on demand and closed again when it would overwhelm context. Small is the mindset, not a limit: `_agent/` can grow when there is need, and progressive disclosure keeps a rich one from flooding attention. Knowledge still carries weight in `.md` files; `_agent/` carries how-we-work.
 
 **A named-but-absent file is a drift signal, not an error.** The contract names `purpose.md`; its absence means direction was never captured. Surface the gap.
 
 **4. Fractal.** `_agent/` can appear at any position. Reading composes along the path — root, then each branch — specificity sharpening as you descend. A branch with no `_agent/` inherits its ancestors'. `foundation.md` lives only at a space root; branches refine, they do not re-declare.
+
+**Collections and elaborations.** Two parent→child relations read differently. *Elaboration* — heterogeneous children, each deepening the surface ("what do you mean?"). *Collection* — homogeneous children, each instancing one kind ("such as?"). An optional `_agent/schema.md` lets a collection declare its instance shape — "Notes here look like this" — the way `.gitattributes` declares how to treat files under a path: in-tree, path-scoped, composing along the path, gracefully ignored by any tool that doesn't read it.
+
+It is **guidance, never validation.** `schema.md` shapes how an agent *writes and reads* the folder's Notes; it does not gate writes. Content that doesn't match is still valid content — the mismatch is a drift signal about the agent that wrote it, and a Note outgrowing its folder's shape is a *promotion* signal. Nothing rejects a write; nothing marks a file invalid.
 
 **5. The handshake.** `foundation.md` orients anyone arriving: what this place is, what areas and agreements exist, where to go for what. It **points, it does not reproduce** — one line per area, links for depth. A space without a foundation is just folders; with it, it is a legible place an agent can self-direct through instead of being told where to look.
 
@@ -95,7 +101,7 @@ The checkable form of all five trailers — keys, values, the `Change-Id` format
 
 Plus a diff-as-Note: the interpretation of a change, captured as a searchable Note linked back by `Change-Id`. Like the underscore namespace, Change is **opt-in and additive** — `Change-Id` is just a trailer; repos that don't use it ignore it, and bare git still works. With it, `git log --grep="Change-Id: …"` traces one decision across a codebase, a docs repo, and a private context repo at once — including private repos, which the `Change-Id` links to shared outputs without exposing their content.
 
-**Status: format specified, wiring partial (checked against the code 2026-06-30).** The trailer *shape* is now pinned in [`schema/trailers.md`](schema/trailers.md). Wiring is uneven: `sw_space` stamps and reads `Op`/`Conversation`/`Turn` server-side, but the CLI/plugin path commits bare (no trailers), and `Change-Id` is wired nowhere — no minting, no stamping, no query. The reference lib (`src/trailers.ts`) that surfaces import is not yet built. Treat the Change layer as the contract; surfaces reach conformance incrementally.
+**Status: format specified, lib built, adoption pending (re-checked against the code 2026-07-06).** The trailer *shape* is pinned in [`schema/trailers.md`](schema/trailers.md), and the reference lib (`src/trailers.ts`) is built and tested — `mintChangeId` (offline), the trailer parse/format helpers, and `changeIdGrep`, all exported through `index.ts`. Wiring is where it lags: `sw_space` stamps and reads `Op`/`Conversation`/`Turn` server-side, but the CLI/plugin path commits bare, and `Change-Id` has zero call sites — no stamping, no query. The capability ships; adoption is the open work. Treat the Change layer as the contract; surfaces reach conformance incrementally.
 
 ---
 
@@ -124,7 +130,8 @@ A tool or agent that claims to inhabit ideaspaces:
 **SHOULD**
 - Surface a named-but-absent `_agent/` file as a drift signal rather than silently filling it.
 - Author commits as the person and append a `Co-authored-by: <agent>` trailer when an agent drove the commit.
-- Keep `_agent/` small; let `.md` files carry the weight of what is known.
+- Keep `_agent/`'s surface tight and disclose depth on demand; let `.md` files carry the weight of what is known.
+- Treat `_agent/schema.md` as instance-shape guidance, and a schema mismatch as a drift signal — never a write rejection.
 - Write per-agent records only under its own `_agent/<agent-id>/`.
 
 ---
