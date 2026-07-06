@@ -6,7 +6,6 @@ description: >
   asks what this place is for, purpose or now feel stale, or the
   shared understanding needs renegotiating.
 ---
-<!-- Ported from sw_space/resources/skills/guide.md @ 3b62262; neutralized for surface-neutral SDK distribution. Substance tracks the source — re-sync against that baseline. -->
 
 # Guide
 

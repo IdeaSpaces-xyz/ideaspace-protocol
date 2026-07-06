@@ -5,7 +5,6 @@ description: >
   the user wants to make their evaluation criteria, analysis framework, or
   judgment process repeatable and consistent.
 ---
-<!-- Ported from sw_space/resources/skills/form-perspective.md @ 3b62262; neutralized for surface-neutral SDK distribution. Substance tracks the source — re-sync against that baseline. -->
 
 # Form Perspective
 

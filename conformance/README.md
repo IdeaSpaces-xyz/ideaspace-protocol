@@ -34,5 +34,5 @@ const report = await validateSpace("./conformance/reference-space");
 console.log(report.ok); // true
 ```
 
-The same kit doubles as the test that an implementation (TS lib here, or
-`sw_space` in Python) actually conforms.
+The same kit doubles as the test that an implementation (the TS reference
+lib here, or a platform's own — say, in Python) actually conforms.

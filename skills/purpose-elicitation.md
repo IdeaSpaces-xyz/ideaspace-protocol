@@ -5,7 +5,6 @@ description: >
   it's heading. Use when working on _agent/purpose.md, when purpose is
   missing, or when the user asks about direction, goals, or what matters.
 ---
-<!-- Ported from sw_space/resources/skills/purpose-elicitation.md @ 3b62262; neutralized for surface-neutral SDK distribution. Substance tracks the source — re-sync against that baseline. -->
 
 # Purpose Elicitation
 

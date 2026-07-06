@@ -31,6 +31,6 @@
   "x-notes": [
     "Subject rides in frontmatter (this schema); provenance (author, co-author, Change-Id) rides in git; internal platform handles ride in the platform's map, never the file.",
     "Other fields are permitted via additionalProperties but are not standardized here.",
-    "The attached_to type namespace is platform-defined: the protocol fixes the `<type>:<id>` shape only. x-platform-type-examples lists the types sw_space resolves; other platforms declare their own."
+    "The attached_to type namespace is platform-defined: the protocol fixes the `<type>:<id>` shape only. x-platform-type-examples lists illustrative types; each platform declares the ones it resolves."
   ]
 }

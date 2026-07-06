@@ -14,5 +14,5 @@ In place:
 
 Next:
 - **Change-layer adoption.** The trailer lib is built and tested but has zero call sites — wiring it into the surfaces (the plugin's `is_commit`, the CLI) is the open work. This commit is its first real use.
-- **Conformance kit against a real space** — point it at a sw_space-managed repo; every failure is a platform bug or a spec gap, both wins.
+- **Conformance kit against a real space** — point it at a repo managed by a real platform implementation; every failure is a platform bug or a spec gap, both wins.
 - The frontmatter schema is expected to evolve — especially the `attached_to` attach-type vocabulary, the open namespace question.
