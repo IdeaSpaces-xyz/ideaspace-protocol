@@ -80,16 +80,11 @@ Progressive disclosure: Title → Summary → Sections. Each level complete at i
 
 ## Primary Attachment
 
-Use `attached_to` for the one thing this Note is primarily about — like putting a sticky note on an object. It is singular: choose zero or one primary anchor.
+Use `attached_to` for the one thing this Note is primarily about — like putting a sticky note on an object. It is singular: choose zero or one primary anchor, written `<type>:<id>`.
 
-- Company/org entity: `hostname:acme.com`
-- Person entity: `person:alice`
-- Agent entity: `agent:assistant`
-- External URL/document: `web_page:https://example.com/report.pdf`
-- Another Note: `note:n_abc123def456`
-- Another non-Note Node in this Space: `node:n_def456abc789`
+The type vocabulary is your platform's — the protocol fixes only the `<type>:<id>` shape. Common types a platform resolves might include a person (`person:alice`), an agent (`agent:assistant`), or a web page (`web_page:https://example.com/report.pdf`).
 
-If the Note mentions several things, don't put all of them in `attached_to`. Choose the primary anchor, split the Note, use tags, or link in prose. Use `references` only for hard source/provenance nodes.
+If the Note mentions several things, don't put all of them in `attached_to`. Choose the primary anchor, split the Note, use tags, or link in prose. Use `references` only for hard sources.
 
 ## Cross-Note Links
 
@@ -100,15 +95,13 @@ See [Acme profile](../companies/acme.md) for background.
 See [Market map](../markets/README.md) for the branch overview.
 ```
 
-Path links are user-facing handles. They may break when the target is renamed unless the editor/tool rewrites links; use editor rename refactors when available. For durable platform references outside portable prose, use `/n/{node_id}` URLs.
-
-Existing inline `node:n_...` links remain resolvable, but don't write them as the default prose link form. Inline links are reader navigation, not provenance. They do not populate `references` or `referenced_by`.
+Path links are user-facing handles. They may break when the target is renamed unless the editor/tool rewrites them; use editor rename refactors when available. Inline prose links are reader navigation, not provenance — they don't populate `references`.
 
 When renaming a Note and heavily rewriting it, commit the rename separately from the rewrite. Git rename detection is similarity-based; a rename plus large content change in one commit can defeat it, losing the file's history link.
 
 ## Sources and References
 
-Use `references` only for hard sources: the small set of node IDs this Note was produced from or grounded in. Perspective outputs and synthesis Notes use `references` for their input Notes. If a Note merely mentions or points to another Note, use an inline markdown link instead.
+Use `references` only for hard sources: the small set of Notes this Note was produced from or grounded in. Perspective outputs and synthesis Notes use `references` for their input Notes. If a Note merely mentions or points to another Note, use an inline markdown link instead.
 
 ## Sentence-Level Mechanics
 

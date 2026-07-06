@@ -1,7 +1,7 @@
 ---
 name: Example Note
 summary: A knowledge Note with full, valid Layer-1+2 frontmatter — name, summary, a schema-valid attached_to, and tags.
-attached_to: hostname:example.com
+attached_to: web_page:https://example.com
 tags:
   - reference
   - conformance

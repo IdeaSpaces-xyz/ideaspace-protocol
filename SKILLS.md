@@ -68,7 +68,7 @@ A skill has two parts, and they live in different places:
 - **Shared protocol** — the substance of *how* to capture, write, reflect, shape, orient. This lives **once**, in the SDK canonical skill catalog, and is generated into each surface (`pi-is-space/reference/`, and the plugin's skill resources). Update the protocol in the SDK, regenerate — don't hand-edit each copy.
 - **Surface entrypoint** — the thin, platform-specific skill file that points at the protocol and adapts to that surface's tools.
 
-When surface entrypoints carry substance by hand, they drift. The live example: `is-space` taught `contributed_by` as frontmatter on one surface after the same claim had been corrected on another. The fix is structural — substance in the SDK, surfaces generated — not hand-fixing each copy forever.
+When surface entrypoints carry substance by hand, they drift. The live example: `is-space` taught a platform provenance field as frontmatter on one surface after the same claim had been corrected on another. The fix is structural — substance in the SDK, surfaces generated — not hand-fixing each copy forever.
 
 ## Reference implementation
 
