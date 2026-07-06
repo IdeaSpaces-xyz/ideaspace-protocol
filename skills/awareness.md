@@ -6,7 +6,6 @@ description: >
   or when asked "is this still accurate?", "has this drifted?", "does the README match?".
   The protocol: read declarations, read reality, compare, propose updates or stay silent.
 ---
-<!-- Ported from sw_space/resources/skills/awareness.md @ 3b62262; neutralized for surface-neutral SDK distribution. Substance tracks the source — re-sync against that baseline. -->
 
 # Awareness — Delta Protocol
 

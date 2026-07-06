@@ -54,19 +54,14 @@ describe("neutralization guard", () => {
       /grep_sections/,
       /list_tags/,
       /\bkeeper\b/i,
+      // No implementation names — this repo is the shape, not a platform.
+      /sw[_-]space/i,
     ];
     for (const { name } of skills) {
       const { content } = await readSkill(name);
       for (const pat of forbidden) {
         expect(pat.test(content), `${name} contains forbidden token ${pat}`).toBe(false);
       }
-    }
-  });
-
-  it("every skill carries a provenance marker", async () => {
-    for (const { name } of await listSkills()) {
-      const { content } = await readSkill(name);
-      expect(content, `${name} missing provenance`).toMatch(/Ported from sw_space\/resources\/skills\//);
     }
   });
 });

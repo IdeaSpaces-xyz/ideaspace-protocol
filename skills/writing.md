@@ -6,7 +6,6 @@ description: >
   or when asked "write this well", "capture this", "create a Note about".
   Derived from Strunk & White, Zinsser, Kovach & Rosenstiel.
 ---
-<!-- Ported from sw_space/resources/skills/writing.md @ 3b62262; neutralized for surface-neutral SDK distribution. Substance tracks the source — re-sync against that baseline. -->
 
 # Writing Standard
 

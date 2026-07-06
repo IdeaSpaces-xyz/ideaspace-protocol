@@ -6,7 +6,6 @@ description: >
   user wants to define how the agent should work in specific situations.
   Produces a file in _agent/ with name + description frontmatter.
 ---
-<!-- Ported from sw_space/resources/skills/form-primitive.md @ 3b62262; neutralized for surface-neutral SDK distribution. Substance tracks the source — re-sync against that baseline. -->
 
 # Form Primitive
 

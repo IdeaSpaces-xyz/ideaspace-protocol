@@ -5,7 +5,6 @@ description: >
   compound. Use when the user wants to persist knowledge, save what's been
   discussed, or capture expertise from conversation.
 ---
-<!-- Ported from sw_space/resources/skills/capture.md @ 3b62262; neutralized for surface-neutral SDK distribution. Substance tracks the source — re-sync against that baseline. -->
 
 # Capture
 

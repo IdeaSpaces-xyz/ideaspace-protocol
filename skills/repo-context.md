@@ -5,7 +5,6 @@ description: >
   _agent/repo-context.md, when onboarding to a new repo, or when the agent
   needs to understand the repo's identity.
 ---
-<!-- Ported from sw_space/resources/skills/repo-context.md @ 3b62262; neutralized for surface-neutral SDK distribution. Substance tracks the source — re-sync against that baseline. -->
 
 # Repo Context
 

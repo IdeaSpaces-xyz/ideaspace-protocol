@@ -95,7 +95,7 @@ describe("appendTrailers", () => {
 });
 
 // ── Shared conformance vectors ───────────────────────────────────────────────
-// The same file a non-TS implementation (e.g. sw_space's Python) loads and must
+// The same file a non-TS implementation (e.g. a Python one) loads and must
 // satisfy. Read at runtime — not imported — so it stays language-neutral.
 
 const vectors = JSON.parse(
