@@ -15,10 +15,9 @@
     },
     "attached_to": {
       "type": "string",
-      "description": "A SINGLE typed link to the entity this Note is about (subject, not provenance). One value by design — the inverse fan-in (a thing having many Notes) is the graph's job, not the file's. The type prefix vocabulary is the open 'namespace' question; this enum is provisional and meant to grow.",
-      "pattern": "^(hostname|person|agent|web_page|node):.+$",
-      "x-provisional-types": ["hostname", "person", "agent", "web_page", "node"],
-      "x-candidate-types": ["note"]
+      "description": "A SINGLE typed link to the entity this Note is about (subject, not provenance), written `<type>:<id>`. One value by design — the inverse fan-in (a thing having many Notes) is the platform's job, not the file's. The type namespace is PLATFORM-DEFINED and open, like the underscore extension point: the protocol fixes only the `<type>:<id>` shape; a platform declares which types it resolves.",
+      "pattern": "^[a-z][a-z0-9_]*:.+$",
+      "x-platform-type-examples": ["person", "agent", "web_page", "hostname", "node"]
     },
     "tags": {
       "type": "array",
@@ -30,8 +29,8 @@
   "additionalProperties": true,
   "x-status": "provisional — internal use; public timing undecided",
   "x-notes": [
-    "Subject rides in frontmatter (this schema); provenance (author, co-author, Change-Id) rides in git; internal handles (node_id) ride in the platform map, never the file.",
-    "Other fields (e.g. web_page source URL, generation cost) are permitted via additionalProperties but are not yet standardized here.",
-    "To extend the attach-type namespace, add the prefix to the pattern and x-provisional-types. Keep it a deliberate, versioned change."
+    "Subject rides in frontmatter (this schema); provenance (author, co-author, Change-Id) rides in git; internal platform handles ride in the platform's map, never the file.",
+    "Other fields are permitted via additionalProperties but are not standardized here.",
+    "The attached_to type namespace is platform-defined: the protocol fixes the `<type>:<id>` shape only. x-platform-type-examples lists the types sw_space resolves; other platforms declare their own."
   ]
 }
