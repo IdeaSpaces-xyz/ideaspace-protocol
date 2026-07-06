@@ -21,9 +21,9 @@ This repository is itself a conformant ideaspace (see [`_agent/`](_agent/)) — 
 
 ## Concepts in 30 seconds
 
-- **Position.** Every directory is a position. A `README.md` says what it is, for everyone.
+- **Position.** Every directory is a position, presenting as *summary → surface → children*. Its surface — a `README.md`, a repo's root README, or a lone `.md` file — says what it is, for everyone. Depth is elaboration: a child answers "what do you mean?" about the surface above it.
 - **Two kinds of content.** Plain `.md` files are *knowledge*; the `_agent/` folder is *agent context* (how to work here). Everything not underscore-prefixed is knowledge.
-- **The `_agent/` contract.** `foundation.md` (root handshake), `guide.md`, `purpose.md`, `now.md`, `next.md`. Keep it small — it's always loaded.
+- **The `_agent/` contract.** `foundation.md` (root handshake), `guide.md`, `purpose.md`, `now.md`, `next.md`, and optional `schema.md` (the shape of Notes in the folder — guidance, not validation). Give it a good surface: loaded at depth 0, with depth on demand.
 - **Fractal.** `_agent/` can appear at any position and composes along the path: general at the root, specific as you descend.
 - **Identity in git.** The author is the person; an agent that helped adds a `Co-authored-by:` trailer. Provenance rides in git, not in a file's frontmatter.
 
