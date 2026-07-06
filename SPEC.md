@@ -85,7 +85,7 @@ Git already has the slots; use them, don't invent a store. This section is the c
 
 Provenance lives in **git**, not in a Note's frontmatter. The commit author and the `Co-authored-by` trailer *are* the portable record of who produced what — they travel with history. The same `agent:<id>` / `person:<id>` strings also name per-agent record folders, `_agent/<agent-id>/`.
 
-A platform may *project* these trailers into queryable provenance metadata (a `contributed_by` index and the like), rebuildable from git — that projection is platform-specific and outside this spec.
+A platform may *project* these trailers into a queryable provenance index, rebuildable from git — that projection is platform-specific and outside this spec.
 
 Don't conflate provenance with **subject**. *Who produced* a Note is git-borne (above) and projected into the platform's map — it is **not** a frontmatter field. *What a Note is about* is the opposite: a knowledge field that lives in the Note's own frontmatter and travels in the file — `attached_to`: a single typed link from the Note to the entity it describes, written `<type>:<id>`. The **type namespace is platform-defined**, not fixed by the protocol — the same open-vocabulary rule as the underscore extension point; a platform declares the types it resolves (`person`, `agent`, a web page, a hostname, its own node kinds). The same `agent:<id>` string means different things on each axis — `attached_to: agent:keeper` is a Note *about* the agent; a commit co-author is the agent that *wrote* it. Subject rides in frontmatter, provenance rides in git — different layers, don't mix. (Internal platform handles ride in neither — they live in the platform's map, never the file.)
 
