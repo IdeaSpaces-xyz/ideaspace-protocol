@@ -10,7 +10,7 @@ description: >
 
 # Writing Standard
 
-Notes that compound follow these principles. They're functional requirements for knowledge that works — clear writing produces clean vectors, dense summaries drive discovery, structured sections enable precise retrieval.
+Notes that compound follow these principles. They're functional requirements for knowledge that works — clear writing is easy to find and reuse, dense summaries drive discovery, well-scoped sections make a Note precise to navigate and search.
 
 Derived from Strunk & White, Zinsser, Kovach & Rosenstiel.
 
@@ -18,7 +18,7 @@ Derived from Strunk & White, Zinsser, Kovach & Rosenstiel.
 
 The `summary` field is the most important thing you write. It's what search results show. It's what shows when browsing the tree. It's what loads in awareness context. Write it like the first thing someone reads — because it is.
 
-Two sentences max. Dense. Immediate orientation. "What is this and why does it matter." Early tokens carry disproportionate influence on the embedding vector.
+Two sentences max. Dense. Immediate orientation. "What is this and why does it matter." Early words carry disproportionate weight — they anchor how the Note reads and how it is found.
 
 ## Conciseness (Strunk & White)
 
@@ -43,7 +43,7 @@ Active voice over passive. "The startup was analyzed" → "We analyzed the start
 
 ## Concreteness
 
-Specifics cluster with related specifics in vector space. Abstractions diffuse.
+Specifics connect a Note to related specifics; abstractions blur those connections.
 
 | Abstract | Concrete |
 |----------|----------|
@@ -67,12 +67,12 @@ Every claim traces to a source. "According to the landing page..." or "The pitch
 
 **What the agent does NOT do:** verify claims, add information not in the source, editorialize ("impressive team"), fill gaps with plausible content. If the source doesn't mention revenue, note the absence — don't guess.
 
-## Sections Are the Semantic Fingerprint
+## Well-Scoped Sections
 
-Each `## heading` creates a vector centroid. Well-scoped sections = precise retrieval.
+Each `## heading` scopes one distinct point. Well-scoped sections = precise navigation and search.
 
-- A Note with five distinct sections has a 5-dimensional semantic fingerprint
-- A wall of text collapses to one dimension — hard to find, hard to compare
+- A Note with five distinct sections makes five findable, comparable points
+- A wall of text blurs into one undifferentiated block — hard to find, hard to compare
 - Each section makes a complete point independently
 - Headings are contracts — "Team Analysis" contains team analysis, not market commentary
 - Target: 3-10 paragraphs per section. Too short = insufficient signal. Too long = diluted topic.
@@ -105,7 +105,7 @@ Path links are user-facing handles. They may break when the target is renamed un
 
 Existing inline `node:n_...` links remain resolvable, but don't write them as the default prose link form. Inline links are reader navigation, not provenance. They do not populate `references` or `referenced_by`.
 
-When renaming a Note and heavily rewriting it, commit the rename separately from the rewrite. Git rename detection is similarity-based; a rename plus large content change in one commit can lose node identity.
+When renaming a Note and heavily rewriting it, commit the rename separately from the rewrite. Git rename detection is similarity-based; a rename plus large content change in one commit can defeat it, losing the file's history link.
 
 ## Sources and References
 
@@ -122,7 +122,7 @@ Use `references` only for hard sources: the small set of node IDs this Note was 
 
 - **Throat-clearing.** "Before we dive into the analysis..." — delete, start with the analysis
 - **Hedge stacking.** "It seems like it might possibly be somewhat relevant" — state or acknowledge uncertainty once
-- **Elegant variation.** If it's a "startup" in paragraph one, don't call it a "venture" in paragraph two for variety. Consistency aids retrieval.
+- **Elegant variation.** If it's a "startup" in paragraph one, don't call it a "venture" in paragraph two for variety. Consistency aids findability.
 - **Nominalization.** "Make a determination" → "determine." "Performed an analysis" → "analyzed."
 - **Weasel words.** "Some experts say," "studies show" — without attribution, these are noise
 
@@ -131,7 +131,7 @@ Use `references` only for hard sources: the small set of node IDs this Note was 
 Knowledge capture succeeds when:
 
 1. A human can scan the output and orient in seconds
-2. A machine can embed the output and retrieve it precisely
+2. A machine can index the output and retrieve it precisely
 3. Every sentence traces to a source or is explicitly marked as interpretation
 4. Nothing is added that wasn't in the input
 5. Nothing important from the input is lost without acknowledgment

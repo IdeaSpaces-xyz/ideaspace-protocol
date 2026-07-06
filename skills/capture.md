@@ -24,7 +24,7 @@ Too early loses nuance, too late loses coherence. Ready: clarity reached, same p
 Notes are retrieval artifacts — what you write now serves a future search.
 
 - **Signal density** — one clear thing per sentence. "Revenue grew 40% in Q3" not "significant growth."
-- **Summary first** — orient immediately, dense with meaning, stands alone. Anchors the embedding.
+- **Summary first** — orient immediately, dense with meaning, stands alone. It is what a reader and a search see first.
 - **Self-contained sections** — each independently meaningful. No "as mentioned above." Headings are contracts.
 - **Fact vs interpretation** — distinguish, attribute, never blend. Gaps are information.
 - **Progressive disclosure** — title → summary → sections. Each level adds detail without contradicting.
