@@ -27,8 +27,6 @@ This is the **base layer**. Knowing the shape *is* awareness. Acting on it — c
 
 **1. Position.** Every directory is a position, and every position presents the same way: **summary → surface → children.** The *surface* is the one Note that says what this place is, for everyone (human and agent) — a directory's surface is its `README.md`, a repo's is its root `README.md`, a lone `.md` file is its own surface. Reading surfaces along a path is how you orient: general at the root, specific as you descend.
 
-**Depth is elaboration.** A child answers *"what do you mean by that?"* about the surface above it. Grow a layer only when someone needs to ask — depth on demand, never scaffolded in advance. So "Note vs folder vs repo" names stages of one idea expanding, not three kinds of thing: a Note grows children into a folder; a folder earns its own sharing boundary as a repo. The shape is identical at every stage.
-
 **2. Two kinds of content** at every position:
 
 - **Knowledge** — regular `.md` files. What we know. This is what accumulates and travels.
@@ -54,10 +52,6 @@ Not every position needs all of them — a branch might carry only `now.md`. **G
 
 **4. Fractal.** `_agent/` can appear at any position. Reading composes along the path — root, then each branch — specificity sharpening as you descend. A branch with no `_agent/` inherits its ancestors'. `foundation.md` lives only at a space root; branches refine, they do not re-declare.
 
-**Collections and elaborations.** Two parent→child relations read differently. *Elaboration* — heterogeneous children, each deepening the surface ("what do you mean?"). *Collection* — homogeneous children, each instancing one kind ("such as?"). An optional `_agent/schema.md` lets a collection declare its instance shape — "Notes here look like this" — the way `.gitattributes` declares how to treat files under a path: in-tree, path-scoped, composing along the path, gracefully ignored by any tool that doesn't read it.
-
-It is **guidance, never validation.** `schema.md` shapes how an agent *writes and reads* the folder's Notes; it does not gate writes. Content that doesn't match is still valid content — the mismatch is a drift signal about the agent that wrote it, and a Note outgrowing its folder's shape is a *promotion* signal. Nothing rejects a write; nothing marks a file invalid. Keeping it on this side of the line is deliberate: schema tends toward validation and validation toward rejection — refusing that slide is what keeps `schema.md` an agreement, not a type system.
-
 **5. The handshake.** `foundation.md` orients anyone arriving: what this place is, what areas and agreements exist, where to go for what. It **points, it does not reproduce** — one line per area, links for depth. A space without a foundation is just folders; with it, it is a legible place an agent can self-direct through instead of being told where to look.
 
 **6. Underscore is the extension point.** Any `_`-prefixed folder is infrastructure — loaded by position, not search. `_agent/` is the one every agent must understand. Others (`_access/`, `_conversations/`, …) are optional and platform-defined. **An agent gracefully ignores any `_`-folder it does not understand.** This is the portability guarantee: a space can carry features a given agent has never heard of, and that agent still inhabits it correctly.
@@ -69,6 +63,16 @@ It is **guidance, never validation.** `schema.md` shapes how an agent *writes an
 - **Per-agent** — `_agent/<agent-id>/`, gitignored. What one agent noticed, learned, plans. Agents read each other's; each writes only its own.
 
 **Awareness is local; only content travels.** A handshake can durably point only to *shared* content — a pointer into a gitignored code repo is real for you, dangling for whoever clones. Same brain, different peripheral vision.
+
+---
+
+## The model
+
+The seven requirements above are all an agent needs to conform. This is the model that explains *why* they are enough — why it is **one** shape at every scale, not a pile of special cases. Rationale, not conformance; an agent that never reads it still inhabits any space correctly.
+
+- **One shape, three stages.** A Note, a folder, and a repo are the same idea expanding, not three kinds of thing: a Note grows children into a folder; a folder earns its own sharing boundary as a repo. The shape — *summary → surface → children* — is identical at every stage.
+- **Depth is elaboration.** A child answers "what do you mean?" about the surface above it; the tree is a crystallized conversation, depth the record of what's been asked and answered. Grow a layer only when someone needs to ask — disclose depth on demand, close it when it would crowd attention.
+- **Collections vs elaborations.** Two parent→child relations read differently: *elaboration* — heterogeneous children each deepening the surface ("what do you mean?"); *collection* — homogeneous children each instancing one kind ("such as?"). An optional `_agent/schema.md` lets a collection declare its instance shape — the `.gitattributes` of the protocol: in-tree, path-scoped, composing along the path, gracefully ignored. It is **guidance, never validation** — a mismatch is a drift signal about the writer and a promotion signal for the Note, never a rejected write. Schema tends toward validation and validation toward rejection; refusing that slide keeps it an agreement, not a type system.
 
 ---
 
@@ -87,7 +91,7 @@ Provenance lives in **git**, not in a Note's frontmatter. The commit author and 
 
 A platform may *project* these trailers into a queryable provenance index, rebuildable from git — that projection is platform-specific and outside this spec.
 
-Don't conflate provenance with **subject**. *Who produced* a Note is git-borne (above) and projected into the platform's map — it is **not** a frontmatter field. *What a Note is about* is the opposite: a knowledge field that lives in the Note's own frontmatter and travels in the file — `attached_to`: a single typed link from the Note to the entity it describes, written `<type>:<id>`. The **type namespace is platform-defined**, not fixed by the protocol — the same open-vocabulary rule as the underscore extension point; a platform declares the types it resolves (`person`, `agent`, a web page, a hostname, its own node kinds). The same `agent:<id>` string means different things on each axis — `attached_to: agent:keeper` is a Note *about* the agent; a commit co-author is the agent that *wrote* it. Subject rides in frontmatter, provenance rides in git — different layers, don't mix. (Internal platform handles ride in neither — they live in the platform's map, never the file.)
+Don't conflate provenance with **subject**. *Who produced* a Note rides in git (above); *what a Note is about* rides in its frontmatter — `attached_to`, a single typed `<type>:<id>` link to the entity it describes. The type namespace is platform-defined (the same open-vocabulary rule as the underscore extension point). So `attached_to: agent:x` is a Note *about* an agent, while a commit co-author is the agent that *wrote* it — different layers. Subject travels in the file, provenance in history; internal platform handles live in neither. Field detail is in [`schema/frontmatter.schema.json`](schema/frontmatter.schema.json).
 
 Attribution travels with the content in git history. Per-agent working records do not. Set the person's git identity when the space is created, not when it is published, so attribution is correct from the first commit. *Resolution* of these strings to accounts and profiles (login, identity providers) is a platform concern, outside this spec.
 
@@ -101,18 +105,11 @@ The checkable form of all five trailers — keys, values, the `Change-Id` format
 
 Plus a diff-as-Note: the interpretation of a change, captured as a searchable Note linked back by `Change-Id`. Like the underscore namespace, Change is **opt-in and additive** — `Change-Id` is just a trailer; repos that don't use it ignore it, and bare git still works. With it, `git log --grep="Change-Id: …"` traces one decision across a codebase, a docs repo, and a private context repo at once — including private repos, which the `Change-Id` links to shared outputs without exposing their content.
 
-**Status: format specified, lib built, adoption pending (re-checked against the code 2026-07-06).** The trailer *shape* is pinned in [`schema/trailers.md`](schema/trailers.md), and the reference lib (`src/trailers.ts`) is built and tested — `mintChangeId` (offline), the trailer parse/format helpers, and `changeIdGrep`, all exported through `index.ts`. Wiring is where it lags: a platform may stamp and read `Op`/`Conversation`/`Turn` server-side while a client commit path still commits bare, and `Change-Id` has zero call sites — no stamping, no query. The capability ships; adoption is the open work. Treat the Change layer as the contract; surfaces reach conformance incrementally.
-
 ---
 
 ## Two Layers
 
-The spec is half the understanding layer.
-
-- **Base layer — the spec → awareness.** A fixed, readable shape. An agent that knows it can *perceive* any conformant space: where it is, what's declared here, what the contract says. Passive, always-on.
-- **Skills layer → ability.** The verbs an agent installs to *work* a space, not just read it — **orient, understand, capture, reflect, share**. Standardized and platform-neutral like the spec, so the same skills work in any conformant space.
-
-Skills are not optional polish. Explicit-but-stale knowledge fails; the agreement is *maintained, not declared*. A space that can be read but not maintained goes stale on contact. The skill layer is what keeps it alive. *(Skills are a separate document — [SKILLS.md](SKILLS.md).)*
+The spec is the **base layer** — a fixed, readable shape an agent *perceives*: where it is, what's declared here, what the contract says. The **skills layer** is ability: the verbs to *work* a space — orient, understand, capture, reflect, share — standardized and platform-neutral like the spec. Skills aren't polish: a space that can be read but not maintained goes stale on contact; the skill layer keeps the agreement alive. Skills are their own document — [SKILLS.md](SKILLS.md).
 
 ---
 
