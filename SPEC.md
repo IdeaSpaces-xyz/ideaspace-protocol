@@ -109,7 +109,7 @@ Plus a diff-as-Note: the interpretation of a change, captured as a searchable No
 
 ## Two Layers
 
-The spec is the **base layer** — a fixed, readable shape an agent *perceives*: where it is, what's declared here, what the contract says. The **skills layer** is ability: the verbs to *work* a space — orient, understand, capture, reflect, share — standardized and platform-neutral like the spec. Skills aren't polish: a space that can be read but not maintained goes stale on contact; the skill layer keeps the agreement alive. Skills are their own document — [SKILLS.md](SKILLS.md).
+The spec is the **base layer** — a fixed, readable shape an agent *perceives*: where it is, what's declared here, what the contract says. The **skills layer** is ability: the verbs to *work* a space — orient, understand, capture, reflect, share — standardized and platform-neutral like the spec. Skills aren't polish: the agreement is *maintained, not declared* — a space that can be read but not maintained goes stale on contact, and the skill layer is what keeps it alive. Skills are their own document — [SKILLS.md](SKILLS.md).
 
 ---
 
