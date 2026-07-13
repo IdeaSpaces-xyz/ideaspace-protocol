@@ -46,17 +46,17 @@ describe("composeFrontmatter", () => {
 
   it("orders fields name, summary, tags, attached_to", () => {
     const out = composeFrontmatter({
-      attached_to: ["person:alice"],
+      attached_to: "person:alice",
       tags: ["a"],
       summary: "S",
       name: "N",
     });
     expect(out).toBe(
-      "---\nname: N\nsummary: S\ntags:\n  - a\nattached_to:\n  - person:alice\n---\n",
+      "---\nname: N\nsummary: S\ntags:\n  - a\nattached_to: person:alice\n---\n",
     );
   });
 
-  it("renders arrays in block style", () => {
+  it("renders tags in block-array style", () => {
     const out = composeFrontmatter({ tags: ["one", "two", "three"] });
     expect(out).toBe("---\ntags:\n  - one\n  - two\n  - three\n---\n");
   });
@@ -215,7 +215,7 @@ describe("extractSummary", () => {
 
   it("finds summary even when it's not the first frontmatter field", () => {
     const input =
-      "---\nname: Foo\ntags: [a, b]\nattached_to: [person:alice]\nsummary: Found me later.\n---\n# Body";
+      "---\nname: Foo\ntags: [a, b]\nattached_to: person:alice\nsummary: Found me later.\n---\n# Body";
     expect(extractSummary(input)).toBe("Found me later.");
   });
 
