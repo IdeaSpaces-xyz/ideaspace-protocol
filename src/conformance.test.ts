@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { validateSpace } from "./conformance.js";
+import { composeFrontmatter } from "./frontmatter.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 // src/ and conformance/ are siblings under the package root.
@@ -76,12 +77,33 @@ describe("validateSpace — frontmatter violations", () => {
       "---\nname: Bad\nattached_to: garbage\n---\nbody\n",
       "utf-8",
     );
+    // The legacy array-of-one shape is invalid: attached_to is singular.
+    await fs.writeFile(
+      join(tmp, "array-attach.md"),
+      "---\nname: Legacy\nattached_to:\n  - person:alice\n---\nbody\n",
+      "utf-8",
+    );
 
     const report = await validateSpace(tmp);
     expect(report.ok).toBe(false);
     const rules = report.issues.filter((i) => i.level === "error").map((i) => i.rule);
     expect(rules).toContain("frontmatter-malformed");
     expect(rules).toContain("attached-to-pattern");
+    expect(rules).toContain("attached-to-type");
+  });
+
+  it("accepts attached_to emitted by the reference composer", async () => {
+    await makeAgent(tmp, { "foundation.md": "# Foundation" });
+    await fs.writeFile(
+      join(tmp, "composed.md"),
+      composeFrontmatter({ name: "Composed", attached_to: "person:alice" }) + "body\n",
+      "utf-8",
+    );
+
+    const report = await validateSpace(tmp);
+    const errors = report.issues.filter((i) => i.level === "error");
+    expect(errors).toEqual([]);
+    expect(report.ok).toBe(true);
   });
 
   it("flags wrong types for name and tags", async () => {

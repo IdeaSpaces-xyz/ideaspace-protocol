@@ -24,7 +24,7 @@ export interface Frontmatter {
   /** Skill trigger hint (SDK skill catalog). Notes use `summary` instead. */
   description?: string;
   tags?: string[];
-  attached_to?: string[];
+  attached_to?: string;
 }
 
 const DELIM = "---";
@@ -180,8 +180,8 @@ function extractScalarField(content: string, field: string): string | null {
 /**
  * Compose a stable yaml frontmatter block.
  *
- * Output is sorted by field order (name, summary, tags, attached_to)
- * and uses block-style for arrays. Strings are escaped only if they contain
+ * Output is sorted by field order (name, summary, tags, attached_to).
+ * Tags use block-array style. Strings are escaped only if they contain
  * yaml-special characters (colons, quotes, leading dashes); otherwise the
  * raw form is emitted for readability.
  *
@@ -193,7 +193,9 @@ export function composeFrontmatter(fm: Frontmatter): string {
   if (fm.name !== undefined) lines.push(`name: ${escapeScalar(fm.name)}`);
   if (fm.summary !== undefined) lines.push(`summary: ${escapeScalar(fm.summary)}`);
   if (fm.tags?.length) lines.push(...renderArray("tags", fm.tags));
-  if (fm.attached_to?.length) lines.push(...renderArray("attached_to", fm.attached_to));
+  if (fm.attached_to !== undefined) {
+    lines.push(`attached_to: ${escapeScalar(fm.attached_to)}`);
+  }
   lines.push(DELIM, "");
   return lines.join("\n");
 }
