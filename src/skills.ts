@@ -2,11 +2,11 @@ import { extractDescription } from "./frontmatter.js";
 import { SKILL_CATALOG } from "./skill-catalog.generated.js";
 
 /**
- * The SDK skill catalog — the distribution-canonical reference content.
+ * The protocol skill catalog — the distribution-canonical reference content.
  *
  * Content is **compiled in** (see `scripts/embed-skills.mjs`, which bakes
  * `skills/*.md` into `skill-catalog.generated.ts`), so `listSkills`/`readSkill`
- * work identically whether the SDK is read from `node_modules` or bundled into
+ * work identically whether the protocol library is read from `node_modules` or bundled into
  * a consumer (the MCP server, any esbuild'd tool). No filesystem, no
  * `import.meta.url` path resolution — bundling can't break it.
  *
