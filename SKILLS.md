@@ -1,78 +1,90 @@
 ---
 name: The Skills Layer
 summary: >-
-  The companion to SPEC.md: if the spec is awareness (perceive a space), skills are ability (work it). Skills are organized by the operating loop — the per-session cycle an agent runs: arrive → orient → inspect → act → capture → sync → reflect. Three layers, each disclosing the next: loop phase → skill (the obvious intent match) → MCP/CLI tool → SDK behavior. The space-specific skills cluster in the back half (capture, sync, reflect) plus orient; the front half (arrive, inspect, act) is generic agent work. This operating loop is distinct from the knowledge loop in loop.md (how understanding advances across people and turns) — they meet at capture, don't conflate them. Skill substance has one home: shared protocol (writing, capture, awareness, shaping) lives in the SDK canonical catalog and is generated into each surface; surface entrypoint skills stay thin. Canonical skills: is-orient, is-capture, is-sync, is-reflect (loop), is-shape (meta), is-setup, is-publish (lifecycle), is-space, is-writing (reference). pi-is-space is the reference implementation; the Claude plugin is being brought to parity.
+  The companion to SPEC.md: the spec gives an agent awareness of an ideaspace;
+  skills give it the ability to work there. The per-session loop is arrive →
+  orient → inspect → act → capture → push/pull → reflect. Shared skill substance
+  lives in this protocol's skills/ catalog and is distributed to each surface;
+  thin surface entrypoints adapt it to their native tools. Daily intent skills
+  are is-orient, is-capture, is-push, is-pull, and is-reflect, with lifecycle,
+  shaping, and reference skills alongside them.
 ---
 
 # The Skills Layer
 
-> SPEC.md is half the understanding layer — awareness, the shape you can *perceive*. This is the other half: **ability**, the verbs an agent installs to *work* a space. Skills are not optional polish; an agreement that's read but not maintained goes stale on contact.
+> SPEC.md is half the understanding layer — awareness, the shape an agent can *perceive*. This is the other half: **ability**, the verbs an agent uses to *work* a space. Skills are not optional polish; an agreement that is read but not maintained goes stale on contact.
 
 ## The operating loop
 
-A skill matches an intent, and intents follow a cycle — the per-session loop an agent runs from the moment it arrives in a space:
+A skill matches an intent, and intents follow a per-session cycle:
 
-**arrive → orient → inspect → act → capture → sync → reflect**
+**arrive → orient → inspect → act → capture → push/pull → reflect**
 
 | Phase | What happens |
 |---|---|
-| **Arrive** | Session starts. Detect the space, position in the tree, git state. Automatic — a session-start hook, not a skill the agent picks. |
-| **Orient** | Read `foundation` / `guide` / `purpose` / `now` / `next` along the path. Understand where we are and what's active. |
+| **Arrive** | Detect the space, position, and git state. Automatic session-start behavior, not a skill the agent picks. |
+| **Orient** | Read the effective `foundation` / `guide` / `purpose` / `now` / `next` contract and position surfaces. |
 | **Inspect** | Explore the relevant knowledge, code, and state before acting. |
-| **Act** | Do the work. Ordinary edits, research, code — may use domain skills. |
-| **Capture** | The agreement moment: "what changed in shared understanding?" Write or update Notes. |
-| **Sync** | Align local and remote — push committed captures, integrate others'. |
-| **Reflect** | Check for drift: does `now`, the guide, the spec, or actual practice disagree? |
+| **Act** | Do the work: ordinary edits, research, code, or domain-specific procedures. |
+| **Capture** | Reach agreement on what changed in shared understanding, then write and commit it deliberately. |
+| **Push/pull** | Push committed captures outward or pull others' committed captures inward. The directions stay separate. |
+| **Reflect** | Check declared understanding against reality and propose a concrete recalibration when they differ. |
 
-This is **not** the knowledge loop. The knowledge loop describes how shared understanding advances over time, across people and conversations (capture → read → question → discuss). This is the **operating loop** — how one agent runs a single session. They meet at **Capture**, where working state becomes shared understanding. Keep them distinct.
+This is **not** the knowledge loop. The knowledge loop describes how shared understanding advances across people and conversations. This is the **operating loop** for one agent session. They meet at Capture, where working state becomes shared understanding.
 
-## Three layers: loop → skill → tool
+## Intent → skill → tool
 
-The agent chooses *intent*; the skill chooses *mechanism*; the tool does the work.
+The agent chooses the intent; the skill chooses the mechanism; the tool performs the operation.
 
+```text
+loop phase → intent skill → native or is_* tool → CLI / protocol implementation
 ```
-loop phase  →  skill (the obvious pick)  →  MCP/CLI tool  →  SDK behavior
-```
 
-This is progressive disclosure of capability: you're in a phase, one skill is the natural match, the skill reaches for the tools. The agent never picks between equivalent backends — it names what it wants to do.
+The user should not have to choose between equivalent backends. They ask to capture, push, pull, or reflect; the surface adapts that intent to its native tools.
 
-## The catalog
+## The surface skill set
 
-The space-specific skills cluster in the **back half** of the loop — the phases that touch shared understanding. The front half is generic agent work that needs no IdeaSpaces skill.
+The IdeaSpaces-specific skills cluster around the phases that touch shared understanding. Inspect and Act remain generic agent work.
 
-| Phase / role | Skill | Tools |
+| Phase / role | Skill | Typical mechanism |
 |---|---|---|
-| Arrive | — (session-start hook) | git state, the `refs/ideaspaces/seen` marker |
-| Orient | `is-space` (the reference) — largely front-loaded by the hook | read `_agent/` along the path |
-| Inspect | — (generic) | Read, Grep, Glob, search |
-| Act | — (domain skills) | Edit, Write, Bash |
-| Capture | `is-capture` (when) + `is-writing` (how) | `is_write` → `is_commit` |
-| Sync | `is-sync` | `is_sync` |
-| Reflect | `is-reflect` | the doc-vs-code drift check |
+| Arrive | — | session-start awareness, git state, `refs/ideaspaces/seen` |
+| Orient | `is-orient` | composed `_agent/` contract, position surfaces, `is_status` when needed |
+| Inspect | — | native read/search tools |
+| Act | — | native edit/write/shell tools and domain skills |
+| Capture | `is-capture` + `is-writing` | `is_write` for Notes or native edits for existing docs, then `is_commit` |
+| Push | `is-push` | `is_push` |
+| Pull | `is-pull` | `is_pull` |
+| Reflect | `is-reflect` | compare declarations with reality; capture an agreed update |
 
-Two skills sit *off* the loop, and that's correct:
+Skills outside the daily loop:
 
-- **`is-setup`** — the first-ever Arrive, when there's no space yet (scaffold the `_agent/` contract).
-- **`is-shape`** — the meta-move: change *how* the loop works here by editing the contract, adding a skill, or codifying a perspective.
+- **`is-setup`** — scaffold the seed `_agent/` contract when no ideaspace exists yet.
+- **`is-publish`** — host a local ideaspace at a remote.
+- **`is-shape`** — change how work happens by evolving the contract, a reusable primitive, or a perspective.
+- **`is-space`** — compatibility and contract reference.
+- **`is-writing`** — the Note-writing standard used during capture.
 
-(`is-publish` is a lifecycle action — host the space at a remote — not a loop phase.)
+## One home for shared substance
 
-## Skill names
+A skill has two layers with different homes:
 
-The canonical name is `is-<verb>`, tracking the loop phase: `is-orient`, `is-capture`, `is-sync`, `is-reflect`. SPEC.md's "Two Layers" names the conceptual verbs — *orient, understand, capture, reflect, share*; `inspect`/`act` map to *understand*, and `is-sync` is *share*. The skill name tracks the loop phase, not the conceptual verb, so the intent → skill pick stays obvious.
+- **Shared protocol substance** lives once in [`skills/`](skills/). The build embeds that catalog into the reference library; the SDK re-exports it for compatibility; surfaces generate their committed `reference/` copies from it.
+- **Surface entrypoints** live in each adapter. They stay thin, match user intent, and translate the shared protocol into native tool names, commands, confirmation flows, and runtime constraints.
 
-## One home for skill substance
+Update shared awareness, capture, writing, or shaping guidance here first, release the protocol, bump downstream dependencies, then regenerate surface references. Do not hand-edit generated copies.
 
-A skill has two parts, and they live in different places:
+Surface entrypoints need semantic parity, not byte identity. Pi and Claude Code expose different native tools and UI flows, but the same intent should reach the same agreement boundary and produce the same portable result.
 
-- **Shared protocol** — the substance of *how* to capture, write, reflect, shape, orient. This lives **once**, in the SDK canonical skill catalog, and is generated into each surface (`pi-is-space/reference/`, and the plugin's skill resources). Update the protocol in the SDK, regenerate — don't hand-edit each copy.
-- **Surface entrypoint** — the thin, platform-specific skill file that points at the protocol and adapts to that surface's tools.
+## Conformance posture
 
-When surface entrypoints carry substance by hand, they drift. The live example: `is-space` taught a platform provenance field as frontmatter on one surface after the same claim had been corrected on another. The fix is structural — substance in the SDK, surfaces generated — not hand-fixing each copy forever.
+A conformant surface:
 
-## Reference implementation
-
-`pi-is-space` is the reference implementation: the operating loop is its stated principle, it carries every loop skill including `is-orient` and `is-sync`, and it generates its `reference/` from the SDK catalog. The Claude plugin is being brought to parity — adding `is-orient` and `is-sync`, and moving surface-skill substance into the shared catalog.
+- exposes the daily intents without collapsing push and pull into an ambiguous sync operation;
+- keeps capture deliberate: preview or agreement before persistence, explicit commit afterward;
+- uses native tools for generic inspection and action instead of duplicating them behind protocol-specific wrappers;
+- reads shared protocol substance from the protocol-owned catalog;
+- keeps surface-only mechanics out of the shared skill text.
 
 ---
 

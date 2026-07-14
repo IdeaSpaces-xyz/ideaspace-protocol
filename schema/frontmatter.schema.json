@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ideaspaces.xyz/schema/frontmatter.schema.json",
   "title": "Ideaspace Note frontmatter (Layer 1)",
-  "description": "The portable, author-owned frontmatter of a knowledge Note — what travels in the file (subject), as opposed to provenance (git) and platform identity (the map). PROVISIONAL, internal use, v0.1; public timing undecided. Per the spec, an absent field is a drift signal, not an error — nothing is strictly required. Additional fields are allowed so the leaf stays extensible.",
+  "description": "The portable, author-owned frontmatter of a knowledge Note — what travels in the file (subject), as opposed to provenance (git) and platform identity (the map). PROVISIONAL, internal use, v0.4.1; public timing undecided. Per the spec, an absent field is a drift signal, not an error — nothing is strictly required. Additional fields are allowed so the leaf stays extensible.",
   "type": "object",
   "properties": {
     "name": {

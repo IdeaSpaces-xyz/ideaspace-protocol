@@ -21,7 +21,7 @@ import { parseDocument } from "yaml";
 export interface Frontmatter {
   name?: string;
   summary?: string;
-  /** Skill trigger hint (SDK skill catalog). Notes use `summary` instead. */
+  /** Skill trigger hint (protocol skill catalog). Notes use `summary` instead. */
   description?: string;
   tags?: string[];
   attached_to?: string;
@@ -111,7 +111,7 @@ export function extractSummary(content: string): string | null {
 /**
  * Extract the `description` field, falling back to `summary`.
  *
- * Skill frontmatter (the SDK skill catalog) uses `description` as the agent's
+ * Skill frontmatter (the protocol skill catalog) uses `description` as the agent's
  * trigger hint; the writing standard's Notes use `summary`. Surfacing skill
  * blurbs needs to read either — prefer `description`, fall back to `summary`.
  */

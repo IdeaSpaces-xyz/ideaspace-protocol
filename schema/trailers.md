@@ -1,6 +1,6 @@
 # Commit trailers — the Change layer
 
-> The checkable form of the Change layer. Normative prose is [`../SPEC.md#identity`](../SPEC.md). This is the enumeration tooling stamps and validates against, so the trailers are **identical across every surface** that writes them. **Provisional, v0.1.**
+> The checkable form of the Change layer. Normative prose is [`../SPEC.md#identity`](../SPEC.md). This is the enumeration tooling stamps and validates against, so the trailers are **identical across every surface** that writes them. **Provisional, v0.4.1.**
 
 ## It is just git
 

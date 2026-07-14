@@ -36,10 +36,15 @@ npm install @ideaspaces/protocol
 ```
 
 ```ts
-import { findSpaceRoot, readContract, stripFrontmatter, composeFrontmatter } from "@ideaspaces/protocol";
+import {
+  composeContractAlongPath,
+  stripFrontmatter,
+  composeFrontmatter,
+} from "@ideaspaces/protocol";
 
-const root = await findSpaceRoot(process.cwd());   // nearest space root
-const contract = await readContract(root.path);    // the _agent/ files along the path
+const { spaceRoot, contract } = await composeContractAlongPath(process.cwd());
+if (!spaceRoot) throw new Error("No ideaspace contract resolves here");
+// `contract` is the effective root → current-position _agent/ agreement.
 ```
 
 The TypeScript library is the *reference* implementation, not the only one. Other languages conform to the language-neutral core — [`SPEC.md`](SPEC.md) + [`schema/frontmatter.schema.json`](schema/frontmatter.schema.json) + the conformance fixtures.
@@ -50,7 +55,7 @@ A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.m
 
 ## Status
 
-**v0.1 — early and provisional.** The spec, skills, and reference library are in place; the schema is provisional and expected to evolve (notably the `attached_to` attach-type vocabulary). Pin a version and expect changes before 1.0.
+**v0.4.1 — early and provisional.** The spec, skills, and reference library are in place; the schema is provisional and expected to evolve (notably the open `attached_to` type vocabulary). Pin a version and expect changes before 1.0.
 
 ## Develop
 
