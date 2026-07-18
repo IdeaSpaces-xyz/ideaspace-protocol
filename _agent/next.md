@@ -1,10 +1,12 @@
 ---
 name: Next
-summary: Queued — end-to-end conformance through downstream write paths, generated-artifact drift guards, and evidence-led evolution of the open attachment namespace.
+summary: Queued, reshaped by delivered conformance — lift the four-times-duplicated cache-path derivation into the reference library, add a pure contract-delta primitive for ambient awareness, decide whether the library grows a clearly-scoped local-write layer (a deliberate revision of the read-only rule, made here with consumer evidence), and keep evolving the attachment namespace only on demonstrated need.
 ---
 # Next
 
-- **Cross-surface conformance.** Write Notes through CLI, MCP, Claude plugin, and Pi paths, then validate the results against the protocol conformance kit.
-- **Distribution drift guards.** Make CI fail when generated references or vendored CLI/MCP bundles differ from their canonical sources.
-- **Surface parity.** Keep intent and agreement boundaries equivalent across adapters while allowing native tool and UI differences.
-- **Attach-type namespace.** Extend the open `attached_to` type vocabulary only when real platform behavior earns it.
+The previous queue's first two items — cross-surface conformance and distribution drift guards — are **delivered** (see [now.md](now.md)); surface parity graduated from a queue item to a tested invariant (each surface's conformance CI is the parity test). What the consumer evidence earned next:
+
+- **Cache-path derivation into the reference library.** The user-level session/Change cache-path scheme (`~/.ideaspaces/{sessions,changes}/<sha256(project-dir)[:16]>`) now exists in four consumer copies — the MCP server (write + read), the Claude plugin hook (read), and Pi (write + read) — locked together only by shared golden-value tests. It is a pure path computation; export it once here and retire every copy. The Change record shape (`{change_id, handle, opened_at, session_id}`) travels with it — it is deliberately **shared across surfaces** (a Change opened in one surface surfaces in another; session-aware arming makes cross-surface silent stamping impossible), so the single source of truth belongs at the shape layer.
+- **Contract-delta primitive.** Given a touched path and the set of already-seen `_agent/` positions, return the newly crossed contracts at surface depth (depth 0, progressive disclosure). Pure read over existing composition machinery, with conformance fixtures. This is what lets surfaces make fractal awareness *ambient* — the spec's first MUST ("read `_agent/` along the path before acting") enforced by tooling instead of agent discipline.
+- **Local-write module decision.** Consumer surfaces have converged on a direction: the user's side is self-sufficient; the platform CLI is minimal. Their local write verbs (frontmatter-aware Note writes; path-scoped, trailer-stamped commits) currently shell a platform CLI as a transitional arrangement. The decision — whether this library grows a clearly-scoped local-write layer — is a **deliberate revision of the "read-only shape primitives" design rule** and is made here, not assumed downstream. The consumer conformance suites (which already prove those write paths end to end) would become its acceptance tests.
+- **Attach-type namespace.** Extend the open `attached_to` type vocabulary only when real platform behavior earns it. (Unchanged; no demonstrated need yet.)
