@@ -51,7 +51,7 @@ JSON, one object. The open [Change](trailers.md) ([`trailers.md`](trailers.md) d
 |---|---|---|
 | `change_id` | string, matches `Change-Id` format | the open Change |
 | `handle` | string, optional | the decision handle it was minted from |
-| `opened_at` | number (epoch ms) | when it opened — feeds "opened Nd ago" surfacing |
+| `opened_at` | number (epoch ms), tolerated-missing | when it opened — feeds "opened Nd ago" surfacing; a missing or non-number value defaults to `0` (not treated as malformed) |
 | `session_id` | string, optional | the session that opened it — the arming discriminator |
 
 A malformed record, or one whose `change_id` is invalid, is treated as **no open Change** (fail open), never an error.

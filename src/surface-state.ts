@@ -19,10 +19,10 @@
  * consistent with the read-only shape-primitive rule.
  */
 
-import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { runGit } from "./git.js";
 import { CHANGE_ID_PATTERN } from "./trailers.js";
 
 // ── User-level cache paths ──────────────────────────────────────────
@@ -149,14 +149,6 @@ export const SEEN_REF = "refs/ideaspaces/seen";
  * when the ref is unset (a first session) or the path is not a repo. Read-only.
  */
 export async function readSeenRef(repoRoot: string): Promise<string | undefined> {
-  const sha = await new Promise<string | undefined>((resolveSha) => {
-    const proc = spawn("git", ["-C", repoRoot, "rev-parse", "--verify", "--quiet", SEEN_REF], {
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    let out = "";
-    proc.stdout.on("data", (d: Buffer) => (out += d));
-    proc.on("close", (code) => resolveSha(code === 0 ? out.trim() || undefined : undefined));
-    proc.on("error", () => resolveSha(undefined));
-  });
-  return sha;
+  const res = await runGit(repoRoot, ["rev-parse", "--verify", "--quiet", SEEN_REF]);
+  return res.ok ? res.out.trim() || undefined : undefined;
 }

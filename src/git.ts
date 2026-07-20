@@ -57,8 +57,9 @@ export interface RecentActivity {
   changedFiles: ChangedFile[];
 }
 
-/** Run a git subcommand; resolves `{ ok, out }`. Never rejects. */
-function runGit(
+/** Run a git subcommand; resolves `{ ok, out }`. Never rejects. Shared read
+ * primitive — `surface-state.ts` reuses it rather than hand-rolling a copy. */
+export function runGit(
   repoRoot: string,
   args: string[],
 ): Promise<{ ok: boolean; out: string }> {
