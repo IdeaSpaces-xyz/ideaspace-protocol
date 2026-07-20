@@ -121,21 +121,21 @@ describe("renderPosition", () => {
 
   it("renders repo, cwd, space root, and active branch at the space root", () => {
     const c = ctx([level("", { foundation: true })]);
-    expect(renderPosition("/repo", "/repo", "/repo", c)).toBe(
+    expect(renderPosition({ pos: "/repo", base: "/repo", repoRoot: "/repo", ctx: c })).toBe(
       ["Position:", "  repo: /repo", "  cwd: .", "  space root: .", "  active _agent: ."].join("\n"),
     );
   });
 
   it("shows cwd relative to base and the nearest branch when nested", () => {
     const c = ctx([level("", { foundation: true }), level("a"), level("a/b", { hasAgent: true })]);
-    expect(renderPosition("/repo/a/b", "/repo", "/repo", c)).toBe(
+    expect(renderPosition({ pos: "/repo/a/b", base: "/repo", repoRoot: "/repo", ctx: c })).toBe(
       ["Position:", "  repo: /repo", "  cwd: a/b", "  space root: .", "  active _agent: a/b"].join("\n"),
     );
   });
 
   it("omits the repo line in a non-git ideaspace (repoRoot null); base is the space root", () => {
     const c = ctx([level("", { foundation: true })]);
-    const out = renderPosition("/space", "/space", null, c);
+    const out = renderPosition({ pos: "/space", base: "/space", repoRoot: null, ctx: c });
     expect(out).not.toContain("repo:");
     expect(out).toContain("  space root: .");
     expect(out.startsWith("Position:")).toBe(true);
@@ -143,7 +143,7 @@ describe("renderPosition", () => {
 
   it("omits space-root and branch lines when the path carries no _agent/", () => {
     const c = ctx([level(""), level("docs")]);
-    expect(renderPosition("/repo/docs", "/repo", "/repo", c)).toBe(
+    expect(renderPosition({ pos: "/repo/docs", base: "/repo", repoRoot: "/repo", ctx: c })).toBe(
       ["Position:", "  repo: /repo", "  cwd: docs"].join("\n"),
     );
   });

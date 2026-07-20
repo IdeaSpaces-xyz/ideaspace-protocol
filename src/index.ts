@@ -43,6 +43,7 @@ export type {
   PathContext,
   PathLevel,
   WalkPathContextOpts,
+  RenderPositionOpts,
 } from "./path-context.js";
 
 export { collectDocDependencies, staleDocSignals } from "./stale-docs.js";
