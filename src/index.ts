@@ -86,3 +86,15 @@ export {
 } from "./trailers.js";
 export type { Op, Trailers } from "./trailers.js";
 
+export {
+  projectCacheKey,
+  sessionIdCachePath,
+  changeCachePath,
+  parsePersistedChange,
+  readPersistedChange,
+  armingDecision,
+  readSeenRef,
+  SEEN_REF,
+} from "./surface-state.js";
+export type { PersistedChange, ArmingDecision } from "./surface-state.js";
+

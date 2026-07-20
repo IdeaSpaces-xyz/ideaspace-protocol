@@ -66,6 +66,8 @@ Match: `^chg_[a-z0-9]+(-[a-z0-9]+)*$`. Lowercase, ASCII, no spaces.
 
 *When* and *how* a surface stamps these — the squash-into-handshake flow — is behavior, not format; it lives in [the capture skill](../skills/capture.md). The format's only say in it is conformance check 8 below.
 
+The **open** Change (the one currently stamping commits) is persisted between sessions and shared across surfaces as a user-level record — its shape, cache derivation, and the same-session arming rule are in [`surface-state.md`](surface-state.md).
+
 ## Association, not containment — explicitly not submodules
 
 A Change spans repos, which invites comparison to git submodules. The Change layer is the **opposite topology**, by design:
