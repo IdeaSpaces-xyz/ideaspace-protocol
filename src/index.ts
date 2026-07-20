@@ -37,11 +37,13 @@ export {
   walkPathContext,
   spaceRootLevel,
   currentBranchLevel,
+  renderPosition,
 } from "./path-context.js";
 export type {
   PathContext,
   PathLevel,
   WalkPathContextOpts,
+  RenderPositionOpts,
 } from "./path-context.js";
 
 export { collectDocDependencies, staleDocSignals } from "./stale-docs.js";

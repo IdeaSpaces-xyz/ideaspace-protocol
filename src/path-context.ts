@@ -71,6 +71,40 @@ export function currentBranchLevel(ctx: PathContext): PathLevel | null {
   return null;
 }
 
+export interface RenderPositionOpts {
+  /** Where the agent is — the absolute current path. */
+  pos: string;
+  /** The path `pos` is shown relative to — the repo root, or the space root outside a repo. */
+  base: string;
+  /** The git repo root, or null in a non-git ideaspace (the repo line is then omitted). */
+  repoRoot: string | null;
+  /** The walked context for the path — supplies the space-root and branch levels. */
+  ctx: PathContext;
+}
+
+/**
+ * Render the "Position:" orientation block from a walked {@link PathContext} —
+ * where the agent is: the repo, the cwd relative to `base`, the space root, and
+ * the active `_agent/` branch. The counterpart to {@link assembleAwareness}
+ * (which renders *what's here*); together they are the complete orientation a
+ * surface shows. Kept here beside its inputs so every surface — the CLI and the
+ * in-process agent surfaces — renders the identical block, structurally rather
+ * than by each re-implementing it.
+ *
+ * Takes a named-field options object: `pos` and `base` are both paths and would
+ * be easy to transpose positionally, so the fields carry the distinction.
+ */
+export function renderPosition({ pos, base, repoRoot, ctx }: RenderPositionOpts): string {
+  const spaceRoot = spaceRootLevel(ctx);
+  const branch = currentBranchLevel(ctx);
+  const lines = ["Position:"];
+  if (repoRoot) lines.push(`  repo: ${repoRoot}`);
+  lines.push(`  cwd: ${relative(base, pos) || "."}`);
+  if (spaceRoot) lines.push(`  space root: ${spaceRoot.path || "."}`);
+  if (branch) lines.push(`  active _agent: ${branch.path || "."}`);
+  return lines.join("\n");
+}
+
 export async function walkPathContext(
   repoRoot: string,
   currentPath: string,
