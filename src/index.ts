@@ -37,6 +37,7 @@ export {
   walkPathContext,
   spaceRootLevel,
   currentBranchLevel,
+  renderPosition,
 } from "./path-context.js";
 export type {
   PathContext,
