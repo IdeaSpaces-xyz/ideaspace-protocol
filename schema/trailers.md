@@ -1,6 +1,6 @@
 # Commit trailers — the Change layer
 
-> The checkable form of the Change layer. Normative prose is [`../SPEC.md#identity`](../SPEC.md). This is the enumeration tooling stamps and validates against, so the trailers are **identical across every surface** that writes them. **Provisional, v0.4.1.**
+> The checkable form of the Change layer. Normative prose is [`../SPEC.md#identity`](../SPEC.md). This is the enumeration tooling stamps and validates against, so the trailers are **identical across every surface** that writes them. **Provisional, v0.4.2** (trailer formats unchanged since v0.4.1; v0.4.2 added the [`surface-state.md`](surface-state.md) cross-reference for the persisted open-Change record).
 
 ## It is just git
 
@@ -65,6 +65,8 @@ Match: `^chg_[a-z0-9]+(-[a-z0-9]+)*$`. Lowercase, ASCII, no spaces.
 - **A Change may span sessions.** `Conversation` can differ across the commits of one Change; `Change-Id` is the value that holds constant — `Conversation` is *how it was produced*, `Change-Id` is *what it belongs to*.
 
 *When* and *how* a surface stamps these — the squash-into-handshake flow — is behavior, not format; it lives in [the capture skill](../skills/capture.md). The format's only say in it is conformance check 8 below.
+
+The **open** Change (the one currently stamping commits) is persisted between sessions and shared across surfaces as a user-level record — its shape, cache derivation, and the same-session arming rule are in [`surface-state.md`](surface-state.md).
 
 ## Association, not containment — explicitly not submodules
 

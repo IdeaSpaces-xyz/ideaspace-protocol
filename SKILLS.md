@@ -48,7 +48,7 @@ The IdeaSpaces-specific skills cluster around the phases that touch shared under
 
 | Phase / role | Skill | Typical mechanism |
 |---|---|---|
-| Arrive | — | session-start awareness, git state, `refs/ideaspaces/seen` |
+| Arrive | — | session-start awareness, git state, [`refs/ideaspaces/seen`](schema/surface-state.md) |
 | Orient | `is-orient` | composed `_agent/` contract, position surfaces, `is_status` when needed |
 | Inspect | — | native read/search tools |
 | Act | — | native edit/write/shell tools and domain skills |
