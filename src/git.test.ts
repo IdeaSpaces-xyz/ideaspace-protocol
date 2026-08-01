@@ -5,7 +5,15 @@ import { realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { gitState, recentActivity, lastCommitTime } from "./git.js";
+import {
+  gitState,
+  recentActivity,
+  lastCommitTime,
+  resolveRepoRoot,
+  pathStatus,
+  isIdeaspacePath,
+  stagedIdeaspacePaths,
+} from "./git.js";
 
 let tmp: string;
 
@@ -117,6 +125,116 @@ describe("gitState", () => {
     const state = await gitState(tmp);
     expect(state.headSha).toBeNull();
     expect(state.branch).toBeNull();
+  });
+});
+
+describe("read-only repo and capture status", () => {
+  it("distinguishes an empty repo from a non-repo and resolves nested paths", async () => {
+    if (!hasGit()) return;
+    const repo = join(tmp, "repo");
+    const plain = join(tmp, "plain");
+    await fs.mkdir(join(repo, "a", "b"), { recursive: true });
+    await fs.mkdir(plain, { recursive: true });
+    await initRepo(repo);
+
+    expect(await resolveRepoRoot(join(repo, "a", "b"))).toBe(realpathSync(repo));
+    expect(await resolveRepoRoot(plain)).toBeNull();
+  });
+
+  it("resolves a linked git worktree to that worktree's root", async () => {
+    if (!hasGit()) return;
+    const repo = join(tmp, "repo");
+    const worktree = join(tmp, "worktree");
+    await fs.mkdir(repo, { recursive: true });
+    await initRepo(repo);
+    await fs.writeFile(join(repo, "README.md"), "v1", "utf-8");
+    git(repo, ["add", "."]);
+    git(repo, ["commit", "-q", "-m", "first"]);
+    git(repo, ["worktree", "add", "-q", "-b", "secondary", worktree]);
+
+    expect(await resolveRepoRoot(worktree)).toBe(realpathSync(worktree));
+  });
+
+  it("reports sha and index state for a staged new file", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    const file = join(tmp, "a.md");
+    await fs.writeFile(file, "# A", "utf-8");
+    git(tmp, ["add", "a.md"]);
+
+    expect(await pathStatus(file, tmp)).toEqual({
+      path: file,
+      exists: true,
+      sha: git(tmp, ["hash-object", "a.md"]).trim(),
+      inIndex: true,
+      modified: false,
+      inTracked: true,
+    });
+  });
+
+  it("reports an absent path without inventing git state", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    const file = join(tmp, "ghost.md");
+
+    expect(await pathStatus(file, tmp)).toEqual({
+      path: file,
+      exists: false,
+      sha: null,
+      inIndex: false,
+      modified: false,
+      inTracked: false,
+    });
+  });
+
+  it("resolves a bare filename from a nested caller before reading status", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    const sub = join(tmp, "sub");
+    const file = join(sub, "n.md");
+    await fs.mkdir(sub, { recursive: true });
+    await fs.writeFile(file, "# N", "utf-8");
+    git(tmp, ["add", "sub/n.md"]);
+
+    const root = await resolveRepoRoot(sub);
+    expect(root).toBe(tmp);
+    expect((await pathStatus(join(sub, "n.md"), root!)).sha).toBe(
+      git(tmp, ["hash-object", "sub/n.md"]).trim(),
+    );
+  });
+
+  it("flags an unstaged modification on a committed path", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    const file = join(tmp, "a.md");
+    await fs.writeFile(file, "v1", "utf-8");
+    git(tmp, ["add", "a.md"]);
+    git(tmp, ["commit", "-q", "-m", "first"]);
+    await fs.writeFile(file, "v2", "utf-8");
+
+    const status = await pathStatus(file, tmp);
+    expect(status.modified).toBe(true);
+    expect(status.inIndex).toBe(false);
+    expect(status.inTracked).toBe(true);
+  });
+
+  it("returns only staged Markdown and _agent paths", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    await fs.mkdir(join(tmp, "_agent"), { recursive: true });
+    await fs.writeFile(join(tmp, "note.md"), "note", "utf-8");
+    await fs.writeFile(join(tmp, "_agent", "guide.txt"), "guide", "utf-8");
+    await fs.writeFile(join(tmp, "code.ts"), "code", "utf-8");
+    git(tmp, ["add", "."]);
+
+    expect(await stagedIdeaspacePaths(tmp)).toEqual(["_agent/guide.txt", "note.md"]);
+  });
+
+  it("recognizes cross-platform _agent path separators", () => {
+    expect(isIdeaspacePath("notes/a.md")).toBe(true);
+    expect(isIdeaspacePath("scope/_agent/guide.txt")).toBe(true);
+    expect(isIdeaspacePath("scope\\_agent\\guide.txt")).toBe(true);
+    expect(isIdeaspacePath("src/index.ts")).toBe(false);
   });
 });
 

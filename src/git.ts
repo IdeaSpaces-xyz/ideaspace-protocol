@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process";
 
 /**
- * Local git primitives — `gitState` and `recentActivity`.
+ * Local read-only git primitives for orientation and capture state.
  *
- * Both shell out to the local `git` binary and never touch the network.
- * They back the session-start orientation block: where the working tree
- * stands (`gitState`) and what moved since last session (`recentActivity`).
+ * They shell out to the local `git` binary and never touch the network. The
+ * session-start block uses `gitState` / `recentActivity`; capture surfaces use
+ * repo resolution, single-path status, and staged-knowledge discovery without
+ * routing those reads through a platform executable.
  */
 
 /** Field separator for parseable git formats (ASCII unit separator). */
@@ -62,16 +63,78 @@ export interface RecentActivity {
 export function runGit(
   repoRoot: string,
   args: string[],
-): Promise<{ ok: boolean; out: string }> {
+): Promise<{ ok: boolean; out: string; code: number | null }> {
   return new Promise((resolve) => {
     const proc = spawn("git", ["-C", repoRoot, ...args], {
       stdio: ["ignore", "pipe", "pipe"],
     });
     let out = "";
     proc.stdout.on("data", (d: Buffer) => (out += d));
-    proc.on("close", (code) => resolve({ ok: code === 0, out }));
-    proc.on("error", () => resolve({ ok: false, out: "" }));
+    proc.on("close", (code) => resolve({ ok: code === 0, out, code }));
+    proc.on("error", () => resolve({ ok: false, out: "", code: null }));
   });
+}
+
+/**
+ * Resolve the git toplevel for a directory, or `null` outside a work tree.
+ *
+ * Kept separate from {@link gitState}: an unborn repo and a non-repo can both
+ * have no HEAD or branch, but surfaces must distinguish them when deciding
+ * whether to render repo state or report "not inside a git repository".
+ */
+export async function resolveRepoRoot(cwd: string): Promise<string | null> {
+  const result = await runGit(cwd, ["rev-parse", "--show-toplevel"]);
+  return result.ok ? result.out.trim() || null : null;
+}
+
+export interface PathStatus {
+  /** The path supplied by the caller. */
+  path: string;
+  /** Whether the worktree file exists, represented by a content blob SHA. */
+  exists: boolean;
+  /** Content blob SHA — the optimistic-concurrency token used by `if_match`. */
+  sha: string | null;
+  /** Whether the index differs from HEAD for this path. */
+  inIndex: boolean;
+  /** Whether the worktree differs from the index for this path. */
+  modified: boolean;
+  /** Whether git tracks the path in its index (committed or newly staged). */
+  inTracked: boolean;
+}
+
+/**
+ * Read one path's content/index state without mutating the repository.
+ * `path` may be absolute; `repoRoot` supplies the git context.
+ */
+export async function pathStatus(path: string, repoRoot: string): Promise<PathStatus> {
+  const [hash, staged, modified, tracked] = await Promise.all([
+    runGit(repoRoot, ["hash-object", "--", path]),
+    runGit(repoRoot, ["diff", "--cached", "--quiet", "--", path]),
+    runGit(repoRoot, ["diff", "--quiet", "--", path]),
+    runGit(repoRoot, ["ls-files", "--error-unmatch", "--", path]),
+  ]);
+  const sha = hash.ok ? hash.out.trim() || null : null;
+  return {
+    path,
+    exists: sha !== null,
+    sha,
+    inIndex: staged.code === 1,
+    modified: modified.code === 1,
+    inTracked: tracked.ok,
+  };
+}
+
+/** Knowledge path: a Markdown file, or anything under an `_agent/` directory. */
+export function isIdeaspacePath(path: string): boolean {
+  const normalized = path.replace(/\\/g, "/");
+  return normalized.endsWith(".md") || normalized.split("/").includes("_agent");
+}
+
+/** Staged knowledge paths, repo-relative, in git's deterministic output order. */
+export async function stagedIdeaspacePaths(repoRoot: string): Promise<string[]> {
+  const result = await runGit(repoRoot, ["diff", "--cached", "--name-only"]);
+  if (!result.ok) return [];
+  return result.out.split("\n").map((path) => path.trim()).filter(Boolean).filter(isIdeaspacePath);
 }
 
 /**

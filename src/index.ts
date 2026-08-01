@@ -25,12 +25,21 @@ export type { AssembleAwarenessOpts } from "./awareness.js";
 // Awareness data primitives — local git/fs state for session-start orientation
 // and capture safety. The plugin (and other surfaces) format these into the
 // session block; these return data, not rendered text.
-export { gitState, recentActivity, lastCommitTime } from "./git.js";
+export {
+  gitState,
+  recentActivity,
+  lastCommitTime,
+  resolveRepoRoot,
+  pathStatus,
+  isIdeaspacePath,
+  stagedIdeaspacePaths,
+} from "./git.js";
 export type {
   GitState,
   RecentActivity,
   CommitInfo,
   ChangedFile,
+  PathStatus,
 } from "./git.js";
 
 export {
