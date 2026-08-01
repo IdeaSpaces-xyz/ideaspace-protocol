@@ -104,7 +104,8 @@ export interface PathStatus {
 
 /**
  * Read one path's content/index state without mutating the repository.
- * `path` may be absolute; `repoRoot` supplies the git context.
+ * `path` may be absolute; a relative path resolves against `repoRoot` through
+ * git's `-C` context.
  */
 export async function pathStatus(path: string, repoRoot: string): Promise<PathStatus> {
   const [hash, staged, modified, tracked] = await Promise.all([

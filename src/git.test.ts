@@ -172,6 +172,24 @@ describe("read-only repo and capture status", () => {
     });
   });
 
+  it("reports a clean committed file as tracked but unchanged", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    const file = join(tmp, "a.md");
+    await fs.writeFile(file, "v1", "utf-8");
+    git(tmp, ["add", "a.md"]);
+    git(tmp, ["commit", "-q", "-m", "first"]);
+
+    expect(await pathStatus(file, tmp)).toEqual({
+      path: file,
+      exists: true,
+      sha: git(tmp, ["hash-object", "a.md"]).trim(),
+      inIndex: false,
+      modified: false,
+      inTracked: true,
+    });
+  });
+
   it("reports an absent path without inventing git state", async () => {
     if (!hasGit()) return;
     await initRepo(tmp);
@@ -216,6 +234,25 @@ describe("read-only repo and capture status", () => {
     expect(status.modified).toBe(true);
     expect(status.inIndex).toBe(false);
     expect(status.inTracked).toBe(true);
+  });
+
+  it("reports a staged deletion as absent, staged, and no longer tracked", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    const file = join(tmp, "a.md");
+    await fs.writeFile(file, "v1", "utf-8");
+    git(tmp, ["add", "a.md"]);
+    git(tmp, ["commit", "-q", "-m", "first"]);
+    git(tmp, ["rm", "-q", "a.md"]);
+
+    expect(await pathStatus(file, tmp)).toEqual({
+      path: file,
+      exists: false,
+      sha: null,
+      inIndex: true,
+      modified: false,
+      inTracked: false,
+    });
   });
 
   it("returns only staged Markdown and _agent paths", async () => {
