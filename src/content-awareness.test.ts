@@ -177,7 +177,25 @@ describe("Content awareness manifest", () => {
       lastSha: null,
     });
 
-    expect(manifest?.missingDirection).toEqual(["purpose", "now"]);
+    const canonicalTmp = await fs.realpath(tmp);
+    expect(manifest).toMatchObject({
+      spaceRoot: canonicalTmp,
+      position: {
+        base: canonicalTmp,
+        repoRoot: null,
+      },
+      git: null,
+      staleDocs: [],
+      missingDirection: ["purpose", "now"],
+    });
+    expect(
+      renderContentAwareness(manifest!, { sections: ["position"] }),
+    ).toBe(
+      "Position:\n" +
+        "  cwd: .\n" +
+        "  space root: .\n" +
+        "  active _agent: .",
+    );
     expect(
       renderContentAwareness(manifest!, { sections: ["direction-drift"] }),
     ).toBe(

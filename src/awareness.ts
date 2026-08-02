@@ -222,7 +222,7 @@ export async function assembleContentAwareness(
   const sectionsPromise = lastShaPromise.then((lastSha) =>
     readAwarenessSections({
       root: position,
-      activityRoot: repoRoot ?? position,
+      activityRoot: base,
       contract: composed.contract,
       lastSha,
       maxChanges: opts.maxChanges,
