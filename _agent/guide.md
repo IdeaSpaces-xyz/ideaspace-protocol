@@ -11,7 +11,7 @@ summary: How agent and human work in this repo — the design rules (pure shape,
 - **The schema is provisional and extensible.** `additionalProperties` stays true; nothing is strictly required (an absent field is a drift signal, not an error); the `attached_to` attach-type vocabulary grows by deliberate, versioned change.
 - **Language-neutral core.** The spec + JSON Schema must let non-TypeScript runtimes conform. The TS library is the *reference* implementation, not the only one.
 - **Simple, Lovable, Complete.** Functional API over class wrappers; zero runtime deps beyond `yaml`; stdlib + Node primitives first.
-- **Read-only shape primitives.** `findSpaceRoot`, `assembleAwareness`, `stripFrontmatter` do not write the filesystem. Cross-platform paths via `node:path`; async by default for I/O.
+- **Read-only shape primitives.** `findSpaceRoot`, `assembleAwareness`, `assembleContentAwareness`, and `stripFrontmatter` do not write the filesystem. Cross-platform paths via `node:path`; async by default for I/O.
 
 ## Build
 

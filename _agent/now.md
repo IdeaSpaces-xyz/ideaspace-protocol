@@ -17,7 +17,7 @@ In place:
 - This `_agent/` contract — the repo dogfoods the protocol.
 
 Next (detail in [next.md](next.md)):
-- Portable root-summary and workspace-repository reads needed by local multi-root harnesses without importing a platform CLI.
+- Lift the shared cache-path derivation into the reference library — four consumers duplicate it today, held together by golden-value tests.
 - A contract-delta primitive for ambient fractal awareness on the surfaces.
 - The local-write module decision — whether this library grows a clearly-scoped write layer; a deliberate revision of the read-only design rule, to be decided here with the consumer evidence in hand.
 - Let the open `attached_to` type vocabulary evolve only from demonstrated platform needs.
