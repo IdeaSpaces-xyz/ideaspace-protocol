@@ -19,8 +19,26 @@ export type {
   ComposedContractEntry,
 } from "./space.js";
 
-export { assembleAwareness } from "./awareness.js";
-export type { AssembleAwarenessOpts } from "./awareness.js";
+export {
+  assembleAwareness,
+  assembleContentAwareness,
+  renderContentAwareness,
+  CONTENT_AWARENESS_SECTIONS,
+} from "./awareness.js";
+export type {
+  AssembleAwarenessOpts,
+  AssembleContentAwarenessOpts,
+  RenderContentAwarenessOpts,
+  ContentAwarenessSection,
+  ContentAwarenessPosition,
+  ContentAwarenessNow,
+  ContentAwarenessTreeEntry,
+  ContentAwarenessTree,
+  ContentAwarenessContractEntry,
+  ContentAwarenessSkill,
+  ContentAwarenessActivity,
+  ContentAwarenessManifest,
+} from "./awareness.js";
 
 // Awareness data primitives — local git/fs state for session-start orientation
 // and capture safety. The plugin (and other surfaces) format these into the
