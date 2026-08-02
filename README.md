@@ -14,8 +14,8 @@ This repository is itself a conformant ideaspace (see [`_agent/`](_agent/)) — 
 |---|---|
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
 | [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the verbs (orient, understand, capture, reflect, share) that ride on the shape. |
-| [`schema/`](schema/) | Machine-readable contract — the frontmatter JSON Schema and the `_agent/` contract definition. Language-neutral, so any runtime can conform. |
-| [`src/`](src/) | Reference TypeScript implementation — frontmatter, the `_agent/` contract reader, awareness assembly, path walking, git state, drift, the skill catalog. |
+| [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, Change/surface state, and the structured Content awareness manifest. |
+| [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, git state, drift, and the skill catalog. |
 | [`conformance/`](conformance/) | A reference conformant space and a validator that checks a space (and an implementation) against the spec. |
 | [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
 
@@ -37,14 +37,18 @@ npm install @ideaspaces/protocol
 
 ```ts
 import {
-  composeContractAlongPath,
-  stripFrontmatter,
-  composeFrontmatter,
+  assembleContentAwareness,
+  renderContentAwareness,
 } from "@ideaspaces/protocol";
 
-const { spaceRoot, contract } = await composeContractAlongPath(process.cwd());
-if (!spaceRoot) throw new Error("No ideaspace contract resolves here");
-// `contract` is the effective root → current-position _agent/ agreement.
+const manifest = await assembleContentAwareness({ position: process.cwd() });
+if (!manifest) throw new Error("No ideaspace contract resolves here");
+
+// Render all canonical sections, or select a subset for harness placement.
+const text = renderContentAwareness(manifest);
+const stable = renderContentAwareness(manifest, {
+  sections: ["position", "now", "tree", "contract", "skills"],
+});
 ```
 
 The TypeScript library is the *reference* implementation, not the only one. Other languages conform to the language-neutral core — [`SPEC.md`](SPEC.md) + [`schema/frontmatter.schema.json`](schema/frontmatter.schema.json) + the conformance fixtures.
@@ -55,7 +59,7 @@ A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.m
 
 ## Status
 
-**v0.4.1 — early and provisional.** The spec, skills, and reference library are in place; the schema is provisional and expected to evolve (notably the open `attached_to` type vocabulary). Pin a version and expect changes before 1.0.
+**v0.4.5 — early and provisional.** The spec, skills, structured Content awareness, and reference library are in place; the schema is provisional and expected to evolve (notably the open `attached_to` type vocabulary). Pin a version and expect changes before 1.0.
 
 ## Develop
 
