@@ -59,7 +59,7 @@ A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.m
 
 ## Status
 
-**v0.4.5 — early and provisional.** The spec, skills, structured Content awareness, and reference library are in place; the schema is provisional and expected to evolve (notably the open `attached_to` type vocabulary). Pin a version and expect changes before 1.0.
+**v0.4.6 — early and provisional.** The spec, skills, structured Content awareness, and reference library are in place; the schema is provisional and expected to evolve (notably the open `attached_to` type vocabulary). Pin a version and expect changes before 1.0.
 
 ## Develop
 

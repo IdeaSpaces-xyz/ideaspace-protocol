@@ -1,6 +1,6 @@
 {
   "name": "@ideaspaces/protocol",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "The Ideaspace Protocol — the platform-neutral shape of a knowledge repo. Spec, schema, reference library, and conformance kit.",
   "type": "module",
   "license": "MIT",
@@ -43,5 +43,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/IdeaSpaces-xyz/ideaspace-protocol"
-  }
+  },
+  "sideEffects": false
 }
