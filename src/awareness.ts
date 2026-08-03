@@ -25,6 +25,7 @@ import {
   type DriftSignal,
 } from "./stale-docs.js";
 import { readSeenRef } from "./surface-state.js";
+import { DEFAULT_IGNORED_DIRECTORIES } from "./filesystem.js";
 
 export interface AssembleAwarenessOpts {
   /** Absolute path to the position whose tree and local skills are surfaced. */
@@ -160,16 +161,7 @@ interface AwarenessSections {
   activity: ContentAwarenessActivity | null;
 }
 
-const SKIP_DIRS = new Set([
-  "_agent",
-  "node_modules",
-  ".git",
-  ".github",
-  ".vscode",
-  ".idea",
-  "dist",
-  "build",
-]);
+const SKIP_DIRS = new Set(["_agent", ...DEFAULT_IGNORED_DIRECTORIES]);
 
 const CONTRACT_ORDER = ["foundation", "guide", "purpose", "now", "next"] as const;
 const LEGACY_AWARENESS_SECTIONS: readonly ContentAwarenessSection[] = [

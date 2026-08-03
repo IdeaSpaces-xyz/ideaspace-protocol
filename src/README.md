@@ -8,6 +8,7 @@ Present:
 - `space.ts` — `_agent/` contract reader (`CONTRACT_FILES`, `findSpaceRoot`, `readContract`)
 - `awareness.ts` — structured Content awareness assembly/rendering (`assembleContentAwareness`, `renderContentAwareness`) plus the compatibility `assembleAwareness` block; `path-context.ts` — path walking
 - `git.ts` — git state / recent activity; `stale-docs.ts` — drift signals
+- `workspace.ts` — neutral root handles and immediate-child workspace repository reads
 - `skills.ts` + `skill-catalog.generated.ts` — the canonical skill catalog (generated from `../skills/` by `scripts/embed-skills.mjs`)
 - `types.ts` — the shape type contract
 
