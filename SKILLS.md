@@ -69,7 +69,7 @@ Skills outside the daily loop:
 
 A skill has two layers with different homes:
 
-- **Shared protocol substance** lives once in [`skills/`](skills/). The build embeds that catalog into the reference library; the SDK re-exports it for compatibility; surfaces generate their committed `reference/` copies from it.
+- **Shared protocol substance** lives once in [`skills/`](skills/). The build embeds that catalog into the reference library; surfaces import it directly and generate their committed `reference/` copies from it.
 - **Surface entrypoints** live in each adapter. They stay thin, match user intent, and translate the shared protocol into native tool names, commands, confirmation flows, and runtime constraints.
 
 Update shared awareness, capture, writing, or shaping guidance here first, release the protocol, bump downstream dependencies, then regenerate surface references. Do not hand-edit generated copies.
