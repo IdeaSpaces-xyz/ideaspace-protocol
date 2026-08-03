@@ -12,4 +12,4 @@ Present:
 - `skills.ts` + `skill-catalog.generated.ts` — the canonical skill catalog (generated from `../skills/` by `scripts/embed-skills.mjs`)
 - `types.ts` — the shape type contract
 
-`npm run build` (embed-skills + `tsc`), `npm test` (vitest). `@ideaspaces/sdk` is the transitional re-export/platform layer; local shape consumers import this package directly.
+`npm run build` (embed-skills + `tsc`), `npm test` (vitest). Repository-shape consumers import this package directly; `@ideaspaces/sdk` is a separate Keeper transport package and does not re-export the protocol.
