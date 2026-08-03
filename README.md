@@ -14,8 +14,8 @@ This repository is itself a conformant ideaspace (see [`_agent/`](_agent/)) — 
 |---|---|
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
 | [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the verbs (orient, understand, capture, reflect, share) that ride on the shape. |
-| [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, Change/surface state, and the structured Content awareness manifest. |
-| [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, git state, drift, and the skill catalog. |
+| [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, Change/surface state, structured Content awareness, and local workspace handles. |
+| [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, drift, and the skill catalog. |
 | [`conformance/`](conformance/) | A reference conformant space and a validator that checks a space (and an implementation) against the spec. |
 | [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
 
@@ -51,6 +51,19 @@ const stable = renderContentAwareness(manifest, {
 });
 ```
 
+Local harnesses can also read neutral, unrendered workspace handles without
+assigning protocol-level home/mount/POV roles:
+
+```ts
+import {
+  readRootHandle,
+  readWorkspaceRepositories,
+} from "@ideaspaces/protocol";
+
+const home = await readRootHandle(process.cwd());
+const repositories = await readWorkspaceRepositories("../");
+```
+
 The TypeScript library is the *reference* implementation, not the only one. Other languages conform to the language-neutral core — [`SPEC.md`](SPEC.md) + [`schema/frontmatter.schema.json`](schema/frontmatter.schema.json) + the conformance fixtures.
 
 ## Conformance
@@ -59,7 +72,7 @@ A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.m
 
 ## Status
 
-**v0.4.6 — early and provisional.** The spec, skills, structured Content awareness, and reference library are in place; the schema is provisional and expected to evolve (notably the open `attached_to` type vocabulary). Pin a version and expect changes before 1.0.
+**v0.4.7 — early and provisional.** The spec, skills, structured Content awareness, portable workspace handles, and reference library are in place; the schema is provisional and expected to evolve (notably the open `attached_to` type vocabulary). Pin a version and expect changes before 1.0.
 
 ## Develop
 

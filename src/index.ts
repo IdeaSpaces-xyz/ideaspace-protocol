@@ -61,6 +61,12 @@ export type {
 } from "./git.js";
 
 export {
+  readRootHandle,
+  readWorkspaceRepositories,
+} from "./workspace.js";
+export type { RootHandle, WorkspaceRepository } from "./workspace.js";
+
+export {
   walkPathContext,
   spaceRootLevel,
   currentBranchLevel,
