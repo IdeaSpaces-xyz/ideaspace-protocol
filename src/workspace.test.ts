@@ -53,12 +53,24 @@ describe("readRootHandle", () => {
       "utf-8",
     );
     await fs.writeFile(join(tmp, "README.md"), "README fallback", "utf-8");
-    for (const dir of ["notes", "node_modules", "backups", ".pi", ".claude", ".git"]) {
+    for (const dir of [
+      "notes",
+      "node_modules",
+      "dist",
+      "build",
+      ".github",
+      ".vscode",
+      ".idea",
+      ".git",
+      "surface-cache",
+    ]) {
       await fs.mkdir(join(tmp, dir), { recursive: true });
     }
     await fs.writeFile(join(tmp, "file.md"), "not a directory", "utf-8");
 
-    expect(await readRootHandle(tmp)).toEqual({
+    expect(
+      await readRootHandle(tmp, { excludeDirectories: ["surface-cache"] }),
+    ).toEqual({
       root: tmp,
       summary: "Current focus across two lines.",
       // `_agent/` is meaningful shape and remains visible; implementation-noise
@@ -77,6 +89,18 @@ describe("readRootHandle", () => {
     );
 
     expect((await readRootHandle(tmp)).summary).toBe("A portable root handle.");
+  });
+
+  it("falls through when Now has malformed frontmatter", async () => {
+    await fs.mkdir(join(tmp, "_agent"), { recursive: true });
+    await fs.writeFile(
+      join(tmp, "_agent", "now.md"),
+      "---\nsummary: never closed\n",
+      "utf-8",
+    );
+    await fs.writeFile(join(tmp, "README.md"), "README summary.\n", "utf-8");
+
+    expect((await readRootHandle(tmp)).summary).toBe("README summary.");
   });
 
   it("degrades unreadable roots to null facts", async () => {
@@ -173,6 +197,21 @@ describe("readWorkspaceRepositories", () => {
     expect(roots).toContain("repo");
     expect(roots).toContain("repo-link");
     expect(roots).not.toContain("subdir-link");
+  });
+
+  it("applies caller-supplied workspace exclusions", async () => {
+    if (!hasGit()) return;
+    const visible = join(tmp, "visible");
+    const hiddenByCaller = join(tmp, "surface-cache");
+    await initRepo(visible);
+    await initRepo(hiddenByCaller);
+
+    const repositories = await readWorkspaceRepositories(tmp, {
+      excludeDirectories: ["surface-cache"],
+    });
+    expect(repositories.map((repository) => basename(repository.root))).toEqual([
+      "visible",
+    ]);
   });
 
   it("returns an empty list for a plain, missing, or non-directory workspace", async () => {

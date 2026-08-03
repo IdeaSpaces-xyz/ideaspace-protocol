@@ -25,15 +25,18 @@ Summary selection prefers Layer-1 `summary` frontmatter. An imperfect file may
 fall back to its first meaningful non-heading body line. Whitespace is collapsed
 so the value remains a one-line handle.
 
-Directory counting excludes implementation noise (`.git`, `node_modules`,
-`backups`, `.pi`, `.claude`). `_agent/` is part of the ideaspace shape and is
-therefore counted.
+Directory counting excludes generic implementation noise (`.git`, `.github`,
+`.vscode`, `.idea`, `node_modules`, `dist`, `build`). `_agent/` is part of the
+ideaspace shape and is therefore counted. A harness may supply additional exact
+directory names for its own caches or local workspace conventions; those names
+do not become protocol defaults.
 
 ## Workspace repositories
 
-Workspace repository discovery examines immediate child directories only. A
-child qualifies when resolving its git toplevel returns that child itself after
-canonical path comparison. This rule:
+Workspace repository discovery examines immediate child directories only and
+applies the same generic plus caller-supplied exclusions. A child qualifies when
+resolving its git toplevel returns that child itself after canonical path
+comparison. This rule:
 
 - includes ordinary repositories and linked worktrees (`.git` may be a file),
 - includes a symlink that points directly to a repository root,

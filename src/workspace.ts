@@ -1,20 +1,16 @@
 import { promises as fs } from "node:fs";
 import { join, resolve } from "node:path";
-import { extractSummary, stripFrontmatter } from "./frontmatter.js";
+import {
+  extractSummary,
+  inspectFrontmatterSyntax,
+  stripFrontmatter,
+} from "./frontmatter.js";
 import {
   gitState,
   resolveRepoRoot,
   type GitState,
 } from "./git.js";
-
-/** Directories that are implementation noise rather than workspace handles. */
-const SKIP_DIRECTORIES = new Set([
-  ".git",
-  "node_modules",
-  "backups",
-  ".pi",
-  ".claude",
-]);
+import { DEFAULT_IGNORED_DIRECTORIES } from "./filesystem.js";
 
 /** A neutral, shallow description of one local root. */
 export interface RootHandle {
@@ -32,6 +28,11 @@ export interface WorkspaceRepository extends RootHandle {
   git: GitState;
 }
 
+export interface WorkspaceReadOptions {
+  /** Additional immediate directory names a harness wants to omit. */
+  excludeDirectories?: readonly string[];
+}
+
 /**
  * Read a shallow root handle without assigning it a harness role.
  *
@@ -39,11 +40,14 @@ export interface WorkspaceRepository extends RootHandle {
  * summary wins; imperfect files fall back to their first meaningful body line.
  * Missing or unreadable content degrades to null fields rather than throwing.
  */
-export async function readRootHandle(root: string): Promise<RootHandle> {
+export async function readRootHandle(
+  root: string,
+  opts: WorkspaceReadOptions = {},
+): Promise<RootHandle> {
   const absoluteRoot = resolve(root);
   const [summary, directoryCount] = await Promise.all([
     readRootSummary(absoluteRoot),
-    countImmediateDirectories(absoluteRoot),
+    countImmediateDirectories(absoluteRoot, ignoredDirectories(opts)),
   ]);
   return { root: absoluteRoot, summary, directoryCount };
 }
@@ -58,8 +62,10 @@ export async function readRootHandle(root: string): Promise<RootHandle> {
  */
 export async function readWorkspaceRepositories(
   workspace: string,
+  opts: WorkspaceReadOptions = {},
 ): Promise<WorkspaceRepository[]> {
   const absoluteWorkspace = resolve(workspace);
+  const ignored = ignoredDirectories(opts);
   let entries: Array<{ name: string; isDirectory: () => boolean; isSymbolicLink: () => boolean }>;
   try {
     entries = await fs.readdir(absoluteWorkspace, { withFileTypes: true });
@@ -68,12 +74,14 @@ export async function readWorkspaceRepositories(
   }
 
   const candidates = entries
-    .filter((entry) => !SKIP_DIRECTORIES.has(entry.name))
+    .filter((entry) => !ignored.has(entry.name))
     .filter((entry) => entry.isDirectory() || entry.isSymbolicLink())
     .map((entry) => join(absoluteWorkspace, entry.name))
     .sort((a, b) => a.localeCompare(b));
 
-  const repositories = await Promise.all(candidates.map(readWorkspaceRepository));
+  const repositories = await Promise.all(
+    candidates.map((candidate) => readWorkspaceRepository(candidate, opts)),
+  );
   return repositories.filter(
     (repository): repository is WorkspaceRepository => repository !== null,
   );
@@ -81,6 +89,7 @@ export async function readWorkspaceRepositories(
 
 async function readWorkspaceRepository(
   candidate: string,
+  opts: WorkspaceReadOptions,
 ): Promise<WorkspaceRepository | null> {
   try {
     if (!(await fs.stat(candidate)).isDirectory()) return null;
@@ -98,7 +107,7 @@ async function readWorkspaceRepository(
   if (candidateIdentity !== repoIdentity) return null;
 
   const [handle, git] = await Promise.all([
-    readRootHandle(candidate),
+    readRootHandle(candidate, opts),
     gitState(repoRoot),
   ]);
   return { ...handle, git };
@@ -124,6 +133,7 @@ async function readRootSummary(root: string): Promise<string | null> {
 }
 
 function firstMeaningfulLine(content: string): string | null {
+  if (inspectFrontmatterSyntax(content).status === "malformed") return null;
   for (const raw of stripFrontmatter(content).split("\n")) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
@@ -137,15 +147,25 @@ function normalizeSummary(summary: string): string {
   return summary.replace(/\s+/g, " ").trim();
 }
 
-async function countImmediateDirectories(root: string): Promise<number | null> {
+async function countImmediateDirectories(
+  root: string,
+  ignored: ReadonlySet<string>,
+): Promise<number | null> {
   try {
     const entries = await fs.readdir(root, { withFileTypes: true });
     return entries.filter(
-      (entry) => entry.isDirectory() && !SKIP_DIRECTORIES.has(entry.name),
+      (entry) => entry.isDirectory() && !ignored.has(entry.name),
     ).length;
   } catch {
     return null;
   }
+}
+
+function ignoredDirectories(opts: WorkspaceReadOptions): ReadonlySet<string> {
+  return new Set([
+    ...DEFAULT_IGNORED_DIRECTORIES,
+    ...(opts.excludeDirectories ?? []),
+  ]);
 }
 
 async function canonicalPath(path: string): Promise<string> {

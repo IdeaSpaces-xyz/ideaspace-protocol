@@ -64,7 +64,11 @@ export {
   readRootHandle,
   readWorkspaceRepositories,
 } from "./workspace.js";
-export type { RootHandle, WorkspaceRepository } from "./workspace.js";
+export type {
+  RootHandle,
+  WorkspaceRepository,
+  WorkspaceReadOptions,
+} from "./workspace.js";
 
 export {
   walkPathContext,
