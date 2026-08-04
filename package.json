@@ -2,6 +2,16 @@
   "name": "@ideaspaces/protocol",
   "version": "0.4.7",
   "description": "The Ideaspace Protocol — the platform-neutral shape of a knowledge repo. Spec, schema, reference library, and conformance kit.",
+  "keywords": [
+    "ideaspaces",
+    "agents",
+    "knowledge",
+    "markdown",
+    "git",
+    "local-first",
+    "protocol",
+    "conformance"
+  ],
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -26,11 +36,12 @@
   "scripts": {
     "prepare": "npm run build",
     "embed-skills": "node scripts/embed-skills.mjs",
-    "build": "npm run embed-skills && tsc",
+    "build": "npm run clean && npm run embed-skills && tsc",
+    "check:package": "node scripts/check-package.mjs",
     "dev": "npm run embed-skills && tsc --watch",
     "pretest": "npm run embed-skills",
     "test": "vitest run",
-    "clean": "rm -rf dist"
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\""
   },
   "dependencies": {
     "yaml": "^2.8.4"
@@ -40,9 +51,20 @@
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
   },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/IdeaSpaces-xyz/ideaspace-protocol"
+    "url": "git+https://github.com/IdeaSpaces-xyz/ideaspace-protocol.git"
+  },
+  "homepage": "https://ideaspaces.xyz/developers#protocol",
+  "bugs": {
+    "url": "https://github.com/IdeaSpaces-xyz/ideaspace-protocol/issues"
   },
   "sideEffects": false
 }

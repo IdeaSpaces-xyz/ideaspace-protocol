@@ -32,5 +32,23 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build
-        run: npm run build
+      - name: Build and verify the publishable package
+        run: npm run check:package
+
+  node-18-package:
+    name: Package smoke (Node 18)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify the supported runtime floor
+        run: npm run check:package
