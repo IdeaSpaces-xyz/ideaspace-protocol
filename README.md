@@ -6,13 +6,20 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status: provisional](https://img.shields.io/badge/protocol-provisional-orange.svg)](#status)
 
-> The platform-neutral **shape** of a knowledge repo. An agent that knows this shape can inhabit any conformant space — orient, navigate, work — with no bespoke instructions.
+> The open standard for how agents turn useful work into durable, portable knowledge.
 
-[Explore this repo as an Ideaspace](https://ideaspaces.xyz/spaces/n_64dbf7878f05362337a6cda6) · [Install from npm](https://www.npmjs.com/package/@ideaspaces/protocol) · [Read the spec](SPEC.md) · [See the skills](SKILLS.md)
+[Use with Claude Code or Cowork](https://github.com/IdeaSpaces-xyz/claude-code-plugin) · [Use with Pi](https://github.com/IdeaSpaces-xyz/pi-is-space) · [Explore this repo as an Ideaspace](https://ideaspaces.xyz/spaces/n_64dbf7878f05362337a6cda6) · [Install the library](https://www.npmjs.com/package/@ideaspaces/protocol) · [Read the spec](SPEC.md)
 
-An **ideaspace** is a folder of Markdown under git: knowledge accumulates as `.md` files, how-to-work lives in an `_agent/` folder, and git carries identity and history. This repo defines that shape — the spec, a machine-readable schema, a reference implementation, and a conformance kit — in one place, so any tool or agent can read and write ideaspaces predictably.
+Agents produce decisions, findings, plans, and context while they work. Most of it disappears with the conversation. The Ideaspace Protocol gives agents a shared way to preserve what matters as ordinary Markdown with git history, so knowledge remains inspectable, editable, and useful to the next person or agent.
 
-It is **not a data format for retrieval**. It is an *inhabitation contract*: shape + identity + conformance, plus the verbs to work a space. The shape is fixed so it is predictable — drop a conformant agent into a conformant space and it already knows where to look.
+The standard has two parts:
+
+- **A predictable place for knowledge.** An ideaspace is a folder of Markdown under git. Knowledge lives in `.md` files, how-to-work lives in `_agent/`, and git carries identity and history.
+- **A predictable way to maintain it.** Agents follow the same operating loop: arrive → orient → inspect → act → capture → push/pull → reflect. Capture is deliberate: agree on what changed, write it down, then commit it explicitly.
+
+This is not merely a data format for retrieval. It is an *inhabitation contract*: a shared place and a shared way for agents to work there.
+
+This repository keeps the normative spec and skills, machine-readable schema, reference TypeScript library, and conformance kit together. Most people adopt the standard through a plugin; implementers use this package to build another conformant surface.
 
 ## Why this exists
 
@@ -27,7 +34,7 @@ This repository is both the definition and a conformant example. [Browse it as a
 | Path | What |
 |---|---|
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
-| [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the verbs (orient, understand, capture, reflect, share) that ride on the shape. |
+| [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the agent operating loop and shared intent skills for orientation, deliberate capture, directional sync, and reflection. |
 | [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, Change/surface state, structured Content awareness, and local workspace handles. |
 | [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, drift, and the skill catalog. |
 | [`conformance/`](conformance/) | A reference conformant space and a validator that checks a space (and an implementation) against the spec. |
@@ -86,7 +93,7 @@ A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.m
 
 ## Ecosystem
 
-The protocol owns portable shape and ability semantics. Each integration keeps its own tools, permissions, placement, and lifecycle behavior.
+The protocol owns the portable repository shape and operating-loop semantics. Plugins make that standard native to an agent harness; the CLI implements shared capture, commit, and sync mechanics; each surface keeps its own tools, permissions, placement, and lifecycle behavior.
 
 | Project | Role |
 |---|---|
