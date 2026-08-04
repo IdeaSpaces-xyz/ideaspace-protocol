@@ -106,7 +106,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.4.7 — early and provisional.** The spec, skills, structured Content awareness, portable workspace handles, and reference library are in place; the schema is provisional and expected to evolve (notably the open `attached_to` type vocabulary). Pin a version and expect changes before 1.0.
+**v0.4.8 — early and provisional.** This patch aligns the public GitHub and npm framing around the protocol's repository shape and operating loop; portable APIs and schema semantics are unchanged from v0.4.7. Pin a version and expect changes before 1.0, including evolution of the open `attached_to` type vocabulary.
 
 ## Develop
 
