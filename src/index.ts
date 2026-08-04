@@ -17,6 +17,7 @@ export type {
   ComposedSpace,
   ComposedContract,
   ComposedContractEntry,
+  ContractLevel,
 } from "./space.js";
 
 export {

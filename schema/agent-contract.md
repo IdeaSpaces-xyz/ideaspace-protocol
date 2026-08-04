@@ -1,6 +1,6 @@
 # The `_agent/` contract
 
-> The checkable form of the space contract. Normative prose is [`../SPEC.md`](../SPEC.md); this is the enumeration tooling validates against. **Provisional, v0.4.1.**
+> The checkable form of the space contract. Normative prose is [`../SPEC.md`](../SPEC.md); this is the enumeration tooling validates against. **Provisional, v0.5.0** — full-stack fractal composition made explicit (ancestors retained, nearest wins, skills union).
 
 ## Positions and content
 
@@ -34,7 +34,7 @@ Optional: `schema.md` (the shape of Notes in this folder — guidance, not valid
 
 ## Fractal composition
 
-`_agent/` may appear at any position. Reading **composes along the path** — root first, then each branch, specificity sharpening as you descend. A branch with no `_agent/` inherits its ancestors'. `foundation.md` lives only at a space root; branches refine, they do not re-declare.
+`_agent/` may appear at any position. Reading **composes along the path** — the reader assembles the full stack from the space root down to the position, root first. Every level's contract stays in the assembled view; a deeper level narrows or overrides same-named files for its branch, and on conflict the **nearest instruction wins**. Refinement never deletes ancestor context. A branch with no `_agent/` inherits its ancestors'. `skills/` compose the same way: the available set is the union along the path, with a deeper same-named skill shadowing its ancestor's. `foundation.md` lives only at a space root; branches refine, they do not re-declare.
 
 ## Surface, and collections vs elaborations
 
@@ -57,7 +57,7 @@ A conformant space / tool:
 1. reads `README.md` and `_agent/` files along the path before acting at a position;
 2. treats `_agent/foundation.md` as the space-root handshake (root only);
 3. treats `.md` as knowledge, `_agent/` as instruction;
-4. composes `_agent/` along the path (root → branch);
+4. composes the full `_agent/` stack along the path (root → branch; ancestors retained, nearest instruction wins, skills union with deeper shadowing);
 5. surfaces a named-but-absent contract file as drift, not error;
 6. gracefully ignores unknown `_`-prefixed folders;
 7. never commits gitignored paths;

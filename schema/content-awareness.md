@@ -16,12 +16,12 @@ Assembly starts from a directory position:
 
 1. Canonicalize the position so symlinked ancestors and git's reported toplevel
    share one coordinate system.
-2. Compose the effective `_agent/` contract up to the nearest
-   `foundation.md` boundary.
+2. Compose the full `_agent/` contract stack up to the nearest
+   `foundation.md` boundary (ancestors retained; nearest instruction wins).
 3. If no foundation-marked space resolves, return no Content manifest.
-4. Read the root-to-position path context, local tree, effective contract
-   summaries, operating-skill summaries, git state, previous-session activity,
-   and opted-in stale-doc signals.
+4. Read the root-to-position path context, local tree, stacked contract
+   summaries, path-composed operating-skill summaries, git state,
+   previous-session activity, and opted-in stale-doc signals.
 5. Report absent `purpose.md` and `now.md` as structured direction drift.
 
 All operations are local reads. Assembly does not update the seen ref, write
@@ -38,8 +38,8 @@ A manifest carries:
 | `position` | Focus path, display base, optional git root, and structured root-to-focus path context. |
 | `now` | First meaningful line of effective `now.md`, plus its source path; absent when no Now resolves. |
 | `tree` | Bounded top-level map: total markdown count and directory/markdown entries; absent when empty or unreadable. |
-| `contract` | Effective contract files in foundation/guide/purpose/now/next order, each with source path, optional composing level, and summary. |
-| `skills` | Local `_agent/skills/*.md` names, source paths, and summaries. |
+| `contract` | Contract files along the composed root→position stack in foundation/guide/purpose/now/next order. Every level carrying a file appears, root-first per file, the deepest (effective) entry last; each carries source path, composing level, and summary. |
+| `skills` | `_agent/skills/*.md` composed along the root→position stack — the union across levels, a deeper same-named skill shadowing its ancestor's — with names, source paths, composing levels, and summaries. |
 | `activity` | Total changed paths since the seen baseline, a bounded retained prefix, and omitted count; absent without a baseline or changes. |
 | `git` | Local branch/head/upstream/dirty/untracked facts; absent outside git. |
 | `staleDocs` | Raw stale or broken-reference signals from opted-in `code_paths`. |

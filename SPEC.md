@@ -50,7 +50,7 @@ Not every position needs all of them — a branch might carry only `now.md`. **G
 
 **A named-but-absent file is a drift signal, not an error.** The contract names `purpose.md`; its absence means direction was never captured. Surface the gap.
 
-**4. Fractal.** `_agent/` can appear at any position. Reading composes along the path — root, then each branch — specificity sharpening as you descend. A branch with no `_agent/` inherits its ancestors'. `foundation.md` lives only at a space root; branches refine, they do not re-declare.
+**4. Fractal.** `_agent/` can appear at any position. Reading composes along the path — the agent carries the **full stack** from the space root down to its position: ancestors stay in view, each deeper level narrows or overrides for its branch, and on conflict the **nearest instruction wins**. Refinement never deletes ancestor context — a branch `guide.md` rides on the root guide, it does not replace it. A branch with no `_agent/` inherits its ancestors'. `skills/` compose the same way: the available set is the union along the path, a deeper same-named skill shadowing its ancestor's. `foundation.md` lives only at a space root; branches refine, they do not re-declare.
 
 **5. The handshake.** `foundation.md` orients anyone arriving: what this place is, what areas and agreements exist, where to go for what. It **points, it does not reproduce** — one line per area, links for depth. A space without a foundation is just folders; with it, it is a legible place an agent can self-direct through instead of being told where to look.
 

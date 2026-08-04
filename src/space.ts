@@ -107,6 +107,14 @@ export interface ComposedContractEntry extends ContractEntry {
 /** The effective five-file contract composed along a path. */
 export type ComposedContract = Partial<Record<ContractFile, ComposedContractEntry>>;
 
+/** One `_agent/` level along the root → position walk, with its full contract. */
+export interface ContractLevel {
+  /** Absolute directory carrying the `_agent/` (the position, not the `_agent/` folder itself). */
+  dir: string;
+  /** Every contract file present at this level. */
+  contract: SpaceContract;
+}
+
 export interface ComposedSpace {
   /** The position the composition was resolved for (absolute). */
   position: string;
@@ -119,20 +127,31 @@ export interface ComposedSpace {
   /**
    * The effective contract per the fractal rule: `foundation` from the space
    * root; `guide`/`purpose`/`now`/`next` from the deepest level (closest to
-   * `position`) that carries each, with ancestors as fallback. Every entry is
-   * tagged with the `level` it resolved from.
+   * `position`) that carries each — the nearest instruction wins on conflict.
+   * Every entry is tagged with the `level` it resolved from. This is a reading
+   * of `stack`, not a replacement for it: ancestor entries stay available there.
    */
   contract: ComposedContract;
+  /**
+   * The full contract stack, space root first, position-most last. Nothing is
+   * dropped: every `_agent/` level found within the space appears with every
+   * contract file it carries. Deeper levels narrow or override for their
+   * branch; they never delete ancestor context. Readers that render or reason
+   * about the whole agreement should use this; `contract` is the effective
+   * per-file resolution of it.
+   */
+  stack: ContractLevel[];
   /** Every `_agent/` directory found from `position` up to the space root, deepest (position-most) first. */
   levels: string[];
 }
 
 /**
- * Compose the effective `_agent/` contract along the path from `position` up to
- * its space root, per the spec's fractal rule: read the root, refine with each
- * branch as specificity sharpens descending; a branch with no `_agent/` inherits
- * its ancestors'. `foundation` is root-only and always loaded; the other files
- * take the deepest-present value.
+ * Compose the `_agent/` contract along the path from `position` up to its
+ * space root, per the spec's fractal rule: the agent carries the **full stack**
+ * root → position (`stack`), with the effective per-file resolution in
+ * `contract` — `foundation` from the space root, the other files from the
+ * deepest level that carries each (nearest instruction wins). A branch with no
+ * `_agent/` inherits its ancestors'; deeper levels narrow, they never delete.
  *
  * The walk stops at the first ancestor (closest to `position`) whose `_agent/`
  * carries `foundation.md` — that directory *is* the space root, so composition
@@ -181,5 +200,19 @@ export async function composeContractAlongPath(position: string): Promise<Compos
     }
   }
 
-  return { position: start, spaceRoot, contract, levels: found.map((f) => f.dir) };
+  // `found` is deepest-first; the stack reads root-first.
+  const stack: ContractLevel[] = [...found]
+    .reverse()
+    .map(({ dir: levelDir, contract: levelContract }) => ({
+      dir: levelDir,
+      contract: levelContract,
+    }));
+
+  return {
+    position: start,
+    spaceRoot,
+    contract,
+    stack,
+    levels: found.map((f) => f.dir),
+  };
 }
