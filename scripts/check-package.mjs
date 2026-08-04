@@ -111,13 +111,16 @@ try {
   writeFileSync(new URL("../dist/obsolete.js", import.meta.url), "stale\n");
   execFileSync("npm", ["run", "build"], { cwd: root, stdio: "inherit" });
 
-  const packed = JSON.parse(
-    execFileSync(
-      "npm",
-      ["pack", "--ignore-scripts", "--json", "--pack-destination", temp],
-      { cwd: root, encoding: "utf8" },
-    ),
-  )[0];
+  // npm 10 runs `prepare` during `npm pack` even with --ignore-scripts. Its
+  // stdout precedes the requested JSON, so parse the final top-level array
+  // rather than assuming the command emits JSON alone.
+  const packOutput = execFileSync(
+    "npm",
+    ["pack", "--ignore-scripts", "--json", "--pack-destination", temp],
+    { cwd: root, encoding: "utf8" },
+  );
+  const jsonStart = packOutput.lastIndexOf("\n[");
+  const packed = JSON.parse(jsonStart >= 0 ? packOutput.slice(jsonStart + 1) : packOutput)[0];
   const paths = packed.files.map((file) => file.path).sort();
   if (JSON.stringify(paths) !== JSON.stringify(expected)) {
     throw new Error(
