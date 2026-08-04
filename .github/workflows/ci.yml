@@ -32,5 +32,5 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build
-        run: npm run build
+      - name: Build and verify the publishable package
+        run: npm run check:package
