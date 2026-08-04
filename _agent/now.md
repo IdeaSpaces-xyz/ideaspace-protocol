@@ -1,12 +1,13 @@
 ---
 name: Now
-summary: Current state — v0.4.7 adds neutral root and immediate-child repository handles for local workspace awareness; v0.4.6 made narrow direct imports tree-shakeable, and v0.4.5 introduced the structured Content awareness manifest.
+summary: Current state — v0.4.8 aligns the public package around the protocol's repository shape and agent operating loop without changing portable APIs; v0.4.7 added neutral workspace handles.
 ---
 # Now
 
-**v0.4.7, early and provisional — structured, tree-shakeable, and workspace-aware.**
+**v0.4.8, early and provisional — one public standard for repository shape and the agent operating loop.**
 
 In place:
+- **Public capture-standard framing — delivered in v0.4.8.** GitHub and npm now lead with the outcome the protocol makes portable: agents preserving useful work as durable Markdown and git history. The package APIs and schema semantics are unchanged from v0.4.7.
 - `SPEC.md` + `SKILLS.md` — the normative shape and ability layer, including explicit push/pull directions and the protocol-owned shared skill catalog.
 - `schema/` — provisional frontmatter, `_agent/` contract, and Change-layer trailer formats. `attached_to` is one typed link with an open, platform-defined type vocabulary.
 - `src/` — the reference TypeScript library for frontmatter, contract composition, awareness, path walking, git state, drift, skills, conformance, and Change trailers. The full suite is green.
