@@ -1,7 +1,7 @@
 {
   "name": "@ideaspaces/protocol",
   "version": "0.4.7",
-  "description": "The Ideaspace Protocol — the platform-neutral shape of a knowledge repo. Spec, schema, reference library, and conformance kit.",
+  "description": "The open standard for how agents turn useful work into durable, portable knowledge",
   "keywords": [
     "ideaspaces",
     "agents",
