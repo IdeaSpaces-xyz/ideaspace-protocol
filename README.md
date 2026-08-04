@@ -1,12 +1,26 @@
 # Ideaspace Protocol
 
+[![CI](https://github.com/IdeaSpaces-xyz/ideaspace-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/IdeaSpaces-xyz/ideaspace-protocol/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@ideaspaces/protocol?label=npm)](https://www.npmjs.com/package/@ideaspaces/protocol)
+[![Node.js](https://img.shields.io/node/v/@ideaspaces/protocol)](package.json)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Status: provisional](https://img.shields.io/badge/protocol-provisional-orange.svg)](#status)
+
 > The platform-neutral **shape** of a knowledge repo. An agent that knows this shape can inhabit any conformant space — orient, navigate, work — with no bespoke instructions.
+
+[Explore this repo as an Ideaspace](https://ideaspaces.xyz/spaces/n_64dbf7878f05362337a6cda6) · [Install from npm](https://www.npmjs.com/package/@ideaspaces/protocol) · [Read the spec](SPEC.md) · [See the skills](SKILLS.md)
 
 An **ideaspace** is a folder of Markdown under git: knowledge accumulates as `.md` files, how-to-work lives in an `_agent/` folder, and git carries identity and history. This repo defines that shape — the spec, a machine-readable schema, a reference implementation, and a conformance kit — in one place, so any tool or agent can read and write ideaspaces predictably.
 
 It is **not a data format for retrieval**. It is an *inhabitation contract*: shape + identity + conformance, plus the verbs to work a space. The shape is fixed so it is predictable — drop a conformant agent into a conformant space and it already knows where to look.
 
-This repository is itself a conformant ideaspace (see [`_agent/`](_agent/)) — it dogfoods the protocol it defines.
+## Why this exists
+
+Agent context is usually trapped in a product, a prompt, or a transcript. A fixed repository shape makes the knowledge and the agreement for working with it portable. People keep ordinary files and full history; agents get a predictable way to orient and act without every repository inventing its own instructions.
+
+## Experience the protocol
+
+This repository is both the definition and a conformant example. [Browse it as a public Ideaspace](https://ideaspaces.xyz/spaces/n_64dbf7878f05362337a6cda6), navigate the same Markdown as structured knowledge, ask it questions with your own agent, or copy it into your account. Its [root `_agent/` contract](https://github.com/IdeaSpaces-xyz/ideaspace-protocol/tree/main/_agent) dogfoods the protocol it defines.
 
 ## What's here
 
@@ -69,6 +83,19 @@ The TypeScript library is the *reference* implementation, not the only one. Othe
 ## Conformance
 
 A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance) and declares the spec version it targets. The [`conformance/`](conformance/) kit makes that testable.
+
+## Ecosystem
+
+The protocol owns portable shape and ability semantics. Each integration keeps its own tools, permissions, placement, and lifecycle behavior.
+
+| Project | Role |
+|---|---|
+| **Ideaspace Protocol** | Spec, schema, reference library, skills, and conformance kit — this repository. |
+| [Claude Code plugin](https://github.com/IdeaSpaces-xyz/claude-code-plugin) | The recommended local-first path for Claude Code and Cowork; includes the Ideaspace skills and MCP tools. |
+| [Pi extension](https://github.com/IdeaSpaces-xyz/pi-is-space) | Protocol-backed awareness, capture, and sync in Pi. |
+| [CLI](https://github.com/IdeaSpaces-xyz/cli) | Create, publish, clone, push, pull, and automate spaces from the terminal. |
+| [SDK](https://github.com/IdeaSpaces-xyz/sdk) | Keeper transport types and Pi-to-Keeper translation; not a protocol compatibility layer. |
+| [IdeaSpaces](https://ideaspaces.xyz) | Optional hosting for sharing, access control, public exploration, and search across spaces. |
 
 ## Status
 
