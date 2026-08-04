@@ -137,8 +137,10 @@ try {
   );
 
   const probe = `
+    import { createRequire } from "node:module";
     import * as protocol from "@ideaspaces/protocol";
-    import schema from "@ideaspaces/protocol/schema/frontmatter" with { type: "json" };
+    const require = createRequire(import.meta.url);
+    const schema = require("@ideaspaces/protocol/schema/frontmatter");
     const required = [
       "assembleContentAwareness",
       "composeContractAlongPath",

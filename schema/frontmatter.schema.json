@@ -27,7 +27,7 @@
   },
   "required": [],
   "additionalProperties": true,
-  "x-status": "provisional — internal use; public timing undecided",
+  "x-status": "provisional and public — expect breaking changes before 1.0",
   "x-notes": [
     "Subject rides in frontmatter (this schema); provenance (author, co-author, Change-Id) rides in git; internal platform handles ride in the platform's map, never the file.",
     "Other fields are permitted via additionalProperties but are not standardized here.",
