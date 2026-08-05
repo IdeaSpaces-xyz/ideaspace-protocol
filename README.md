@@ -106,7 +106,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.4.8 — early and provisional.** This patch aligns the public GitHub and npm framing around the protocol's repository shape and operating loop; portable APIs and schema semantics are unchanged from v0.4.7. Pin a version and expect changes before 1.0, including evolution of the open `attached_to` type vocabulary.
+**v0.5.0 — early and provisional.** This minor release makes fractal composition full-stack (`ComposedSpace.stack`: ancestors retained, nearest instruction wins, skills union with deeper shadowing) and ships the canonical foundation core — the conduct seed scaffolds compose into a new space's `_agent/foundation.md`, exported as `FOUNDATION_CORE` and as a raw `templates/` asset for non-TypeScript runtimes. Pin a version and expect changes before 1.0, including evolution of the open `attached_to` type vocabulary.
 
 ## Develop
 
