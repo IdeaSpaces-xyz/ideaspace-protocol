@@ -103,21 +103,16 @@ Primitives go in `_agent/` at the level where they apply. Everything in `_agent/
 
 ## Creating Agents
 
-A special case of primitive: a full agent definition. When the user wants a specialized agent (not just an instruction), create `_agent/{agent-name}/agent.md`:
+A full agent definition is not a special file — it is a **vantage-shaped space**: an ideaspace whose five-file `_agent/` contract *is* the character. When the user wants a specialized agent (not just an instruction), create a dedicated space (its own folder or repo) and write its contract:
 
-```yaml
----
-name: "Regulatory Analyst"
-tools: ["read", "write", "search", "git"]
----
+- `_agent/foundation.md` — what this agent is, its character, its boundaries. State plainly that the space is a vantage, not a subject: an agent launched here inhabits it.
+- `_agent/guide.md` — how work goes when inhabiting it.
+- `_agent/skills/` — the procedures this agent can repeat.
+- `_agent/purpose.md` and `_agent/now.md` — the agent's own direction, as they emerge.
 
-An agent specialized in regulatory risk analysis. Evaluates compliance
-requirements, flags regulatory gaps, tracks regulatory changes.
-```
+The same loader that reads any space reads this one; no new file type, no separate agent format. Identity — a name others can select, address, and grant access to — is a platform concern layered on top of the shape, not a file in it.
 
-The optional `tools` field restricts which tools the agent can use. Omit it for full access. The body describes what the agent does.
-
-Also create `_agent/{agent-name}/soul.md` to define how the agent shows up — its character and approach. And optionally `purpose.md` and `now.md` for the agent's own direction. The agent becomes available for conversations once these files exist.
+Do **not** create `soul.md` or `agent.md` — nothing loads them; character belongs in the contract files above. (`_agent/<agent-id>/` folders are per-agent working records inside a shared space, not agent definitions.)
 
 ## What It Is NOT
 
