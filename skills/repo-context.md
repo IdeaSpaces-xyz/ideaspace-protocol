@@ -1,9 +1,9 @@
 ---
 name: repo-context
 description: >
-  Help describe what this place is and who works here. Use when working on
-  _agent/repo-context.md, when onboarding to a new repo, or when the agent
-  needs to understand the repo's identity.
+  Help describe what this place is and who works here. Use when onboarding to
+  a new repo, when the space's identity is unclear, or when drafting the
+  what/who parts of the _agent/ contract.
 ---
 
 # Repo Context
@@ -32,6 +32,6 @@ If the user hasn't written repo context yet:
 
 ## Writing It
 
-Concise. A few paragraphs. Written for the agent — this loads at session start and orients every conversation. Focus on what would change the agent's behavior: vocabulary, assumptions, conventions.
+Concise. A few paragraphs. Written for the agent — surfaces load the `_agent/` contract by position, so this orients every conversation held here. Focus on what would change the agent's behavior: vocabulary, assumptions, conventions.
 
-Persist to `_agent/repo-context.md`.
+Persist into the contract: what this place is and who works here is the `_agent/foundation.md` handshake's job; conventions and vocabulary the agent should follow belong in `_agent/guide.md`. (Some platforms additionally read `_agent/repo-context.md`; the contract is the portable home.)
