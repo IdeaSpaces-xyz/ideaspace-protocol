@@ -17,6 +17,7 @@ A folder of Markdown under git where the protocol lives: the normative spec, a m
 - **[`schema/`](../schema/)** — language-neutral contract (frontmatter JSON Schema + the `_agent/` contract definition).
 - **[`src/`](../src/)** — reference TypeScript implementation.
 - **[`conformance/`](../conformance/)** — reference space + validator.
+- **[`templates/`](../templates/)** — canonical seed content scaffolds compose into new spaces (the foundation core). Default content, not conformance.
 
 ## Reading order
 
