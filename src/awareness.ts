@@ -1,8 +1,9 @@
 import { promises as fs } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import type {
   ComposedContract,
   ContractFile,
+  ContractLevel,
   SpaceContract,
 } from "./space.js";
 import { composeContractAlongPath } from "./space.js";
@@ -122,6 +123,11 @@ export interface ContentAwarenessSkill {
   name: string;
   /** Absolute source file path. */
   path: string;
+  /**
+   * Absolute `_agent/` parent position the skill resolved from, when composed
+   * along a fractal path. A deeper same-named skill shadows its ancestor's.
+   */
+  level?: string;
   summary: string | null;
 }
 
@@ -216,6 +222,7 @@ export async function assembleContentAwareness(
       root: position,
       activityRoot: base,
       contract: composed.contract,
+      stack: composed.stack,
       lastSha,
       maxChanges: opts.maxChanges,
       nowExcerptLength: opts.nowExcerptLength,
@@ -255,7 +262,7 @@ export function renderContentAwareness(
   manifest: ContentAwarenessManifest,
   opts: RenderContentAwarenessOpts = {},
 ): string {
-  return renderAwarenessSections(manifest, opts);
+  return renderAwarenessSections({ ...manifest, levelBase: manifest.spaceRoot }, opts);
 }
 
 /**
@@ -285,12 +292,13 @@ export async function assembleAwareness(
 }
 
 async function readAwarenessSections(
-  opts: AssembleAwarenessOpts & { activityRoot: string },
+  opts: AssembleAwarenessOpts & { activityRoot: string; stack?: ContractLevel[] },
 ): Promise<AwarenessSections> {
   const {
     root,
     activityRoot,
     contract,
+    stack,
     lastSha,
     maxChanges = 15,
     nowExcerptLength = 200,
@@ -298,10 +306,12 @@ async function readAwarenessSections(
   } = opts;
 
   const now = extractNow(contract, nowExcerptLength);
-  const contractEntries = buildContractEntries(contract, summaryExcerptLength);
+  const contractEntries = stack?.length
+    ? buildStackedContractEntries(stack, summaryExcerptLength)
+    : buildContractEntries(contract, summaryExcerptLength);
   const [tree, skills, activity] = await Promise.all([
     buildTree(root),
-    readSkills(root, summaryExcerptLength),
+    readSkills(stack?.length ? stack.map((level) => level.dir) : [root], summaryExcerptLength),
     lastSha
       ? readActivity(activityRoot, lastSha, maxChanges)
       : Promise.resolve(null),
@@ -322,6 +332,8 @@ function renderAwarenessSections(
     git: GitState | null;
     staleDocs: DriftSignal[];
     missingDirection: Array<"purpose" | "now">;
+    /** Base for rendering branch-level annotations; absent for the legacy single-level block. */
+    levelBase?: string;
   },
   opts: RenderContentAwarenessOpts,
 ): string {
@@ -349,10 +361,10 @@ function renderAwarenessSections(
         rendered = data.tree ? renderTree(data.tree) : null;
         break;
       case "contract":
-        rendered = renderContract(data.contract);
+        rendered = renderContract(data.contract, data.levelBase);
         break;
       case "skills":
-        rendered = renderSkills(data.skills);
+        rendered = renderSkills(data.skills, data.levelBase);
         break;
       case "activity":
         rendered = data.activity ? renderActivity(data.activity) : null;
@@ -397,39 +409,63 @@ function hasLevel(
   return "level" in entry;
 }
 
+/**
+ * Contract entries along the full root → position stack: for each contract
+ * file, every level carrying it appears, root-first, deepest (effective) last.
+ * Deeper levels narrow ancestor context; nothing is dropped from view.
+ */
+function buildStackedContractEntries(
+  stack: ContractLevel[],
+  max: number,
+): ContentAwarenessContractEntry[] {
+  const entries: ContentAwarenessContractEntry[] = [];
+  for (const name of CONTRACT_ORDER) {
+    for (const level of stack) {
+      const entry = level.contract[name];
+      if (!entry) continue;
+      entries.push({
+        name,
+        path: entry.path,
+        level: level.dir,
+        summary: describeFile(entry.content, max),
+      });
+    }
+  }
+  return entries;
+}
+
+/**
+ * Skills composed along the root → position stack: the available set is the
+ * union of each level's `_agent/skills/*.md`, a deeper same-named skill
+ * shadowing its ancestor's. `levels` is ordered root-first.
+ */
 async function readSkills(
-  root: string,
+  levels: string[],
   max: number,
 ): Promise<ContentAwarenessSkill[]> {
-  const skillsDir = join(root, "_agent", "skills");
-  let entries: string[];
-  try {
-    entries = (await fs.readdir(skillsDir))
-      .filter((name) => name.endsWith(".md"))
-      .sort();
-  } catch {
-    return [];
-  }
-
-  return Promise.all(
-    entries.map(async (file) => {
+  const byName = new Map<string, ContentAwarenessSkill>();
+  for (const dir of levels) {
+    const skillsDir = join(dir, "_agent", "skills");
+    let entries: string[];
+    try {
+      entries = (await fs.readdir(skillsDir))
+        .filter((name) => name.endsWith(".md"))
+        .sort();
+    } catch {
+      continue;
+    }
+    for (const file of entries) {
       const path = join(skillsDir, file);
+      const name = file.replace(/\.md$/, "");
       try {
         const content = await fs.readFile(path, "utf-8");
-        return {
-          name: file.replace(/\.md$/, ""),
-          path,
-          summary: describeFile(content, max),
-        };
+        byName.set(name, { name, path, level: dir, summary: describeFile(content, max) });
       } catch {
-        return {
-          name: file.replace(/\.md$/, ""),
-          path,
-          summary: null,
-        };
+        byName.set(name, { name, path, level: dir, summary: null });
       }
-    }),
-  );
+    }
+  }
+  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function readActivity(
@@ -564,28 +600,35 @@ function renderTree(tree: ContentAwarenessTree): string {
   return lines.join("\n");
 }
 
-function renderContract(entries: ContentAwarenessContractEntry[]): string | null {
+/** `guide (branch/)` for entries below the space root; bare name at the root or without a base. */
+function levelAnnotation(level: string | undefined, base: string | undefined): string {
+  if (!level || !base || level === base) return "";
+  const rel = relative(base, level);
+  return rel && !rel.startsWith("..") ? ` (${rel}/)` : "";
+}
+
+function renderContract(
+  entries: ContentAwarenessContractEntry[],
+  levelBase?: string,
+): string | null {
   if (!entries.length) return null;
   const lines = ["Agent context:"];
   for (const entry of entries) {
-    lines.push(
-      entry.summary
-        ? `  ${entry.name} — ${entry.summary}`
-        : `  ${entry.name}`,
-    );
+    const name = `${entry.name}${levelAnnotation(entry.level, levelBase)}`;
+    lines.push(entry.summary ? `  ${name} — ${entry.summary}` : `  ${name}`);
   }
   return lines.join("\n");
 }
 
-function renderSkills(skills: ContentAwarenessSkill[]): string | null {
+function renderSkills(
+  skills: ContentAwarenessSkill[],
+  levelBase?: string,
+): string | null {
   if (!skills.length) return null;
   const lines = ["Operating skills:"];
   for (const skill of skills) {
-    lines.push(
-      skill.summary
-        ? `  ${skill.name} — ${skill.summary}`
-        : `  ${skill.name}`,
-    );
+    const name = `${skill.name}${levelAnnotation(skill.level, levelBase)}`;
+    lines.push(skill.summary ? `  ${name} — ${skill.summary}` : `  ${name}`);
   }
   return lines.join("\n");
 }

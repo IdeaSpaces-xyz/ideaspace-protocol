@@ -47,6 +47,31 @@ describe("composeContractAlongPath", () => {
     expect(composed.contract.purpose?.level).toBe(root);
     // levels are the _agent/ dirs found, deepest first (leaf has none)
     expect(composed.levels).toEqual([join(root, "branch"), root]);
+    // the stack reads root-first and keeps every level's full contract
+    expect(composed.stack.map((level) => level.dir)).toEqual([root, join(root, "branch")]);
+    expect(composed.stack[0].contract.now?.content).toContain("Now (root)");
+    expect(composed.stack[1].contract.now?.content).toContain("Now (branch)");
+  });
+
+  it("retains ancestor context in the stack when a branch overrides a file", async () => {
+    const root = await makeSpace({
+      "_agent/foundation.md": "# Foundation",
+      "_agent/guide.md": "# Guide (root)",
+      "branch/_agent/guide.md": "# Guide (branch)",
+    });
+    const branch = join(root, "branch");
+
+    const composed = await composeContractAlongPath(branch);
+
+    // effective view: nearest instruction wins
+    expect(composed.contract.guide?.level).toBe(branch);
+    expect(composed.contract.guide?.content).toContain("Guide (branch)");
+    // full stack: the root guide is narrowed, not deleted
+    expect(composed.stack).toHaveLength(2);
+    expect(composed.stack[0].dir).toBe(root);
+    expect(composed.stack[0].contract.guide?.content).toContain("Guide (root)");
+    expect(composed.stack[1].dir).toBe(branch);
+    expect(composed.stack[1].contract.guide?.content).toContain("Guide (branch)");
   });
 
   it("at the space root, resolves the root contract only", async () => {
@@ -83,6 +108,7 @@ describe("composeContractAlongPath", () => {
     const composed = await composeContractAlongPath(join(root, "notes"));
     expect(composed.spaceRoot).toBeNull();
     expect(composed.contract).toEqual({});
+    expect(composed.stack).toEqual([]);
     expect(composed.levels).toEqual([]);
   });
 });

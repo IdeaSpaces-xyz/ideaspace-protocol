@@ -206,6 +206,74 @@ describe("Content awareness manifest", () => {
     );
   });
 
+  it("composes contract and skills along the path — ancestors retained, deeper shadows", async () => {
+    await writeAgent({
+      "foundation.md": "---\nname: Foundation\nsummary: Root agreement.\n---\n# Foundation",
+      "guide.md": "---\nname: Guide\nsummary: Root guide.\n---\n# Guide",
+    });
+    await fs.mkdir(join(tmp, "_agent", "skills"), { recursive: true });
+    await fs.writeFile(
+      join(tmp, "_agent", "skills", "capture.md"),
+      "---\nname: Capture\nsummary: Root capture procedure.\n---\n# Capture",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(tmp, "_agent", "skills", "review.md"),
+      "---\nname: Review\nsummary: Root review procedure.\n---\n# Review",
+      "utf-8",
+    );
+    const branchAgent = join(tmp, "branch", "_agent");
+    await fs.mkdir(join(branchAgent, "skills"), { recursive: true });
+    await fs.writeFile(
+      join(branchAgent, "guide.md"),
+      "---\nname: Guide\nsummary: Branch guide.\n---\n# Guide",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(branchAgent, "skills", "review.md"),
+      "---\nname: Review\nsummary: Branch review shadows root.\n---\n# Review",
+      "utf-8",
+    );
+    const leaf = join(tmp, "branch", "leaf");
+    await fs.mkdir(leaf, { recursive: true });
+    await fs.writeFile(join(leaf, "note.md"), "# Note", "utf-8");
+
+    const manifest = await assembleContentAwareness({
+      position: leaf,
+      lastSha: null,
+    });
+    const canonicalTmp = await fs.realpath(tmp);
+    const branchDir = join(canonicalTmp, "branch");
+
+    // contract: every level retained, root-first per file, deepest last
+    expect(manifest?.contract).toMatchObject([
+      { name: "foundation", level: canonicalTmp, summary: "Root agreement." },
+      { name: "guide", level: canonicalTmp, summary: "Root guide." },
+      { name: "guide", level: branchDir, summary: "Branch guide." },
+    ]);
+    // skills: union along the path; deeper same-named shadows the ancestor
+    expect(manifest?.skills).toMatchObject([
+      { name: "capture", level: canonicalTmp, summary: "Root capture procedure." },
+      { name: "review", level: branchDir, summary: "Branch review shadows root." },
+    ]);
+
+    const rendered = renderContentAwareness(manifest!, {
+      sections: ["contract", "skills"],
+    });
+    expect(rendered).toBe(
+      [
+        "Agent context:",
+        "  foundation — Root agreement.",
+        "  guide — Root guide.",
+        "  guide (branch/) — Branch guide.",
+        "",
+        "Operating skills:",
+        "  capture — Root capture procedure.",
+        "  review (branch/) — Branch review shadows root.",
+      ].join("\n"),
+    );
+  });
+
   it("reads the seen ref by default and bounds activity in the manifest", async () => {
     await writeAgent({
       "foundation.md": "Foundation",
