@@ -34,7 +34,9 @@ Optional: `schema.md` (the shape of Notes in this folder — guidance, not valid
 
 ## Fractal composition
 
-`_agent/` may appear at any position. Reading **composes along the path** — the reader assembles the full stack from the space root down to the position, root first. Every level's contract stays in the assembled view; a deeper level narrows or overrides same-named files for its branch, and on conflict the **nearest instruction wins**. Refinement never deletes ancestor context. A branch with no `_agent/` inherits its ancestors'. `skills/` compose the same way: the available set is the union along the path, with a deeper same-named skill shadowing its ancestor's. `foundation.md` lives only at a space root; branches refine, they do not re-declare.
+`_agent/` may appear at any position. Reading **composes along the path** — the reader assembles the full stack from the space root down to the position, root first. Every level's contract stays in the assembled view; a deeper level narrows or overrides same-named files for its branch, and on conflict the **nearest instruction wins**. Refinement never deletes ancestor context. A branch with no `_agent/` inherits its ancestors'. `skills/` compose the same way: the available set is the union along the path, with a deeper same-named skill shadowing its ancestor's.
+
+The contract holds two kinds of thing: the four fractal files **layer** (positions, deeper narrows), while `foundation.md` **scopes** (one per space, defining the whole branch beneath it and how to interpret the rest of `_agent/` there). A deeper foundation does not refine the space — it ends it and starts a new one. Branches refine, they do not re-declare.
 
 ## Surface, and collections vs elaborations
 

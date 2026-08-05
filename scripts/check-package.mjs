@@ -27,6 +27,14 @@ const expected = [
   "dist/filesystem.d.ts.map",
   "dist/filesystem.js",
   "dist/filesystem.js.map",
+  "dist/foundation-core.d.ts",
+  "dist/foundation-core.d.ts.map",
+  "dist/foundation-core.js",
+  "dist/foundation-core.js.map",
+  "dist/foundation-core.generated.d.ts",
+  "dist/foundation-core.generated.d.ts.map",
+  "dist/foundation-core.generated.js",
+  "dist/foundation-core.generated.js.map",
   "dist/frontmatter.d.ts",
   "dist/frontmatter.d.ts.map",
   "dist/frontmatter.js",
@@ -87,6 +95,7 @@ const expected = [
   "skills/purpose-elicitation.md",
   "skills/repo-context.md",
   "skills/writing.md",
+  "templates/foundation-core.md",
 ].sort();
 
 try {
@@ -101,7 +110,13 @@ try {
   }
 
   const exportKeys = Object.keys(pkg.exports ?? {});
-  const expectedExports = [".", "./schema/frontmatter", "./SPEC.md", "./SKILLS.md"];
+  const expectedExports = [
+    ".",
+    "./schema/frontmatter",
+    "./SPEC.md",
+    "./SKILLS.md",
+    "./templates/foundation-core.md",
+  ];
   if (JSON.stringify(exportKeys) !== JSON.stringify(expectedExports)) {
     throw new Error(`Unexpected package exports: ${exportKeys.join(", ")}`);
   }
@@ -150,6 +165,9 @@ try {
     ];
     for (const name of required) {
       if (typeof protocol[name] !== "function") throw new Error(\`Missing runtime export: \${name}\`);
+    }
+    if (typeof protocol.FOUNDATION_CORE !== "string" || !protocol.FOUNDATION_CORE.includes("**Never:**")) {
+      throw new Error("FOUNDATION_CORE export did not load");
     }
     if (schema?.title !== "Ideaspace Note frontmatter (Layer 1)") {
       throw new Error("Frontmatter schema export did not load");
