@@ -97,6 +97,12 @@ export type {
 export { listSkills, readSkill } from "./skills.js";
 export type { SkillInfo, Skill } from "./skills.js";
 
+// Foundation core — the canonical conduct seed scaffolds compose into a new
+// space's `_agent/foundation.md`. Default content, not a conformance
+// requirement; the markdown asset ships at templates/foundation-core.md for
+// non-TS runtimes.
+export { FOUNDATION_CORE, FOUNDATION_CORE_VERSION } from "./foundation-core.js";
+
 export {
   stripFrontmatter,
   composeFrontmatter,
