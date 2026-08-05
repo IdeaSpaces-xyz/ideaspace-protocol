@@ -57,6 +57,21 @@ export interface AssembleContentAwarenessOpts {
   nowExcerptLength?: number;
   /** Cap on per-summary length for contract and skill entries. Default: 200 characters. */
   summaryExcerptLength?: number;
+  /**
+   * Probe depth for the tree section — how many levels to pull, soft-capped to
+   * [1, 4]. Default 1: the ambient orientation depth every harness renders at
+   * session start. Deeper is a deliberate map-probe a caller passes on demand
+   * (a CLI flag, a navigate tool parameter); levels below 1 render as a thin
+   * name-rung outline, never summaries. Probe depth pulls more map, not more
+   * content — content loads via read, not here.
+   */
+  treeDepth?: number;
+  /**
+   * Soft display cap per directory. Default 50. Truncation is always honest:
+   * the true totals and an omitted count are carried in the manifest and
+   * rendered — never a silent cut.
+   */
+  treeMaxEntries?: number;
 }
 
 export const CONTENT_AWARENESS_SECTIONS = [
@@ -103,11 +118,23 @@ export interface ContentAwarenessTreeEntry {
   kind: "directory" | "markdown";
   /** Recursive markdown count for directories; absent for markdown files. */
   markdownFiles?: number;
+  /**
+   * Summary-rung handle text at level 1 — a directory's README summary or a
+   * file's frontmatter summary / first content line. Absent below level 1
+   * (deeper levels are name-rung outline) and in the legacy block.
+   */
+  summary?: string | null;
+  /** Probe outline below this directory when `treeDepth > 1`. Name-rung only. */
+  children?: ContentAwarenessTreeEntry[];
+  /** Children over the per-directory cap, when truncated. Always rendered. */
+  omittedChildren?: number;
 }
 
 export interface ContentAwarenessTree {
   totalMarkdownFiles: number;
   entries: ContentAwarenessTreeEntry[];
+  /** Top-level entries over the per-directory cap, when truncated. */
+  omittedEntries?: number;
 }
 
 export interface ContentAwarenessContractEntry {
@@ -217,6 +244,10 @@ export async function assembleContentAwareness(
         staleDocSignals(repoRoot, docs),
       )
     : Promise.resolve([]);
+  // Probe depth is soft-capped, never rejected: a wild value clamps to the
+  // ladder's bounds the way Keeper's navigate does.
+  const treeDepth = Math.min(4, Math.max(1, Math.trunc(opts.treeDepth ?? 1)));
+  const treeMaxEntries = opts.treeMaxEntries ?? 50;
   const sectionsPromise = lastShaPromise.then((lastSha) =>
     readAwarenessSections({
       root: position,
@@ -227,6 +258,12 @@ export async function assembleContentAwareness(
       maxChanges: opts.maxChanges,
       nowExcerptLength: opts.nowExcerptLength,
       summaryExcerptLength: opts.summaryExcerptLength,
+      tree: {
+        depth: treeDepth,
+        maxEntries: treeMaxEntries,
+        summaries: true,
+        summaryLength: opts.summaryExcerptLength ?? 200,
+      },
     }),
   );
 
@@ -276,6 +313,7 @@ export async function assembleAwareness(
   opts: AssembleAwarenessOpts,
 ): Promise<string> {
   const sections = await readAwarenessSections({
+    tree: LEGACY_TREE_OPTS,
     ...opts,
     activityRoot: opts.root,
   });
@@ -292,7 +330,11 @@ export async function assembleAwareness(
 }
 
 async function readAwarenessSections(
-  opts: AssembleAwarenessOpts & { activityRoot: string; stack?: ContractLevel[] },
+  opts: AssembleAwarenessOpts & {
+    activityRoot: string;
+    stack?: ContractLevel[];
+    tree?: BuildTreeOpts;
+  },
 ): Promise<AwarenessSections> {
   const {
     root,
@@ -304,13 +346,19 @@ async function readAwarenessSections(
     nowExcerptLength = 200,
     summaryExcerptLength = 200,
   } = opts;
+  const treeOpts: BuildTreeOpts = opts.tree ?? {
+    depth: 1,
+    maxEntries: 50,
+    summaries: true,
+    summaryLength: summaryExcerptLength,
+  };
 
   const now = extractNow(contract, nowExcerptLength);
   const contractEntries = stack?.length
     ? buildStackedContractEntries(stack, summaryExcerptLength)
     : buildContractEntries(contract, summaryExcerptLength);
   const [tree, skills, activity] = await Promise.all([
-    buildTree(root),
+    buildTree(root, treeOpts),
     readSkills(stack?.length ? stack.map((level) => level.dir) : [root], summaryExcerptLength),
     lastSha
       ? readActivity(activityRoot, lastSha, maxChanges)
@@ -521,43 +569,116 @@ function truncate(value: string, max: number): string {
     : `${value.slice(0, max).trimEnd()}…`;
 }
 
-async function buildTree(root: string): Promise<ContentAwarenessTree | null> {
-  let entries: Array<{ name: string; isDir: boolean }>;
+interface BuildTreeOpts {
+  /** Levels to pull; 1 is the position's own children. Caller pre-clamps. */
+  depth: number;
+  /** Per-directory display cap; `Infinity` disables (legacy block). */
+  maxEntries: number;
+  /** Summary-rung handles at level 1. Off for the legacy block and below level 1. */
+  summaries: boolean;
+  /** Cap on summary excerpt length. */
+  summaryLength: number;
+}
+
+const LEGACY_TREE_OPTS: BuildTreeOpts = {
+  depth: 1,
+  maxEntries: Infinity,
+  summaries: false,
+  summaryLength: 200,
+};
+
+/** Summary-rung text for one child: a directory's README summary, a file's own. */
+async function childSummary(
+  path: string,
+  isDir: boolean,
+  max: number,
+): Promise<string | null> {
   try {
-    const dirents = await fs.readdir(root, { withFileTypes: true });
-    entries = dirents
+    const source = isDir ? join(path, "README.md") : path;
+    return describeFile(await fs.readFile(source, "utf-8"), max);
+  } catch {
+    return null;
+  }
+}
+
+async function buildTree(
+  root: string,
+  opts: BuildTreeOpts,
+): Promise<ContentAwarenessTree | null> {
+  const listed = await listTreeLevel(root, opts, opts.depth);
+  if (!listed) return null;
+  const totalMarkdownFiles = await countMarkdown(root);
+  return {
+    totalMarkdownFiles,
+    entries: listed.entries,
+    ...(listed.omitted ? { omittedEntries: listed.omitted } : {}),
+  };
+}
+
+/**
+ * One directory level of the map, at handle depth. Level `opts.depth` (the
+ * position's own children) may carry summary-rung handles; every level below
+ * is a name-rung probe outline — more map, never content.
+ */
+async function listTreeLevel(
+  dir: string,
+  opts: BuildTreeOpts,
+  levelsLeft: number,
+): Promise<{ entries: ContentAwarenessTreeEntry[]; omitted: number } | null> {
+  let raw: Array<{ name: string; isDir: boolean }>;
+  try {
+    const dirents = await fs.readdir(dir, { withFileTypes: true });
+    raw = dirents
       .filter((entry) => !entry.name.startsWith(".") || entry.name === ".gitignore")
       .map((entry) => ({ name: entry.name, isDir: entry.isDirectory() }));
   } catch {
     return null;
   }
 
-  const dirs = entries
+  const dirs = raw
     .filter((entry) => entry.isDir && !SKIP_DIRS.has(entry.name))
     .map((entry) => entry.name)
     .sort();
-  const files = entries
+  const atTop = levelsLeft === opts.depth;
+  const files = raw
     .filter((entry) => !entry.isDir && entry.name.endsWith(".md"))
+    // Below level 1 the parent's line already carries its README summary —
+    // listing README again in the probe outline is noise (Keeper parity).
+    .filter((entry) => atTop || entry.name !== "README.md")
     .map((entry) => entry.name)
     .sort();
   if (!dirs.length && !files.length) return null;
 
-  const [totalMarkdownFiles, dirCounts] = await Promise.all([
-    countMarkdown(root),
-    Promise.all(dirs.map((dir) => countMarkdown(join(root, dir)))),
-  ]);
+  const all = [
+    ...dirs.map((name) => ({ name, isDir: true })),
+    ...files.map((name) => ({ name, isDir: false })),
+  ];
+  const shown = Number.isFinite(opts.maxEntries) ? all.slice(0, opts.maxEntries) : all;
+  const omitted = all.length - shown.length;
+  const withSummaries = opts.summaries && atTop;
 
-  return {
-    totalMarkdownFiles,
-    entries: [
-      ...dirs.map((name, index) => ({
-        name,
-        kind: "directory" as const,
-        markdownFiles: dirCounts[index],
-      })),
-      ...files.map((name) => ({ name, kind: "markdown" as const })),
-    ],
-  };
+  const entries = await Promise.all(
+    shown.map(async ({ name, isDir }): Promise<ContentAwarenessTreeEntry> => {
+      const path = join(dir, name);
+      const entry: ContentAwarenessTreeEntry = isDir
+        ? { name, kind: "directory", markdownFiles: await countMarkdown(path) }
+        : { name, kind: "markdown" };
+      if (withSummaries) {
+        const summary = await childSummary(path, isDir, opts.summaryLength);
+        if (summary) entry.summary = summary;
+      }
+      if (isDir && levelsLeft > 1) {
+        const deeper = await listTreeLevel(path, opts, levelsLeft - 1);
+        if (deeper) {
+          entry.children = deeper.entries;
+          if (deeper.omitted) entry.omittedChildren = deeper.omitted;
+        }
+      }
+      return entry;
+    }),
+  );
+
+  return { entries, omitted };
 }
 
 async function countMarkdown(dir: string): Promise<number> {
@@ -586,18 +707,32 @@ async function countMarkdown(dir: string): Promise<number> {
 
 function renderTree(tree: ContentAwarenessTree): string {
   const lines = [`Tree (${tree.totalMarkdownFiles} files):`];
-  for (const entry of tree.entries) {
-    if (entry.kind === "directory") {
-      lines.push(
-        entry.markdownFiles
-          ? `  ${entry.name}/ (${entry.markdownFiles})`
-          : `  ${entry.name}/`,
-      );
-    } else {
-      lines.push(`  ${entry.name}`);
+  renderTreeEntries(tree.entries, 1, lines);
+  if (tree.omittedEntries) lines.push(`  … and ${tree.omittedEntries} more`);
+  return lines.join("\n");
+}
+
+function renderTreeEntries(
+  entries: ContentAwarenessTreeEntry[],
+  level: number,
+  lines: string[],
+): void {
+  const indent = "  ".repeat(level);
+  for (const entry of entries) {
+    const base =
+      entry.kind === "directory"
+        ? entry.markdownFiles
+          ? `${indent}${entry.name}/ (${entry.markdownFiles})`
+          : `${indent}${entry.name}/`
+        : `${indent}${entry.name}`;
+    lines.push(entry.summary ? `${base} — ${entry.summary}` : base);
+    if (entry.children) {
+      renderTreeEntries(entry.children, level + 1, lines);
+      if (entry.omittedChildren) {
+        lines.push(`${"  ".repeat(level + 1)}… and ${entry.omittedChildren} more`);
+      }
     }
   }
-  return lines.join("\n");
 }
 
 /** `guide (branch/)` for entries below the space root; bare name at the root or without a base. */

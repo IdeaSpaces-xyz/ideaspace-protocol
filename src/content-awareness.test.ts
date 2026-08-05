@@ -274,6 +274,72 @@ describe("Content awareness manifest", () => {
     );
   });
 
+  it("carries summary-rung handles at level 1 and a name-rung probe below", async () => {
+    await writeAgent({ "foundation.md": "Foundation" });
+    await fs.mkdir(join(tmp, "research", "deep"), { recursive: true });
+    await fs.writeFile(
+      join(tmp, "research", "README.md"),
+      "---\nname: Research\nsummary: EU landscape sweep.\n---\n# Research",
+      "utf-8",
+    );
+    await fs.writeFile(join(tmp, "research", "notes.md"), "# Notes", "utf-8");
+    await fs.writeFile(join(tmp, "research", "deep", "more.md"), "# More", "utf-8");
+    await fs.writeFile(
+      join(tmp, "overview.md"),
+      "---\nname: Overview\nsummary: Top file.\n---\n# Overview",
+      "utf-8",
+    );
+
+    // Ambient default: depth 1, handles decidable.
+    const ambient = await assembleContentAwareness({ position: tmp, lastSha: null });
+    expect(ambient?.tree?.entries).toMatchObject([
+      { name: "research", kind: "directory", markdownFiles: 3, summary: "EU landscape sweep." },
+      { name: "overview.md", kind: "markdown", summary: "Top file." },
+    ]);
+    expect(ambient?.tree?.entries[0].children).toBeUndefined();
+
+    // Probe depth 2: name-rung outline below, no summaries on children.
+    const probed = await assembleContentAwareness({
+      position: tmp,
+      lastSha: null,
+      treeDepth: 2,
+    });
+    const research = probed?.tree?.entries[0];
+    expect(research?.children).toMatchObject([
+      { name: "deep", kind: "directory", markdownFiles: 1 },
+      { name: "notes.md", kind: "markdown" },
+    ]);
+    expect(research?.children?.every((c) => c.summary === undefined)).toBe(true);
+
+    const rendered = renderContentAwareness(probed!, { sections: ["tree"] });
+    expect(rendered).toBe(
+      [
+        "Tree (4 files):",
+        "  research/ (3) — EU landscape sweep.",
+        "    deep/ (1)",
+        "    notes.md",
+        "  overview.md — Top file.",
+      ].join("\n"),
+    );
+  });
+
+  it("caps entries per directory with honest omitted counts", async () => {
+    await writeAgent({ "foundation.md": "Foundation" });
+    for (const name of ["a.md", "b.md", "c.md", "d.md"]) {
+      await fs.writeFile(join(tmp, name), `# ${name}`, "utf-8");
+    }
+    const manifest = await assembleContentAwareness({
+      position: tmp,
+      lastSha: null,
+      treeMaxEntries: 2,
+    });
+    expect(manifest?.tree?.entries).toHaveLength(2);
+    expect(manifest?.tree?.omittedEntries).toBe(2);
+    expect(renderContentAwareness(manifest!, { sections: ["tree"] })).toBe(
+      ["Tree (4 files):", "  a.md", "  b.md", "  … and 2 more"].join("\n"),
+    );
+  });
+
   it("reads the seen ref by default and bounds activity in the manifest", async () => {
     await writeAgent({
       "foundation.md": "Foundation",

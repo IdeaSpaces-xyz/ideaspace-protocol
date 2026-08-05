@@ -37,7 +37,7 @@ A manifest carries:
 | `spaceRoot` | Absolute root selected by the nearest foundation boundary. |
 | `position` | Focus path, display base, optional git root, and structured root-to-focus path context. |
 | `now` | First meaningful line of effective `now.md`, plus its source path; absent when no Now resolves. |
-| `tree` | Bounded top-level map: total markdown count and directory/markdown entries; absent when empty or unreadable. |
+| `tree` | The position's map at handle depth: directory/markdown entries carrying summary-rung handles at level 1 (README summary for directories, frontmatter summary for files), recursive markdown counts, and — when a caller passes `treeDepth` (soft-capped 1..4; ambient default 1) — a name-rung probe outline below, never summaries. Per-directory soft cap (default 50) with honest omitted counts, carried and rendered. Probe depth pulls more map, not content. |
 | `contract` | Contract files along the composed root→position stack in foundation/guide/purpose/now/next order. Every level carrying a file appears, root-first per file, the deepest (effective) entry last; each carries source path, composing level, and summary. |
 | `skills` | `_agent/skills/*.md` composed along the root→position stack — the union across levels, a deeper same-named skill shadowing its ancestor's — with names, source paths, composing levels, and summaries. |
 | `activity` | Total changed paths since the seen baseline, a bounded retained prefix, and omitted count; absent without a baseline or changes. |
