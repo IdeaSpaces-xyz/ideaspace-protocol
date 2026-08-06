@@ -340,6 +340,46 @@ describe("Content awareness manifest", () => {
     );
   });
 
+  it("surfaces a skill's description as its trigger and keeps README out of the roster", async () => {
+    await writeAgent({ "foundation.md": "Foundation" });
+    const skillsDir = join(tmp, "_agent", "skills");
+    await fs.mkdir(skillsDir, { recursive: true });
+    await fs.writeFile(
+      join(skillsDir, "meeting-notes.md"),
+      "---\nname: meeting-notes\ndescription: Turn a transcript into a decision-first record.\n---\n# Meeting notes\n\n1. Lead with decisions.",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(skillsDir, "review.md"),
+      "---\nname: Review\nsummary: Verify behavior before claiming done.\n---\n# Review",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(skillsDir, "README.md"),
+      "---\nname: Skills\nsummary: Convention marker, not an ability.\n---\n# Skills",
+      "utf-8",
+    );
+
+    const manifest = await assembleContentAwareness({
+      position: tmp,
+      lastSha: null,
+    });
+
+    // description (the trigger) wins; summary remains the fallback; README is
+    // the folder's surface, never a roster entry.
+    expect(manifest?.skills).toMatchObject([
+      { name: "meeting-notes", summary: "Turn a transcript into a decision-first record." },
+      { name: "review", summary: "Verify behavior before claiming done." },
+    ]);
+    expect(renderContentAwareness(manifest!, { sections: ["skills"] })).toBe(
+      [
+        "Operating skills:",
+        "  meeting-notes — Turn a transcript into a decision-first record.",
+        "  review — Verify behavior before claiming done.",
+      ].join("\n"),
+    );
+  });
+
   it("reads the seen ref by default and bounds activity in the manifest", async () => {
     await writeAgent({
       "foundation.md": "Foundation",

@@ -7,7 +7,7 @@ import type {
   SpaceContract,
 } from "./space.js";
 import { composeContractAlongPath } from "./space.js";
-import { stripFrontmatter, extractSummary } from "./frontmatter.js";
+import { stripFrontmatter, extractSummary, extractDescription } from "./frontmatter.js";
 import {
   gitState,
   recentActivity,
@@ -497,7 +497,8 @@ async function readSkills(
     let entries: string[];
     try {
       entries = (await fs.readdir(skillsDir))
-        .filter((name) => name.endsWith(".md"))
+        // README.md is the folder's surface, not an ability — keep it out of the roster.
+        .filter((name) => name.endsWith(".md") && name !== "README.md")
         .sort();
     } catch {
       continue;
@@ -507,7 +508,7 @@ async function readSkills(
       const name = file.replace(/\.md$/, "");
       try {
         const content = await fs.readFile(path, "utf-8");
-        byName.set(name, { name, path, level: dir, summary: describeFile(content, max) });
+        byName.set(name, { name, path, level: dir, summary: describeSkill(content, max) });
       } catch {
         byName.set(name, { name, path, level: dir, summary: null });
       }
@@ -541,6 +542,17 @@ function describeFile(content: string, max: number): string | null {
     return truncate(line, max);
   }
   return null;
+}
+
+/**
+ * A skill's `description` is its trigger condition — the convention `_agent/`
+ * skills carry — so it wins over `summary`; body first-line stays the last
+ * resort via {@link describeFile}.
+ */
+function describeSkill(content: string, max: number): string | null {
+  const description = extractDescription(content);
+  if (description) return truncate(description, max);
+  return describeFile(content, max);
 }
 
 function extractNow(
