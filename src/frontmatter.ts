@@ -119,6 +119,29 @@ export function extractDescription(content: string): string | null {
   return extractScalarField(content, "description") ?? extractScalarField(content, "summary");
 }
 
+/**
+ * Parse the leading YAML frontmatter block into a plain object.
+ *
+ * Returns null when there is no block or the YAML is malformed. Unknown fields
+ * are preserved — the schema is extensible by design (`additionalProperties`),
+ * and consumers copying frontmatter forward (e.g. skill-pointer generation)
+ * must not drop fields they don't recognize.
+ */
+export function parseFrontmatter(content: string): Record<string, unknown> | null {
+  const block = frontmatterBlock(content);
+  if (!block) return null;
+  const source = block.lines
+    .slice(1, block.endLineIndex)
+    .map((line) => line.replace(/\r$/, ""))
+    .join("\n");
+  const doc = parseDocument(source);
+  if (doc.errors.length) return null;
+  const value: unknown = doc.toJS();
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
 /** Read a single scalar frontmatter field, handling folded/literal blocks. */
 function extractScalarField(content: string, field: string): string | null {
   if (!content.startsWith(`${DELIM}\n`) && !content.startsWith(`${DELIM}\r\n`)) {

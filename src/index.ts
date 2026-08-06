@@ -24,9 +24,11 @@ export {
   assembleAwareness,
   assembleContentAwareness,
   renderContentAwareness,
+  discoverSkillEntries,
   CONTENT_AWARENESS_SECTIONS,
 } from "./awareness.js";
 export type {
+  SkillEntry,
   AssembleAwarenessOpts,
   AssembleContentAwarenessOpts,
   RenderContentAwarenessOpts,
@@ -108,6 +110,7 @@ export {
   composeFrontmatter,
   extractSummary,
   extractDescription,
+  parseFrontmatter,
   inspectFrontmatterSyntax,
 } from "./frontmatter.js";
 export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
