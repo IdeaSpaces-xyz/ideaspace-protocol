@@ -482,17 +482,26 @@ function buildStackedContractEntries(
   return entries;
 }
 
+/** One discovered `_agent/skills/` entry — either form — content unread. */
+export interface SkillEntry {
+  /** Skill name: flat-file basename or directory name. */
+  name: string;
+  /** Absolute path to the skill's entry point (`<name>.md` or `<name>/SKILL.md`). */
+  path: string;
+  /** Absolute directory carrying the `_agent/` this skill resolved from. */
+  level: string;
+}
+
 /**
- * Skills composed along the root → position stack: the available set is the
- * union of each level's `_agent/skills/` entries — flat `<name>.md` files and
- * Agent Skills-style `<name>/SKILL.md` directories — with a deeper same-named
- * skill shadowing its ancestor's. `levels` is ordered root-first.
+ * Discover `_agent/skills/` entries across contract levels (root-first): flat
+ * `<name>.md` files and Agent Skills-style `<name>/SKILL.md` directories. At
+ * one level the directory form wins over a same-named flat file; across
+ * levels a deeper same-named skill shadows its ancestor's. `README.md` is the
+ * folder's surface, never an entry; a directory without `SKILL.md` is a plain
+ * asset folder. Content is not read — callers decide what to load.
  */
-async function readSkills(
-  levels: string[],
-  max: number,
-): Promise<ContentAwarenessSkill[]> {
-  const byName = new Map<string, ContentAwarenessSkill>();
+export async function discoverSkillEntries(levels: string[]): Promise<SkillEntry[]> {
+  const byName = new Map<string, SkillEntry>();
   for (const dir of levels) {
     const skillsDir = join(dir, "_agent", "skills");
     let dirents: Array<{ name: string; isFile: () => boolean; isDirectory: () => boolean }>;
@@ -501,24 +510,14 @@ async function readSkills(
     } catch {
       continue;
     }
-    // Flat form: <name>.md. README.md is the folder's surface, not an ability.
     const flat = dirents
       .filter((e) => e.isFile() && e.name.endsWith(".md") && e.name !== "README.md")
       .map((e) => e.name)
       .sort();
     for (const file of flat) {
-      const path = join(skillsDir, file);
       const name = file.replace(/\.md$/, "");
-      try {
-        const content = await fs.readFile(path, "utf-8");
-        byName.set(name, { name, path, level: dir, summary: describeSkill(content, max) });
-      } catch {
-        byName.set(name, { name, path, level: dir, summary: null });
-      }
+      byName.set(name, { name, path: join(skillsDir, file), level: dir });
     }
-    // Agent Skills standard form: <name>/SKILL.md plus assets. Canonical, so at
-    // the same level it wins over a same-named flat file (processed after).
-    // A directory without SKILL.md is not a skill — skipped, never an error.
     const skillDirs = dirents
       .filter((e) => e.isDirectory())
       .map((e) => e.name)
@@ -526,14 +525,37 @@ async function readSkills(
     for (const name of skillDirs) {
       const path = join(skillsDir, name, "SKILL.md");
       try {
-        const content = await fs.readFile(path, "utf-8");
-        byName.set(name, { name, path, level: dir, summary: describeSkill(content, max) });
+        await fs.access(path);
+        byName.set(name, { name, path, level: dir });
       } catch {
         // no SKILL.md — plain asset folder, not a skill
       }
     }
   }
   return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Skills composed along the root → position stack, with summaries: the
+ * discovered entries ({@link discoverSkillEntries}) read and described —
+ * `description` (the trigger) first, `summary`, then first body line. An
+ * entry whose file cannot be read surfaces name-only rather than vanishing.
+ */
+async function readSkills(
+  levels: string[],
+  max: number,
+): Promise<ContentAwarenessSkill[]> {
+  const entries = await discoverSkillEntries(levels);
+  return Promise.all(
+    entries.map(async ({ name, path, level }) => {
+      try {
+        const content = await fs.readFile(path, "utf-8");
+        return { name, path, level, summary: describeSkill(content, max) };
+      } catch {
+        return { name, path, level, summary: null };
+      }
+    }),
+  );
 }
 
 async function readActivity(

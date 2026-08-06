@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { stripFrontmatter, composeFrontmatter, extractSummary, extractDescription, inspectFrontmatterSyntax } from "./frontmatter.js";
+import { stripFrontmatter, composeFrontmatter, extractSummary, extractDescription, parseFrontmatter, inspectFrontmatterSyntax } from "./frontmatter.js";
 
 describe("stripFrontmatter", () => {
   it("returns body when frontmatter present", () => {
@@ -277,5 +277,40 @@ describe("extractDescription", () => {
 
   it("returns null when neither field exists", () => {
     expect(extractDescription("---\nname: x\n---\nBody")).toBeNull();
+  });
+});
+
+describe("parseFrontmatter", () => {
+  it("parses the full block including unknown and structured fields", () => {
+    const input = [
+      "---",
+      "name: pdf-report",
+      "description: Render a PDF report.",
+      "allowed-tools: Read, Bash",
+      "license: MIT",
+      "metadata:",
+      "  author: alice",
+      "---",
+      "# Body",
+    ].join("\n");
+    expect(parseFrontmatter(input)).toEqual({
+      name: "pdf-report",
+      description: "Render a PDF report.",
+      "allowed-tools": "Read, Bash",
+      license: "MIT",
+      metadata: { author: "alice" },
+    });
+  });
+
+  it("returns null without a frontmatter block", () => {
+    expect(parseFrontmatter("# Just a doc")).toBeNull();
+  });
+
+  it("returns null on malformed yaml", () => {
+    expect(parseFrontmatter("---\nname: [broken\n---\nBody")).toBeNull();
+  });
+
+  it("returns null when the block is not a map", () => {
+    expect(parseFrontmatter("---\n- a\n- b\n---\nBody")).toBeNull();
   });
 });
