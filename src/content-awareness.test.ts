@@ -380,6 +380,55 @@ describe("Content awareness manifest", () => {
     );
   });
 
+  it("discovers Agent Skills-style skill directories beside flat files", async () => {
+    await writeAgent({ "foundation.md": "Foundation" });
+    const skillsDir = join(tmp, "_agent", "skills");
+    // Flat skill that a same-named directory form should shadow.
+    await fs.mkdir(skillsDir, { recursive: true });
+    await fs.writeFile(
+      join(skillsDir, "review.md"),
+      "---\nname: Review\ndescription: Flat review form.\n---\n# Review",
+      "utf-8",
+    );
+    // Standard directory skill with an asset — copied in as users have it.
+    await fs.mkdir(join(skillsDir, "pdf-report", "scripts"), { recursive: true });
+    await fs.writeFile(
+      join(skillsDir, "pdf-report", "SKILL.md"),
+      "---\nname: pdf-report\ndescription: Render a PDF report from collected notes.\n---\n# PDF report",
+      "utf-8",
+    );
+    await fs.writeFile(join(skillsDir, "pdf-report", "scripts", "render.sh"), "#!/bin/sh\n", "utf-8");
+    // Directory form beats the flat file of the same name.
+    await fs.mkdir(join(skillsDir, "review"), { recursive: true });
+    await fs.writeFile(
+      join(skillsDir, "review", "SKILL.md"),
+      "---\nname: review\ndescription: Directory review form wins.\n---\n# Review",
+      "utf-8",
+    );
+    // A plain asset folder without SKILL.md is not a skill.
+    await fs.mkdir(join(skillsDir, "notes"), { recursive: true });
+    await fs.writeFile(join(skillsDir, "notes", "scratch.md"), "# scratch", "utf-8");
+
+    const manifest = await assembleContentAwareness({
+      position: tmp,
+      lastSha: null,
+    });
+    const canonicalTmp = await fs.realpath(tmp);
+
+    expect(manifest?.skills).toMatchObject([
+      {
+        name: "pdf-report",
+        path: join(canonicalTmp, "_agent", "skills", "pdf-report", "SKILL.md"),
+        summary: "Render a PDF report from collected notes.",
+      },
+      {
+        name: "review",
+        path: join(canonicalTmp, "_agent", "skills", "review", "SKILL.md"),
+        summary: "Directory review form wins.",
+      },
+    ]);
+  });
+
   it("reads the seen ref by default and bounds activity in the manifest", async () => {
     await writeAgent({
       "foundation.md": "Foundation",
