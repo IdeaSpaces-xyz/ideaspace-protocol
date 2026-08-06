@@ -26,7 +26,7 @@ An `_agent/` folder may carry:
 | `now.md` | what's active | any position |
 | `next.md` | what's queued | any position |
 
-Optional: `schema.md` (the shape of Notes in this folder — guidance, not validation), and subfolders `skills/` (how to do), `perspectives/` (how to see), `<agent-id>/` (per-agent records, gitignored).
+Optional: `schema.md` (the shape of Notes in this folder — guidance, not validation), and subfolders `skills/` (how to do — flat `<name>.md` files or Agent Skills-style `<name>/SKILL.md` directories, so existing skills can be copied in unchanged), `perspectives/` (how to see), `<agent-id>/` (per-agent records, gitignored).
 
 - **Nothing is strictly required.** A branch may carry only `now.md`.
 - **A named-but-absent file is a drift signal, not an error** — surface the gap, don't silently fill it.
