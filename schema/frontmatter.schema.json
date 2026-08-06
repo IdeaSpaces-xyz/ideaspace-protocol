@@ -13,6 +13,10 @@
       "type": "string",
       "description": "What this is about, compressed. Orients a reader without querying anything."
     },
+    "description": {
+      "type": "string",
+      "description": "When this applies — the trigger condition. The convention `_agent/skills/` entries carry (per the open Agent Skills spec, where it is the field an agent matches on); awareness prefers it over `summary` for skills. Ordinary knowledge Notes use `summary`."
+    },
     "attached_to": {
       "type": "string",
       "description": "A SINGLE typed link to the entity this Note is about (subject, not provenance), written `<type>:<id>`. One value by design — the inverse fan-in (a thing having many Notes) is the platform's job, not the file's. The type namespace is PLATFORM-DEFINED and open, like the underscore extension point: the protocol fixes only the `<type>:<id>` shape; a platform declares which types it resolves.",

@@ -154,12 +154,12 @@ describe("assembleAwareness", () => {
     expect(block).not.toContain("Operating skills:");
   });
 
-  it("falls back to name-only when a skill file can't be read", async () => {
+  it("treats a directory named like a flat skill as a directory, not a broken file", async () => {
     await makeAgent(tmp, { "purpose.md": "p" });
     const skillsDir = join(tmp, "_agent", "skills");
     await fs.mkdir(skillsDir, { recursive: true });
-    // Create a directory whose name ends in .md — readdir picks it up, but
-    // readFile fails with EISDIR. Portable across platforms.
+    // A directory whose name ends in .md is classified by type: it carries no
+    // SKILL.md, so it is a plain folder — not a roster entry, not an error.
     await fs.mkdir(join(skillsDir, "broken.md"), { recursive: true });
     await fs.writeFile(
       join(skillsDir, "good.md"),
@@ -169,9 +169,27 @@ describe("assembleAwareness", () => {
     const space = await findSpaceRoot(tmp);
     const block = await assembleAwareness({ root: space.root!, contract: space.contract });
     expect(block).toContain("Operating skills:");
-    expect(block).toContain("  broken"); // name-only, no dash
-    expect(block).not.toMatch(/^ {2}broken — /m);
+    expect(block).not.toContain("broken");
     expect(block).toContain("  good — A working skill.");
+  });
+
+  it("falls back to name-only when a skill file can't be read", async () => {
+    if (typeof process.getuid === "function" && process.getuid() === 0) return; // root ignores modes
+    await makeAgent(tmp, { "purpose.md": "p" });
+    const skillsDir = join(tmp, "_agent", "skills");
+    await fs.mkdir(skillsDir, { recursive: true });
+    const locked = join(skillsDir, "locked.md");
+    await fs.writeFile(locked, "---\nname: Locked\nsummary: Unreadable.\n---\n", "utf-8");
+    await fs.chmod(locked, 0o000);
+    try {
+      const space = await findSpaceRoot(tmp);
+      const block = await assembleAwareness({ root: space.root!, contract: space.contract });
+      expect(block).toContain("Operating skills:");
+      expect(block).toContain("  locked"); // name-only, no dash
+      expect(block).not.toMatch(/^ {2}locked — /m);
+    } finally {
+      await fs.chmod(locked, 0o644); // let afterEach rm succeed everywhere
+    }
   });
 
   it("truncates long summaries with ellipsis", async () => {

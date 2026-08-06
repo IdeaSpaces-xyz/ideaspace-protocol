@@ -484,8 +484,9 @@ function buildStackedContractEntries(
 
 /**
  * Skills composed along the root → position stack: the available set is the
- * union of each level's `_agent/skills/*.md`, a deeper same-named skill
- * shadowing its ancestor's. `levels` is ordered root-first.
+ * union of each level's `_agent/skills/` entries — flat `<name>.md` files and
+ * Agent Skills-style `<name>/SKILL.md` directories — with a deeper same-named
+ * skill shadowing its ancestor's. `levels` is ordered root-first.
  */
 async function readSkills(
   levels: string[],
@@ -494,16 +495,18 @@ async function readSkills(
   const byName = new Map<string, ContentAwarenessSkill>();
   for (const dir of levels) {
     const skillsDir = join(dir, "_agent", "skills");
-    let entries: string[];
+    let dirents: Array<{ name: string; isFile: () => boolean; isDirectory: () => boolean }>;
     try {
-      entries = (await fs.readdir(skillsDir))
-        // README.md is the folder's surface, not an ability — keep it out of the roster.
-        .filter((name) => name.endsWith(".md") && name !== "README.md")
-        .sort();
+      dirents = await fs.readdir(skillsDir, { withFileTypes: true });
     } catch {
       continue;
     }
-    for (const file of entries) {
+    // Flat form: <name>.md. README.md is the folder's surface, not an ability.
+    const flat = dirents
+      .filter((e) => e.isFile() && e.name.endsWith(".md") && e.name !== "README.md")
+      .map((e) => e.name)
+      .sort();
+    for (const file of flat) {
       const path = join(skillsDir, file);
       const name = file.replace(/\.md$/, "");
       try {
@@ -511,6 +514,22 @@ async function readSkills(
         byName.set(name, { name, path, level: dir, summary: describeSkill(content, max) });
       } catch {
         byName.set(name, { name, path, level: dir, summary: null });
+      }
+    }
+    // Agent Skills standard form: <name>/SKILL.md plus assets. Canonical, so at
+    // the same level it wins over a same-named flat file (processed after).
+    // A directory without SKILL.md is not a skill — skipped, never an error.
+    const skillDirs = dirents
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort();
+    for (const name of skillDirs) {
+      const path = join(skillsDir, name, "SKILL.md");
+      try {
+        const content = await fs.readFile(path, "utf-8");
+        byName.set(name, { name, path, level: dir, summary: describeSkill(content, max) });
+      } catch {
+        // no SKILL.md — plain asset folder, not a skill
       }
     }
   }
