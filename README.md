@@ -72,6 +72,18 @@ const stable = renderContentAwareness(manifest, {
 });
 ```
 
+Inspect one Markdown document without defaulting to its full body:
+
+```ts
+import { inspectMarkdownFile } from "@ideaspaces/protocol";
+
+const outline = await inspectMarkdownFile("work/Next.md", { mode: "outline" });
+const section = await inspectMarkdownFile("work/Next.md", {
+  mode: "section",
+  heading: "Current window",
+});
+```
+
 Local harnesses can also read neutral, unrendered workspace handles without
 assigning protocol-level home/mount/POV roles:
 
