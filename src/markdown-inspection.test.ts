@@ -100,6 +100,7 @@ describe("inspectMarkdown outline", () => {
         "~~~",
         "### Hidden tilde heading",
         "~~~",
+        "    ## Indented code heading",
         "## Also visible",
       ].join("\n"),
       { mode: "outline" },
@@ -108,7 +109,7 @@ describe("inspectMarkdown outline", () => {
       mode: "outline",
       headings: [
         { level: 1, text: "Visible", line: 1, occurrence: 1 },
-        { level: 2, text: "Also visible", line: 8, occurrence: 1 },
+        { level: 2, text: "Also visible", line: 9, occurrence: 1 },
       ],
     });
   });

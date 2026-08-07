@@ -140,7 +140,10 @@ export function inspectMarkdown(
   };
 }
 
-/** Read and inspect a local Markdown file without network or writes. */
+/**
+ * Read and inspect a local Markdown file without network or writes.
+ * Filesystem errors propagate so the host can apply its own error contract.
+ */
 export async function inspectMarkdownFile(
   path: string,
   request: MarkdownInspectionRequest,

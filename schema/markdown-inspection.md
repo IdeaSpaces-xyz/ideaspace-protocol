@@ -6,7 +6,7 @@ Portable, read-only inspection lets a surface deepen into one Markdown document 
 summary → outline → selected section → full document
 ```
 
-This is a reader capability, not a new repository format or conformance requirement. It performs no network access and no writes.
+This is a reader capability, not a new repository format or conformance requirement. It performs no network access and no writes. Local file-read errors propagate to the caller so each host can apply its own permission, missing-path, and presentation contract.
 
 ## Requests
 
