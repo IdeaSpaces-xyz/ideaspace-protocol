@@ -7,7 +7,8 @@ import type {
   SpaceContract,
 } from "./space.js";
 import { composeContractAlongPath } from "./space.js";
-import { stripFrontmatter, extractSummary, extractDescription } from "./frontmatter.js";
+import { stripFrontmatter, extractDescription } from "./frontmatter.js";
+import { summarizeMarkdown } from "./markdown-inspection.js";
 import {
   gitState,
   recentActivity,
@@ -574,15 +575,8 @@ async function readActivity(
 }
 
 function describeFile(content: string, max: number): string | null {
-  const summary = extractSummary(content);
-  if (summary) return truncate(summary, max);
-  const body = stripFrontmatter(content);
-  for (const raw of body.split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    return truncate(line, max);
-  }
-  return null;
+  const summary = summarizeMarkdown(content);
+  return summary ? truncate(summary, max) : null;
 }
 
 /**

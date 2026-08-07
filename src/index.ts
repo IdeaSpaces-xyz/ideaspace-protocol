@@ -115,6 +115,24 @@ export {
 } from "./frontmatter.js";
 export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
 
+// Progressive-disclosure Markdown inspection — summary, ATX outline, or one
+// exact section. Pure string inspection plus a local read-only file wrapper.
+export {
+  inspectMarkdown,
+  inspectMarkdownFile,
+  summarizeMarkdown,
+} from "./markdown-inspection.js";
+export type {
+  MarkdownInspectionMode,
+  MarkdownHeading,
+  MarkdownInspectionRequest,
+  MarkdownSummaryInspection,
+  MarkdownOutlineInspection,
+  MarkdownSectionQuery,
+  MarkdownSectionInspection,
+  MarkdownInspection,
+} from "./markdown-inspection.js";
+
 // Conformance — check whether a directory is a conformant ideaspace. Read-only;
 // validates the shape against SPEC.md + the runtime-loaded frontmatter schema.
 export { validateSpace } from "./conformance.js";
