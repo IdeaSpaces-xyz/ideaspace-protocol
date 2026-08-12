@@ -1,6 +1,6 @@
 # The `_agent/` contract
 
-> The checkable form of the space contract. Normative prose is [`../SPEC.md`](../SPEC.md); this is the enumeration tooling validates against. **Provisional, v0.5.0** — full-stack fractal composition made explicit (ancestors retained, nearest wins, skills union).
+> The checkable form of the space contract. Normative prose is [`../SPEC.md`](../SPEC.md); this is the enumeration tooling validates against. **Provisional, v0.6.0** — portable skill identity joins full-stack fractal composition (ancestors retained, nearest wins, skills union).
 
 ## Positions and content
 
@@ -28,9 +28,12 @@ An `_agent/` folder may carry:
 
 Optional: `schema.md` (the shape of Notes in this folder — guidance, not validation), and subfolders `skills/` (how to do — flat `<name>.md` files or Agent Skills-style `<name>/SKILL.md` directories, so existing skills can be copied in unchanged), `perspectives/` (how to see), `<agent-id>/` (per-agent records, gitignored).
 
+A skill's entry id (`<name>`) and frontmatter `name` MUST be identical. The id is 1–64 lowercase ASCII letters, digits, or single hyphens, with no leading, trailing, or consecutive hyphen (`^[a-z0-9]+(?:-[a-z0-9]+)*$`). Human-readable capitalization and spaces belong in the Markdown heading, not the machine id.
+
 - **Nothing is strictly required.** A branch may carry only `now.md`.
 - **A named-but-absent file is a drift signal, not an error** — surface the gap, don't silently fill it.
 - **Keep `_agent/` small** — it is always loaded. Knowledge carries weight in `.md` files.
+- **Skill ids are portable** — validators report an invalid entry id, invalid frontmatter `name`, or a mismatch between them as an error.
 
 ## Fractal composition
 

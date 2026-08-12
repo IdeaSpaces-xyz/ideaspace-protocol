@@ -4,9 +4,9 @@
  * This checks the *shape* a space must have per [`../SPEC.md`](../SPEC.md)'s
  * Conformance section and [`../schema/agent-contract.md`](../schema/agent-contract.md):
  * a root `_agent/` (it's a space at all), the named-but-absent contract files as
- * drift signals, knowledge `.md` frontmatter against
- * [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json), and
- * graceful-ignore of underscore-prefixed infrastructure folders.
+ * drift signals, portable `_agent/skills/` identities, knowledge `.md`
+ * frontmatter against [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json),
+ * and graceful-ignore of underscore-prefixed infrastructure folders.
  *
  * It dogfoods the reference library — `readContract` / `CONTRACT_FILES` for the
  * `_agent/` contract and `inspectFrontmatterSyntax` for malformed-frontmatter
@@ -22,6 +22,7 @@ import { promises as fs } from "node:fs";
 import { join, relative } from "node:path";
 import { parseDocument } from "yaml";
 import { CONTRACT_FILES, readContract } from "./space.js";
+import { discoverSkillEntries } from "./awareness.js";
 import { inspectFrontmatterSyntax } from "./frontmatter.js";
 
 export interface ConformanceIssue {
@@ -43,6 +44,9 @@ export interface ConformanceReport {
 
 /** Root contract files whose absence is surfaced as a drift signal (not noise). */
 const DRIFT_CONTRACT_FILES = ["guide", "purpose", "now"] as const;
+
+/** Portable Agent Skills id: 1–64 lowercase ASCII alphanumerics, single-hyphen joined. */
+const SKILL_NAME_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** Loaded subset of the frontmatter schema's key constraints. */
 interface SchemaConstraints {
@@ -94,7 +98,10 @@ export async function validateSpace(root: string): Promise<ConformanceReport> {
     }
   }
 
-  // 3. Knowledge `.md` frontmatter against the runtime-loaded schema.
+  // 3. `_agent/skills/` ids and frontmatter names must be portable and identical.
+  await checkSkills(root, issues);
+
+  // 4. Knowledge `.md` frontmatter against the runtime-loaded schema.
   const constraints = await loadSchemaConstraints();
   if (constraints.loadError) {
     issues.push({
@@ -217,6 +224,105 @@ async function checkNote(
   }
 }
 
+/** Check skill entry ids and frontmatter names across this space, excluding nested spaces. */
+async function checkSkills(root: string, issues: ConformanceIssue[]): Promise<void> {
+  for await (const entry of walkSkillEntries(root)) {
+    const rel = relative(root, entry.path);
+    if (!isPortableSkillName(entry.name)) {
+      issues.push({
+        level: "error",
+        rule: "skill-id-invalid",
+        path: rel,
+        detail: `skill id \`${entry.name}\` must match ${SKILL_NAME_RE.source} and be at most 64 characters`,
+      });
+    }
+
+    const content = await fs.readFile(entry.path, "utf-8");
+    const syntax = inspectFrontmatterSyntax(content);
+    if (syntax.status === "malformed") {
+      issues.push({
+        level: "error",
+        rule: "skill-frontmatter-malformed",
+        path: rel,
+        detail: `skill frontmatter does not parse: ${syntax.message}`,
+      });
+      continue;
+    }
+
+    const fm = parseFrontmatter(content);
+    if (fm === null || !("name" in fm)) {
+      issues.push({
+        level: "error",
+        rule: "skill-name-missing",
+        path: rel,
+        detail: "skill frontmatter must declare `name`",
+      });
+      continue;
+    }
+    if (typeof fm.name !== "string") {
+      issues.push({
+        level: "error",
+        rule: "skill-name-type",
+        path: rel,
+        detail: "skill frontmatter `name` must be a string",
+      });
+      continue;
+    }
+    if (!isPortableSkillName(fm.name)) {
+      issues.push({
+        level: "error",
+        rule: "skill-name-invalid",
+        path: rel,
+        detail: `skill frontmatter \`name: ${fm.name}\` must match ${SKILL_NAME_RE.source} and be at most 64 characters`,
+      });
+    }
+    if (fm.name !== entry.name) {
+      issues.push({
+        level: "error",
+        rule: "skill-name-mismatch",
+        path: rel,
+        detail: `skill frontmatter \`name: ${fm.name}\` must equal entry id \`${entry.name}\``,
+      });
+    }
+  }
+}
+
+function isPortableSkillName(name: string): boolean {
+  return name.length <= 64 && SKILL_NAME_RE.test(name);
+}
+
+interface SkillEntrypoint {
+  /** Identity from the flat-file stem or Agent Skills directory. */
+  name: string;
+  path: string;
+}
+
+async function* walkSkillEntries(root: string): AsyncGenerator<SkillEntrypoint> {
+  yield* walkSkillPositions(root, true);
+}
+
+async function* walkSkillPositions(dir: string, isRoot: boolean): AsyncGenerator<SkillEntrypoint> {
+  if (!isRoot && await isFile(join(dir, "_agent", "foundation.md"))) return;
+
+  // Reuse awareness's canonical single-level scanner so directory-vs-flat
+  // precedence, README exclusion, and regular-file checks cannot drift.
+  for (const entry of await discoverSkillEntries([dir])) {
+    yield { name: entry.name, path: entry.path };
+  }
+
+  let children: Array<{ name: string; isDirectory: () => boolean }>;
+  try {
+    children = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of children.sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith(".") || entry.name.startsWith("_") || entry.name === "node_modules") continue;
+    yield* walkSkillPositions(join(dir, entry.name), false);
+  }
+}
+
 /** Parse the leading frontmatter block into a plain object, or null if absent/non-object. */
 function parseFrontmatter(content: string): Record<string, unknown> | null {
   const DELIM = "---";
@@ -249,14 +355,19 @@ async function* walkKnowledge(
   root: string,
   issues: ConformanceIssue[],
 ): AsyncGenerator<string> {
-  yield* walkDir(root, root, issues);
+  yield* walkDir(root, root, issues, true);
 }
 
 async function* walkDir(
   dir: string,
   root: string,
   issues: ConformanceIssue[],
+  isRoot: boolean,
 ): AsyncGenerator<string> {
+  // A deeper foundation starts another space. Its knowledge and agent context
+  // are validated from that root, never as part of its parent's report.
+  if (!isRoot && await isFile(join(dir, "_agent", "foundation.md"))) return;
+
   const entries = await fs.readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const abs = join(dir, entry.name);
@@ -275,7 +386,7 @@ async function* walkDir(
         continue;
       }
       if (entry.name === ".git" || entry.name === "node_modules") continue;
-      yield* walkDir(abs, root, issues);
+      yield* walkDir(abs, root, issues, false);
     } else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "README.md") {
       yield abs;
     }
@@ -285,6 +396,14 @@ async function* walkDir(
 async function isDirectory(path: string): Promise<boolean> {
   try {
     return (await fs.stat(path)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+async function isFile(path: string): Promise<boolean> {
+  try {
+    return (await fs.stat(path)).isFile();
   } catch {
     return false;
   }

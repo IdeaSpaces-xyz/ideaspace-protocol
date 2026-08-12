@@ -118,7 +118,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.5.0 — early and provisional.** This minor release makes fractal composition full-stack (`ComposedSpace.stack`: ancestors retained, nearest instruction wins, skills union with deeper shadowing) and ships the canonical foundation core — the conduct seed scaffolds compose into a new space's `_agent/foundation.md`, exported as `FOUNDATION_CORE` and as a raw `templates/` asset for non-TypeScript runtimes. Pin a version and expect changes before 1.0, including evolution of the open `attached_to` type vocabulary.
+**v0.6.0 — early and provisional.** This minor release makes `_agent/skills/` identity portable across Agent Skills harnesses: the entry id and frontmatter `name` are one lowercase-hyphen id, while display titles live in Markdown headings. The conformance kit checks both entry forms and stops at nested-space foundations. It builds on v0.5.0's full-stack fractal composition and canonical foundation core. Pin a version and expect changes before 1.0, including evolution of the open `attached_to` type vocabulary.
 
 ## Develop
 

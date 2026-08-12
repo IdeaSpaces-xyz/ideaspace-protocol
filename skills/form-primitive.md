@@ -13,18 +13,20 @@ Help the user create a reusable instruction that shapes how you work together. N
 
 ## The L1 Contract
 
-Every primitive needs frontmatter with `name` and `description`. The description tells the agent when to use it — like a trigger condition.
+Every primitive needs frontmatter with `name` and `description`. For an `_agent/skills/` entry, `name` is the portable skill id: it must match the flat-file stem or skill-directory name and use 1–64 lowercase ASCII letters, digits, or single hyphens (no leading, trailing, or consecutive hyphens). Put the human-readable title in the Markdown heading. The description tells the agent when to use it — like a trigger condition.
 
 ```yaml
 ---
-name: Weekly Review
+name: weekly-review
 description: >
   Review the week's captures, surface patterns, update Now.
   Use at the end of each week or when the user asks to reflect.
 ---
+
+# Weekly Review
 ```
 
-The name says what it is. The description says when to use it. Both are required. Both show up when browsing the tree. The description is how the agent decides "this is relevant right now."
+The name identifies the skill across harnesses. The heading says what it is to a reader. The description says when to use it. All are required for a skill, and the description is how the agent decides "this is relevant right now."
 
 ## Elicitation
 
@@ -124,6 +126,7 @@ Do **not** create `soul.md` or `agent.md` — nothing loads them; character belo
 
 Before saving, check:
 - Does it have `name` and `description` in frontmatter?
+- For a skill, does `name` match its file stem or directory and satisfy `^[a-z0-9]+(?:-[a-z0-9]+)*$` within 64 characters?
 - Does the description clearly say when to use it?
 - Is the instruction clear enough that you could follow it without asking questions?
 - Would it produce consistent results across different situations?

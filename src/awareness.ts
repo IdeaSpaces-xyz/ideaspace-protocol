@@ -526,10 +526,11 @@ export async function discoverSkillEntries(levels: string[]): Promise<SkillEntry
     for (const name of skillDirs) {
       const path = join(skillsDir, name, "SKILL.md");
       try {
-        await fs.access(path);
-        byName.set(name, { name, path, level: dir });
+        if ((await fs.stat(path)).isFile()) {
+          byName.set(name, { name, path, level: dir });
+        }
       } catch {
-        // no SKILL.md — plain asset folder, not a skill
+        // no regular SKILL.md — plain asset folder, not a skill
       }
     }
   }
