@@ -38,6 +38,9 @@ describe("validateSpace — reference space", () => {
     expect(errors).toEqual([]);
     expect(report.ok).toBe(true);
     expect(report.notesChecked).toBeGreaterThan(0);
+    expect(
+      await fs.readFile(join(referenceSpace, "_agent", "skills", "weekly-review.md"), "utf-8"),
+    ).toContain("name: weekly-review");
   });
 
   it("records the unknown underscore folder as a graceful skip (warn, not error)", async () => {
@@ -117,6 +120,78 @@ describe("validateSpace — frontmatter violations", () => {
     const rules = report.issues.filter((i) => i.level === "error").map((i) => i.rule);
     expect(rules).toContain("name-type");
     expect(rules).toContain("tags-type");
+  });
+});
+
+describe("validateSpace — skill identities", () => {
+  it("accepts matching portable names in both skill entry forms", async () => {
+    await makeAgent(tmp, { "foundation.md": "# Foundation" });
+    const skills = join(tmp, "_agent", "skills");
+    await fs.mkdir(join(skills, "pdf-report"), { recursive: true });
+    await fs.writeFile(
+      join(skills, "weekly-review.md"),
+      "---\nname: weekly-review\ndescription: Review the week.\n---\n# Weekly Review\n",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(skills, "pdf-report", "SKILL.md"),
+      "---\nname: pdf-report\ndescription: Render a PDF.\n---\n# PDF Report\n",
+      "utf-8",
+    );
+
+    const report = await validateSpace(tmp);
+    expect(report.issues.filter((i) => i.rule.startsWith("skill-"))).toEqual([]);
+    expect(report.ok).toBe(true);
+  });
+
+  it("rejects invalid or mismatched skill names and stops at nested spaces", async () => {
+    await makeAgent(tmp, { "foundation.md": "# Foundation" });
+    const skills = join(tmp, "_agent", "skills");
+    await fs.mkdir(skills, { recursive: true });
+    await fs.writeFile(
+      join(skills, "weekly-review.md"),
+      "---\nname: Weekly Review\ndescription: Review the week.\n---\n# Weekly Review\n",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(skills, "Bad_Name.md"),
+      "---\nname: other-name\ndescription: Invalid id and mismatch.\n---\n# Bad\n",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(skills, "missing.md"),
+      "---\ndescription: Missing name.\n---\n# Missing\n",
+      "utf-8",
+    );
+    await fs.mkdir(join(skills, "Bad-Directory"), { recursive: true });
+    await fs.writeFile(
+      join(skills, "Bad-Directory", "SKILL.md"),
+      "---\nname: other-directory\ndescription: Invalid directory id and mismatch.\n---\n# Bad\n",
+      "utf-8",
+    );
+
+    const nested = join(tmp, "nested");
+    await makeAgent(nested, { "foundation.md": "# Separate space" });
+    await fs.mkdir(join(nested, "_agent", "skills"), { recursive: true });
+    await fs.writeFile(
+      join(nested, "_agent", "skills", "nested.md"),
+      "---\nname: Nested Invalid\ndescription: Belongs to another space.\n---\n",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(nested, "broken.md"),
+      "---\nname: Broken nested knowledge\n# no closing delimiter\n",
+      "utf-8",
+    );
+
+    const report = await validateSpace(tmp);
+    expect(report.ok).toBe(false);
+    const rules = report.issues.filter((i) => i.level === "error").map((i) => i.rule);
+    expect(rules).toContain("skill-id-invalid");
+    expect(rules).toContain("skill-name-invalid");
+    expect(rules).toContain("skill-name-mismatch");
+    expect(rules).toContain("skill-name-missing");
+    expect(report.issues.some((i) => i.path.includes("nested"))).toBe(false);
   });
 });
 

@@ -3,9 +3,10 @@
 Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`reference-space/`** — a small, known-good conformant ideaspace: a root
-  `_agent/` five-file contract, READMEs along a path, a Note with valid Layer-1+2
-  frontmatter, a `projects/` branch with a partial `_agent/` (fractal
-  composition), and an unknown `_scratch/` folder (graceful-ignore). Validating it
+  `_agent/` five-file contract, a portable flat-form `_agent/skills/` entry,
+  READMEs along a path, a Note with valid Layer-1+2 frontmatter, a `projects/`
+  branch with a partial `_agent/` (fractal composition), and an unknown
+  `_scratch/` folder (graceful-ignore). Validating it
   yields zero `error`-level issues.
 
 - **`validateSpace(root)`** — shipped from the reference library
@@ -14,6 +15,7 @@ Makes "conforms to the protocol" testable rather than aspirational.
   section and [`../schema/agent-contract.md`](../schema/agent-contract.md):
 
   - **error** — no root `_agent/` (not a space at all).
+  - **error** — an `_agent/skills/` entry id or frontmatter `name` is not a portable Agent Skills id, or the two do not match.
   - **error** — knowledge `.md` frontmatter that is malformed or violates the
     [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json) key
     constraints (`name`/`summary` strings, `tags` a string array, `attached_to` a
@@ -22,6 +24,9 @@ Makes "conforms to the protocol" testable rather than aspirational.
   - **warn** — drift signals: a missing `foundation.md`, named-but-absent
     contract files (`guide.md`/`purpose.md`/`now.md`), and skipped underscore-prefixed infra
     folders. Drift never fails conformance.
+
+  Validation stops at a descendant `_agent/foundation.md`: that boundary starts
+  another space, whose knowledge and skills are validated from its own root.
 
   It dogfoods the library (`readContract`, `inspectFrontmatterSyntax`) and adds no
   new runtime dependencies. Returns `{ ok, issues, notesChecked }`; `ok` is true

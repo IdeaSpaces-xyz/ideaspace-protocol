@@ -9,7 +9,7 @@ shape an agent can drop into and orient through.
 
 - **Knowledge** lives in `.md` files — see [`notes/`](../notes/) and the
   [`projects/`](../projects/) branch.
-- **How to work** lives here in `_agent/` — see [`guide.md`](guide.md).
+- **How to work** lives here in `_agent/` — see [`guide.md`](guide.md) and the portable [`weekly-review`](skills/weekly-review.md) skill.
 - **Why** in [`purpose.md`](purpose.md); **what's active** in [`now.md`](now.md).
 
 Underscore folders other than `_agent/` are infrastructure; ignore any you don't

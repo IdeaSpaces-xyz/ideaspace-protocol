@@ -405,9 +405,11 @@ describe("Content awareness manifest", () => {
       "---\nname: review\ndescription: Directory review form wins.\n---\n# Review",
       "utf-8",
     );
-    // A plain asset folder without SKILL.md is not a skill.
+    // A plain asset folder without SKILL.md is not a skill. Nor is a directory
+    // merely named SKILL.md — the entry point must be a regular file.
     await fs.mkdir(join(skillsDir, "notes"), { recursive: true });
     await fs.writeFile(join(skillsDir, "notes", "scratch.md"), "# scratch", "utf-8");
+    await fs.mkdir(join(skillsDir, "broken", "SKILL.md"), { recursive: true });
 
     const manifest = await assembleContentAwareness({
       position: tmp,

@@ -44,7 +44,7 @@ Everything that is not underscore-prefixed is knowledge. `README.md` describes t
 | `now.md` | What's active. |
 | `next.md` | What's queued. |
 
-Optional: `schema.md` (the shape of Notes in this folder — guidance, not validation), `skills/` (how to do — flat `<name>.md` files or [Agent Skills](https://agentskills.io)-style `<name>/SKILL.md` directories with assets), `perspectives/` (how to see), `<agent-id>/` (per-agent records).
+Optional: `schema.md` (the shape of Notes in this folder — guidance, not validation), `skills/` (how to do — flat `<name>.md` files or [Agent Skills](https://agentskills.io)-style `<name>/SKILL.md` directories with assets), `perspectives/` (how to see), `<agent-id>/` (per-agent records). A skill's identity is `<name>`: 1–64 lowercase ASCII letters, digits, or single hyphens, with no leading, trailing, or consecutive hyphen. Its frontmatter `name` MUST equal that identity; a human-readable title belongs in the Markdown heading.
 
 Not every position needs all of them — a branch might carry only `now.md`. **Give `_agent/` a good surface.** "Always loaded" means loaded at depth 0 — the surface — with depth disclosed on demand and closed again when it would overwhelm context. Small is the mindset, not a limit: `_agent/` can grow when there is need, and progressive disclosure keeps a rich one from flooding attention. Knowledge still carries weight in `.md` files; `_agent/` carries how-we-work.
 
@@ -126,6 +126,7 @@ A tool or agent that claims to inhabit ideaspaces:
 - Treat `.md` files as knowledge and `_agent/` as instruction.
 - Gracefully ignore any `_`-prefixed folder it does not understand (skip, never error).
 - Never commit gitignored paths into the space.
+- Author `_agent/skills/` entry ids and frontmatter names in the portable Agent Skills form, with the two names identical.
 
 **SHOULD**
 - Surface a named-but-absent `_agent/` file as a drift signal rather than silently filling it.
