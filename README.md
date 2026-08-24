@@ -36,7 +36,7 @@ This repository is both the definition and a conformant example. [Browse it as a
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
 | [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the agent operating loop and shared intent skills for orientation, deliberate capture, directional sync, and reflection. |
 | [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
-| [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect contract validation, drift, and the skill catalog. |
+| [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect validation plus the opt-in effect runtime, drift, and the skill catalog. |
 | [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral local-effect vectors shared by independent runtimes. |
 | [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
 
@@ -97,7 +97,7 @@ const home = await readRootHandle(process.cwd());
 const repositories = await readWorkspaceRepositories("../");
 ```
 
-PF0 also exports pure local-effect request/result types and validators, plus the read-only `pathRevision(root, path, git)` fact. `pathRevision` receives a caller-supplied stock-Git runner; the package does not discover an executable. Package-root APIs remain mutation-free — effect implementations opt into a dedicated subpath in the next layer.
+The package root exports pure local-effect request/result types and validators, plus the read-only `pathRevision(root, path, git)` fact. Mutation is available only through the explicit `@ideaspaces/protocol/local-effects` subpath. Both reads and effects receive caller-supplied capabilities; the package never discovers a Git executable.
 
 ```ts
 import { validateWriteMarkdownRequest } from "@ideaspaces/protocol";
@@ -112,6 +112,34 @@ const checked = validateWriteMarkdownRequest({
   stage: true,
 });
 if (!checked.ok) console.error(checked.issues);
+```
+
+```ts
+import { pathRevision, type LocalGitRunner } from "@ideaspaces/protocol";
+import {
+  nodeLocalEffectFileSystem,
+  writeMarkdown,
+} from "@ideaspaces/protocol/local-effects";
+
+// The host chooses and injects a stock-Git runner; the protocol does not
+// discover an executable, identity, credentials, or network configuration.
+declare const git: LocalGitRunner;
+const reviewed = await pathRevision("/canonical/worktree", "notes/a.md", git);
+if (reviewed.status === "ok") {
+  const result = await writeMarkdown(
+    {
+      operation: "write_markdown",
+      root: "/canonical/worktree",
+      path: "notes/a.md",
+      expected_revision: reviewed.revision,
+      frontmatter: { mode: "preserve", set: { name: "A" }, remove: [] },
+      body: "# A\n",
+      stage: true,
+    },
+    { git, filesystem: nodeLocalEffectFileSystem },
+  );
+  console.log(result.status);
+}
 ```
 
 The TypeScript library is the *reference* implementation, not the only one. Other languages conform to the language-neutral core — [`SPEC.md`](SPEC.md), [`schema/`](schema/), and the conformance fixtures.
@@ -135,7 +163,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.7.0 — early and provisional.** This minor release defines one language-neutral local repository effect contract before Rust or TypeScript implementations encode divergent write and commit semantics: `write_markdown`, exact-path `commit_paths`, per-path worktree/index/HEAD revision CAS, stable partial failures, and shared conformance vectors. The package root adds only pure types/validators and read-only `pathRevision`; mutation remains explicit opt-in. It builds on v0.6.0's portable skill identity and v0.5.0's full-stack fractal composition. Pin a version and expect changes before 1.0.
+**v0.8.0 — early and provisional.** The TypeScript reference now executes the v0.7.0 language-neutral local-effect contract through `@ideaspaces/protocol/local-effects`: atomic Markdown writes, exact reviewed-path commits, revision CAS, typed partial failures, injected filesystem/Git capabilities, and all shared vectors. The package root remains mutation-free, and no npm release is implied by the repository version. Pin a version and expect changes before 1.0.
 
 ## Develop
 

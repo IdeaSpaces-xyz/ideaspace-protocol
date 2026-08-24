@@ -66,8 +66,8 @@ export type {
 
 // Local-effect contract — pure request/result types and preflight validators.
 // The package root remains mutation-free: the only executable addition here is
-// the read-only `pathRevision` fact above. Effect implementations opt into a
-// dedicated subpath in the next layer.
+// the read-only `pathRevision` fact above. Mutation is available only through
+// the explicit `@ideaspaces/protocol/local-effects` subpath.
 export {
   validateLocalEffectPath,
   validateWriteMarkdownRequest,
@@ -101,6 +101,10 @@ export type {
   PathRevisionReadResult,
   LocalGitResult,
   LocalGitRunner,
+  LocalEffectFileStat,
+  LocalEffectReadFileSystem,
+  LocalEffectFileSystem,
+  LocalEffectCapabilities,
   LocalEffectValidationIssue,
   LocalEffectValidationResult,
 } from "./local-effects.js";

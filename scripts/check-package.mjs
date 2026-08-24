@@ -52,6 +52,10 @@ const expected = [
   "dist/local-effects.d.ts.map",
   "dist/local-effects.js",
   "dist/local-effects.js.map",
+  "dist/local-effects-runtime.d.ts",
+  "dist/local-effects-runtime.d.ts.map",
+  "dist/local-effects-runtime.js",
+  "dist/local-effects-runtime.js.map",
   "dist/markdown-inspection.d.ts",
   "dist/markdown-inspection.d.ts.map",
   "dist/markdown-inspection.js",
@@ -123,6 +127,7 @@ try {
   const exportKeys = Object.keys(pkg.exports ?? {});
   const expectedExports = [
     ".",
+    "./local-effects",
     "./schema/frontmatter",
     "./schema/local-effects",
     "./conformance/local-effects",
@@ -167,6 +172,7 @@ try {
   const probe = `
     import { createRequire } from "node:module";
     import * as protocol from "@ideaspaces/protocol";
+    import * as localEffects from "@ideaspaces/protocol/local-effects";
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
     const effects = require("@ideaspaces/protocol/conformance/local-effects");
@@ -185,6 +191,17 @@ try {
     ];
     for (const name of required) {
       if (typeof protocol[name] !== "function") throw new Error(\`Missing runtime export: \${name}\`);
+    }
+    for (const name of ["writeMarkdown", "commitPaths"]) {
+      if (name in protocol) throw new Error(\`Mutation leaked through package root: \${name}\`);
+      if (typeof localEffects[name] !== "function") throw new Error(\`Missing local-effect export: \${name}\`);
+    }
+    if (typeof localEffects.nodeLocalEffectFileSystem?.atomicWriteUtf8 !== "function") {
+      throw new Error("Node local-effect filesystem adapter did not load");
+    }
+    const invalidWrite = await localEffects.writeMarkdown(null, {});
+    if (invalidWrite.status !== "error" || invalidWrite.code !== "invalid_request") {
+      throw new Error("Local-effect subpath did not execute its portable validation boundary");
     }
     if (typeof protocol.FOUNDATION_CORE !== "string" || !protocol.FOUNDATION_CORE.includes("**Never:**")) {
       throw new Error("FOUNDATION_CORE export did not load");

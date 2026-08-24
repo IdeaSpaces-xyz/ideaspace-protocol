@@ -2,7 +2,7 @@
 
 Makes "conforms to the protocol" testable rather than aspirational.
 
-- **`local-effects/manifest.json`** — language-neutral PF0 request/result vectors for safe Markdown writes, per-path revision CAS, exact-path commits, frontmatter preservation, ignore/symlink boundaries, bystander preservation, explicit identity, and honest partial failures. Rust, TypeScript, or another runtime materializes and judges the same data; the manifest contains no language-specific API shape.
+- **`local-effects/manifest.json`** — language-neutral request/result vectors for safe Markdown writes, per-path revision CAS, exact-path commits, frontmatter preservation, ignore/symlink boundaries, bystander preservation, explicit identity, and honest partial failures. Rust, TypeScript, or another runtime materializes and judges the same data; the manifest contains no language-specific API shape. The TypeScript reference suite executes every vector and case against isolated real Git repositories through the public effect subpath, with injected stage/commit failures.
 
 - **`reference-space/`** — a small, known-good conformant ideaspace: a root
   `_agent/` five-file contract, a portable flat-form `_agent/skills/` entry,
