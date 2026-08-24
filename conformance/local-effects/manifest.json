@@ -1,0 +1,738 @@
+{
+  "format": "ideaspaces-local-effects/v1",
+  "contents": {
+    "empty": "",
+    "v1": "v1\n",
+    "v2": "v2\n",
+    "v3": "v3\n",
+    "new-note": "# New\n",
+    "unicode-old": "---\nname: Old\n---\n# Old\n",
+    "frontmatter-rich": "---\nname: Old\nunknown_scalar: keep\nunknown_list:\n  - one\n  - two\nunknown_map:\n  nested: true\nobsolete: remove me\n---\n# Old body\n",
+    "frontmatter-malformed": "---\nname: [broken\n---\n# Old\n",
+    "frontmatter-duplicate": "---\nname: One\nname: Two\n---\n# Old\n",
+    "frontmatter-list": "---\n- not\n- a map\n---\n# Old\n",
+    "outside": "outside\n"
+  },
+  "required_coverage": [
+    "unicode_create",
+    "unicode_update",
+    "absolute_path_refusal",
+    "traversal_refusal",
+    "reserved_git_refusal",
+    "literal_pathspec",
+    "target_symlink_refusal",
+    "ancestor_symlink_refusal",
+    "ignored_new_refusal",
+    "tracked_ignored_commit",
+    "frontmatter_preserve_unknown",
+    "frontmatter_remove",
+    "frontmatter_malformed_refusal",
+    "frontmatter_duplicate_refusal",
+    "frontmatter_non_map_refusal",
+    "frontmatter_replace_repair",
+    "revision_absent",
+    "revision_matching",
+    "revision_stale_worktree",
+    "revision_stale_index",
+    "revision_stale_head",
+    "write_stage_partial",
+    "bystanders_preserved",
+    "commit_create",
+    "commit_modify",
+    "commit_plain_delete",
+    "commit_staged_delete",
+    "commit_rename",
+    "commit_mixed_paths",
+    "selected_changed_before_commit",
+    "invalid_multi_path_refuses_all",
+    "commit_failure_partial",
+    "valid_trailers",
+    "invalid_trailers",
+    "conflicting_trailers",
+    "explicit_identity_no_ambient"
+  ],
+  "vectors": [
+    {
+      "id": "write-unicode-create",
+      "covers": ["unicode_create", "revision_absent"],
+      "initial": { "head": {}, "index": {}, "worktree": {}, "ignore": [] },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "notes with spaces/日本語.md",
+        "expected_revision": { "$revision": "reviewed", "path": "notes with spaces/日本語.md" },
+        "frontmatter": { "mode": "preserve", "set": { "name": "日本語" }, "remove": [] },
+        "body": "# New\n",
+        "stage": true
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["notes with spaces/日本語.md"] },
+        "facts": {
+          "paths": {
+            "notes with spaces/日本語.md": {
+              "frontmatter": { "name": "日本語" },
+              "body_exact": "# New\n",
+              "index_matches_worktree": true,
+              "head": null
+            }
+          },
+          "unchanged": []
+        }
+      }
+    },
+    {
+      "id": "write-unicode-update-preserves-frontmatter",
+      "covers": ["unicode_update", "revision_matching", "frontmatter_preserve_unknown", "frontmatter_remove"],
+      "initial": {
+        "head": { "notes with spaces/日本語.md": { "content": "frontmatter-rich" } },
+        "index": { "notes with spaces/日本語.md": { "content": "frontmatter-rich" } },
+        "worktree": { "notes with spaces/日本語.md": { "content": "frontmatter-rich" } },
+        "ignore": []
+      },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "notes with spaces/日本語.md",
+        "expected_revision": { "$revision": "reviewed", "path": "notes with spaces/日本語.md" },
+        "frontmatter": {
+          "mode": "preserve",
+          "set": { "name": "New" },
+          "remove": ["obsolete"]
+        },
+        "body": "# Updated\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["notes with spaces/日本語.md"] },
+        "facts": {
+          "paths": {
+            "notes with spaces/日本語.md": {
+              "frontmatter": {
+                "name": "New",
+                "unknown_scalar": "keep",
+                "unknown_list": ["one", "two"],
+                "unknown_map": { "nested": true }
+              },
+              "frontmatter_absent": ["obsolete"],
+              "body_exact": "# Updated\n",
+              "index": "frontmatter-rich",
+              "head": "frontmatter-rich"
+            }
+          },
+          "unchanged": []
+        }
+      }
+    },
+    {
+      "id": "write-path-boundary-refusals",
+      "covers": ["absolute_path_refusal", "traversal_refusal", "reserved_git_refusal"],
+      "cases": [
+        { "path": "/outside.md", "code": "path_escape" },
+        { "path": "../outside.md", "code": "path_escape" },
+        { "path": "notes/../../outside.md", "code": "path_escape" },
+        { "path": ".git/config.md", "code": "reserved_git_path" }
+      ],
+      "initial": { "head": {}, "index": {}, "worktree": {}, "ignore": [] },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "$CASE.path",
+        "expected_revision": "any",
+        "frontmatter": { "mode": "replace", "set": {}, "remove": [] },
+        "body": "outside\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "error", "code": "$CASE.code", "phase": "preflight", "affected_paths": [] },
+        "facts": { "paths": {}, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-literal-pathspec",
+      "covers": ["literal_pathspec"],
+      "initial": {
+        "head": { "x.md": { "content": "v1" } },
+        "index": { "x.md": { "content": "v1" } },
+        "worktree": { "x.md": { "content": "v1" }, "[x].md": { "content": "v2" } },
+        "ignore": []
+      },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "[x].md", "expected_revision": { "$revision": "reviewed", "path": "[x].md" } }],
+        "message": "Commit literal path",
+        "trailers": { "op": "create" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["[x].md"], "commit_paths": ["[x].md"] },
+        "facts": { "paths": { "[x].md": { "worktree": "v2", "index": "v2", "head": "v2" } }, "unchanged": ["x.md"] }
+      }
+    },
+    {
+      "id": "write-target-symlink-refusal",
+      "covers": ["target_symlink_refusal"],
+      "initial": {
+        "head": {},
+        "index": {},
+        "worktree": {
+          "outside.md": { "content": "outside" },
+          "notes/link.md": { "symlink": "../outside.md" }
+        },
+        "ignore": []
+      },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "notes/link.md",
+        "expected_revision": "any",
+        "frontmatter": { "mode": "replace", "set": {}, "remove": [] },
+        "body": "changed\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "error", "code": "symlink_refused", "phase": "preflight", "affected_paths": [] },
+        "facts": { "paths": {}, "unchanged": ["outside.md", "notes/link.md"] }
+      }
+    },
+    {
+      "id": "write-ancestor-symlink-refusal",
+      "covers": ["ancestor_symlink_refusal"],
+      "initial": {
+        "head": {},
+        "index": {},
+        "worktree": {
+          "real/a.md": { "content": "v1" },
+          "linked": { "symlink": "real" }
+        },
+        "ignore": []
+      },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "linked/a.md",
+        "expected_revision": "any",
+        "frontmatter": { "mode": "replace", "set": {}, "remove": [] },
+        "body": "changed\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "error", "code": "symlink_refused", "phase": "preflight", "affected_paths": [] },
+        "facts": { "paths": {}, "unchanged": ["real/a.md", "linked"] }
+      }
+    },
+    {
+      "id": "write-ignored-new-refusal",
+      "covers": ["ignored_new_refusal"],
+      "initial": { "head": {}, "index": {}, "worktree": {}, "ignore": ["drafts/**"] },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "drafts/private.md",
+        "expected_revision": { "$revision": "reviewed", "path": "drafts/private.md" },
+        "frontmatter": { "mode": "replace", "set": {}, "remove": [] },
+        "body": "private\n",
+        "stage": true
+      },
+      "expected": {
+        "result": { "status": "error", "code": "ignored_local_path", "phase": "preflight", "affected_paths": [] },
+        "facts": { "paths": { "drafts/private.md": { "worktree": null, "index": null, "head": null } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "write-malformed-frontmatter-refusals",
+      "covers": ["frontmatter_malformed_refusal", "frontmatter_duplicate_refusal", "frontmatter_non_map_refusal"],
+      "cases": [
+        { "content": "frontmatter-malformed" },
+        { "content": "frontmatter-duplicate" },
+        { "content": "frontmatter-list" }
+      ],
+      "initial": {
+        "head": { "note.md": { "content": "$CASE.content" } },
+        "index": { "note.md": { "content": "$CASE.content" } },
+        "worktree": { "note.md": { "content": "$CASE.content" } },
+        "ignore": []
+      },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "note.md",
+        "expected_revision": { "$revision": "reviewed", "path": "note.md" },
+        "frontmatter": { "mode": "preserve", "set": { "name": "Repaired" }, "remove": [] },
+        "body": "# New\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "error", "code": "malformed_frontmatter", "phase": "preflight", "affected_paths": [] },
+        "facts": { "paths": { "note.md": { "worktree": "$CASE.content", "index": "$CASE.content", "head": "$CASE.content" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "write-replace-repairs-malformed-frontmatter",
+      "covers": ["frontmatter_replace_repair"],
+      "initial": {
+        "head": { "note.md": { "content": "frontmatter-malformed" } },
+        "index": { "note.md": { "content": "frontmatter-malformed" } },
+        "worktree": { "note.md": { "content": "frontmatter-malformed" } },
+        "ignore": []
+      },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "note.md",
+        "expected_revision": { "$revision": "reviewed", "path": "note.md" },
+        "frontmatter": { "mode": "replace", "set": { "name": "Repaired" }, "remove": [] },
+        "body": "# Repaired\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["note.md"] },
+        "facts": {
+          "paths": {
+            "note.md": {
+              "frontmatter": { "name": "Repaired" },
+              "body_exact": "# Repaired\n",
+              "index": "frontmatter-malformed",
+              "head": "frontmatter-malformed"
+            }
+          },
+          "unchanged": []
+        }
+      }
+    },
+    {
+      "id": "write-stale-worktree-refusal",
+      "covers": ["revision_stale_worktree"],
+      "initial": {
+        "head": { "note.md": { "content": "v1" } },
+        "index": { "note.md": { "content": "v1" } },
+        "worktree": { "note.md": { "content": "v1" } },
+        "ignore": []
+      },
+      "before_request": [{ "action": "write_worktree", "path": "note.md", "content": "v2" }],
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "note.md",
+        "expected_revision": { "$revision": "reviewed", "path": "note.md" },
+        "frontmatter": { "mode": "replace", "set": {}, "remove": [] },
+        "body": "replacement\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "error", "code": "revision_mismatch", "phase": "revision_check", "affected_paths": [] },
+        "facts": { "paths": { "note.md": { "worktree": "v2", "index": "v1", "head": "v1" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "write-stale-index-refusal",
+      "covers": ["revision_stale_index"],
+      "initial": {
+        "head": { "note.md": { "content": "v1" } },
+        "index": { "note.md": { "content": "v1" } },
+        "worktree": { "note.md": { "content": "v1" } },
+        "ignore": []
+      },
+      "before_request": [
+        { "action": "write_worktree", "path": "note.md", "content": "v2" },
+        { "action": "stage", "paths": ["note.md"] },
+        { "action": "write_worktree", "path": "note.md", "content": "v1" }
+      ],
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "note.md",
+        "expected_revision": { "$revision": "reviewed", "path": "note.md" },
+        "frontmatter": { "mode": "replace", "set": {}, "remove": [] },
+        "body": "replacement\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "error", "code": "revision_mismatch", "phase": "revision_check", "affected_paths": [] },
+        "facts": { "paths": { "note.md": { "worktree": "v1", "index": "v2", "head": "v1" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "write-stale-head-refusal",
+      "covers": ["revision_stale_head"],
+      "initial": {
+        "head": { "note.md": { "content": "v1" } },
+        "index": { "note.md": { "content": "v1" } },
+        "worktree": { "note.md": { "content": "v1" } },
+        "ignore": []
+      },
+      "before_request": [
+        { "action": "write_worktree", "path": "note.md", "content": "v2" },
+        { "action": "stage", "paths": ["note.md"] },
+        { "action": "commit", "paths": ["note.md"], "message": "Concurrent change" },
+        { "action": "write_worktree", "path": "note.md", "content": "v1" },
+        { "action": "stage", "paths": ["note.md"] }
+      ],
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "note.md",
+        "expected_revision": { "$revision": "reviewed", "path": "note.md" },
+        "frontmatter": { "mode": "replace", "set": {}, "remove": [] },
+        "body": "replacement\n",
+        "stage": false
+      },
+      "expected": {
+        "result": { "status": "error", "code": "revision_mismatch", "phase": "revision_check", "affected_paths": [] },
+        "facts": { "paths": { "note.md": { "worktree": "v1", "index": "v1", "head": "v2" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "write-stage-failure-is-partial",
+      "covers": ["write_stage_partial"],
+      "initial": { "head": {}, "index": {}, "worktree": {}, "ignore": [] },
+      "fault": { "phase": "stage", "when": "before" },
+      "request": {
+        "operation": "write_markdown",
+        "root": "$ROOT",
+        "path": "note.md",
+        "expected_revision": { "$revision": "reviewed", "path": "note.md" },
+        "frontmatter": { "mode": "replace", "set": { "name": "New" }, "remove": [] },
+        "body": "# New\n",
+        "stage": true
+      },
+      "expected": {
+        "result": {
+          "status": "partial",
+          "code": "stage_failed",
+          "phase": "stage",
+          "completed_phases": ["revision_check", "write"],
+          "affected_paths": ["note.md"]
+        },
+        "facts": {
+          "paths": {
+            "note.md": { "frontmatter": { "name": "New" }, "body_exact": "# New\n", "index": null, "head": null }
+          },
+          "unchanged": []
+        }
+      }
+    },
+    {
+      "id": "commit-tracked-path-despite-ignore",
+      "covers": ["tracked_ignored_commit", "commit_modify"],
+      "initial": {
+        "head": { "note.md": { "content": "v1" } },
+        "index": { "note.md": { "content": "v1" } },
+        "worktree": { "note.md": { "content": "v2" } },
+        "ignore": ["*.md"]
+      },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "note.md", "expected_revision": { "$revision": "reviewed", "path": "note.md" } }],
+        "message": "Update tracked note",
+        "trailers": { "op": "update" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["note.md"], "commit_paths": ["note.md"] },
+        "facts": { "paths": { "note.md": { "worktree": "v2", "index": "v2", "head": "v2" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-create",
+      "covers": ["commit_create"],
+      "initial": { "head": {}, "index": {}, "worktree": { "new.md": { "content": "new-note" } }, "ignore": [] },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "new.md", "expected_revision": { "$revision": "reviewed", "path": "new.md" } }],
+        "message": "Create note",
+        "trailers": { "op": "create" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["new.md"], "commit_paths": ["new.md"] },
+        "facts": { "paths": { "new.md": { "worktree": "new-note", "index": "new-note", "head": "new-note" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-plain-delete",
+      "covers": ["commit_plain_delete"],
+      "initial": {
+        "head": { "old.md": { "content": "v1" } },
+        "index": { "old.md": { "content": "v1" } },
+        "worktree": {},
+        "ignore": []
+      },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "old.md", "expected_revision": { "$revision": "reviewed", "path": "old.md" } }],
+        "message": "Delete note",
+        "trailers": { "op": "delete" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["old.md"], "commit_paths": ["old.md"] },
+        "facts": { "paths": { "old.md": { "worktree": null, "index": null, "head": null } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-staged-delete",
+      "covers": ["commit_staged_delete"],
+      "initial": { "head": { "old.md": { "content": "v1" } }, "index": {}, "worktree": {}, "ignore": [] },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "old.md", "expected_revision": { "$revision": "reviewed", "path": "old.md" } }],
+        "message": "Commit staged deletion",
+        "trailers": { "op": "delete" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["old.md"], "commit_paths": ["old.md"] },
+        "facts": { "paths": { "old.md": { "worktree": null, "index": null, "head": null } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-rename-as-exact-pair",
+      "covers": ["commit_rename"],
+      "initial": {
+        "head": { "old.md": { "content": "v1" } },
+        "index": { "old.md": { "content": "v1" } },
+        "worktree": { "new.md": { "content": "v1" } },
+        "ignore": []
+      },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [
+          { "path": "old.md", "expected_revision": { "$revision": "reviewed", "path": "old.md" } },
+          { "path": "new.md", "expected_revision": { "$revision": "reviewed", "path": "new.md" } }
+        ],
+        "message": "Move note",
+        "trailers": { "op": "move" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "ok", "affected_paths": ["old.md", "new.md"], "commit_paths": ["old.md", "new.md"] },
+        "facts": {
+          "paths": {
+            "old.md": { "worktree": null, "index": null, "head": null },
+            "new.md": { "worktree": "v1", "index": "v1", "head": "v1" }
+          },
+          "unchanged": []
+        }
+      }
+    },
+    {
+      "id": "commit-mixed-paths-preserves-bystanders",
+      "covers": ["commit_mixed_paths", "bystanders_preserved"],
+      "initial": {
+        "head": {
+          "modify.md": { "content": "v1" },
+          "delete.md": { "content": "v1" },
+          "staged-bystander.md": { "content": "v1" },
+          "unstaged-bystander.md": { "content": "v1" }
+        },
+        "index": {
+          "modify.md": { "content": "v1" },
+          "delete.md": { "content": "v1" },
+          "staged-bystander.md": { "content": "v3" },
+          "unstaged-bystander.md": { "content": "v1" }
+        },
+        "worktree": {
+          "create.md": { "content": "v2" },
+          "modify.md": { "content": "v2" },
+          "staged-bystander.md": { "content": "v3" },
+          "unstaged-bystander.md": { "content": "v2" }
+        },
+        "ignore": []
+      },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [
+          { "path": "create.md", "expected_revision": { "$revision": "reviewed", "path": "create.md" } },
+          { "path": "modify.md", "expected_revision": { "$revision": "reviewed", "path": "modify.md" } },
+          { "path": "delete.md", "expected_revision": { "$revision": "reviewed", "path": "delete.md" } }
+        ],
+        "message": "Commit reviewed set",
+        "trailers": { "op": "capture" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": {
+          "status": "ok",
+          "affected_paths": ["create.md", "modify.md", "delete.md"],
+          "commit_paths": ["create.md", "modify.md", "delete.md"]
+        },
+        "facts": {
+          "paths": {
+            "create.md": { "worktree": "v2", "index": "v2", "head": "v2" },
+            "modify.md": { "worktree": "v2", "index": "v2", "head": "v2" },
+            "delete.md": { "worktree": null, "index": null, "head": null }
+          },
+          "unchanged": ["staged-bystander.md", "unstaged-bystander.md"]
+        }
+      }
+    },
+    {
+      "id": "commit-selected-path-changed-after-review",
+      "covers": ["selected_changed_before_commit"],
+      "initial": {
+        "head": { "note.md": { "content": "v1" } },
+        "index": { "note.md": { "content": "v1" } },
+        "worktree": { "note.md": { "content": "v2" } },
+        "ignore": []
+      },
+      "before_request": [{ "action": "write_worktree", "path": "note.md", "content": "v3" }],
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "note.md", "expected_revision": { "$revision": "reviewed", "path": "note.md" } }],
+        "message": "Commit reviewed note",
+        "trailers": { "op": "update" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "error", "code": "revision_mismatch", "phase": "revision_check", "affected_paths": [] },
+        "facts": { "paths": { "note.md": { "worktree": "v3", "index": "v1", "head": "v1" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-one-invalid-path-refuses-all",
+      "covers": ["invalid_multi_path_refuses_all"],
+      "initial": {
+        "head": { "valid.md": { "content": "v1" } },
+        "index": { "valid.md": { "content": "v1" } },
+        "worktree": { "valid.md": { "content": "v2" } },
+        "ignore": []
+      },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [
+          { "path": "valid.md", "expected_revision": { "$revision": "reviewed", "path": "valid.md" } },
+          { "path": "../outside.md", "expected_revision": { "worktree": null, "index": null, "head": null } }
+        ],
+        "message": "Must refuse all",
+        "trailers": {},
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "error", "code": "path_escape", "phase": "preflight", "affected_paths": [] },
+        "facts": { "paths": { "valid.md": { "worktree": "v2", "index": "v1", "head": "v1" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-failure-after-staging-is-partial",
+      "covers": ["commit_failure_partial"],
+      "initial": {
+        "head": { "note.md": { "content": "v1" }, "bystander.md": { "content": "v1" } },
+        "index": { "note.md": { "content": "v1" }, "bystander.md": { "content": "v3" } },
+        "worktree": { "note.md": { "content": "v2" }, "bystander.md": { "content": "v3" } },
+        "ignore": []
+      },
+      "fault": { "phase": "commit", "when": "before" },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "note.md", "expected_revision": { "$revision": "reviewed", "path": "note.md" } }],
+        "message": "Commit note",
+        "trailers": { "op": "update" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": {
+          "status": "partial",
+          "code": "commit_failed",
+          "phase": "commit",
+          "completed_phases": ["revision_check", "stage"],
+          "affected_paths": ["note.md"]
+        },
+        "facts": { "paths": { "note.md": { "worktree": "v2", "index": "v2", "head": "v1" } }, "unchanged": ["bystander.md"] }
+      }
+    },
+    {
+      "id": "commit-valid-trailers-and-explicit-identity",
+      "covers": ["valid_trailers", "explicit_identity_no_ambient"],
+      "environment": { "home": "isolated", "git_config": "empty", "credentials": false, "network": false, "ambient_git": false },
+      "initial": { "head": {}, "index": {}, "worktree": { "note.md": { "content": "v1" } }, "ignore": [] },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "note.md", "expected_revision": { "$revision": "reviewed", "path": "note.md" } }],
+        "message": "Capture note",
+        "trailers": {
+          "op": "capture",
+          "conversation": "session-1",
+          "turn": 4,
+          "co_authored_by": ["Keeper <agent:keeper@ideaspaces>"],
+          "change_id": "chg_capture-note-a3f9"
+        },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Committer", "email": "committer@example.com" }
+      },
+      "expected": {
+        "result": {
+          "status": "ok",
+          "affected_paths": ["note.md"],
+          "commit_paths": ["note.md"],
+          "author": { "name": "Person", "email": "person@example.com" },
+          "committer": { "name": "Committer", "email": "committer@example.com" },
+          "trailers": {
+            "Op": ["capture"],
+            "Conversation": ["session-1"],
+            "Turn": ["4"],
+            "Co-authored-by": ["Keeper <agent:keeper@ideaspaces>"],
+            "Change-Id": ["chg_capture-note-a3f9"]
+          }
+        },
+        "facts": { "paths": { "note.md": { "worktree": "v1", "index": "v1", "head": "v1" } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-invalid-trailer-refusal",
+      "covers": ["invalid_trailers"],
+      "initial": { "head": {}, "index": {}, "worktree": { "note.md": { "content": "v1" } }, "ignore": [] },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "note.md", "expected_revision": { "$revision": "reviewed", "path": "note.md" } }],
+        "message": "Capture note",
+        "trailers": { "op": "invalid", "change_id": "not-a-change-id" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "error", "code": "invalid_trailers", "phase": "preflight", "affected_paths": [] },
+        "facts": { "paths": { "note.md": { "worktree": "v1", "index": null, "head": null } }, "unchanged": [] }
+      }
+    },
+    {
+      "id": "commit-conflicting-trailer-refusal",
+      "covers": ["conflicting_trailers"],
+      "initial": { "head": {}, "index": {}, "worktree": { "note.md": { "content": "v1" } }, "ignore": [] },
+      "request": {
+        "operation": "commit_paths",
+        "root": "$ROOT",
+        "paths": [{ "path": "note.md", "expected_revision": { "$revision": "reviewed", "path": "note.md" } }],
+        "message": "Capture note\n\nOp: update",
+        "trailers": { "op": "capture" },
+        "author": { "name": "Person", "email": "person@example.com" },
+        "committer": { "name": "Person", "email": "person@example.com" }
+      },
+      "expected": {
+        "result": { "status": "error", "code": "invalid_trailers", "phase": "preflight", "affected_paths": [] },
+        "facts": { "paths": { "note.md": { "worktree": "v1", "index": null, "head": null } }, "unchanged": [] }
+      }
+    }
+  ]
+}

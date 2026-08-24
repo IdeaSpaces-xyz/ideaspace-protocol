@@ -15,6 +15,7 @@ const expected = [
   "SKILLS.md",
   "SPEC.md",
   "VERSION",
+  "conformance/local-effects/manifest.json",
   "dist/awareness.d.ts",
   "dist/awareness.d.ts.map",
   "dist/awareness.js",
@@ -47,6 +48,10 @@ const expected = [
   "dist/index.d.ts.map",
   "dist/index.js",
   "dist/index.js.map",
+  "dist/local-effects.d.ts",
+  "dist/local-effects.d.ts.map",
+  "dist/local-effects.js",
+  "dist/local-effects.js.map",
   "dist/markdown-inspection.d.ts",
   "dist/markdown-inspection.d.ts.map",
   "dist/markdown-inspection.js",
@@ -88,6 +93,7 @@ const expected = [
   "schema/agent-contract.md",
   "schema/content-awareness.md",
   "schema/frontmatter.schema.json",
+  "schema/local-effects.md",
   "schema/markdown-inspection.md",
   "schema/surface-state.md",
   "schema/trailers.md",
@@ -118,6 +124,8 @@ try {
   const expectedExports = [
     ".",
     "./schema/frontmatter",
+    "./schema/local-effects",
+    "./conformance/local-effects",
     "./SPEC.md",
     "./SKILLS.md",
     "./templates/foundation-core.md",
@@ -161,14 +169,19 @@ try {
     import * as protocol from "@ideaspaces/protocol";
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
+    const effects = require("@ideaspaces/protocol/conformance/local-effects");
+    const localEffectsSchema = require.resolve("@ideaspaces/protocol/schema/local-effects");
     const required = [
       "assembleContentAwareness",
       "composeContractAlongPath",
       "inspectMarkdown",
       "inspectMarkdownFile",
+      "pathRevision",
       "renderContentAwareness",
       "renderPosition",
+      "validateCommitPathsRequest",
       "validateSpace",
+      "validateWriteMarkdownRequest",
     ];
     for (const name of required) {
       if (typeof protocol[name] !== "function") throw new Error(\`Missing runtime export: \${name}\`);
@@ -178,6 +191,12 @@ try {
     }
     if (schema?.title !== "Ideaspace Note frontmatter (Layer 1)") {
       throw new Error("Frontmatter schema export did not load");
+    }
+    if (effects?.format !== "ideaspaces-local-effects/v1" || !effects.required_coverage?.length) {
+      throw new Error("Local-effect conformance manifest did not load");
+    }
+    if (!localEffectsSchema.endsWith("schema/local-effects.md")) {
+      throw new Error("Local-effect schema export did not resolve");
     }
   `;
   execFileSync(process.execPath, ["--input-type=module", "--eval", probe], {

@@ -11,6 +11,7 @@ import {
   lastCommitTime,
   resolveRepoRoot,
   pathStatus,
+  pathRevision,
   isIdeaspacePath,
   stagedIdeaspacePaths,
 } from "./git.js";
@@ -43,6 +44,16 @@ async function initRepo(dir: string): Promise<void> {
   git(dir, ["config", "user.email", "test@example.com"]);
   git(dir, ["config", "user.name", "Test"]);
 }
+
+const localGit = async (root: string, args: readonly string[]) => {
+  const result = spawnSync("git", ["-C", root, ...args], { encoding: "utf-8" });
+  return {
+    ok: result.status === 0,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    code: result.status,
+  };
+};
 
 describe("gitState", () => {
   it("reports repoRoot, branch, clean tree, and null ahead/behind without upstream", async () => {
@@ -272,6 +283,162 @@ describe("read-only repo and capture status", () => {
     expect(isIdeaspacePath("scope/_agent/guide.txt")).toBe(true);
     expect(isIdeaspacePath("scope\\_agent\\guide.txt")).toBe(true);
     expect(isIdeaspacePath("src/index.ts")).toBe(false);
+  });
+});
+
+describe("pathRevision", () => {
+  it("reads independent worktree, index, and HEAD blob ids", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    const file = join(tmp, "a.md");
+    await fs.writeFile(file, "v1", "utf-8");
+    git(tmp, ["add", "a.md"]);
+    git(tmp, ["commit", "-q", "-m", "first"]);
+    const v1 = git(tmp, ["hash-object", "a.md"]).trim();
+
+    await fs.writeFile(file, "v2", "utf-8");
+    const v2 = git(tmp, ["hash-object", "a.md"]).trim();
+    expect(await pathRevision(tmp, "a.md", localGit)).toEqual({
+      status: "ok",
+      operation: "path_revision",
+      path: "a.md",
+      revision: { worktree: v2, index: v1, head: v1 },
+    });
+
+    git(tmp, ["add", "a.md"]);
+    expect(await pathRevision(tmp, "a.md", localGit)).toMatchObject({
+      status: "ok",
+      revision: { worktree: v2, index: v2, head: v1 },
+    });
+  });
+
+  it("treats Git pathspec metacharacters as a literal exact path", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    await fs.writeFile(join(tmp, "[x].md"), "brackets", "utf-8");
+    await fs.writeFile(join(tmp, "x.md"), "plain", "utf-8");
+    git(tmp, ["add", "--", ":(literal)[x].md", "x.md"]);
+    git(tmp, ["commit", "-q", "-m", "first"]);
+
+    const bracketOid = git(tmp, ["rev-parse", "HEAD:[x].md"]).trim();
+    const plainOid = git(tmp, ["rev-parse", "HEAD:x.md"]).trim();
+    expect(bracketOid).not.toBe(plainOid);
+    expect(await pathRevision(tmp, "[x].md", localGit)).toMatchObject({
+      status: "ok",
+      revision: { worktree: bracketOid, index: bracketOid, head: bracketOid },
+    });
+  });
+
+  it("represents absent, untracked, and staged-deleted locations independently", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    await fs.writeFile(join(tmp, "tracked.md"), "v1", "utf-8");
+    git(tmp, ["add", "tracked.md"]);
+    git(tmp, ["commit", "-q", "-m", "first"]);
+    const v1 = git(tmp, ["rev-parse", "HEAD:tracked.md"]).trim();
+
+    await fs.writeFile(join(tmp, "new.md"), "new", "utf-8");
+    const untracked = await pathRevision(tmp, "new.md", localGit);
+    expect(untracked).toMatchObject({
+      status: "ok",
+      revision: { index: null, head: null },
+    });
+    if (untracked.status === "ok") expect(untracked.revision.worktree).not.toBeNull();
+
+    git(tmp, ["rm", "-q", "tracked.md"]);
+    expect(await pathRevision(tmp, "tracked.md", localGit)).toMatchObject({
+      status: "ok",
+      revision: { worktree: null, index: null, head: v1 },
+    });
+    expect(await pathRevision(tmp, "missing.md", localGit)).toMatchObject({
+      status: "ok",
+      revision: { worktree: null, index: null, head: null },
+    });
+  });
+
+  it("supports an unborn repository without inventing HEAD state", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    await fs.writeFile(join(tmp, "new.md"), "new", "utf-8");
+    const result = await pathRevision(tmp, "new.md", localGit);
+    expect(result).toMatchObject({
+      status: "ok",
+      revision: { index: null, head: null },
+    });
+  });
+
+  it("refuses target and ancestor symlinks without following them", async () => {
+    if (!hasGit() || process.platform === "win32") return;
+    await initRepo(tmp);
+    await fs.writeFile(join(tmp, "outside.md"), "outside", "utf-8");
+    await fs.symlink("outside.md", join(tmp, "target.md"));
+    await fs.mkdir(join(tmp, "real"));
+    await fs.writeFile(join(tmp, "real", "nested.md"), "nested", "utf-8");
+    await fs.symlink("real", join(tmp, "linked"));
+
+    expect(await pathRevision(tmp, "target.md", localGit)).toMatchObject({
+      status: "error",
+      code: "symlink_refused",
+      phase: "preflight",
+    });
+    expect(await pathRevision(tmp, "linked/nested.md", localGit)).toMatchObject({
+      status: "error",
+      code: "symlink_refused",
+      phase: "preflight",
+    });
+  });
+
+  it("refuses invalid paths and non-canonical roots before reading revisions", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    await fs.mkdir(join(tmp, "nested"));
+
+    expect(await pathRevision(tmp, "../outside.md", localGit)).toMatchObject({
+      status: "error",
+      code: "path_escape",
+    });
+    expect(await pathRevision(tmp, ".git/config", localGit)).toMatchObject({
+      status: "error",
+      code: "reserved_git_path",
+    });
+    expect(await pathRevision(join(tmp, "nested"), "a.md", localGit)).toMatchObject({
+      status: "error",
+      code: "invalid_root",
+    });
+
+    const bare = join(tmp, "bare.git");
+    await fs.mkdir(bare);
+    git(bare, ["init", "--bare", "-q"]);
+    expect(await pathRevision(bare, "a.md", localGit)).toMatchObject({
+      status: "error",
+      code: "not_git_repository",
+    });
+  });
+
+  it("distinguishes an unavailable runner from a failed Git command", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    const unavailable = async () => {
+      throw new Error("missing executable");
+    };
+    expect(await pathRevision(tmp, "a.md", unavailable)).toMatchObject({
+      status: "error",
+      code: "git_unavailable",
+      phase: "preflight",
+    });
+
+    await fs.writeFile(join(tmp, "a.md"), "a", "utf-8");
+    const failed = async (root: string, args: readonly string[]) => {
+      if (args[0] === "rev-parse" && args[1] === "--show-toplevel") {
+        return localGit(root, args);
+      }
+      return { ok: false, stdout: "", stderr: "denied", code: 128 };
+    };
+    expect(await pathRevision(tmp, "a.md", failed)).toMatchObject({
+      status: "error",
+      code: "git_executor_failed",
+      detail: "denied",
+    });
   });
 });
 

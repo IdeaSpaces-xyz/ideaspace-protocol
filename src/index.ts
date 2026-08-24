@@ -52,6 +52,7 @@ export {
   lastCommitTime,
   resolveRepoRoot,
   pathStatus,
+  pathRevision,
   isIdeaspacePath,
   stagedIdeaspacePaths,
 } from "./git.js";
@@ -62,6 +63,47 @@ export type {
   ChangedFile,
   PathStatus,
 } from "./git.js";
+
+// Local-effect contract — pure request/result types and preflight validators.
+// The package root remains mutation-free: the only executable addition here is
+// the read-only `pathRevision` fact above. Effect implementations opt into a
+// dedicated subpath in the next layer.
+export {
+  validateLocalEffectPath,
+  validateWriteMarkdownRequest,
+  validateCommitPathsRequest,
+} from "./local-effects.js";
+export type {
+  LocalEffectOperation,
+  LocalEffectReadOperation,
+  PathObjectId,
+  PathRevision,
+  WriteRevisionPrecondition,
+  LocalEffectValue,
+  FrontmatterUpdate,
+  WriteMarkdownRequest,
+  CommitPathInput,
+  LocalEffectTrailers,
+  LocalEffectIdentity,
+  CommitPathsRequest,
+  LocalEffectPhase,
+  LocalEffectFailureCode,
+  SelectedPathRevision,
+  WriteMarkdownOk,
+  CommitPathsOk,
+  LocalEffectPartial,
+  LocalEffectError,
+  WriteMarkdownResult,
+  CommitPathsResult,
+  LocalEffectResult,
+  PathRevisionReadOk,
+  PathRevisionReadError,
+  PathRevisionReadResult,
+  LocalGitResult,
+  LocalGitRunner,
+  LocalEffectValidationIssue,
+  LocalEffectValidationResult,
+} from "./local-effects.js";
 
 export {
   readRootHandle,

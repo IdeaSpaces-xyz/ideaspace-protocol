@@ -35,9 +35,9 @@ This repository is both the definition and a conformant example. [Browse it as a
 |---|---|
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
 | [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the agent operating loop and shared intent skills for orientation, deliberate capture, directional sync, and reflection. |
-| [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, Change/surface state, structured Content awareness, and local workspace handles. |
-| [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, drift, and the skill catalog. |
-| [`conformance/`](conformance/) | A reference conformant space and a validator that checks a space (and an implementation) against the spec. |
+| [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
+| [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect contract validation, drift, and the skill catalog. |
+| [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral local-effect vectors shared by independent runtimes. |
 | [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
 
 ## Concepts in 30 seconds
@@ -97,11 +97,28 @@ const home = await readRootHandle(process.cwd());
 const repositories = await readWorkspaceRepositories("../");
 ```
 
-The TypeScript library is the *reference* implementation, not the only one. Other languages conform to the language-neutral core — [`SPEC.md`](SPEC.md) + [`schema/frontmatter.schema.json`](schema/frontmatter.schema.json) + the conformance fixtures.
+PF0 also exports pure local-effect request/result types and validators, plus the read-only `pathRevision(root, path, git)` fact. `pathRevision` receives a caller-supplied stock-Git runner; the package does not discover an executable. Package-root APIs remain mutation-free — effect implementations opt into a dedicated subpath in the next layer.
+
+```ts
+import { validateWriteMarkdownRequest } from "@ideaspaces/protocol";
+
+const checked = validateWriteMarkdownRequest({
+  operation: "write_markdown",
+  root: "/canonical/worktree",
+  path: "notes/a.md",
+  expected_revision: { worktree: null, index: null, head: null },
+  frontmatter: { mode: "preserve", set: { name: "A" }, remove: [] },
+  body: "# A\n",
+  stage: true,
+});
+if (!checked.ok) console.error(checked.issues);
+```
+
+The TypeScript library is the *reference* implementation, not the only one. Other languages conform to the language-neutral core — [`SPEC.md`](SPEC.md), [`schema/`](schema/), and the conformance fixtures.
 
 ## Conformance
 
-A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance) and declares the spec version it targets. The [`conformance/`](conformance/) kit makes that testable.
+A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance) and declares the spec version it targets. A tool separately claiming local-effect conformance executes every required vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json). The [`conformance/`](conformance/) kit makes both claims testable.
 
 ## Ecosystem
 
@@ -118,7 +135,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.6.0 — early and provisional.** This minor release makes `_agent/skills/` identity portable across Agent Skills harnesses: the entry id and frontmatter `name` are one lowercase-hyphen id, while display titles live in Markdown headings. The conformance kit checks both entry forms and stops at nested-space foundations. It builds on v0.5.0's full-stack fractal composition and canonical foundation core. Pin a version and expect changes before 1.0, including evolution of the open `attached_to` type vocabulary.
+**v0.7.0 — early and provisional.** This minor release defines one language-neutral local repository effect contract before Rust or TypeScript implementations encode divergent write and commit semantics: `write_markdown`, exact-path `commit_paths`, per-path worktree/index/HEAD revision CAS, stable partial failures, and shared conformance vectors. The package root adds only pure types/validators and read-only `pathRevision`; mutation remains explicit opt-in. It builds on v0.6.0's portable skill identity and v0.5.0's full-stack fractal composition. Pin a version and expect changes before 1.0.
 
 ## Develop
 
