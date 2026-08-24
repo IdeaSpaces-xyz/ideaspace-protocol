@@ -1,4 +1,14 @@
 import { spawn } from "node:child_process";
+import { lstat, realpath } from "node:fs/promises";
+import { isAbsolute, join, resolve } from "node:path";
+import type {
+  LocalGitResult,
+  LocalGitRunner,
+  PathRevision,
+  PathRevisionReadError,
+  PathRevisionReadResult,
+} from "./local-effects.js";
+import { validateLocalEffectPath } from "./local-effects.js";
 
 /**
  * Local read-only git primitives for orientation and capture state.
@@ -123,6 +133,292 @@ export async function pathStatus(path: string, repoRoot: string): Promise<PathSt
     modified: modified.code === 1,
     inTracked: tracked.ok,
   };
+}
+
+/**
+ * Read one portable path revision through a caller-supplied stock-Git runner.
+ *
+ * The function is read-only: it checks the canonical worktree boundary and
+ * existing path components without following symlinks, then hashes the
+ * worktree bytes and reads the stage-0 index and HEAD blob ids. It never
+ * discovers a Git executable, mutates the object database, or contacts a
+ * remote. Object-id length and algorithm are deliberately opaque.
+ */
+export async function pathRevision(
+  root: string,
+  path: string,
+  runner: LocalGitRunner,
+): Promise<PathRevisionReadResult> {
+  const pathIssue = validateLocalEffectPath(path);
+  if (pathIssue) {
+    return revisionError(pathIssue.code, "preflight", pathIssue.message, path);
+  }
+  if (typeof root !== "string" || root.length === 0 || !isAbsolute(root)) {
+    return revisionError("invalid_root", "preflight", "root must be an absolute path", path);
+  }
+
+  let canonicalRoot: string;
+  try {
+    canonicalRoot = await realpath(root);
+  } catch (error) {
+    return revisionError("invalid_root", "preflight", "root does not resolve", path, detail(error));
+  }
+  if (resolve(root) !== canonicalRoot) {
+    return revisionError(
+      "invalid_root",
+      "preflight",
+      "root must be the canonical worktree path",
+      path,
+    );
+  }
+
+  const top = await runLocalGit(runner, root, ["rev-parse", "--show-toplevel"]);
+  if (!top.ok) {
+    return revisionError(
+      top.code === null ? "git_unavailable" : "not_git_repository",
+      "preflight",
+      "root is not a Git worktree",
+      path,
+      top.stderr?.trim() || undefined,
+    );
+  }
+
+  let gitRoot: string;
+  try {
+    gitRoot = await realpath(top.stdout.trim());
+  } catch (error) {
+    return revisionError(
+      "not_git_repository",
+      "preflight",
+      "Git did not return a valid worktree root",
+      path,
+      detail(error),
+    );
+  }
+  if (gitRoot !== canonicalRoot) {
+    return revisionError(
+      "invalid_root",
+      "preflight",
+      "root is not the supplied repository's canonical worktree root",
+      path,
+    );
+  }
+
+  const componentError = await inspectPathComponents(canonicalRoot, path);
+  if (componentError) return componentError;
+
+  const worktree = await worktreeObjectId(runner, root, path);
+  if (isRevisionError(worktree)) return worktree;
+  const index = await indexObjectId(runner, root, path);
+  if (isRevisionError(index)) return index;
+  const head = await headObjectId(runner, root, path);
+  if (isRevisionError(head)) return head;
+
+  const revision: PathRevision = { worktree, index, head };
+  return { status: "ok", operation: "path_revision", path, revision };
+}
+
+async function inspectPathComponents(
+  root: string,
+  path: string,
+): Promise<PathRevisionReadError | null> {
+  const segments = path.split("/");
+  let current = root;
+  for (const [index, segment] of segments.entries()) {
+    current = join(current, segment);
+    try {
+      const stat = await lstat(current);
+      if (stat.isSymbolicLink()) {
+        return revisionError(
+          "symlink_refused",
+          "preflight",
+          "selected path has a symlink target or ancestor",
+          path,
+        );
+      }
+      if (index < segments.length - 1 && !stat.isDirectory()) {
+        return revisionError(
+          "invalid_path",
+          "preflight",
+          "a path ancestor is not a directory",
+          path,
+        );
+      }
+      if (index === segments.length - 1 && stat.isDirectory()) {
+        return revisionError(
+          "uncommittable_path",
+          "preflight",
+          "selected path is a directory",
+          path,
+        );
+      }
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") return null;
+      return revisionError(
+        "invalid_path",
+        "preflight",
+        "selected path could not be inspected",
+        path,
+        detail(error),
+      );
+    }
+  }
+  return null;
+}
+
+async function worktreeObjectId(
+  runner: LocalGitRunner,
+  root: string,
+  path: string,
+): Promise<string | null | PathRevisionReadError> {
+  try {
+    const stat = await lstat(join(root, ...path.split("/")));
+    if (!stat.isFile()) {
+      return revisionError(
+        "uncommittable_path",
+        "revision_check",
+        "worktree path is not a regular file",
+        path,
+      );
+    }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    return revisionError(
+      "invalid_path",
+      "revision_check",
+      "worktree path could not be read",
+      path,
+      detail(error),
+    );
+  }
+  const result = await runLocalGit(runner, root, ["hash-object", "--", path]);
+  if (!result.ok) return gitReadError(result, "revision_check", path, "could not hash worktree path");
+  const oid = result.stdout.trim();
+  return oid || revisionError("git_executor_failed", "revision_check", "Git returned no worktree object id", path);
+}
+
+async function indexObjectId(
+  runner: LocalGitRunner,
+  root: string,
+  path: string,
+): Promise<string | null | PathRevisionReadError> {
+  const result = await runLocalGit(runner, root, [
+    "ls-files",
+    "--stage",
+    "-z",
+    "--",
+    literalPathspec(path),
+  ]);
+  if (!result.ok) return gitReadError(result, "revision_check", path, "could not read index path");
+  const entries = result.stdout.split("\0").filter(Boolean);
+  if (entries.length === 0) return null;
+  if (entries.length !== 1) {
+    return revisionError(
+      "uncommittable_path",
+      "revision_check",
+      "index path has unresolved merge stages",
+      path,
+    );
+  }
+  const match = /^(\d+) ([^ ]+) (\d+)\t/.exec(entries[0]);
+  if (!match || match[3] !== "0") {
+    return revisionError(
+      "uncommittable_path",
+      "revision_check",
+      "index path has no single stage-0 blob",
+      path,
+    );
+  }
+  return match[2];
+}
+
+async function headObjectId(
+  runner: LocalGitRunner,
+  root: string,
+  path: string,
+): Promise<string | null | PathRevisionReadError> {
+  const verify = await runLocalGit(runner, root, ["rev-parse", "--verify", "-q", "HEAD"]);
+  if (!verify.ok) {
+    if (verify.code === 1) return null;
+    return gitReadError(verify, "revision_check", path, "could not resolve HEAD");
+  }
+  const result = await runLocalGit(runner, root, [
+    "ls-tree",
+    "-z",
+    "HEAD",
+    "--",
+    literalPathspec(path),
+  ]);
+  if (!result.ok) return gitReadError(result, "revision_check", path, "could not read HEAD path");
+  const entries = result.stdout.split("\0").filter(Boolean);
+  if (entries.length === 0) return null;
+  if (entries.length !== 1) {
+    return revisionError("uncommittable_path", "revision_check", "HEAD path is not one file", path);
+  }
+  const match = /^(\d+) blob ([^\t]+)\t/.exec(entries[0]);
+  if (!match) {
+    return revisionError("uncommittable_path", "revision_check", "HEAD path is not a blob", path);
+  }
+  return match[2];
+}
+
+async function runLocalGit(
+  runner: LocalGitRunner,
+  root: string,
+  args: readonly string[],
+): Promise<LocalGitResult> {
+  try {
+    return await runner(root, args);
+  } catch (error) {
+    return { ok: false, stdout: "", stderr: detail(error), code: null };
+  }
+}
+
+function gitReadError(
+  result: LocalGitResult,
+  phase: "preflight" | "revision_check",
+  path: string,
+  message: string,
+): PathRevisionReadError {
+  return revisionError(
+    result.code === null ? "git_unavailable" : "git_executor_failed",
+    phase,
+    message,
+    path,
+    result.stderr?.trim() || undefined,
+  );
+}
+
+function revisionError(
+  code: PathRevisionReadError["code"],
+  phase: PathRevisionReadError["phase"],
+  message: string,
+  path?: string,
+  errorDetail?: string,
+): PathRevisionReadError {
+  return {
+    status: "error",
+    operation: "path_revision",
+    code,
+    phase,
+    ...(path === undefined ? {} : { path }),
+    message,
+    ...(errorDetail === undefined ? {} : { detail: errorDetail }),
+  };
+}
+
+function isRevisionError(value: unknown): value is PathRevisionReadError {
+  return typeof value === "object" && value !== null && "status" in value;
+}
+
+/** Force Git pathspec consumers to interpret every request path literally. */
+function literalPathspec(path: string): string {
+  return `:(literal)${path}`;
+}
+
+function detail(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 /** Knowledge path: a Markdown file, or anything under an `_agent/` directory. */

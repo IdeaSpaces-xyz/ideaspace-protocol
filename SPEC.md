@@ -4,7 +4,8 @@ summary: >
   A simple, shareable, traceable piece of brain — and the fixed, platform-neutral
   shape that makes it so. Knowledge in `.md` files, how-to-work in `_agent/`, git
   carries identity and history. Any agent that knows the shape can inhabit any
-  conformant space. The base layer gives awareness; skills give ability.
+  conformant space. The base layer gives awareness and safe local effects; skills
+  carry intent and judgment.
 ---
 
 # The Ideaspace Spec
@@ -19,7 +20,7 @@ Three properties, three pillars:
 - **Shareable** — content travels, awareness stays local. The boundary is explicit. → [invariant 7](#the-shape)
 - **Traceable** — every change carries who made it and when. → [Identity](#identity)
 
-This is the **base layer**. Knowing the shape *is* awareness. Acting on it — capturing, reflecting, growing the space — is the job of [skills](#two-layers), which ride on the same shape.
+This is the **base layer**. Knowing the shape *is* awareness; its local-effect boundary makes the mechanics of maintaining that shape portable. Deciding when and why to act — capturing, reflecting, growing the space — is the job of [skills](#two-layers).
 
 ---
 
@@ -60,8 +61,8 @@ The contract holds two kinds of thing. The four fractal files **layer** — they
 
 **7. Awareness ⊋ content.** The working tree can hold more than the space commits — other repos (code), drafts, scratch. `.gitignore` is the allowlist that splits them:
 
-- **Shared** — committed. Travels to anyone you share with.
-- **Local** — gitignored. Private to this machine: code repos, drafts, work-in-progress.
+- **Shared** — committed or already tracked. Travels to anyone you share with. A later ignore rule does not make tracked history local again.
+- **Local** — untracked and gitignored. Private to this machine: code repos, drafts, work-in-progress.
 - **Per-agent** — `_agent/<agent-id>/`, gitignored. What one agent noticed, learned, plans. Agents read each other's; each writes only its own.
 
 **Awareness is local; only content travels.** A handshake can durably point only to *shared* content — a pointer into a gitignored code repo is real for you, dangling for whoever clones. Same brain, different peripheral vision.
@@ -110,9 +111,25 @@ Plus a diff-as-Note: the interpretation of a change, captured as a searchable No
 
 ---
 
+## Local effects
+
+The shape includes one language-neutral boundary for safely maintaining local Markdown and Git history. It defines two effects and one read-only concurrency fact:
+
+- `write_markdown` atomically creates or updates one UTF-8 `.md` file, preserves extensible frontmatter by default, and may stage exactly that path;
+- `commit_paths` revalidates and commits one caller-supplied exact path set without consuming or changing unrelated worktree/index state;
+- `path_revision` reports one path's opaque worktree/index/HEAD blob triple.
+
+The caller supplies a canonical Git worktree root, portable repository-relative paths, expected per-path revisions, explicit commit identity and trailer values, and a stock-Git capability. Local effects do not authenticate, discover platform identity, inspect session caches or credentials, contact remotes, or mutate Git configuration.
+
+Requests are preflighted as a whole. Paths are root-confined, `.git`-reserved, and checked component-by-component without following symlinks. Untracked ignored paths are local-only and refused; already-tracked paths remain shared and committable if a later ignore rule matches them. Writes preserve unknown frontmatter semantically unless replacement is explicit. Commits require exact expected revisions for every selected path and have no force or implicit `all` form.
+
+Results are `ok`, `partial`, or `error`. A durable write or index effect followed by failure MUST be reported as `partial` with completed phases, current selected-path revisions, a stable code, and safe recovery guidance. Implementations never claim rollback over index state they cannot prove they own.
+
+The full request/result grammar, failure vocabulary, phase semantics, and language-neutral conformance manifest are normative in [`schema/local-effects.md`](schema/local-effects.md) and [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json). The package-root reference API remains mutation-free; effect implementations require explicit opt-in.
+
 ## Two Layers
 
-The spec is the **base layer** — a fixed, readable shape an agent *perceives*: where it is, what's declared here, what the contract says. The **skills layer** is ability: the verbs to *work* a space — orient, understand, capture, reflect, share — standardized and platform-neutral like the spec. Skills aren't polish: the agreement is *maintained, not declared* — a space that can be read but not maintained goes stale on contact, and the skill layer is what keeps it alive. Skills are their own document — [SKILLS.md](SKILLS.md).
+The spec is the **base layer** — a fixed, readable shape an agent *perceives* and one safe local-effect boundary implementations can execute. The **skills layer** carries intent and judgment: the verbs to *work* a space — orient, understand, capture, reflect, share — standardized and platform-neutral like the spec. A skill decides what should happen and supplies reviewed inputs; the local-effect contract decides whether the write or commit mechanics conformed. Skills aren't polish: the agreement is *maintained, not declared* — a space that can be read but not maintained goes stale on contact. Skills are their own document — [SKILLS.md](SKILLS.md).
 
 ---
 
@@ -125,7 +142,7 @@ A tool or agent that claims to inhabit ideaspaces:
 - Treat `_agent/foundation.md` as the space-root handshake.
 - Treat `.md` files as knowledge and `_agent/` as instruction.
 - Gracefully ignore any `_`-prefixed folder it does not understand (skip, never error).
-- Never commit gitignored paths into the space.
+- Never add an untracked path matched by Git's effective ignore rules; continue to treat already-tracked paths as shared history.
 - Author `_agent/skills/` entry ids and frontmatter names in the portable Agent Skills form, with the two names identical.
 
 **SHOULD**
@@ -134,6 +151,8 @@ A tool or agent that claims to inhabit ideaspaces:
 - Keep `_agent/`'s surface tight and disclose depth on demand; let `.md` files carry the weight of what is known.
 - Treat `_agent/schema.md` as instance-shape guidance, and a schema mismatch as a drift signal — never a write rejection.
 - Write per-agent records only under its own `_agent/<agent-id>/`.
+
+A tool that claims **local-effect conformance** additionally MUST pass every required coverage vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json), including per-path revision CAS, symlink refusal, semantic frontmatter preservation, exact commit membership, unselected-state preservation, explicit identity, and honest partial failure.
 
 ---
 

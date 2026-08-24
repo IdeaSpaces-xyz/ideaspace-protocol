@@ -2,6 +2,8 @@
 
 Makes "conforms to the protocol" testable rather than aspirational.
 
+- **`local-effects/manifest.json`** — language-neutral PF0 request/result vectors for safe Markdown writes, per-path revision CAS, exact-path commits, frontmatter preservation, ignore/symlink boundaries, bystander preservation, explicit identity, and honest partial failures. Rust, TypeScript, or another runtime materializes and judges the same data; the manifest contains no language-specific API shape.
+
 - **`reference-space/`** — a small, known-good conformant ideaspace: a root
   `_agent/` five-file contract, a portable flat-form `_agent/skills/` entry,
   READMEs along a path, a Note with valid Layer-1+2 frontmatter, a `projects/`
@@ -40,4 +42,4 @@ console.log(report.ok); // true
 ```
 
 The same kit doubles as the test that an implementation (the TS reference
-lib here, or a platform's own — say, in Python) actually conforms.
+lib here, or another language/runtime) actually conforms. Repository-shape conformance and local-effect conformance are separate claims: a reader need not mutate a space, while an effect implementation must execute every required manifest coverage tag.
