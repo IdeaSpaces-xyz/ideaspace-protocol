@@ -1,7 +1,8 @@
 import { spawn } from "node:child_process";
-import { lstat, realpath } from "node:fs/promises";
+import { lstat as nodeLstat, realpath as nodeRealpath } from "node:fs/promises";
 import { isAbsolute, join, resolve } from "node:path";
 import type {
+  LocalEffectReadFileSystem,
   LocalGitResult,
   LocalGitRunner,
   PathRevision,
@@ -135,6 +136,28 @@ export async function pathStatus(path: string, repoRoot: string): Promise<PathSt
   };
 }
 
+const nodeReadFileSystem: LocalEffectReadFileSystem = {
+  realpath: (path) => nodeRealpath(path),
+  async lstat(path) {
+    try {
+      const stat = await nodeLstat(path);
+      return {
+        kind: stat.isSymbolicLink()
+          ? "symlink"
+          : stat.isFile()
+            ? "file"
+            : stat.isDirectory()
+              ? "directory"
+              : "other",
+        mode: stat.mode,
+      };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
+  },
+};
+
 /**
  * Read one portable path revision through a caller-supplied stock-Git runner.
  *
@@ -148,6 +171,7 @@ export async function pathRevision(
   root: string,
   path: string,
   runner: LocalGitRunner,
+  filesystem: LocalEffectReadFileSystem = nodeReadFileSystem,
 ): Promise<PathRevisionReadResult> {
   const pathIssue = validateLocalEffectPath(path);
   if (pathIssue) {
@@ -159,7 +183,7 @@ export async function pathRevision(
 
   let canonicalRoot: string;
   try {
-    canonicalRoot = await realpath(root);
+    canonicalRoot = await filesystem.realpath(root);
   } catch (error) {
     return revisionError("invalid_root", "preflight", "root does not resolve", path, detail(error));
   }
@@ -185,7 +209,7 @@ export async function pathRevision(
 
   let gitRoot: string;
   try {
-    gitRoot = await realpath(top.stdout.trim());
+    gitRoot = await filesystem.realpath(top.stdout.trim());
   } catch (error) {
     return revisionError(
       "not_git_repository",
@@ -204,10 +228,10 @@ export async function pathRevision(
     );
   }
 
-  const componentError = await inspectPathComponents(canonicalRoot, path);
+  const componentError = await inspectPathComponents(canonicalRoot, path, filesystem);
   if (componentError) return componentError;
 
-  const worktree = await worktreeObjectId(runner, root, path);
+  const worktree = await worktreeObjectId(runner, root, path, filesystem);
   if (isRevisionError(worktree)) return worktree;
   const index = await indexObjectId(runner, root, path);
   if (isRevisionError(index)) return index;
@@ -221,14 +245,16 @@ export async function pathRevision(
 async function inspectPathComponents(
   root: string,
   path: string,
+  filesystem: LocalEffectReadFileSystem,
 ): Promise<PathRevisionReadError | null> {
   const segments = path.split("/");
   let current = root;
   for (const [index, segment] of segments.entries()) {
     current = join(current, segment);
     try {
-      const stat = await lstat(current);
-      if (stat.isSymbolicLink()) {
+      const stat = await filesystem.lstat(current);
+      if (stat === null) return null;
+      if (stat.kind === "symlink") {
         return revisionError(
           "symlink_refused",
           "preflight",
@@ -236,7 +262,7 @@ async function inspectPathComponents(
           path,
         );
       }
-      if (index < segments.length - 1 && !stat.isDirectory()) {
+      if (index < segments.length - 1 && stat.kind !== "directory") {
         return revisionError(
           "invalid_path",
           "preflight",
@@ -244,7 +270,7 @@ async function inspectPathComponents(
           path,
         );
       }
-      if (index === segments.length - 1 && stat.isDirectory()) {
+      if (index === segments.length - 1 && stat.kind === "directory") {
         return revisionError(
           "uncommittable_path",
           "preflight",
@@ -253,8 +279,6 @@ async function inspectPathComponents(
         );
       }
     } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code === "ENOENT") return null;
       return revisionError(
         "invalid_path",
         "preflight",
@@ -271,10 +295,12 @@ async function worktreeObjectId(
   runner: LocalGitRunner,
   root: string,
   path: string,
+  filesystem: LocalEffectReadFileSystem,
 ): Promise<string | null | PathRevisionReadError> {
   try {
-    const stat = await lstat(join(root, ...path.split("/")));
-    if (!stat.isFile()) {
+    const stat = await filesystem.lstat(join(root, ...path.split("/")));
+    if (stat === null) return null;
+    if (stat.kind !== "file") {
       return revisionError(
         "uncommittable_path",
         "revision_check",
@@ -283,7 +309,6 @@ async function worktreeObjectId(
       );
     }
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     return revisionError(
       "invalid_path",
       "revision_check",

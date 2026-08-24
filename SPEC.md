@@ -125,7 +125,7 @@ Requests are preflighted as a whole. Paths are root-confined, `.git`-reserved, a
 
 Results are `ok`, `partial`, or `error`. A durable write or index effect followed by failure MUST be reported as `partial` with completed phases, current selected-path revisions, a stable code, and safe recovery guidance. Implementations never claim rollback over index state they cannot prove they own.
 
-The full request/result grammar, failure vocabulary, phase semantics, and language-neutral conformance manifest are normative in [`schema/local-effects.md`](schema/local-effects.md) and [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json). The package-root reference API remains mutation-free; effect implementations require explicit opt-in.
+The full request/result grammar, failure vocabulary, phase semantics, and language-neutral conformance manifest are normative in [`schema/local-effects.md`](schema/local-effects.md) and [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json). The package-root reference API remains mutation-free. TypeScript callers opt into the conformant reference implementation through `@ideaspaces/protocol/local-effects`, supplying explicit filesystem and Git capabilities.
 
 ## Two Layers
 

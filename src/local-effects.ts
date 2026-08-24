@@ -6,8 +6,8 @@ import type { Op, Trailers } from "./trailers.js";
  * Pure contract types and preflight validators for local repository effects.
  *
  * This module does not read or mutate the filesystem, invoke Git, or discover
- * ambient identity. The effect implementations are intentionally a separate,
- * opt-in package subpath; PF0 defines only the portable request/result shape.
+ * ambient identity. The conformant effect implementation is intentionally a
+ * separate, opt-in `@ideaspaces/protocol/local-effects` package subpath.
  */
 
 export type LocalEffectOperation = "write_markdown" | "commit_paths";
@@ -200,6 +200,29 @@ export type LocalGitRunner = (
   root: string,
   args: readonly string[],
 ) => Promise<LocalGitResult>;
+
+/** Portable file-kind facts used without following symbolic links. */
+export interface LocalEffectFileStat {
+  kind: "file" | "directory" | "symlink" | "other";
+  mode?: number;
+}
+
+/** Read-only filesystem capability shared by revision reads and effects. */
+export interface LocalEffectReadFileSystem {
+  realpath(path: string): Promise<string>;
+  lstat(path: string): Promise<LocalEffectFileStat | null>;
+}
+
+/** Explicit filesystem mutation boundary for the TypeScript reference effects. */
+export interface LocalEffectFileSystem extends LocalEffectReadFileSystem {
+  readUtf8(path: string): Promise<string>;
+  atomicWriteUtf8(path: string, content: string): Promise<void>;
+}
+
+export interface LocalEffectCapabilities {
+  git: LocalGitRunner;
+  filesystem: LocalEffectFileSystem;
+}
 
 export interface LocalEffectValidationIssue {
   code: LocalEffectFailureCode;

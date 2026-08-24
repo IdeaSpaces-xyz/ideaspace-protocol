@@ -1,6 +1,6 @@
 {
   "name": "@ideaspaces/protocol",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "The open standard for how agents turn useful work into durable, portable knowledge",
   "keywords": [
     "ideaspaces",
@@ -20,6 +20,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./local-effects": {
+      "types": "./dist/local-effects-runtime.d.ts",
+      "import": "./dist/local-effects-runtime.js"
     },
     "./schema/frontmatter": "./schema/frontmatter.schema.json",
     "./schema/local-effects": "./schema/local-effects.md",

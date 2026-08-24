@@ -16,7 +16,7 @@ The caller supplies:
 
 The implementation MUST NOT authenticate, discover a platform account, call a remote API, read session/Change caches, inspect credentials, mutate Git configuration, or invoke a network Git verb. Harnesses own confirmation and capture-ledger persistence. The CLI owns terminal, auth, remote, and platform behavior.
 
-The package-root TypeScript API remains mutation-free. Pure contract values, validators, and `pathRevision` may be exported there. A TypeScript effect implementation MUST require an explicit effect subpath.
+The package-root TypeScript API remains mutation-free. Pure contract values, validators, and `pathRevision` may be exported there. The conformant TypeScript reference implementation is the explicit `@ideaspaces/protocol/local-effects` subpath: async `writeMarkdown(request, capabilities)` and `commitPaths(request, capabilities)` receive a caller-supplied Git runner and filesystem capability. It ships a Node filesystem adapter but no ambient/default Git runner. These names map the language-neutral operations; they do not change the portable request or result grammar.
 
 ## Shared vocabulary
 

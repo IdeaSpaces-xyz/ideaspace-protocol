@@ -1,13 +1,13 @@
 ---
 name: Now
-summary: Current state — v0.7.0 defines one language-neutral local-effect contract and shared vectors before independent Rust and TypeScript implementations encode repository mutation.
+summary: Current state — v0.8.0 adds the explicit TypeScript local-effect reference subpath, executing the shared language-neutral vectors while Rust remains independent.
 ---
 # Now
 
-**v0.7.0, early and provisional — one public standard for repository shape, the agent operating loop, and safe local repository effects.**
+**v0.8.0, early and provisional — one public standard for repository shape, the agent operating loop, and safe local repository effects.**
 
 In place:
-- **Language-neutral local effects — delivered in v0.7.0.** `schema/local-effects.md` defines `write_markdown`, exact-path `commit_paths`, and the read-only worktree/index/HEAD `path_revision` fact; `conformance/local-effects/manifest.json` gives Rust and TypeScript one fixture set for root/symlink/ignore safety, revision CAS, frontmatter preservation, exact commit membership, explicit identity, bystander preservation, and honest partial failure. The package root remains mutation-free: it exports pure request/result types, validators, and injected `pathRevision`; effect implementations proceed independently behind explicit boundaries.
+- **TypeScript reference local effects — delivered in v0.8.0.** `@ideaspaces/protocol/local-effects` implements async atomic Markdown writes and exact reviewed-path commits over explicit filesystem/Git capabilities. It executes every v0.7.0 language-neutral vector and case against isolated real Git, including fault-injected stage/commit boundaries. The package root remains mutation-free: it exports only pure request/result/capability types, validators, and injected read-only `pathRevision`; Rust remains an independent implementation of the same contract.
 - **Public capture-standard framing — delivered in v0.4.8.** GitHub and npm now lead with the outcome the protocol makes portable: agents preserving useful work as durable Markdown and git history. The package APIs and schema semantics are unchanged from v0.4.7.
 - `SPEC.md` + `SKILLS.md` — the normative shape and ability layer, including explicit push/pull directions and the protocol-owned shared skill catalog.
 - `schema/` — provisional frontmatter, `_agent/` contract, and Change-layer trailer formats. `attached_to` is one typed link with an open, platform-defined type vocabulary.
@@ -28,5 +28,5 @@ In place:
 Next (detail in [next.md](next.md)):
 - Lift the shared cache-path derivation into the reference library — four consumers duplicate it today, held together by golden-value tests.
 - A contract-delta primitive for ambient fractal awareness on the surfaces.
-- Independent Rust and TypeScript local-effect implementations against the v0.7.0 vectors; TypeScript mutation enters only through an explicit effect subpath.
+- Independent Rust local effects against the v0.7.0 vectors, plus downstream CLI, MCP/Claude, and Pi adoption of the shipped TypeScript subpath.
 - Let the open `attached_to` type vocabulary evolve only from demonstrated platform needs.
