@@ -4,6 +4,7 @@ The reference TypeScript implementation of the shape — what TS surfaces embed 
 
 Present:
 
+- `assets.ts` — exact `_assets/` recognition and pure lexical relative-reference resolution with no filesystem lookup, search, fallback, or mutation
 - `frontmatter.ts` — parse / compose / extract (Layer 1: `name`, `summary`, `attached_to`, `tags`)
 - `root-identity.ts` — optional Space root ID parsing, deterministic current-form generation, and pure lazy-alignment evaluation over caller-supplied evidence
 - `markdown-inspection.ts` — portable progressive-disclosure reads (`summary`, ATX `outline`, exact `section`) over a string or local file

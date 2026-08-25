@@ -1,12 +1,13 @@
 ---
 name: Now
-summary: Current state — v0.9.0 promotes optional Space root identity into the protocol with current and legacy forms, deterministic generation, pure lazy-alignment states, and language-neutral vectors.
+summary: Current state — v0.10.0 recognizes exact `_assets/` as supporting payload and adds one pure lexical relative-reference operation with language-neutral vectors, without storage, rendering, or mutation.
 ---
 # Now
 
-**v0.9.0, early and provisional — one public standard for repository shape, portable Space identity, the agent operating loop, and safe local repository effects.**
+**v0.10.0, early and provisional — one public standard for repository shape, portable supporting material and Space identity, the agent operating loop, and safe local repository effects.**
 
 In place:
+- **Portable supporting material — delivered in v0.10.0.** Exact `_assets/` is referenced payload beneath any content position, not a position, Note, surface, searchable knowledge, or ambient context. `resolveAssetReference` lexically resolves an already-extracted relative Markdown path from its containing document with no filesystem lookup, search, fallback, rendering, or mutation. The language-neutral schema and vectors prove root, colocated, both-present authored selection, dot normalization, exact-case/extension precedence, root escape, invalid input, and validator skipping.
 - **Portable root identity — delivered in v0.9.0.** A root foundation may declare optional `root_node_id`; current writers mint 96 random bits while readers preserve current and legacy forms. Pure package-root primitives parse, mint from injected entropy, and evaluate caller-supplied declaration/origin/registry evidence as absent, local-only, legacy-unstamped, aligned, drift, ambiguous, or invalid. Missing identity remains valid; no read creates a contract, writes, migrates, or rebinds. The language-neutral schema and vectors make lazy convergence independently implementable.
 - **TypeScript reference local effects — delivered in v0.8.0.** `@ideaspaces/protocol/local-effects` implements async atomic Markdown writes and exact reviewed-path commits over explicit filesystem/Git capabilities. It executes every v0.7.0 language-neutral vector and case against isolated real Git, including fault-injected stage/commit boundaries. The package root remains mutation-free: it exports only pure request/result/capability types, validators, and injected read-only `pathRevision`; Rust remains an independent implementation of the same contract.
 - **Public capture-standard framing — delivered in v0.4.8.** GitHub and npm now lead with the outcome the protocol makes portable: agents preserving useful work as durable Markdown and git history. The package APIs and schema semantics are unchanged from v0.4.7.
@@ -28,6 +29,6 @@ In place:
 
 Next (detail in [next.md](next.md)):
 - Keeper adoption and CLI create/publish/clone/fork use the v0.9.0 root-identity contract without changing its lazy compatibility rules.
-- Name `_assets/` and ordinary relative resolution as the next independent protocol lane.
+- Local and hosted consumers adopt the v0.10.0 `_assets/` shape without moving rendering, access, MIME, or storage policy into the protocol.
 - A contract-delta primitive for ambient fractal awareness on the surfaces.
 - Retire the legacy awareness wrapper after a final consumer audit; evolve `attached_to` only from demonstrated needs.

@@ -15,8 +15,13 @@ const expected = [
   "SKILLS.md",
   "SPEC.md",
   "VERSION",
+  "conformance/assets/manifest.json",
   "conformance/local-effects/manifest.json",
   "conformance/root-identity/manifest.json",
+  "dist/assets.d.ts",
+  "dist/assets.d.ts.map",
+  "dist/assets.js",
+  "dist/assets.js.map",
   "dist/awareness.d.ts",
   "dist/awareness.d.ts.map",
   "dist/awareness.js",
@@ -100,6 +105,7 @@ const expected = [
   "package.json",
   "schema/README.md",
   "schema/agent-contract.md",
+  "schema/assets.md",
   "schema/content-awareness.md",
   "schema/frontmatter.schema.json",
   "schema/local-effects.md",
@@ -135,8 +141,10 @@ try {
     ".",
     "./local-effects",
     "./schema/frontmatter",
+    "./schema/assets",
     "./schema/local-effects",
     "./schema/root-identity",
+    "./conformance/assets",
     "./conformance/local-effects",
     "./conformance/root-identity",
     "./SPEC.md",
@@ -183,8 +191,10 @@ try {
     import * as localEffects from "@ideaspaces/protocol/local-effects";
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
+    const assets = require("@ideaspaces/protocol/conformance/assets");
     const effects = require("@ideaspaces/protocol/conformance/local-effects");
     const rootIdentity = require("@ideaspaces/protocol/conformance/root-identity");
+    const assetsSchema = require.resolve("@ideaspaces/protocol/schema/assets");
     const localEffectsSchema = require.resolve("@ideaspaces/protocol/schema/local-effects");
     const rootIdentitySchema = require.resolve("@ideaspaces/protocol/schema/root-identity");
     const required = [
@@ -199,6 +209,7 @@ try {
       "rootNodeIdFromBytes",
       "renderContentAwareness",
       "renderPosition",
+      "resolveAssetReference",
       "validateCommitPathsRequest",
       "validateSpace",
       "validateWriteMarkdownRequest",
@@ -223,17 +234,27 @@ try {
     if (schema?.title !== "Ideaspace Note frontmatter (Layer 1)") {
       throw new Error("Frontmatter schema export did not load");
     }
+    if (assets?.format !== "ideaspaces-assets/v1" || !assets.required_coverage?.length) {
+      throw new Error("Assets conformance manifest did not load");
+    }
     if (effects?.format !== "ideaspaces-local-effects/v1" || !effects.required_coverage?.length) {
       throw new Error("Local-effect conformance manifest did not load");
     }
     if (rootIdentity?.format !== "ideaspaces-root-identity/v1" || !rootIdentity.required_coverage?.length) {
       throw new Error("Root-identity conformance manifest did not load");
     }
+    if (!assetsSchema.endsWith("schema/assets.md")) {
+      throw new Error("Assets schema export did not resolve");
+    }
     if (!localEffectsSchema.endsWith("schema/local-effects.md")) {
       throw new Error("Local-effect schema export did not resolve");
     }
     if (!rootIdentitySchema.endsWith("schema/root-identity.md")) {
       throw new Error("Root-identity schema export did not resolve");
+    }
+    const asset = protocol.resolveAssetReference("guides/topic.md", "_assets/x.png");
+    if (asset.status !== "asset" || asset.path !== "guides/_assets/x.png") {
+      throw new Error("Assets package boundary did not execute");
     }
     const aligned = protocol.evaluateRootIdentity({
       declaration: "n_0123456789abcdef01234567",

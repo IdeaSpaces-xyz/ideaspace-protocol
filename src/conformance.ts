@@ -5,7 +5,7 @@
  * Conformance section and [`../schema/agent-contract.md`](../schema/agent-contract.md):
  * a root `_agent/` (it's a space at all), the named-but-absent contract files as
  * drift signals, optional root identity, portable `_agent/skills/` identities,
- * knowledge `.md` frontmatter against
+ * recognized `_assets/` supporting payload, knowledge `.md` frontmatter against
  * [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json), and
  * graceful-ignore of underscore-prefixed infrastructure folders.
  *
@@ -26,6 +26,7 @@ import { CONTRACT_FILES, readContract } from "./space.js";
 import { discoverSkillEntries } from "./awareness.js";
 import { inspectFrontmatterSyntax } from "./frontmatter.js";
 import { parseRootNodeId } from "./root-identity.js";
+import { ASSET_DIRECTORY } from "./assets.js";
 
 export interface ConformanceIssue {
   level: "error" | "warn";
@@ -379,10 +380,10 @@ function parseFrontmatter(content: string): Record<string, unknown> | null {
  * Yield absolute paths of knowledge `.md` files under `root`.
  *
  * Knowledge is everything NOT under an underscore-prefixed directory, excluding
- * `README.md` (a position descriptor, not a Note). Underscore folders other than
- * `_agent/` are infrastructure — skipped gracefully, with a single `warn` per
- * skipped folder so the caller can see what was ignored. Never descends outside
- * `root`.
+ * `README.md` (a position descriptor, not a Note). `_assets/` is recognized
+ * supporting payload and is skipped silently. Other underscore folders besides
+ * `_agent/` are unknown infrastructure — skipped gracefully, with one `warn` per
+ * folder so the caller can see what was ignored. Never descends outside `root`.
  */
 async function* walkKnowledge(
   root: string,
@@ -406,14 +407,15 @@ async function* walkDir(
     const abs = join(dir, entry.name);
     if (entry.isDirectory()) {
       if (entry.name.startsWith("_")) {
-        // Underscore folder — infrastructure. `_agent/` is handled separately;
-        // any other is gracefully ignored (skip, never error).
-        if (entry.name !== "_agent") {
+        // Underscore folder — never knowledge. `_agent/` is handled separately;
+        // recognized `_assets/` is supporting payload; unknown extensions are
+        // gracefully ignored and surfaced as one warning.
+        if (entry.name !== "_agent" && entry.name !== ASSET_DIRECTORY) {
           issues.push({
             level: "warn",
             rule: "infra-skipped",
             path: relative(root, abs),
-            detail: "underscore-prefixed infrastructure folder — skipped (graceful-ignore)",
+            detail: "unknown underscore-prefixed infrastructure folder — skipped (graceful-ignore)",
           });
         }
         continue;
