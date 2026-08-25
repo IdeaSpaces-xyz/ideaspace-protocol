@@ -16,6 +16,7 @@ const expected = [
   "SPEC.md",
   "VERSION",
   "conformance/local-effects/manifest.json",
+  "conformance/root-identity/manifest.json",
   "dist/awareness.d.ts",
   "dist/awareness.d.ts.map",
   "dist/awareness.js",
@@ -64,6 +65,10 @@ const expected = [
   "dist/path-context.d.ts.map",
   "dist/path-context.js",
   "dist/path-context.js.map",
+  "dist/root-identity.d.ts",
+  "dist/root-identity.d.ts.map",
+  "dist/root-identity.js",
+  "dist/root-identity.js.map",
   "dist/skill-catalog.generated.d.ts",
   "dist/skill-catalog.generated.d.ts.map",
   "dist/skill-catalog.generated.js",
@@ -99,6 +104,7 @@ const expected = [
   "schema/frontmatter.schema.json",
   "schema/local-effects.md",
   "schema/markdown-inspection.md",
+  "schema/root-identity.md",
   "schema/surface-state.md",
   "schema/trailers.md",
   "schema/workspace-handles.md",
@@ -130,7 +136,9 @@ try {
     "./local-effects",
     "./schema/frontmatter",
     "./schema/local-effects",
+    "./schema/root-identity",
     "./conformance/local-effects",
+    "./conformance/root-identity",
     "./SPEC.md",
     "./SKILLS.md",
     "./templates/foundation-core.md",
@@ -176,13 +184,19 @@ try {
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
     const effects = require("@ideaspaces/protocol/conformance/local-effects");
+    const rootIdentity = require("@ideaspaces/protocol/conformance/root-identity");
     const localEffectsSchema = require.resolve("@ideaspaces/protocol/schema/local-effects");
+    const rootIdentitySchema = require.resolve("@ideaspaces/protocol/schema/root-identity");
     const required = [
       "assembleContentAwareness",
       "composeContractAlongPath",
       "inspectMarkdown",
       "inspectMarkdownFile",
+      "evaluateRootIdentity",
+      "mintRootNodeId",
+      "parseRootNodeId",
       "pathRevision",
+      "rootNodeIdFromBytes",
       "renderContentAwareness",
       "renderPosition",
       "validateCommitPathsRequest",
@@ -212,8 +226,21 @@ try {
     if (effects?.format !== "ideaspaces-local-effects/v1" || !effects.required_coverage?.length) {
       throw new Error("Local-effect conformance manifest did not load");
     }
+    if (rootIdentity?.format !== "ideaspaces-root-identity/v1" || !rootIdentity.required_coverage?.length) {
+      throw new Error("Root-identity conformance manifest did not load");
+    }
     if (!localEffectsSchema.endsWith("schema/local-effects.md")) {
       throw new Error("Local-effect schema export did not resolve");
+    }
+    if (!rootIdentitySchema.endsWith("schema/root-identity.md")) {
+      throw new Error("Root-identity schema export did not resolve");
+    }
+    const aligned = protocol.evaluateRootIdentity({
+      declaration: "n_0123456789abcdef01234567",
+      canonicalOrigin: "n_0123456789abcdef01234567",
+    });
+    if (aligned.state !== "aligned" || aligned.rootNodeId !== "n_0123456789abcdef01234567") {
+      throw new Error("Root-identity package boundary did not execute");
     }
   `;
   execFileSync(process.execPath, ["--input-type=module", "--eval", probe], {

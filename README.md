@@ -35,9 +35,9 @@ This repository is both the definition and a conformant example. [Browse it as a
 |---|---|
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
 | [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the agent operating loop and shared intent skills for orientation, deliberate capture, directional sync, and reflection. |
-| [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
-| [`src/`](src/) | Reference TypeScript implementation — frontmatter, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect validation plus the opt-in effect runtime, drift, and the skill catalog. |
-| [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral local-effect vectors shared by independent runtimes. |
+| [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, optional root identity, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
+| [`src/`](src/) | Reference TypeScript implementation — frontmatter, root identity, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect validation plus the opt-in effect runtime, drift, and the skill catalog. |
+| [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral root-identity/local-effect vectors shared by independent runtimes. |
 | [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
 
 ## Concepts in 30 seconds
@@ -46,7 +46,8 @@ This repository is both the definition and a conformant example. [Browse it as a
 - **Two kinds of content.** Plain `.md` files are *knowledge*; the `_agent/` folder is *agent context* (how to work here). Everything not underscore-prefixed is knowledge.
 - **The `_agent/` contract.** `foundation.md` (root handshake), `guide.md`, `purpose.md`, `now.md`, `next.md`, and optional `schema.md` (the shape of Notes in the folder — guidance, not validation). Give it a good surface: loaded at depth 0, with depth on demand.
 - **Fractal.** `_agent/` can appear at any position and composes along the path: general at the root, specific as you descend.
-- **Identity in git.** The author is the person; an agent that helped adds a `Co-authored-by:` trailer. Provenance rides in git, not in a file's frontmatter.
+- **Space identity, progressively.** A root foundation may carry optional `root_node_id`; missing identity remains valid, clone retains it, and fork remints it.
+- **Provenance in git.** The author is the person; an agent that helped adds a `Co-authored-by:` trailer. Provenance rides in git, not in knowledge-Note frontmatter.
 
 The full, normative version is [`SPEC.md`](SPEC.md).
 
@@ -82,6 +83,19 @@ const section = await inspectMarkdownFile("work/Next.md", {
   mode: "section",
   heading: "Current window",
 });
+```
+
+Evaluate optional root identity without discovering remotes or contacting a host:
+
+```ts
+import { evaluateRootIdentity, mintRootNodeId } from "@ideaspaces/protocol";
+
+const localId = mintRootNodeId();
+const state = evaluateRootIdentity({
+  declaration: localId,
+  canonicalOrigin: localId,
+});
+console.log(state.state); // aligned
 ```
 
 Local harnesses can also read neutral, unrendered workspace handles without
@@ -146,7 +160,7 @@ The TypeScript library is the *reference* implementation, not the only one. Othe
 
 ## Conformance
 
-A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance) and declares the spec version it targets. A tool separately claiming local-effect conformance executes every required vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json). The [`conformance/`](conformance/) kit makes both claims testable.
+A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance) and declares the spec version it targets. Root-identity and local-effect implementations separately execute every required vector in their respective manifests under [`conformance/`](conformance/). The kit makes all three claims testable.
 
 ## Ecosystem
 
@@ -163,7 +177,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.8.0 — early and provisional.** The TypeScript reference now executes the v0.7.0 language-neutral local-effect contract through `@ideaspaces/protocol/local-effects`: atomic Markdown writes, exact reviewed-path commits, revision CAS, typed partial failures, injected filesystem/Git capabilities, and all shared vectors. The package root remains mutation-free, and no npm release is implied by the repository version. Pin a version and expect changes before 1.0.
+**v0.9.0 — early and provisional.** A Space may now declare optional `root_node_id` in its root foundation. The package exports current/legacy validation, injected 96-bit generation, and pure lazy-alignment evaluation; language-neutral vectors prove absence, alignment, legacy stamping, drift, ambiguity, and malformed evidence. Missing identity remains valid, and no npm release is implied by the repository version. Pin a version and expect changes before 1.0.
 
 ## Develop
 

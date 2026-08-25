@@ -4,9 +4,10 @@
  * This checks the *shape* a space must have per [`../SPEC.md`](../SPEC.md)'s
  * Conformance section and [`../schema/agent-contract.md`](../schema/agent-contract.md):
  * a root `_agent/` (it's a space at all), the named-but-absent contract files as
- * drift signals, portable `_agent/skills/` identities, knowledge `.md`
- * frontmatter against [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json),
- * and graceful-ignore of underscore-prefixed infrastructure folders.
+ * drift signals, optional root identity, portable `_agent/skills/` identities,
+ * knowledge `.md` frontmatter against
+ * [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json), and
+ * graceful-ignore of underscore-prefixed infrastructure folders.
  *
  * It dogfoods the reference library — `readContract` / `CONTRACT_FILES` for the
  * `_agent/` contract and `inspectFrontmatterSyntax` for malformed-frontmatter
@@ -24,6 +25,7 @@ import { parseDocument } from "yaml";
 import { CONTRACT_FILES, readContract } from "./space.js";
 import { discoverSkillEntries } from "./awareness.js";
 import { inspectFrontmatterSyntax } from "./frontmatter.js";
+import { parseRootNodeId } from "./root-identity.js";
 
 export interface ConformanceIssue {
   level: "error" | "warn";
@@ -86,6 +88,8 @@ export async function validateSpace(root: string): Promise<ConformanceReport> {
       path: "_agent/foundation.md",
       detail: "a space without a foundation is just folders — the handshake is missing",
     });
+  } else {
+    checkFoundation(contract.foundation.content, issues);
   }
   for (const name of DRIFT_CONTRACT_FILES) {
     if (!contract[name]) {
@@ -151,6 +155,35 @@ async function loadSchemaConstraints(): Promise<SchemaConstraints> {
       loadError: `could not load frontmatter schema: ${(err as Error).message}`,
     };
   }
+}
+
+/** Validate optional root identity without requiring or minting it. */
+function checkFoundation(content: string, issues: ConformanceIssue[]): void {
+  const path = "_agent/foundation.md";
+  const syntax = inspectFrontmatterSyntax(content);
+  if (syntax.status === "malformed") {
+    issues.push({
+      level: "error",
+      rule: "foundation-frontmatter-malformed",
+      path,
+      detail: `foundation frontmatter does not parse: ${syntax.message}`,
+    });
+    return;
+  }
+
+  const fm = parseFrontmatter(content);
+  if (fm === null || !("root_node_id" in fm)) return;
+  const parsed = parseRootNodeId(fm.root_node_id);
+  if (parsed.status === "valid") return;
+  const detail = parsed.status === "invalid" && parsed.code === "invalid_format"
+    ? "`root_node_id` must match ^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$"
+    : "`root_node_id` must be a string when declared";
+  issues.push({
+    level: "error",
+    rule: "root-node-id-invalid",
+    path,
+    detail,
+  });
 }
 
 /** Check one knowledge note's frontmatter syntax and schema-key constraints. */

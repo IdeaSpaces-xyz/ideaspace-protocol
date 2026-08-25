@@ -1,0 +1,300 @@
+{
+  "format": "ideaspaces-root-identity/v1",
+  "current_form": "^n_[0-9a-f]{24}$",
+  "legacy_read_form": "^n_[0-9a-f]{12}$",
+  "required_coverage": [
+    "missing_allowed",
+    "current_read",
+    "legacy_read",
+    "invalid_type",
+    "invalid_format",
+    "current_mint",
+    "invalid_entropy_length",
+    "aligned",
+    "local_only",
+    "legacy_unstamped",
+    "drift",
+    "ambiguous",
+    "invalid_evidence"
+  ],
+  "vectors": [
+    {
+      "id": "parse-missing",
+      "operation": "parse",
+      "covers": ["missing_allowed"],
+      "expected": { "status": "absent" }
+    },
+    {
+      "id": "parse-current",
+      "operation": "parse",
+      "covers": ["current_read"],
+      "input": "n_0123456789abcdef01234567",
+      "expected": {
+        "status": "valid",
+        "rootNodeId": "n_0123456789abcdef01234567",
+        "format": "current"
+      }
+    },
+    {
+      "id": "parse-legacy",
+      "operation": "parse",
+      "covers": ["legacy_read"],
+      "input": "n_0123456789ab",
+      "expected": {
+        "status": "valid",
+        "rootNodeId": "n_0123456789ab",
+        "format": "legacy"
+      }
+    },
+    {
+      "id": "parse-invalid-type",
+      "operation": "parse",
+      "covers": ["invalid_type"],
+      "input": 42,
+      "expected": { "status": "invalid", "code": "invalid_type" }
+    },
+    {
+      "id": "parse-invalid-forms",
+      "operation": "parse_cases",
+      "covers": ["invalid_format"],
+      "cases": [
+        "",
+        "0123456789ab",
+        "n_0123456789",
+        "n_0123456789abc",
+        "n_0123456789abcdef0123456",
+        "n_0123456789abcdef012345678",
+        "n_0123456789ABCDEF01234567",
+        "n_g123456789abcdef01234567",
+        "space_0123456789abcdef01234567"
+      ],
+      "expected": { "status": "invalid", "code": "invalid_format" }
+    },
+    {
+      "id": "mint-current-from-zero-bytes",
+      "operation": "from_bytes",
+      "covers": ["current_mint"],
+      "bytes_hex": "000000000000000000000000",
+      "expected": "n_000000000000000000000000"
+    },
+    {
+      "id": "mint-current-from-sequence",
+      "operation": "from_bytes",
+      "covers": ["current_mint"],
+      "bytes_hex": "000102030405060708090a0b",
+      "expected": "n_000102030405060708090a0b"
+    },
+    {
+      "id": "mint-rejects-wrong-entropy-length",
+      "operation": "from_bytes_error",
+      "covers": ["invalid_entropy_length"],
+      "cases_hex": [
+        "",
+        "000102030405",
+        "000102030405060708090a",
+        "000102030405060708090a0b0c",
+        "000102030405060708090a0b0c0d0e0f1011121314151617"
+      ],
+      "error": "invalid_entropy_length"
+    },
+    {
+      "id": "evaluate-absent",
+      "operation": "evaluate",
+      "covers": ["missing_allowed"],
+      "input": {},
+      "expected": { "state": "absent", "evidence": [] }
+    },
+    {
+      "id": "evaluate-local-only",
+      "operation": "evaluate",
+      "covers": ["local_only"],
+      "input": { "declaration": "n_111111111111111111111111" },
+      "expected": {
+        "state": "local_only",
+        "rootNodeId": "n_111111111111111111111111",
+        "evidence": [
+          {
+            "source": "declaration",
+            "rootNodeId": "n_111111111111111111111111",
+            "format": "current"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluate-legacy-unstamped-from-origin",
+      "operation": "evaluate",
+      "covers": ["legacy_unstamped"],
+      "input": { "canonicalOrigin": "n_222222222222222222222222" },
+      "expected": {
+        "state": "legacy_unstamped",
+        "rootNodeId": "n_222222222222222222222222",
+        "evidence": [
+          {
+            "source": "canonical_origin",
+            "rootNodeId": "n_222222222222222222222222",
+            "format": "current"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluate-legacy-unstamped-agreeing-fallbacks",
+      "operation": "evaluate",
+      "covers": ["legacy_unstamped", "legacy_read"],
+      "input": {
+        "canonicalOrigin": "n_333333333333",
+        "localRegistry": "n_333333333333"
+      },
+      "expected": {
+        "state": "legacy_unstamped",
+        "rootNodeId": "n_333333333333",
+        "evidence": [
+          {
+            "source": "canonical_origin",
+            "rootNodeId": "n_333333333333",
+            "format": "legacy"
+          },
+          {
+            "source": "local_registry",
+            "rootNodeId": "n_333333333333",
+            "format": "legacy"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluate-aligned",
+      "operation": "evaluate",
+      "covers": ["aligned"],
+      "input": {
+        "declaration": "n_444444444444444444444444",
+        "canonicalOrigin": "n_444444444444444444444444",
+        "localRegistry": "n_444444444444444444444444"
+      },
+      "expected": {
+        "state": "aligned",
+        "rootNodeId": "n_444444444444444444444444",
+        "evidence": [
+          {
+            "source": "declaration",
+            "rootNodeId": "n_444444444444444444444444",
+            "format": "current"
+          },
+          {
+            "source": "canonical_origin",
+            "rootNodeId": "n_444444444444444444444444",
+            "format": "current"
+          },
+          {
+            "source": "local_registry",
+            "rootNodeId": "n_444444444444444444444444",
+            "format": "current"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluate-drift",
+      "operation": "evaluate",
+      "covers": ["drift"],
+      "input": {
+        "declaration": "n_555555555555555555555555",
+        "canonicalOrigin": "n_666666666666666666666666"
+      },
+      "expected": {
+        "state": "drift",
+        "evidence": [
+          {
+            "source": "declaration",
+            "rootNodeId": "n_555555555555555555555555",
+            "format": "current"
+          },
+          {
+            "source": "canonical_origin",
+            "rootNodeId": "n_666666666666666666666666",
+            "format": "current"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluate-ambiguous-fallbacks",
+      "operation": "evaluate",
+      "covers": ["ambiguous"],
+      "input": {
+        "canonicalOrigin": "n_777777777777777777777777",
+        "localRegistry": "n_888888888888888888888888"
+      },
+      "expected": {
+        "state": "ambiguous",
+        "evidence": [
+          {
+            "source": "canonical_origin",
+            "rootNodeId": "n_777777777777777777777777",
+            "format": "current"
+          },
+          {
+            "source": "local_registry",
+            "rootNodeId": "n_888888888888888888888888",
+            "format": "current"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluate-ambiguous-fallbacks-ignore-matching-declaration",
+      "operation": "evaluate",
+      "covers": ["ambiguous"],
+      "input": {
+        "declaration": "n_777777777777777777777777",
+        "canonicalOrigin": "n_777777777777777777777777",
+        "localRegistry": "n_888888888888888888888888"
+      },
+      "expected": {
+        "state": "ambiguous",
+        "evidence": [
+          {
+            "source": "declaration",
+            "rootNodeId": "n_777777777777777777777777",
+            "format": "current"
+          },
+          {
+            "source": "canonical_origin",
+            "rootNodeId": "n_777777777777777777777777",
+            "format": "current"
+          },
+          {
+            "source": "local_registry",
+            "rootNodeId": "n_888888888888888888888888",
+            "format": "current"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluate-invalid-evidence",
+      "operation": "evaluate",
+      "covers": ["invalid_evidence"],
+      "input": {
+        "declaration": "n_999999999999999999999999",
+        "canonicalOrigin": "not-an-id",
+        "localRegistry": 42
+      },
+      "expected": {
+        "state": "invalid",
+        "evidence": [
+          {
+            "source": "declaration",
+            "rootNodeId": "n_999999999999999999999999",
+            "format": "current"
+          }
+        ],
+        "invalidEvidence": [
+          { "source": "canonical_origin", "code": "invalid_format" },
+          { "source": "local_registry", "code": "invalid_type" }
+        ]
+      }
+    }
+  ]
+}

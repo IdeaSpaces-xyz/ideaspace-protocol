@@ -57,6 +57,8 @@ The contract holds two kinds of thing. The four fractal files **layer** — they
 
 **5. The handshake.** `foundation.md` orients anyone arriving: what this place is, what areas and agreements exist, where to go for what. It **points, it does not reproduce** — one line per area, links for depth. A space without a foundation is just folders; with it, it is a legible place an agent can self-direct through instead of being told where to look.
 
+A root foundation MAY carry optional `root_node_id` frontmatter: the Space's portable opaque identity. Current writers mint `n_` plus 24 lowercase hexadecimal characters (96 random bits); readers also accept the legacy 12-character payload. Missing identity remains valid progressive enhancement. Identity lifecycle, lazy legacy convergence, and language-neutral vectors are defined in [`schema/root-identity.md`](schema/root-identity.md).
+
 **6. Underscore is the extension point.** Any `_`-prefixed folder is infrastructure — loaded by position, not search. `_agent/` is the one every agent must understand. Others (`_access/`, `_conversations/`, …) are optional and platform-defined. **An agent gracefully ignores any `_`-folder it does not understand.** This is the portability guarantee: a space can carry features a given agent has never heard of, and that agent still inhabits it correctly.
 
 **7. Awareness ⊋ content.** The working tree can hold more than the space commits — other repos (code), drafts, scratch. `.gitignore` is the allowlist that splits them:
@@ -82,7 +84,17 @@ The seven requirements above are all an agent needs to conform. This is the mode
 
 ## Identity
 
-Git already has the slots; use them, don't invent a store. This section is the canonical contract for identity and commit trailers — skills and tooling conform to it rather than restating it.
+### Space identity
+
+A Space MAY declare one `root_node_id` in its root `_agent/foundation.md`. It names the Space across checkouts without exposing a private storage key, granting access, or assigning IDs to every Note. A nested foundation starts another Space and may carry that Space's own identity.
+
+One side mints per lifecycle. A local-first creator mints the current 96-bit form and a Keeper adopts it; a Keeper-first Space retains the Keeper's existing ID and may declare it locally later. Clone retains identity; fork remints. Missing identity remains valid indefinitely. Declaration drift never silently rebinds hosted authority.
+
+Legacy convergence is lazy and reviewable: trusted canonical-origin or local-registry evidence may identify an existing hosted Space, but a tool only proposes adding that exact ID to an existing foundation. It never creates an agent contract, writes, stages, commits, or rekeys merely because the field is absent. The complete grammar and evidence-state table are in [`schema/root-identity.md`](schema/root-identity.md).
+
+### Commit identity and provenance
+
+Git already has the slots; use them, don't invent a store. This section is the canonical contract for commit identity and trailers — skills and tooling conform to it rather than restating it.
 
 - **Author = the person.** Commits are authored by the space's owner, `person:<username>`. True even for autonomous agent runs — the agent acts under the owner's account. One rule, no special cases.
 - **Agent = a `Co-authored-by:` trailer**, on every commit an agent made or assisted:
@@ -144,6 +156,7 @@ A tool or agent that claims to inhabit ideaspaces:
 - Gracefully ignore any `_`-prefixed folder it does not understand (skip, never error).
 - Never add an untracked path matched by Git's effective ignore rules; continue to treat already-tracked paths as shared history.
 - Author `_agent/skills/` entry ids and frontmatter names in the portable Agent Skills form, with the two names identical.
+- Accept an absent `root_node_id`; when a root foundation declares one, accept only the current or legacy form defined by [`schema/root-identity.md`](schema/root-identity.md).
 
 **SHOULD**
 - Surface a named-but-absent `_agent/` file as a drift signal rather than silently filling it.
@@ -153,6 +166,8 @@ A tool or agent that claims to inhabit ideaspaces:
 - Write per-agent records only under its own `_agent/<agent-id>/`.
 
 A tool that claims **local-effect conformance** additionally MUST pass every required coverage vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json), including per-path revision CAS, symlink refusal, semantic frontmatter preservation, exact commit membership, unselected-state preservation, explicit identity, and honest partial failure.
+
+A tool that claims **root-identity conformance** additionally MUST pass every required coverage vector in [`conformance/root-identity/manifest.json`](conformance/root-identity/manifest.json), including optional absence, current and legacy forms, 96-bit minting, lazy legacy alignment, drift, ambiguity, and malformed evidence.
 
 ---
 

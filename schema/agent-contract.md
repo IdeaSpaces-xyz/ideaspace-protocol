@@ -1,6 +1,6 @@
 # The `_agent/` contract
 
-> The checkable form of the space contract. Normative prose is [`../SPEC.md`](../SPEC.md); this is the enumeration tooling validates against. **Provisional, v0.6.0** — portable skill identity joins full-stack fractal composition (ancestors retained, nearest wins, skills union).
+> The checkable form of the space contract. Normative prose is [`../SPEC.md`](../SPEC.md); this is the enumeration tooling validates against. **Provisional, v0.9.0** — optional portable root identity joins full-stack fractal composition and portable skill identity.
 
 ## Positions and content
 
@@ -29,6 +29,8 @@ An `_agent/` folder may carry:
 Optional: `schema.md` (the shape of Notes in this folder — guidance, not validation), and subfolders `skills/` (how to do — flat `<name>.md` files or Agent Skills-style `<name>/SKILL.md` directories, so existing skills can be copied in unchanged), `perspectives/` (how to see), `<agent-id>/` (per-agent records, gitignored).
 
 A skill's entry id (`<name>`) and frontmatter `name` MUST be identical. The id is 1–64 lowercase ASCII letters, digits, or single hyphens, with no leading, trailing, or consecutive hyphen (`^[a-z0-9]+(?:-[a-z0-9]+)*$`). Human-readable capitalization and spaces belong in the Markdown heading, not the machine id.
+
+The root `foundation.md` MAY declare the Space's optional `root_node_id` in frontmatter. Missing identity remains valid. A declared value MUST use the current or legacy form in [`root-identity.md`](root-identity.md). This field belongs to the foundation handshake, not the knowledge-Note frontmatter schema; a nested foundation starts a new Space with its own optional identity.
 
 - **Nothing is strictly required.** A branch may carry only `now.md`.
 - **A named-but-absent file is a drift signal, not an error** — surface the gap, don't silently fill it.
@@ -66,6 +68,7 @@ A conformant space / tool:
 5. surfaces a named-but-absent contract file as drift, not error;
 6. gracefully ignores unknown `_`-prefixed folders;
 7. never commits gitignored paths;
-8. treats `_agent/schema.md` as instance-shape guidance and a schema mismatch as drift, never a write rejection.
+8. treats `_agent/schema.md` as instance-shape guidance and a schema mismatch as drift, never a write rejection;
+9. accepts a missing root identity and validates a declared `root_node_id` without minting, migrating, or rebinding during a read.
 
 See [`../SPEC.md#conformance`](../SPEC.md#conformance) for the MUST/SHOULD this expands.

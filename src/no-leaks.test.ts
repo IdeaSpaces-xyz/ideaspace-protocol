@@ -11,7 +11,6 @@ import { dirname, join } from "node:path";
 const FORBIDDEN = [
   "sw[_-]space", // internal platform name
   "pi-sw-space", // internal source path
-  "node_id", // platform graph handle (rides in the map, never the file)
   "node_type", // platform graph handle
   "node:n_", // platform node reference form
   "dir_centroids", // platform vector index
@@ -24,6 +23,35 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SELF = "src/no-leaks.test.ts";
 
 describe("no implementation leaks (repo-wide)", () => {
+  it("permits root_node_id but no other node_id handle", () => {
+    let hits = "";
+    try {
+      hits = execFileSync(
+        "git",
+        [
+          "grep",
+          "-nIi",
+          "node_id",
+          "--",
+          ".",
+          ":(exclude)node_modules",
+          ":(exclude)dist",
+          ":(exclude)package-lock.json",
+          `:(exclude)${SELF}`,
+        ],
+        { cwd: repoRoot, encoding: "utf-8" },
+      );
+    } catch (err) {
+      if ((err as { status?: number }).status === 1) return;
+      throw err;
+    }
+    const nonRootHits = hits
+      .split("\n")
+      .filter(Boolean)
+      .filter((line) => line.replace(/root_node_id(?=$|[^a-z])/gi, "").match(/node_id/i));
+    expect(nonRootHits, `per-Note node_id leaked:\n${nonRootHits.join("\n")}`).toEqual([]);
+  });
+
   it.each(FORBIDDEN)("no tracked file contains /%s/i", (pattern) => {
     let hits = "";
     try {
