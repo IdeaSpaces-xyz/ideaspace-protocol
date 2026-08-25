@@ -86,7 +86,6 @@ interface ValidateSpaceVector {
   expected: {
     ok: boolean;
     notes_checked: number;
-    asset_warning: boolean;
     unknown_infrastructure_warnings: string[];
   };
 }
@@ -175,7 +174,7 @@ describe("assets conformance manifest", () => {
             (issue) =>
               issue.rule === "infra-skipped" && issue.path.split("/").includes("_assets"),
           ),
-        ).toBe(vector.expected.asset_warning);
+        ).toBe(false);
         const unknownWarnings = report.issues
           .filter((issue) => issue.rule === "infra-skipped")
           .map((issue) => issue.path)
