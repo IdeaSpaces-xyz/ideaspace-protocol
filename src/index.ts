@@ -161,6 +161,31 @@ export {
 } from "./frontmatter.js";
 export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
 
+// Portable Space root identity — optional foundation declaration, current and
+// legacy forms, deterministic 96-bit formatting, and pure lazy-alignment
+// evaluation over caller-supplied trusted evidence. No discovery or mutation.
+export {
+  ROOT_NODE_ID_BYTES,
+  ROOT_NODE_ID_PATTERN,
+  CURRENT_ROOT_NODE_ID_PATTERN,
+  parseRootNodeId,
+  isValidRootNodeId,
+  rootNodeIdFromBytes,
+  mintRootNodeId,
+  evaluateRootIdentity,
+} from "./root-identity.js";
+export type {
+  RootNodeIdFormat,
+  RootNodeIdParseResult,
+  RootNodeIdEntropy,
+  RootIdentityEvidenceSource,
+  RootIdentityEvidence,
+  RootIdentityEvidenceFact,
+  InvalidRootIdentityEvidence,
+  RootIdentityState,
+  RootIdentityEvaluation,
+} from "./root-identity.js";
+
 // Progressive-disclosure Markdown inspection — summary, ATX outline, or one
 // exact section. Pure string inspection plus a local read-only file wrapper.
 export {

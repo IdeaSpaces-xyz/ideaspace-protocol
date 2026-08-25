@@ -1,12 +1,13 @@
 ---
 name: Now
-summary: Current state — v0.8.0 adds the explicit TypeScript local-effect reference subpath, executing the shared language-neutral vectors while Rust remains independent.
+summary: Current state — v0.9.0 promotes optional Space root identity into the protocol with current and legacy forms, deterministic generation, pure lazy-alignment states, and language-neutral vectors.
 ---
 # Now
 
-**v0.8.0, early and provisional — one public standard for repository shape, the agent operating loop, and safe local repository effects.**
+**v0.9.0, early and provisional — one public standard for repository shape, portable Space identity, the agent operating loop, and safe local repository effects.**
 
 In place:
+- **Portable root identity — delivered in v0.9.0.** A root foundation may declare optional `root_node_id`; current writers mint 96 random bits while readers preserve current and legacy forms. Pure package-root primitives parse, mint from injected entropy, and evaluate caller-supplied declaration/origin/registry evidence as absent, local-only, legacy-unstamped, aligned, drift, ambiguous, or invalid. Missing identity remains valid; no read creates a contract, writes, migrates, or rebinds. The language-neutral schema and vectors make lazy convergence independently implementable.
 - **TypeScript reference local effects — delivered in v0.8.0.** `@ideaspaces/protocol/local-effects` implements async atomic Markdown writes and exact reviewed-path commits over explicit filesystem/Git capabilities. It executes every v0.7.0 language-neutral vector and case against isolated real Git, including fault-injected stage/commit boundaries. The package root remains mutation-free: it exports only pure request/result/capability types, validators, and injected read-only `pathRevision`; Rust remains an independent implementation of the same contract.
 - **Public capture-standard framing — delivered in v0.4.8.** GitHub and npm now lead with the outcome the protocol makes portable: agents preserving useful work as durable Markdown and git history. The package APIs and schema semantics are unchanged from v0.4.7.
 - `SPEC.md` + `SKILLS.md` — the normative shape and ability layer, including explicit push/pull directions and the protocol-owned shared skill catalog.
@@ -15,7 +16,7 @@ In place:
 - **Structured Content awareness — delivered in v0.4.5.** `assembleContentAwareness` returns portable position/Now/tree/contract/skills/activity/git/drift facts; `renderContentAwareness` renders canonical selected sections. The manifest is the local filesystem/git Content adapter, not a graph/platform manifest. Harnesses retain placement, session state, mounts, seen-ref writes, and remote tiers; `assembleAwareness` remains as the compatibility block.
 - **Tree-shakeable direct imports — delivered in v0.4.6.** The package declares `sideEffects: false`, matching its function/constant-only modules, so bundlers may remove unused protocol re-exports. This keeps a hook that imports only path/git primitives from carrying the YAML-backed awareness/conformance graph.
 - **Portable workspace handles — delivered in v0.4.7.** `readRootHandle` returns a root's Now/README summary and immediate directory count; `readWorkspaceRepositories` returns sorted immediate-child repository handles with raw git state. The protocol assigns no home/mount/POV role, renders no catalog, contacts no remote, and performs no writes. Repository qualification compares the resolved git toplevel with the child itself, supporting linked worktrees and repository-root symlinks without misclassifying directories inherited from a parent repo.
-- Downstream adoption — CLI, MCP, the Claude plugin, and Pi consume the v0.4 shape directly; shared references are generated from this repo's catalog. SDK 0.2 is a separate Keeper transport package with no protocol dependency or re-export.
+- Downstream adoption — CLI, MCP, the Claude plugin, and Pi consume the protocol shape directly; CLI, MCP/Claude, and Pi run local writes and exact-path commits over the v0.8.0 effect boundary. Shared references are generated from this repo's catalog. SDK 0.2 is a separate Keeper transport package with no protocol dependency or re-export.
 - **Cross-surface conformance — delivered (2026-07-16→18).** Every surface proves the same write-path contract in its own CI, judged by this repo's kit (`validateSpace` + trailer vectors): the CLI in its own tests, the MCP server + Claude plugin through the shipped MCP artifacts (claude-code-plugin#46), and Pi through its genuine extension runtime (pi-is-space#52). Surface parity is now *tested semantically*, not asserted. The program earned its keep immediately: seven real defects found in three days, five fixed — including a rename-commit failure in the CLI's path-scoped commit (cli#85), a floating-install breakage, and a cross-surface record race — each now locked by a conformance vector.
 - **Distribution drift guards — shipped, consumer-side.** The Claude plugin pins vendored bundles with a hash-verified lock and a CI rebuild check; Pi installs from a committed lockfile via `npm ci`. Consumers can no longer silently lag the protocol or float their dependencies.
 - **Portable skill identity — delivered in v0.6.0 (#41).** `_agent/skills/` entry ids and frontmatter `name` are one Agent Skills-compatible value: lowercase ASCII letters, digits, and single hyphens, with display titles in Markdown headings. The conformance kit checks both flat and directory forms, respects nested-space boundaries for skills and knowledge, and carries a valid skill in the language-neutral reference space.
@@ -26,7 +27,7 @@ In place:
 - This `_agent/` contract — the repo dogfoods the protocol.
 
 Next (detail in [next.md](next.md)):
-- Lift the shared cache-path derivation into the reference library — four consumers duplicate it today, held together by golden-value tests.
+- Keeper adoption and CLI create/publish/clone/fork use the v0.9.0 root-identity contract without changing its lazy compatibility rules.
+- Name `_assets/` and ordinary relative resolution as the next independent protocol lane.
 - A contract-delta primitive for ambient fractal awareness on the surfaces.
-- Independent Rust local effects against the v0.7.0 vectors, plus downstream CLI, MCP/Claude, and Pi adoption of the shipped TypeScript subpath.
-- Let the open `attached_to` type vocabulary evolve only from demonstrated platform needs.
+- Retire the legacy awareness wrapper after a final consumer audit; evolve `attached_to` only from demonstrated needs.

@@ -123,6 +123,48 @@ describe("validateSpace — frontmatter violations", () => {
   });
 });
 
+describe("validateSpace — root identity", () => {
+  it("accepts missing, current, and legacy root identity", async () => {
+    for (const foundation of [
+      "# Foundation\n",
+      "---\nroot_node_id: n_0123456789abcdef01234567\n---\n# Foundation\n",
+      "---\nroot_node_id: n_0123456789ab\n---\n# Foundation\n",
+    ]) {
+      await fs.rm(join(tmp, "_agent"), { recursive: true, force: true });
+      await makeAgent(tmp, { "foundation.md": foundation });
+      const report = await validateSpace(tmp);
+      expect(report.issues.filter((issue) => issue.rule.startsWith("root-node-id"))).toEqual([]);
+      expect(report.ok).toBe(true);
+    }
+  });
+
+  it("rejects malformed declarations without absorbing the field into Note frontmatter", async () => {
+    await makeAgent(tmp, {
+      "foundation.md": "---\nroot_node_id: uppercase\n---\n# Foundation\n",
+    });
+    await fs.writeFile(
+      join(tmp, "knowledge.md"),
+      "---\nname: Knowledge\nroot_node_id: extension-field\n---\nBody\n",
+      "utf-8",
+    );
+
+    const report = await validateSpace(tmp);
+    expect(report.issues.filter((issue) => issue.rule === "root-node-id-invalid")).toHaveLength(1);
+    expect(report.issues.some((issue) => issue.path === "knowledge.md" && issue.rule === "root-node-id-invalid"))
+      .toBe(false);
+    expect(report.ok).toBe(false);
+  });
+
+  it("reports malformed foundation frontmatter as an error", async () => {
+    await makeAgent(tmp, {
+      "foundation.md": "---\nroot_node_id: [broken\n---\n# Foundation\n",
+    });
+    const report = await validateSpace(tmp);
+    expect(report.issues.map((issue) => issue.rule)).toContain("foundation-frontmatter-malformed");
+    expect(report.ok).toBe(false);
+  });
+});
+
 describe("validateSpace — skill identities", () => {
   it("accepts matching portable names in both skill entry forms", async () => {
     await makeAgent(tmp, { "foundation.md": "# Foundation" });
