@@ -448,22 +448,20 @@ function detail(error: unknown): string {
 }
 
 /**
- * Shared protocol content: Markdown (including gracefully ignored extension
- * files), agent context, or supporting payload. `_assets/` adds binary payload
- * recognition without changing pre-v0.10 Markdown visibility.
+ * Shared protocol content: Markdown, agent context, or supporting payload.
+ * `_assets/` adds binary payload recognition without changing pre-v0.10
+ * Markdown or nested `_agent` visibility.
  */
 export function isIdeaspacePath(path: string): boolean {
   const normalized = path.replace(/\\/g, "/");
   const segments = normalized.split("/");
+  if (normalized.endsWith(".md") || segments.includes("_agent")) return true;
+
   const directorySegments = segments.slice(0, -1);
   const firstInfrastructure = directorySegments.find(
     (segment) => segment.startsWith("_") || segment.toLowerCase() === ".git",
   );
-  if (firstInfrastructure === "_agent" || firstInfrastructure === ASSET_DIRECTORY) {
-    return true;
-  }
-  if (firstInfrastructure?.toLowerCase() === ".git") return false;
-  return normalized.endsWith(".md");
+  return firstInfrastructure === ASSET_DIRECTORY;
 }
 
 /** Staged shared protocol paths, repo-relative, in git's deterministic output order. */

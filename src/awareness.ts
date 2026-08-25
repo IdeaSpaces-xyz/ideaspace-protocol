@@ -9,6 +9,7 @@ import type {
 import { composeContractAlongPath } from "./space.js";
 import { stripFrontmatter, extractDescription } from "./frontmatter.js";
 import { summarizeMarkdown } from "./markdown-inspection.js";
+import { ASSET_DIRECTORY } from "./assets.js";
 import {
   gitState,
   recentActivity,
@@ -195,12 +196,11 @@ interface AwarenessSections {
   activity: ContentAwarenessActivity | null;
 }
 
-const SKIP_DIRS: ReadonlySet<string> = new Set(DEFAULT_IGNORED_DIRECTORIES);
-
-/** Underscore extension containers are never part of the content tree. */
-function skipTreeDirectory(name: string): boolean {
-  return name.startsWith("_") || SKIP_DIRS.has(name);
-}
+const SKIP_DIRS: ReadonlySet<string> = new Set([
+  "_agent",
+  ASSET_DIRECTORY,
+  ...DEFAULT_IGNORED_DIRECTORIES,
+]);
 
 const CONTRACT_ORDER = ["foundation", "guide", "purpose", "now", "next"] as const;
 const LEGACY_AWARENESS_SECTIONS: readonly ContentAwarenessSection[] = [
@@ -689,7 +689,7 @@ async function listTreeLevel(
   }
 
   const dirs = raw
-    .filter((entry) => entry.isDir && !skipTreeDirectory(entry.name))
+    .filter((entry) => entry.isDir && !SKIP_DIRS.has(entry.name))
     .map((entry) => entry.name)
     .sort();
   const atTop = levelsLeft === opts.depth;
@@ -749,7 +749,7 @@ async function countMarkdown(dir: string): Promise<number> {
   for (const entry of dirents) {
     if (entry.name.startsWith(".")) continue;
     if (entry.isDirectory()) {
-      if (skipTreeDirectory(entry.name)) continue;
+      if (SKIP_DIRS.has(entry.name)) continue;
       count += await countMarkdown(join(dir, entry.name));
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       count += 1;

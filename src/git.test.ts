@@ -296,6 +296,7 @@ describe("read-only repo and capture status", () => {
     expect(isIdeaspacePath("_assets/_scratch/diagram.png")).toBe(true);
     expect(isIdeaspacePath("_scratch/note.md")).toBe(true);
     expect(isIdeaspacePath("_scratch/data.bin")).toBe(false);
+    expect(isIdeaspacePath("_scratch/_agent/data.bin")).toBe(true);
     expect(isIdeaspacePath("_scratch/_assets/diagram.png")).toBe(false);
     expect(isIdeaspacePath("_Assets/diagram.png")).toBe(false);
     expect(isIdeaspacePath(".git/_assets/diagram.png")).toBe(false);
