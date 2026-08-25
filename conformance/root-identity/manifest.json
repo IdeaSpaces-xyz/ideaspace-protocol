@@ -243,6 +243,36 @@
       }
     },
     {
+      "id": "evaluate-ambiguous-fallbacks-ignore-matching-declaration",
+      "operation": "evaluate",
+      "covers": ["ambiguous"],
+      "input": {
+        "declaration": "n_777777777777777777777777",
+        "canonicalOrigin": "n_777777777777777777777777",
+        "localRegistry": "n_888888888888888888888888"
+      },
+      "expected": {
+        "state": "ambiguous",
+        "evidence": [
+          {
+            "source": "declaration",
+            "rootNodeId": "n_777777777777777777777777",
+            "format": "current"
+          },
+          {
+            "source": "canonical_origin",
+            "rootNodeId": "n_777777777777777777777777",
+            "format": "current"
+          },
+          {
+            "source": "local_registry",
+            "rootNodeId": "n_888888888888888888888888",
+            "format": "current"
+          }
+        ]
+      }
+    },
+    {
       "id": "evaluate-invalid-evidence",
       "operation": "evaluate",
       "covers": ["invalid_evidence"],
