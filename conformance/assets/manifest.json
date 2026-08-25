@@ -82,6 +82,14 @@
         {
           "reference_path": "../c/../_assets/diagram.png",
           "expected": { "status": "asset", "path": "a/_assets/diagram.png" }
+        },
+        {
+          "reference_path": ".",
+          "expected": { "status": "other", "path": "a/b" }
+        },
+        {
+          "reference_path": "../..",
+          "expected": { "status": "other", "path": "." }
         }
       ]
     },

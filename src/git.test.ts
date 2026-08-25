@@ -266,7 +266,7 @@ describe("read-only repo and capture status", () => {
     });
   });
 
-  it("returns only staged knowledge, agent context, and supporting payload", async () => {
+  it("returns staged Markdown, agent context, and supporting payload", async () => {
     if (!hasGit()) return;
     await initRepo(tmp);
     await fs.mkdir(join(tmp, "_agent"), { recursive: true });
@@ -282,6 +282,7 @@ describe("read-only repo and capture status", () => {
     expect(await stagedIdeaspacePaths(tmp)).toEqual([
       "_agent/guide.txt",
       "_assets/diagram.png",
+      "_scratch/draft.md",
       "note.md",
     ]);
   });
@@ -293,7 +294,8 @@ describe("read-only repo and capture status", () => {
     expect(isIdeaspacePath("scope/_assets/diagram.png")).toBe(true);
     expect(isIdeaspacePath("scope\\_assets\\diagram.png")).toBe(true);
     expect(isIdeaspacePath("_assets/_scratch/diagram.png")).toBe(true);
-    expect(isIdeaspacePath("_scratch/note.md")).toBe(false);
+    expect(isIdeaspacePath("_scratch/note.md")).toBe(true);
+    expect(isIdeaspacePath("_scratch/data.bin")).toBe(false);
     expect(isIdeaspacePath("_scratch/_assets/diagram.png")).toBe(false);
     expect(isIdeaspacePath("_Assets/diagram.png")).toBe(false);
     expect(isIdeaspacePath(".git/_assets/diagram.png")).toBe(false);

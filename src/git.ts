@@ -448,9 +448,9 @@ function detail(error: unknown): string {
 }
 
 /**
- * Shared protocol content: knowledge Markdown, agent context, or supporting
- * payload. The first extension/reserved directory fixes the role, matching the
- * `_assets/` lexical contract; unknown extensions and `.git` are not content.
+ * Shared protocol content: Markdown (including gracefully ignored extension
+ * files), agent context, or supporting payload. `_assets/` adds binary payload
+ * recognition without changing pre-v0.10 Markdown visibility.
  */
 export function isIdeaspacePath(path: string): boolean {
   const normalized = path.replace(/\\/g, "/");
@@ -462,7 +462,7 @@ export function isIdeaspacePath(path: string): boolean {
   if (firstInfrastructure === "_agent" || firstInfrastructure === ASSET_DIRECTORY) {
     return true;
   }
-  if (firstInfrastructure) return false;
+  if (firstInfrastructure?.toLowerCase() === ".git") return false;
   return normalized.endsWith(".md");
 }
 
