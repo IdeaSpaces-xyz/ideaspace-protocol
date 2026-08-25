@@ -175,9 +175,9 @@ function checkFoundation(content: string, issues: ConformanceIssue[]): void {
   if (fm === null || !("root_node_id" in fm)) return;
   const parsed = parseRootNodeId(fm.root_node_id);
   if (parsed.status === "valid") return;
-  const detail = parsed.status === "absent" || parsed.code === "invalid_type"
-    ? "`root_node_id` must be a string when declared"
-    : "`root_node_id` must match ^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$";
+  const detail = parsed.status === "invalid" && parsed.code === "invalid_format"
+    ? "`root_node_id` must match ^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$"
+    : "`root_node_id` must be a string when declared";
   issues.push({
     level: "error",
     rule: "root-node-id-invalid",

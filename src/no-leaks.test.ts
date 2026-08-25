@@ -48,7 +48,7 @@ describe("no implementation leaks (repo-wide)", () => {
     const nonRootHits = hits
       .split("\n")
       .filter(Boolean)
-      .filter((line) => line.replace(/root_node_id/gi, "").match(/node_id/i));
+      .filter((line) => line.replace(/root_node_id(?=$|[^a-z])/gi, "").match(/node_id/i));
     expect(nonRootHits, `per-Note node_id leaked:\n${nonRootHits.join("\n")}`).toEqual([]);
   });
 
