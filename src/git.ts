@@ -10,6 +10,7 @@ import type {
   PathRevisionReadResult,
 } from "./local-effects.js";
 import { validateLocalEffectPath } from "./local-effects.js";
+import { ASSET_DIRECTORY } from "./assets.js";
 
 /**
  * Local read-only git primitives for orientation and capture state.
@@ -446,13 +447,24 @@ function detail(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** Knowledge path: a Markdown file, or anything under an `_agent/` directory. */
+/**
+ * Shared protocol content: Markdown, agent context, or supporting payload.
+ * `_assets/` adds binary payload recognition without changing pre-v0.10
+ * Markdown or nested `_agent` visibility.
+ */
 export function isIdeaspacePath(path: string): boolean {
   const normalized = path.replace(/\\/g, "/");
-  return normalized.endsWith(".md") || normalized.split("/").includes("_agent");
+  const segments = normalized.split("/");
+  if (normalized.endsWith(".md") || segments.includes("_agent")) return true;
+
+  const directorySegments = segments.slice(0, -1);
+  const firstInfrastructure = directorySegments.find(
+    (segment) => segment.startsWith("_") || segment.toLowerCase() === ".git",
+  );
+  return firstInfrastructure === ASSET_DIRECTORY;
 }
 
-/** Staged knowledge paths, repo-relative, in git's deterministic output order. */
+/** Staged shared protocol paths, repo-relative, in git's deterministic output order. */
 export async function stagedIdeaspacePaths(repoRoot: string): Promise<string[]> {
   const result = await runGit(repoRoot, ["diff", "--cached", "--name-only"]);
   if (!result.ok) return [];

@@ -266,22 +266,40 @@ describe("read-only repo and capture status", () => {
     });
   });
 
-  it("returns only staged Markdown and _agent paths", async () => {
+  it("returns staged Markdown, agent context, and supporting payload", async () => {
     if (!hasGit()) return;
     await initRepo(tmp);
     await fs.mkdir(join(tmp, "_agent"), { recursive: true });
+    await fs.mkdir(join(tmp, "_assets"), { recursive: true });
+    await fs.mkdir(join(tmp, "_scratch"), { recursive: true });
     await fs.writeFile(join(tmp, "note.md"), "note", "utf-8");
     await fs.writeFile(join(tmp, "_agent", "guide.txt"), "guide", "utf-8");
+    await fs.writeFile(join(tmp, "_assets", "diagram.png"), "payload", "utf-8");
+    await fs.writeFile(join(tmp, "_scratch", "draft.md"), "local extension", "utf-8");
     await fs.writeFile(join(tmp, "code.ts"), "code", "utf-8");
     git(tmp, ["add", "."]);
 
-    expect(await stagedIdeaspacePaths(tmp)).toEqual(["_agent/guide.txt", "note.md"]);
+    expect(await stagedIdeaspacePaths(tmp)).toEqual([
+      "_agent/guide.txt",
+      "_assets/diagram.png",
+      "_scratch/draft.md",
+      "note.md",
+    ]);
   });
 
-  it("recognizes cross-platform _agent path separators", () => {
+  it("recognizes portable content roles across path separators", () => {
     expect(isIdeaspacePath("notes/a.md")).toBe(true);
     expect(isIdeaspacePath("scope/_agent/guide.txt")).toBe(true);
     expect(isIdeaspacePath("scope\\_agent\\guide.txt")).toBe(true);
+    expect(isIdeaspacePath("scope/_assets/diagram.png")).toBe(true);
+    expect(isIdeaspacePath("scope\\_assets\\diagram.png")).toBe(true);
+    expect(isIdeaspacePath("_assets/_scratch/diagram.png")).toBe(true);
+    expect(isIdeaspacePath("_scratch/note.md")).toBe(true);
+    expect(isIdeaspacePath("_scratch/data.bin")).toBe(false);
+    expect(isIdeaspacePath("_scratch/_agent/data.bin")).toBe(true);
+    expect(isIdeaspacePath("_scratch/_assets/diagram.png")).toBe(false);
+    expect(isIdeaspacePath("_Assets/diagram.png")).toBe(false);
+    expect(isIdeaspacePath(".git/_assets/diagram.png")).toBe(false);
     expect(isIdeaspacePath("src/index.ts")).toBe(false);
   });
 });

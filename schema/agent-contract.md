@@ -1,18 +1,23 @@
 # The `_agent/` contract
 
-> The checkable form of the space contract. Normative prose is [`../SPEC.md`](../SPEC.md); this is the enumeration tooling validates against. **Provisional, v0.9.0** — optional portable root identity joins full-stack fractal composition and portable skill identity.
+> The checkable form of the space contract. Normative prose is [`../SPEC.md`](../SPEC.md); this is the enumeration tooling validates against. **Provisional, v0.10.0** — recognized `_assets/` supporting payload joins optional portable root identity, full-stack fractal composition, and portable skill identity.
 
 ## Positions and content
 
-Every directory is a **position**. At each position, content splits in two:
+Every content directory is a **position**. Leading-underscore extension containers belong to their
+containing position rather than creating content positions. At each position, repository content has
+these roles:
 
 | Role | What | Where | Searchable? |
 |---|---|---|---|
-| **Knowledge** | what we know — accumulates and travels | any non-underscore file (`.md`) | yes |
+| **Knowledge** | what we know — accumulates and travels | `.md` outside extension containers | yes |
+| **Supporting material** | referenced payload traveling with knowledge | exact `_assets/` child and descendants | no — loaded only through an authored reference |
 | **Agent context** | how to work here | the `_agent/` folder | no — always loaded by position |
 | **Position identity** | what this place is, for everyone | `README.md` | loaded by position |
 
-Rule: everything not underscore-prefixed is knowledge. `README.md` describes the position; `_agent/` instructs the agent.
+`README.md` describes the position; `_agent/` instructs the agent; `_assets/` supports authored
+content. A `.md` beneath `_assets/` is payload, not a Note or surface. Other ordinary files remain
+legal without acquiring a special protocol role.
 
 ## The five-file contract
 
@@ -51,7 +56,11 @@ Two parent→child relations read differently: **elaboration** (heterogeneous ch
 
 ## Underscore extension point
 
-Any `_`-prefixed folder is infrastructure — loaded by position, not search. `_agent/` is the one every agent MUST understand. Others (`_access/`, `_conversations/`, …) are optional and platform-defined. **An agent gracefully ignores any `_`-folder it does not understand** (skip, never error). This is the portability guarantee.
+Any `_`-prefixed folder is a non-knowledge extension container. `_agent/` is ambient context loaded
+by position. Exact `_assets/` is recognized supporting payload and is never loaded ambiently or
+searched; its pure relative-reference contract is [`assets.md`](assets.md). Others (`_access/`,
+`_conversations/`, …) are optional and platform-defined. **An agent gracefully ignores any
+`_`-folder it does not understand** (skip, never error). This is the portability guarantee.
 
 ## Shared vs local
 
@@ -63,12 +72,13 @@ A conformant space / tool:
 
 1. reads `README.md` and `_agent/` files along the path before acting at a position;
 2. treats `_agent/foundation.md` as the space-root handshake (root only);
-3. treats `.md` as knowledge, `_agent/` as instruction;
-4. composes the full `_agent/` stack along the path (root → branch; ancestors retained, nearest instruction wins, skills union with deeper shadowing);
-5. surfaces a named-but-absent contract file as drift, not error;
-6. gracefully ignores unknown `_`-prefixed folders;
-7. never commits gitignored paths;
-8. treats `_agent/schema.md` as instance-shape guidance and a schema mismatch as drift, never a write rejection;
-9. accepts a missing root identity and validates a declared `root_node_id` without minting, migrating, or rebinding during a read.
+3. treats `.md` outside extension containers as knowledge and `_agent/` as instruction;
+4. treats exact `_assets/` and all descendants as supporting payload, never positions, Notes, surfaces, search input, or ambient context;
+5. composes the full `_agent/` stack along the path (root → branch; ancestors retained, nearest instruction wins, skills union with deeper shadowing);
+6. surfaces a named-but-absent contract file as drift, not error;
+7. gracefully ignores unknown `_`-prefixed folders;
+8. never commits gitignored paths;
+9. treats `_agent/schema.md` as instance-shape guidance and a schema mismatch as drift, never a write rejection;
+10. accepts a missing root identity and validates a declared `root_node_id` without minting, migrating, or rebinding during a read.
 
 See [`../SPEC.md#conformance`](../SPEC.md#conformance) for the MUST/SHOULD this expands.

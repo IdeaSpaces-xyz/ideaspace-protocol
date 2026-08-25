@@ -10,9 +10,10 @@ summary: How agent and human work in this repo — the design rules (pure shape,
 - **Spec ↔ schema ↔ impl stay coherent.** A change to the shape updates [`SPEC.md`](../SPEC.md), [`schema/`](../schema/), and [`src/`](../src/) together — never let them drift.
 - **The schema is provisional and extensible.** `additionalProperties` stays true; nothing is strictly required (an absent field is a drift signal, not an error); the `attached_to` attach-type vocabulary grows by deliberate, versioned change.
 - **Identity moves forward, never gates the past.** New tools mint the current root identity form; readers preserve legacy forms and accept absence. Evidence conflict is surfaced, never guessed into a rewrite or rebind.
+- **Supporting payload is not an asset subsystem.** `_assets/` names a portable role and lexical reference rule. Filesystem reads, Markdown parsing, rendering, MIME/size limits, upload, access, and storage remain consumer concerns.
 - **Language-neutral core.** The spec + JSON Schema must let non-TypeScript runtimes conform. The TS library is the *reference* implementation, not the only one.
 - **Simple, Lovable, Complete.** Functional API over class wrappers; zero runtime deps beyond `yaml`; stdlib + Node primitives first.
-- **Mutation-free package root; explicit local-effect boundary.** Package-root primitives do not write the filesystem or Git. It may expose pure local-effect request/result types, validators, capability types, and the read-only `pathRevision` fact; mutation lives only behind `@ideaspaces/protocol/local-effects` and obeys the language-neutral contract and vectors. Cross-platform paths via `node:path`; async by default for I/O.
+- **Mutation-free package root; explicit local-effect boundary.** Package-root primitives do not write the filesystem or Git. It may expose pure local-effect request/result types, validators, capability types, and the read-only `pathRevision` fact; mutation lives only behind `@ideaspaces/protocol/local-effects` and obeys the language-neutral contract and vectors. Filesystem paths use `node:path`; portable repository/Markdown paths use `/` in every runtime. Async by default for I/O.
 
 ## Build
 

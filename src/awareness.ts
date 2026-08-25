@@ -9,6 +9,7 @@ import type {
 import { composeContractAlongPath } from "./space.js";
 import { stripFrontmatter, extractDescription } from "./frontmatter.js";
 import { summarizeMarkdown } from "./markdown-inspection.js";
+import { ASSET_DIRECTORY } from "./assets.js";
 import {
   gitState,
   recentActivity,
@@ -195,7 +196,11 @@ interface AwarenessSections {
   activity: ContentAwarenessActivity | null;
 }
 
-const SKIP_DIRS = new Set(["_agent", ...DEFAULT_IGNORED_DIRECTORIES]);
+const SKIP_DIRS: ReadonlySet<string> = new Set([
+  "_agent",
+  ASSET_DIRECTORY,
+  ...DEFAULT_IGNORED_DIRECTORIES,
+]);
 
 const CONTRACT_ORDER = ["foundation", "guide", "purpose", "now", "next"] as const;
 const LEGACY_AWARENESS_SECTIONS: readonly ContentAwarenessSection[] = [

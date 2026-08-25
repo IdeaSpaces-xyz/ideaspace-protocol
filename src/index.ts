@@ -161,6 +161,11 @@ export {
 } from "./frontmatter.js";
 export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
 
+// Portable supporting material — one pure lexical operation over an already
+// extracted relative Markdown destination. No filesystem lookup or mutation.
+export { ASSET_DIRECTORY, resolveAssetReference } from "./assets.js";
+export type { AssetReferenceResolution } from "./assets.js";
+
 // Portable Space root identity — optional foundation declaration, current and
 // legacy forms, deterministic 96-bit formatting, and pure lazy-alignment
 // evaluation over caller-supplied trusted evidence. No discovery or mutation.

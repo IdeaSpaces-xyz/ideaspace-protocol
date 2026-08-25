@@ -12,7 +12,7 @@ A folder of Markdown under git where the protocol lives: the normative spec, a m
 
 ## The areas
 
-- **[`SPEC.md`](../SPEC.md)** — normative shape: position, two kinds of content, the `_agent/` contract, fractal composition, identity, conformance.
+- **[`SPEC.md`](../SPEC.md)** — normative shape: content positions, knowledge/support/context roles, the `_agent/` contract, fractal composition, identity, conformance.
 - **[`SKILLS.md`](../SKILLS.md)** — the ability layer: the verbs that ride on the shape.
 - **[`schema/`](../schema/)** — language-neutral contract (frontmatter JSON Schema + the `_agent/` contract definition).
 - **[`src/`](../src/)** — reference TypeScript implementation.

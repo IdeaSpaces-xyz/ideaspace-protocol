@@ -79,6 +79,8 @@ describe("Content awareness manifest", () => {
     );
     await fs.mkdir(join(tmp, "docs"));
     await fs.writeFile(join(tmp, "docs", "design.md"), "# Design", "utf-8");
+    await fs.mkdir(join(tmp, "_assets"));
+    await fs.writeFile(join(tmp, "_assets", "payload.md"), "# Not knowledge", "utf-8");
     await fs.writeFile(join(tmp, "README.md"), "# Space", "utf-8");
     initGit();
     commit("seed");

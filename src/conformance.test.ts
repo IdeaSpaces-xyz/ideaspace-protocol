@@ -43,12 +43,17 @@ describe("validateSpace — reference space", () => {
     ).toContain("name: weekly-review");
   });
 
-  it("records the unknown underscore folder as a graceful skip (warn, not error)", async () => {
+  it("skips recognized assets silently and unknown infrastructure with a warning", async () => {
     const report = await validateSpace(referenceSpace);
-    const skipped = report.issues.find((i) => i.rule === "infra-skipped");
-    expect(skipped).toBeDefined();
-    expect(skipped?.level).toBe("warn");
-    expect(skipped?.path).toBe("_scratch");
+    const skipped = report.issues.filter((i) => i.rule === "infra-skipped");
+    expect(skipped).toEqual([
+      expect.objectContaining({ level: "warn", path: "_scratch" }),
+    ]);
+    expect(report.issues.some((issue) => issue.path.startsWith("_assets"))).toBe(false);
+
+    // The deliberately malformed Markdown payload under `_assets/` is not a Note.
+    expect(report.ok).toBe(true);
+    expect(report.notesChecked).toBe(2);
   });
 });
 

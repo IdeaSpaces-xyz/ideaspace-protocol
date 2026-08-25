@@ -1,0 +1,255 @@
+{
+  "format": "ideaspaces-assets/v1",
+  "asset_directory": "_assets",
+  "required_coverage": [
+    "root_asset",
+    "colocated_asset",
+    "explicit_root_asset",
+    "authored_selection_no_fallback",
+    "dot_segment_normalization",
+    "unicode_and_spaces",
+    "exact_case",
+    "first_infrastructure_segment",
+    "non_asset_target",
+    "outside_root",
+    "invalid_input",
+    "known_asset_tree_skip",
+    "asset_lookalike_unknown",
+    "unknown_infrastructure_skip"
+  ],
+  "vectors": [
+    {
+      "id": "root-note-root-asset",
+      "operation": "resolve",
+      "covers": ["root_asset"],
+      "input": {
+        "source_path": "README.md",
+        "reference_path": "_assets/root.png"
+      },
+      "expected": { "status": "asset", "path": "_assets/root.png" }
+    },
+    {
+      "id": "nested-note-colocated-asset",
+      "operation": "resolve",
+      "covers": ["colocated_asset"],
+      "input": {
+        "source_path": "guides/topic.md",
+        "reference_path": "_assets/local.png"
+      },
+      "expected": { "status": "asset", "path": "guides/_assets/local.png" }
+    },
+    {
+      "id": "nested-note-explicit-root-asset",
+      "operation": "resolve",
+      "covers": ["explicit_root_asset"],
+      "input": {
+        "source_path": "guides/topic.md",
+        "reference_path": "../_assets/root.png"
+      },
+      "expected": { "status": "asset", "path": "_assets/root.png" }
+    },
+    {
+      "id": "both-folders-authored-path-selects",
+      "operation": "resolve_cases",
+      "covers": ["authored_selection_no_fallback"],
+      "tree": [
+        "_assets/shared.png",
+        "guides/_assets/shared.png",
+        "guides/topic.md"
+      ],
+      "source_path": "guides/topic.md",
+      "cases": [
+        {
+          "reference_path": "_assets/shared.png",
+          "expected": { "status": "asset", "path": "guides/_assets/shared.png" }
+        },
+        {
+          "reference_path": "../_assets/shared.png",
+          "expected": { "status": "asset", "path": "_assets/shared.png" }
+        }
+      ]
+    },
+    {
+      "id": "normalizes-dot-segments",
+      "operation": "resolve_cases",
+      "covers": ["dot_segment_normalization"],
+      "source_path": "a/b/topic.md",
+      "cases": [
+        {
+          "reference_path": "./_assets/./diagram.png",
+          "expected": { "status": "asset", "path": "a/b/_assets/diagram.png" }
+        },
+        {
+          "reference_path": "../c/../_assets/diagram.png",
+          "expected": { "status": "asset", "path": "a/_assets/diagram.png" }
+        },
+        {
+          "reference_path": ".",
+          "expected": { "status": "other", "path": "a/b" }
+        },
+        {
+          "reference_path": "../..",
+          "expected": { "status": "other", "path": "." }
+        }
+      ]
+    },
+    {
+      "id": "decoded-unicode-and-spaces",
+      "operation": "resolve",
+      "covers": ["unicode_and_spaces"],
+      "input": {
+        "source_path": "résumé/案内.md",
+        "reference_path": "_assets/my diagram.png"
+      },
+      "expected": {
+        "status": "asset",
+        "path": "résumé/_assets/my diagram.png"
+      }
+    },
+    {
+      "id": "exact-case-and-lookalikes",
+      "operation": "resolve_cases",
+      "covers": ["exact_case", "non_asset_target"],
+      "source_path": "guides/topic.md",
+      "cases": [
+        {
+          "reference_path": "_Assets/local.png",
+          "expected": { "status": "other", "path": "guides/_Assets/local.png" }
+        },
+        {
+          "reference_path": "_assets.md",
+          "expected": { "status": "other", "path": "guides/_assets.md" }
+        },
+        {
+          "reference_path": "assets/local.png",
+          "expected": { "status": "other", "path": "guides/assets/local.png" }
+        },
+        {
+          "reference_path": "_assets",
+          "expected": { "status": "other", "path": "guides/_assets" }
+        }
+      ]
+    },
+    {
+      "id": "first-infrastructure-segment-controls-role",
+      "operation": "resolve_cases",
+      "covers": ["first_infrastructure_segment"],
+      "source_path": "topic.md",
+      "cases": [
+        {
+          "reference_path": "_agent/_assets/x.png",
+          "expected": { "status": "other", "path": "_agent/_assets/x.png" }
+        },
+        {
+          "reference_path": "_scratch/_assets/x.png",
+          "expected": { "status": "other", "path": "_scratch/_assets/x.png" }
+        },
+        {
+          "reference_path": ".git/_assets/x.png",
+          "expected": { "status": "other", "path": ".git/_assets/x.png" }
+        },
+        {
+          "reference_path": "_assets/_agent/x.png",
+          "expected": { "status": "asset", "path": "_assets/_agent/x.png" }
+        }
+      ]
+    },
+    {
+      "id": "ordinary-relative-target-remains-other",
+      "operation": "resolve",
+      "covers": ["non_asset_target"],
+      "input": {
+        "source_path": "guides/topic.md",
+        "reference_path": "../images/diagram.png"
+      },
+      "expected": { "status": "other", "path": "images/diagram.png" }
+    },
+    {
+      "id": "escape-above-root",
+      "operation": "resolve_cases",
+      "covers": ["outside_root"],
+      "source_path": "guides/topic.md",
+      "cases": [
+        {
+          "reference_path": "../../_assets/outside.png",
+          "expected": { "status": "outside" }
+        },
+        {
+          "reference_path": "../..",
+          "expected": { "status": "outside" }
+        }
+      ]
+    },
+    {
+      "id": "invalid-source-paths",
+      "operation": "invalid_source_cases",
+      "covers": ["invalid_input"],
+      "reference_path": "_assets/x.png",
+      "cases": [
+        null,
+        42,
+        "",
+        "/topic.md",
+        "a//topic.md",
+        "a/../topic.md",
+        "_agent/topic.md",
+        ".git/topic.md",
+        ".GIT/topic.md",
+        "topic.txt",
+        "a\\topic.md"
+      ],
+      "expected": { "status": "invalid", "code": "invalid_source_path" }
+    },
+    {
+      "id": "invalid-reference-paths",
+      "operation": "invalid_reference_cases",
+      "covers": ["invalid_input"],
+      "source_path": "topic.md",
+      "cases": [
+        null,
+        42,
+        "",
+        "/_assets/x.png",
+        "_assets//x.png",
+        "_assets/x.png/",
+        "https://example.com/x.png",
+        "file:x.png",
+        "_assets\\x.png"
+      ],
+      "expected": { "status": "invalid", "code": "invalid_reference_path" }
+    },
+    {
+      "id": "validator-recognizes-assets-and-skips-unknown-infrastructure",
+      "operation": "validate_space",
+      "covers": ["known_asset_tree_skip", "unknown_infrastructure_skip"],
+      "tree": {
+        "_agent/foundation.md": "# Foundation\n",
+        "knowledge.md": "# Knowledge\n",
+        "notes/knowledge.md": "# Nested knowledge\n",
+        "_assets/broken.md": "---\nname: [malformed\n",
+        "notes/_assets/broken.md": "---\nname: [nested malformed\n",
+        "_scratch/broken.md": "---\nname: [also malformed\n"
+      },
+      "expected": {
+        "ok": true,
+        "notes_checked": 2,
+        "unknown_infrastructure_warnings": ["_scratch"]
+      }
+    },
+    {
+      "id": "validator-treats-case-lookalike-as-unknown",
+      "operation": "validate_space",
+      "covers": ["asset_lookalike_unknown"],
+      "tree": {
+        "_agent/foundation.md": "# Foundation\n",
+        "knowledge.md": "# Knowledge\n",
+        "_Assets/broken.md": "---\nname: [case lookalike\n"
+      },
+      "expected": {
+        "ok": true,
+        "notes_checked": 1,
+        "unknown_infrastructure_warnings": ["_Assets"]
+      }
+    }
+  ]
+}

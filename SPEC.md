@@ -2,8 +2,8 @@
 name: The Ideaspace Spec
 summary: >
   A simple, shareable, traceable piece of brain — and the fixed, platform-neutral
-  shape that makes it so. Knowledge in `.md` files, how-to-work in `_agent/`, git
-  carries identity and history. Any agent that knows the shape can inhabit any
+  shape that makes it so. Knowledge in `.md` files, supporting material in
+  `_assets/`, how-to-work in `_agent/`, and git carries identity and history. Any
   conformant space. The base layer gives awareness and safe local effects; skills
   carry intent and judgment.
 ---
@@ -12,7 +12,7 @@ summary: >
 
 > **A simple, shareable, traceable piece of brain** — and the shape that makes it so. An agent that knows this shape can inhabit any conformant space: orient, navigate, work, with no bespoke instructions.
 
-An ideaspace is a folder of markdown under git. Knowledge accumulates as `.md` files; how-to-work lives in `_agent/`; git makes it shareable and carries who-did-what. The shape is fixed so it is *predictable*: drop a conformant agent into a conformant space and it already knows where to look. This document names no platform — a Claude Code agent, a Pi agent, or a third-party tool all read the same shape.
+An ideaspace is a folder of markdown under git. Knowledge accumulates as `.md` files; referenced supporting material lives in `_assets/`; how-to-work lives in `_agent/`; git makes it shareable and carries who-did-what. The shape is fixed so it is *predictable*: drop a conformant agent into a conformant space and it already knows where to look. This document names no platform — a Claude Code agent, a Pi agent, or a third-party tool all read the same shape.
 
 Three properties, three pillars:
 
@@ -26,14 +26,15 @@ This is the **base layer**. Knowing the shape *is* awareness; its local-effect b
 
 ## The Shape
 
-**1. Position.** Every directory is a position, and every position presents the same way: **summary → surface → children.** The *surface* is the one Note that says what this place is, for everyone (human and agent) — a directory's surface is its `README.md`, a repo's is its root `README.md`, a lone `.md` file is its own surface. Reading surfaces along a path is how you orient: general at the root, specific as you descend.
+**1. Position.** Every content directory is a position, and every position presents the same way: **summary → surface → children.** The *surface* is the one Note that says what this place is, for everyone (human and agent) — a directory's surface is its `README.md`, a repo's is its root `README.md`, a lone `.md` file is its own surface. Reading surfaces along a path is how you orient: general at the root, specific as you descend. A leading-underscore extension container belongs to its containing position rather than becoming a content position itself; its recognized convention decides what, if anything, a reader loads beneath it.
 
-**2. Two kinds of content** at every position:
+**2. Three repository roles** at every position:
 
-- **Knowledge** — regular `.md` files. What we know. This is what accumulates and travels.
+- **Knowledge** — regular `.md` files outside extension containers. What we know. This is what accumulates and travels.
+- **Supporting material** — the exact `_assets/` child. Referenced payload that travels with knowledge but is not a position, Note, surface, searchable knowledge, or ambient context. A `.md` file beneath it remains payload.
 - **Agent context** — the `_agent/` folder. How to work here. Read by position, never searched — its surface always, its depth on demand.
 
-Everything that is not underscore-prefixed is knowledge. `README.md` describes the position for everyone; `_agent/` instructs the agent.
+`README.md` describes the position for everyone; `_agent/` instructs the agent; `_assets/` supports authored content. Other ordinary files remain legal but acquire no special protocol role. Other underscore-prefixed folders are extension containers, not knowledge.
 
 **3. The `_agent/` contract.** An `_agent/` folder may carry:
 
@@ -59,7 +60,7 @@ The contract holds two kinds of thing. The four fractal files **layer** — they
 
 A root foundation MAY carry optional `root_node_id` frontmatter: the Space's portable opaque identity. Current writers mint `n_` plus 24 lowercase hexadecimal characters (96 random bits); readers also accept the legacy 12-character payload. Missing identity remains valid progressive enhancement. Identity lifecycle, lazy legacy convergence, and language-neutral vectors are defined in [`schema/root-identity.md`](schema/root-identity.md).
 
-**6. Underscore is the extension point.** Any `_`-prefixed folder is infrastructure — loaded by position, not search. `_agent/` is the one every agent must understand. Others (`_access/`, `_conversations/`, …) are optional and platform-defined. **An agent gracefully ignores any `_`-folder it does not understand.** This is the portability guarantee: a space can carry features a given agent has never heard of, and that agent still inhabits it correctly.
+**6. Underscore is the extension point.** Any `_`-prefixed folder is a non-knowledge extension container. `_agent/` is ambient agent context, loaded by position; `_assets/` is referenced supporting payload, never loaded ambiently or searched. Others (`_access/`, `_conversations/`, …) are optional and platform-defined. **An agent gracefully ignores any `_`-folder it does not understand.** This is the portability guarantee: a space can carry features a given agent has never heard of, and that agent still inhabits it correctly.
 
 **7. Awareness ⊋ content.** The working tree can hold more than the space commits — other repos (code), drafts, scratch. `.gitignore` is the allowlist that splits them:
 
@@ -152,7 +153,8 @@ A tool or agent that claims to inhabit ideaspaces:
 **MUST**
 - Read `README.md` and `_agent/` files along the path before acting at a position.
 - Treat `_agent/foundation.md` as the space-root handshake.
-- Treat `.md` files as knowledge and `_agent/` as instruction.
+- Treat `.md` files outside extension containers as knowledge and `_agent/` as instruction.
+- Treat exact `_assets/` as supporting payload: skip it as knowledge/context and do not promote descendants into positions, surfaces, or Notes.
 - Gracefully ignore any `_`-prefixed folder it does not understand (skip, never error).
 - Never add an untracked path matched by Git's effective ignore rules; continue to treat already-tracked paths as shared history.
 - Author `_agent/skills/` entry ids and frontmatter names in the portable Agent Skills form, with the two names identical.
@@ -168,6 +170,8 @@ A tool or agent that claims to inhabit ideaspaces:
 A tool that claims **local-effect conformance** additionally MUST pass every required coverage vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json), including per-path revision CAS, symlink refusal, semantic frontmatter preservation, exact commit membership, unselected-state preservation, explicit identity, and honest partial failure.
 
 A tool that claims **root-identity conformance** additionally MUST pass every required coverage vector in [`conformance/root-identity/manifest.json`](conformance/root-identity/manifest.json), including optional absence, current and legacy forms, 96-bit minting, lazy legacy alignment, drift, ambiguity, and malformed evidence.
+
+A tool that claims **assets conformance** additionally MUST pass every required coverage vector in [`conformance/assets/manifest.json`](conformance/assets/manifest.json), including exact recognition, relative resolution from the containing Markdown file, explicit authored selection when root and nested folders coexist, root escape, and repository-validator skipping. The pure language-neutral operation and its boundary are normative in [`schema/assets.md`](schema/assets.md).
 
 ---
 

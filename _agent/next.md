@@ -1,6 +1,6 @@
 ---
 name: Next
-summary: Queued — carry the optional root identity through Keeper and local lifecycle adapters, then take the independent `_assets/` convention and remaining read-shape cleanup.
+summary: Queued — carry root identity and the `_assets/` convention into their independent consumers, then continue the contract-delta and read-shape cleanup lanes.
 ---
 # Next
 
@@ -12,10 +12,10 @@ the TypeScript consumers. The next work belongs at the boundaries that consume t
   publish, clone, and fork then implement the one-minter lifecycle. Existing hosted checkouts may
   propose the exact foundation patch, but absence remains valid and no read silently writes or
   commits.
-- **`_assets/` convention.** Name `_assets/` as supporting material at any position, with ordinary
-  Markdown paths resolved from the containing Note and no ancestor search or root fallback. Align
-  spec, schema, reference implementation, and language-neutral fixtures before rendering/hosting
-  consumers proceed independently.
+- **`_assets/` consumers.** Desktop resolves the v0.10.0 lexical path inside a workspace-bounded
+  asset protocol. Hosted surfaces separately remove payload trees from content indexing and add
+  authorized inert-raster serving/projection. MIME, limits, access, and storage stay consumer policy,
+  not protocol shape.
 - **Contract-delta primitive.** Given a touched path and already-seen `_agent/` positions, return newly
   crossed contracts at surface depth. Pure read over existing composition machinery, with fixtures;
   this lets harnesses enforce ambient fractal awareness instead of relying on agent discipline.

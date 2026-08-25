@@ -226,15 +226,16 @@ describe("assembleAwareness", () => {
     expect(block).toContain("README.md");
   });
 
-  it("skips _agent, node_modules, .git, dist from the tree", async () => {
+  it("skips agent/assets containers, dependencies, git, and build output from the tree", async () => {
     await makeAgent(tmp, { "purpose.md": "p" });
-    for (const name of ["node_modules", ".git", "dist", "build"]) {
+    for (const name of ["_assets", "node_modules", ".git", "dist", "build"]) {
       await fs.mkdir(join(tmp, name), { recursive: true });
       await fs.writeFile(join(tmp, name, "x.md"), "x", "utf-8");
     }
     const space = await findSpaceRoot(tmp);
     const block = await assembleAwareness({ root: space.root!, contract: space.contract });
     expect(block).not.toContain("_agent/");
+    expect(block).not.toContain("_assets/");
     expect(block).not.toContain("node_modules");
     expect(block).not.toContain("dist/");
     expect(block).not.toContain("build/");
