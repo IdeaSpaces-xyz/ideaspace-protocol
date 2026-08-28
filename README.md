@@ -14,7 +14,7 @@ Agents produce decisions, findings, plans, and context while they work. Most of 
 
 The standard has two parts:
 
-- **A predictable place for knowledge.** An ideaspace is a folder of Markdown under git. Knowledge lives in `.md` files, referenced supporting material in `_assets/`, how-to-work in `_agent/`, and git carries identity and history.
+- **A predictable place for knowledge.** An ideaspace is a folder of Markdown under git. Knowledge lives in `.md` files, how-to-work in exact `_agent/`, optional payload in opaque extension containers, and git carries identity and history. Exact `_assets/` is the first standard extension.
 - **A predictable way to maintain it.** Agents follow the same operating loop: arrive → orient → inspect → act → capture → push/pull → reflect. Capture is deliberate: agree on what changed, write it down, then commit it explicitly.
 
 This is not merely a data format for retrieval. It is an *inhabitation contract*: a shared place and a shared way for agents to work there.
@@ -35,15 +35,15 @@ This repository is both the definition and a conformant example. [Browse it as a
 |---|---|
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
 | [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the agent operating loop and shared intent skills for orientation, deliberate capture, directional sync, and reflection. |
-| [`schema/`](schema/) | Language-neutral contract — frontmatter, `_agent/`, `_assets/`, optional root identity, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
+| [`schema/`](schema/) | Language-neutral contract — frontmatter, generic repository-path ownership, `_agent/`, optional `_assets/`, root identity, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
 | [`src/`](src/) | Reference TypeScript implementation — frontmatter, supporting-material resolution, root identity, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect validation plus the opt-in effect runtime, drift, and the skill catalog. |
-| [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral assets/root-identity/local-effect vectors shared by independent runtimes. |
+| [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral extension-boundary/assets/root-identity/local-effect vectors shared by independent runtimes. |
 | [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
 
 ## Concepts in 30 seconds
 
 - **Position.** Every content directory is a position, presenting as *summary → surface → children*. Its surface — a `README.md`, a repo's root README, or a lone `.md` file — says what it is, for everyone. Leading-underscore extension containers belong to the containing position instead.
-- **Three roles.** Plain `.md` files outside extension containers are *knowledge*; exact `_assets/` is referenced supporting payload; `_agent/` is *agent context* (how to work here).
+- **Base roles.** Plain `.md` files outside extensions are *knowledge*; exact `_agent/` is *agent context*; ordinary paths stay untyped; every other `_`-prefixed directory is opaque extension payload. Exact `_assets/` optionally gives referenced payload a standard aware-reader contract.
 - **The `_agent/` contract.** `foundation.md` (root handshake), `guide.md`, `purpose.md`, `now.md`, `next.md`, and optional `schema.md` (the shape of Notes in the folder — guidance, not validation). Give it a good surface: loaded at depth 0, with depth on demand.
 - **Fractal.** `_agent/` can appear at any position and composes along the path: general at the root, specific as you descend.
 - **Space identity, progressively.** A root foundation may carry optional `root_node_id`; missing identity remains valid, clone retains it, and fork remints it.
@@ -83,6 +83,18 @@ const section = await inspectMarkdownFile("work/Next.md", {
   mode: "section",
   heading: "Current window",
 });
+```
+
+Classify a repository path without consulting the filesystem or knowing named extensions:
+
+```ts
+import { classifyRepositoryPath } from "@ideaspaces/protocol";
+
+classifyRepositoryPath("_example/payload.md", "file");
+// { status: "ok", role: "extension", extension: "_example" }
+
+classifyRepositoryPath("_assets", "file");
+// { status: "ok", role: "ordinary" }
 ```
 
 Resolve one already-extracted relative asset path without filesystem lookup or fallback:
@@ -172,7 +184,7 @@ The TypeScript library is the *reference* implementation, not the only one. Othe
 
 ## Conformance
 
-A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance) and declares the spec version it targets. Assets, root-identity, and local-effect implementations separately execute every required vector in their respective manifests under [`conformance/`](conformance/). The kit makes all four claims testable.
+A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance), executes the base extension-boundary vectors, and declares the spec version it targets. Assets, root-identity, and local-effect implementations separately execute every required vector in their respective manifests under [`conformance/`](conformance/). The kit keeps generic repository reading independent from optional named-extension semantics.
 
 ## Ecosystem
 
@@ -189,7 +201,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.10.0 — early and provisional.** Exact `_assets/` is now recognized supporting payload at any content position. One pure lexical operation resolves an already-extracted relative Markdown path from its containing document with no filesystem lookup, search, fallback, rendering, or mutation; language-neutral vectors prove root, colocated, both-present selection, normalization, and validation behavior. Optional root identity remains progressive, and no npm release is implied by the repository version. Pin a version and expect changes before 1.0.
+**v0.11.0 — early and provisional.** One pure repository-path classifier now makes exact `_agent` core and every other first underscore-prefixed directory a quiet opaque extension boundary. Generic Content readers share that rule without knowing named extensions; classification remains separate from Git mutation. Exact `_assets/` retains its optional aware-reader resolver and vectors unchanged. Optional root identity remains progressive, and no npm release is implied by the repository version. Pin a version and expect changes before 1.0.
 
 ## Develop
 

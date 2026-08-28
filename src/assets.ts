@@ -7,6 +7,8 @@
  * destination path; this module performs no Markdown parsing or filesystem I/O.
  */
 
+import { classifyRepositoryPath } from "./repository-path.js";
+
 /** Exact, case-sensitive supporting-material directory name. */
 export const ASSET_DIRECTORY = "_assets";
 
@@ -55,11 +57,14 @@ export function resolveAssetReference(
   }
 
   const path = resolved.length === 0 ? "." : resolved.join("/");
-  const directorySegments = resolved.slice(0, -1);
-  const firstInfrastructure = directorySegments.find(
-    (segment) => segment.startsWith("_") || segment.toLowerCase() === ".git",
-  );
-  if (firstInfrastructure === ASSET_DIRECTORY) return { status: "asset", path };
+  const classification = classifyRepositoryPath(path, "file");
+  if (
+    classification.status === "ok" &&
+    classification.role === "extension" &&
+    classification.extension === ASSET_DIRECTORY
+  ) {
+    return { status: "asset", path };
+  }
   return { status: "other", path };
 }
 
@@ -67,18 +72,9 @@ function parseSourcePath(value: unknown): string[] | null {
   if (typeof value !== "string" || !isPortablePathText(value)) return null;
   if (value.startsWith("/") || value.endsWith("/") || value.includes("//")) return null;
 
-  const segments = value.split("/");
-  if (segments.some((segment) => segment === "." || segment === "..")) return null;
-  const filename = segments.at(-1)!;
-  if (!filename.endsWith(".md")) return null;
-  if (
-    segments
-      .slice(0, -1)
-      .some((segment) => segment.startsWith("_") || segment.toLowerCase() === ".git")
-  ) {
-    return null;
-  }
-  return segments;
+  const classification = classifyRepositoryPath(value, "file");
+  if (classification.status !== "ok" || classification.role !== "knowledge") return null;
+  return value.split("/");
 }
 
 function parseReferencePath(value: unknown): string[] | null {

@@ -59,6 +59,17 @@ describe("collectDocDependencies", () => {
     ]);
     expect(byPath["docs/with.md"]).toEqual(["src/a.ts"]);
   });
+
+  it("does not discover agent-context or extension Markdown", async () => {
+    await write("docs/with.md", docWithDeps(["src/a.ts"]));
+    await write("docs/_example/hidden.md", docWithDeps(["src/b.ts"]));
+    await write("_agent/hidden.md", docWithDeps(["src/c.ts"]));
+
+    await expect(collectDocDependencies(tmp, tmp)).resolves.toEqual([
+      { path: "docs/with.md", codePaths: ["src/a.ts"] },
+    ]);
+    await expect(collectDocDependencies(tmp, "docs/_example")).resolves.toEqual([]);
+  });
 });
 
 describe("staleDocSignals", () => {

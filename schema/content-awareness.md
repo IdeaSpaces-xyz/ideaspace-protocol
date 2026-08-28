@@ -15,7 +15,9 @@ harness concerns.
 Assembly starts from a directory position:
 
 1. Canonicalize the position so symlinked ancestors and git's reported toplevel
-   share one coordinate system.
+   share one coordinate system. If the requested directory is inside core agent
+   context, an extension, or reserved Git state, return no Content manifest;
+   never silently promote payload into a position or snap focus elsewhere.
 2. Compose the full `_agent/` contract stack up to the nearest
    `foundation.md` boundary (ancestors retained; nearest instruction wins).
 3. If no foundation-marked space resolves, return no Content manifest.
@@ -37,7 +39,7 @@ A manifest carries:
 | `spaceRoot` | Absolute root selected by the nearest foundation boundary. |
 | `position` | Focus path, display base, optional git root, and structured root-to-focus path context. |
 | `now` | First meaningful line of effective `now.md`, plus its source path; absent when no Now resolves. |
-| `tree` | The position's content map at handle depth: directory/markdown entries carrying summary-rung handles at level 1 (README summary for directories, frontmatter summary for files), recursive markdown counts, and — when a caller passes `treeDepth` (soft-capped 1..4; ambient default 1) — a name-rung probe outline below, never summaries. `_agent/`, exact `_assets/`, and local/build exclusions do not enter entries or counts. Per-directory soft cap (default 50) with honest omitted counts, carried and rendered. Probe depth pulls more map, not content. |
+| `tree` | The position's content map at handle depth: directory/markdown entries carrying summary-rung handles at level 1 (README summary for directories, frontmatter summary for files), recursive markdown counts, and — when a caller passes `treeDepth` (soft-capped 1..4; ambient default 1) — a name-rung probe outline below, never summaries. Core `_agent/`, every extension container, reserved Git state, and local/build exclusions do not enter entries or counts. Per-directory soft cap (default 50) with honest omitted counts, carried and rendered. Probe depth pulls more map, not content. |
 | `contract` | Contract files along the composed root→position stack in foundation/guide/purpose/now/next order. Every level carrying a file appears, root-first per file, the deepest (effective) entry last; each carries source path, composing level, and summary. |
 | `skills` | `_agent/skills/` entries composed along the root→position stack — the union across levels, a deeper same-named skill shadowing its ancestor's — with names, source paths, composing levels, and summaries. Two forms: flat `<name>.md`, and Agent Skills-style `<name>/SKILL.md` directories (assets beside the entry point are not roster entries; the directory form wins over a same-named flat file). `<name>` is the portable skill id and must equal the entry's frontmatter `name`; display titles belong in Markdown headings. A skill's `description` frontmatter (its trigger condition) is the summary source, falling back to `summary`, then first body line. `README.md` is the folder's surface and never appears in the roster. |
 | `activity` | Total changed paths since the seen baseline, a bounded retained prefix, and omitted count; absent without a baseline or changes. |

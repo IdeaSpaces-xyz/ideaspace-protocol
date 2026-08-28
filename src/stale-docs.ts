@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { parseDocument } from "yaml";
 import { lastCommitTime } from "./git.js";
+import { classifyRepositoryPath } from "./repository-path.js";
 
 /**
  * Stale-doc drift detection — split into policy and comparison.
@@ -68,6 +69,11 @@ export async function collectDocDependencies(
   const root = resolve(repoRoot);
   const start = resolve(root, docDir);
   const out: DocDependency[] = [];
+  const startPath = relative(root, start).replace(/\\/g, "/");
+  if (startPath) {
+    const classification = classifyRepositoryPath(startPath, "directory");
+    if (classification.status !== "ok" || classification.role !== "ordinary") return out;
+  }
 
   async function walk(dir: string): Promise<void> {
     let entries: Array<{ name: string; isDir: boolean }>;
@@ -82,9 +88,16 @@ export async function collectDocDependencies(
     for (const entry of entries) {
       if (entry.name.startsWith(".")) continue;
       const abs = join(dir, entry.name);
+      const path = relative(root, abs).replace(/\\/g, "/");
       if (entry.isDir) {
-        if (!SKIP_DIRS.has(entry.name)) await walk(abs);
-      } else if (entry.name.endsWith(".md")) {
+        if (SKIP_DIRS.has(entry.name)) continue;
+        const classification = classifyRepositoryPath(path, "directory");
+        if (classification.status === "ok" && classification.role === "ordinary") {
+          await walk(abs);
+        }
+      } else {
+        const classification = classifyRepositoryPath(path, "file");
+        if (classification.status !== "ok" || classification.role !== "knowledge") continue;
         const content = await readFileOrNull(abs);
         if (!content) continue;
         const codePaths = readCodePaths(content);

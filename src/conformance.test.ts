@@ -43,13 +43,11 @@ describe("validateSpace — reference space", () => {
     ).toContain("name: weekly-review");
   });
 
-  it("skips recognized assets silently and unknown infrastructure with a warning", async () => {
+  it("skips every extension quietly", async () => {
     const report = await validateSpace(referenceSpace);
-    const skipped = report.issues.filter((i) => i.rule === "infra-skipped");
-    expect(skipped).toEqual([
-      expect.objectContaining({ level: "warn", path: "_scratch" }),
-    ]);
+    expect(report.issues.filter((i) => i.rule === "infra-skipped")).toEqual([]);
     expect(report.issues.some((issue) => issue.path.startsWith("_assets"))).toBe(false);
+    expect(report.issues.some((issue) => issue.path.startsWith("_scratch"))).toBe(false);
 
     // The deliberately malformed Markdown payload under `_assets/` is not a Note.
     expect(report.ok).toBe(true);
@@ -253,8 +251,8 @@ describe("validateSpace — drift signals", () => {
   });
 });
 
-describe("validateSpace — graceful ignore", () => {
-  it("does not error on junk inside an unknown underscore folder", async () => {
+describe("validateSpace — quiet extension opacity", () => {
+  it("does not inspect or warn on junk inside an unknown extension", async () => {
     await makeAgent(tmp, { "foundation.md": "# Foundation" });
     const infra = join(tmp, "_junk");
     await fs.mkdir(infra, { recursive: true });
@@ -264,7 +262,6 @@ describe("validateSpace — graceful ignore", () => {
     const report = await validateSpace(tmp);
     expect(report.ok).toBe(true);
     expect(report.issues.some((i) => i.level === "error")).toBe(false);
-    const skipped = report.issues.find((i) => i.rule === "infra-skipped");
-    expect(skipped?.path).toBe("_junk");
+    expect(report.issues.some((i) => i.rule === "infra-skipped")).toBe(false);
   });
 });

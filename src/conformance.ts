@@ -5,9 +5,9 @@
  * Conformance section and [`../schema/agent-contract.md`](../schema/agent-contract.md):
  * a root `_agent/` (it's a space at all), the named-but-absent contract files as
  * drift signals, optional root identity, portable `_agent/skills/` identities,
- * recognized `_assets/` supporting payload, knowledge `.md` frontmatter against
+ * knowledge `.md` frontmatter against
  * [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json), and
- * graceful-ignore of underscore-prefixed infrastructure folders.
+ * quiet opacity for underscore-prefixed extension containers.
  *
  * It dogfoods the reference library — `readContract` / `CONTRACT_FILES` for the
  * `_agent/` contract and `inspectFrontmatterSyntax` for malformed-frontmatter
@@ -26,7 +26,7 @@ import { CONTRACT_FILES, readContract } from "./space.js";
 import { discoverSkillEntries } from "./awareness.js";
 import { inspectFrontmatterSyntax } from "./frontmatter.js";
 import { parseRootNodeId } from "./root-identity.js";
-import { ASSET_DIRECTORY } from "./assets.js";
+import { classifyRepositoryPath } from "./repository-path.js";
 
 export interface ConformanceIssue {
   level: "error" | "warn";
@@ -117,7 +117,7 @@ export async function validateSpace(root: string): Promise<ConformanceReport> {
     });
   }
   let notesChecked = 0;
-  for await (const file of walkKnowledge(root, issues)) {
+  for await (const file of walkKnowledge(root)) {
     notesChecked++;
     await checkNote(root, file, constraints, issues);
   }
@@ -379,23 +379,17 @@ function parseFrontmatter(content: string): Record<string, unknown> | null {
 /**
  * Yield absolute paths of knowledge `.md` files under `root`.
  *
- * Knowledge is everything NOT under an underscore-prefixed directory, excluding
- * `README.md` (a position descriptor, not a Note). `_assets/` is recognized
- * supporting payload and is skipped silently. Other underscore folders besides
- * `_agent/` are unknown infrastructure — skipped gracefully, with one `warn` per
- * folder so the caller can see what was ignored. Never descends outside `root`.
+ * Agent context, every extension subtree, and reserved Git state are opaque.
+ * `README.md` remains a position descriptor rather than a Note. Unknown
+ * extensions are skipped quietly; validation never interprets their payload.
  */
-async function* walkKnowledge(
-  root: string,
-  issues: ConformanceIssue[],
-): AsyncGenerator<string> {
-  yield* walkDir(root, root, issues, true);
+async function* walkKnowledge(root: string): AsyncGenerator<string> {
+  yield* walkDir(root, root, true);
 }
 
 async function* walkDir(
   dir: string,
   root: string,
-  issues: ConformanceIssue[],
   isRoot: boolean,
 ): AsyncGenerator<string> {
   // A deeper foundation starts another space. Its knowledge and agent context
@@ -405,25 +399,17 @@ async function* walkDir(
   const entries = await fs.readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const abs = join(dir, entry.name);
+    const path = relative(root, abs).replace(/\\/g, "/");
     if (entry.isDirectory()) {
-      if (entry.name.startsWith("_")) {
-        // Underscore folder — never knowledge. `_agent/` is handled separately;
-        // recognized `_assets/` is supporting payload; unknown extensions are
-        // gracefully ignored and surfaced as one warning.
-        if (entry.name !== "_agent" && entry.name !== ASSET_DIRECTORY) {
-          issues.push({
-            level: "warn",
-            rule: "infra-skipped",
-            path: relative(root, abs),
-            detail: "unknown underscore-prefixed infrastructure folder — skipped (graceful-ignore)",
-          });
-        }
-        continue;
+      if (entry.name === "node_modules") continue;
+      const classification = classifyRepositoryPath(path, "directory");
+      if (classification.status !== "ok" || classification.role !== "ordinary") continue;
+      yield* walkDir(abs, root, false);
+    } else if (entry.isFile() && entry.name !== "README.md") {
+      const classification = classifyRepositoryPath(path, "file");
+      if (classification.status === "ok" && classification.role === "knowledge") {
+        yield abs;
       }
-      if (entry.name === ".git" || entry.name === "node_modules") continue;
-      yield* walkDir(abs, root, issues, false);
-    } else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "README.md") {
-      yield abs;
     }
   }
 }

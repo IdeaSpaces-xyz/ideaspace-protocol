@@ -43,6 +43,14 @@ export type {
   ContentAwarenessManifest,
 } from "./awareness.js";
 
+// Base repository ownership — one pure lexical classifier shared by generic
+// Content readers and named extension operations.
+export { classifyRepositoryPath } from "./repository-path.js";
+export type {
+  RepositoryPathTargetKind,
+  RepositoryPathClassification,
+} from "./repository-path.js";
+
 // Awareness data primitives — local git/fs state for session-start orientation
 // and capture safety. The plugin (and other surfaces) format these into the
 // session block; these return data, not rendered text.

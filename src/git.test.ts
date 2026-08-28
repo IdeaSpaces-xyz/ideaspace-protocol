@@ -266,7 +266,7 @@ describe("read-only repo and capture status", () => {
     });
   });
 
-  it("returns staged Markdown, agent context, and supporting payload", async () => {
+  it("returns staged Markdown, agent context, and opaque extension payload", async () => {
     if (!hasGit()) return;
     await initRepo(tmp);
     await fs.mkdir(join(tmp, "_agent"), { recursive: true });
@@ -276,12 +276,14 @@ describe("read-only repo and capture status", () => {
     await fs.writeFile(join(tmp, "_agent", "guide.txt"), "guide", "utf-8");
     await fs.writeFile(join(tmp, "_assets", "diagram.png"), "payload", "utf-8");
     await fs.writeFile(join(tmp, "_scratch", "draft.md"), "local extension", "utf-8");
+    await fs.writeFile(join(tmp, "_scratch", "data.bin"), "opaque extension", "utf-8");
     await fs.writeFile(join(tmp, "code.ts"), "code", "utf-8");
     git(tmp, ["add", "."]);
 
     expect(await stagedIdeaspacePaths(tmp)).toEqual([
       "_agent/guide.txt",
       "_assets/diagram.png",
+      "_scratch/data.bin",
       "_scratch/draft.md",
       "note.md",
     ]);
@@ -295,12 +297,40 @@ describe("read-only repo and capture status", () => {
     expect(isIdeaspacePath("scope\\_assets\\diagram.png")).toBe(true);
     expect(isIdeaspacePath("_assets/_scratch/diagram.png")).toBe(true);
     expect(isIdeaspacePath("_scratch/note.md")).toBe(true);
-    expect(isIdeaspacePath("_scratch/data.bin")).toBe(false);
+    expect(isIdeaspacePath("_scratch/data.bin")).toBe(true);
     expect(isIdeaspacePath("_scratch/_agent/data.bin")).toBe(true);
-    expect(isIdeaspacePath("_scratch/_assets/diagram.png")).toBe(false);
-    expect(isIdeaspacePath("_Assets/diagram.png")).toBe(false);
+    expect(isIdeaspacePath("_scratch/_assets/diagram.png")).toBe(true);
+    expect(isIdeaspacePath("_Assets/diagram.png")).toBe(true);
     expect(isIdeaspacePath(".git/_assets/diagram.png")).toBe(false);
     expect(isIdeaspacePath("src/index.ts")).toBe(false);
+  });
+
+  it("reports unknown payload only after Git stages it", async () => {
+    if (!hasGit()) return;
+    await initRepo(tmp);
+    await fs.mkdir(join(tmp, "_example"), { recursive: true });
+    await fs.writeFile(join(tmp, "_example", "tracked.bin"), "v1", "utf-8");
+    git(tmp, ["add", "_example/tracked.bin"]);
+    git(tmp, ["commit", "-q", "-m", "track extension payload"]);
+
+    await fs.writeFile(join(tmp, ".gitignore"), "_example/\n", "utf-8");
+    await fs.writeFile(join(tmp, "_example", "tracked.bin"), "v2", "utf-8");
+    await fs.writeFile(join(tmp, "_example", "ignored.bin"), "ignored", "utf-8");
+    await fs.mkdir(join(tmp, "_other"), { recursive: true });
+    await fs.writeFile(join(tmp, "_other", "untracked.bin"), "untracked", "utf-8");
+
+    expect(await stagedIdeaspacePaths(tmp)).toEqual([]);
+
+    git(tmp, ["add", ".gitignore"]);
+    git(tmp, ["add", "-u", "_example/tracked.bin"]);
+    expect(await stagedIdeaspacePaths(tmp)).toEqual(["_example/tracked.bin"]);
+
+    await fs.writeFile(join(tmp, "_example", "explicit.bin"), "explicit", "utf-8");
+    git(tmp, ["add", "-f", "_example/explicit.bin"]);
+    expect(await stagedIdeaspacePaths(tmp)).toEqual([
+      "_example/explicit.bin",
+      "_example/tracked.bin",
+    ]);
   });
 });
 
