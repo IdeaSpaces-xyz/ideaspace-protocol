@@ -81,7 +81,10 @@ describe("repository path classification", () => {
         expect(report.notesChecked).toBe(vector.expected.notes_checked);
         expect(
           report.issues
-            .filter((issue) => issue.rule === "infra-skipped")
+            .filter((issue) => {
+              const classification = classifyRepositoryPath(issue.path, "file");
+              return classification.status === "ok" && classification.role === "extension";
+            })
             .map((issue) => issue.path)
             .sort(),
         ).toEqual([...vector.expected.infrastructure_warnings].sort());

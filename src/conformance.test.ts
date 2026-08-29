@@ -45,7 +45,6 @@ describe("validateSpace — reference space", () => {
 
   it("skips every extension quietly", async () => {
     const report = await validateSpace(referenceSpace);
-    expect(report.issues.filter((i) => i.rule === "infra-skipped")).toEqual([]);
     expect(report.issues.some((issue) => issue.path.startsWith("_assets"))).toBe(false);
     expect(report.issues.some((issue) => issue.path.startsWith("_scratch"))).toBe(false);
 
@@ -262,6 +261,6 @@ describe("validateSpace — quiet extension opacity", () => {
     const report = await validateSpace(tmp);
     expect(report.ok).toBe(true);
     expect(report.issues.some((i) => i.level === "error")).toBe(false);
-    expect(report.issues.some((i) => i.rule === "infra-skipped")).toBe(false);
+    expect(report.issues.some((i) => i.path === "_junk" || i.path.startsWith("_junk/"))).toBe(false);
   });
 });

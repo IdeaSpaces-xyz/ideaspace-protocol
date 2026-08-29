@@ -170,13 +170,14 @@ describe("assets conformance manifest", () => {
         expect(report.ok).toBe(vector.expected.ok);
         expect(report.notesChecked).toBe(vector.expected.notes_checked);
         expect(
-          report.issues.some(
-            (issue) =>
-              issue.rule === "infra-skipped" && issue.path.split("/").includes("_assets"),
-          ),
+          report.issues.some((issue) => issue.path.split("/").includes("_assets")),
         ).toBe(false);
         const unknownWarnings = report.issues
-          .filter((issue) => issue.rule === "infra-skipped")
+          .filter((issue) => issue.level === "warn")
+          .filter((issue) => {
+            const owner = issue.path.split("/").find((segment) => segment.startsWith("_"));
+            return owner !== undefined && owner !== "_agent" && owner !== "_assets";
+          })
           .map((issue) => issue.path)
           .sort();
         expect(unknownWarnings).toEqual(
