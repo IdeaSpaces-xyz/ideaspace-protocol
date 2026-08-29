@@ -84,8 +84,8 @@ falls back to another directory, or mutates state.
 An assets-aware implementation executes every required coverage vector in
 [`../conformance/assets/manifest.json`](../conformance/assets/manifest.json). Repository validators
 also recognize `_assets/` as known supporting material: they skip it without an unknown-infrastructure
-warning and never validate Markdown payload beneath it as knowledge. Unknown underscore extensions
-remain gracefully ignored according to the base protocol.
+warning and never validate Markdown payload beneath it as knowledge. Unknown extensions remain
+quietly opaque according to the base protocol: their name alone causes no error or warning.
 
 Binary I/O, upload UX, filename collision policy, MIME/type and size limits, rendering, CSP/filesystem
 capabilities, serving, access control, object storage, rename rewriting, and cross-Space references

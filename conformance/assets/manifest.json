@@ -233,7 +233,7 @@
       "expected": {
         "ok": true,
         "notes_checked": 2,
-        "unknown_infrastructure_warnings": ["_scratch"]
+        "unknown_infrastructure_warnings": []
       }
     },
     {
@@ -248,7 +248,7 @@
       "expected": {
         "ok": true,
         "notes_checked": 1,
-        "unknown_infrastructure_warnings": ["_Assets"]
+        "unknown_infrastructure_warnings": []
       }
     }
   ]

@@ -16,6 +16,7 @@ const expected = [
   "SPEC.md",
   "VERSION",
   "conformance/assets/manifest.json",
+  "conformance/extensions/manifest.json",
   "conformance/local-effects/manifest.json",
   "conformance/root-identity/manifest.json",
   "dist/assets.d.ts",
@@ -70,6 +71,10 @@ const expected = [
   "dist/path-context.d.ts.map",
   "dist/path-context.js",
   "dist/path-context.js.map",
+  "dist/repository-path.d.ts",
+  "dist/repository-path.d.ts.map",
+  "dist/repository-path.js",
+  "dist/repository-path.js.map",
   "dist/root-identity.d.ts",
   "dist/root-identity.d.ts.map",
   "dist/root-identity.js",
@@ -110,6 +115,7 @@ const expected = [
   "schema/frontmatter.schema.json",
   "schema/local-effects.md",
   "schema/markdown-inspection.md",
+  "schema/repository-path.md",
   "schema/root-identity.md",
   "schema/surface-state.md",
   "schema/trailers.md",
@@ -141,9 +147,11 @@ try {
     ".",
     "./local-effects",
     "./schema/frontmatter",
+    "./schema/repository-path",
     "./schema/assets",
     "./schema/local-effects",
     "./schema/root-identity",
+    "./conformance/extensions",
     "./conformance/assets",
     "./conformance/local-effects",
     "./conformance/root-identity",
@@ -191,14 +199,17 @@ try {
     import * as localEffects from "@ideaspaces/protocol/local-effects";
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
+    const extensions = require("@ideaspaces/protocol/conformance/extensions");
     const assets = require("@ideaspaces/protocol/conformance/assets");
     const effects = require("@ideaspaces/protocol/conformance/local-effects");
     const rootIdentity = require("@ideaspaces/protocol/conformance/root-identity");
+    const repositoryPathSchema = require.resolve("@ideaspaces/protocol/schema/repository-path");
     const assetsSchema = require.resolve("@ideaspaces/protocol/schema/assets");
     const localEffectsSchema = require.resolve("@ideaspaces/protocol/schema/local-effects");
     const rootIdentitySchema = require.resolve("@ideaspaces/protocol/schema/root-identity");
     const required = [
       "assembleContentAwareness",
+      "classifyRepositoryPath",
       "composeContractAlongPath",
       "inspectMarkdown",
       "inspectMarkdownFile",
@@ -234,6 +245,9 @@ try {
     if (schema?.title !== "Ideaspace Note frontmatter (Layer 1)") {
       throw new Error("Frontmatter schema export did not load");
     }
+    if (extensions?.format !== "ideaspaces-extensions/v1" || !extensions.required_coverage?.length) {
+      throw new Error("Extensions conformance manifest did not load");
+    }
     if (assets?.format !== "ideaspaces-assets/v1" || !assets.required_coverage?.length) {
       throw new Error("Assets conformance manifest did not load");
     }
@@ -243,6 +257,9 @@ try {
     if (rootIdentity?.format !== "ideaspaces-root-identity/v1" || !rootIdentity.required_coverage?.length) {
       throw new Error("Root-identity conformance manifest did not load");
     }
+    if (!repositoryPathSchema.endsWith("schema/repository-path.md")) {
+      throw new Error("Repository-path schema export did not resolve");
+    }
     if (!assetsSchema.endsWith("schema/assets.md")) {
       throw new Error("Assets schema export did not resolve");
     }
@@ -251,6 +268,10 @@ try {
     }
     if (!rootIdentitySchema.endsWith("schema/root-identity.md")) {
       throw new Error("Root-identity schema export did not resolve");
+    }
+    const extension = protocol.classifyRepositoryPath("_example/payload.md", "file");
+    if (extension.status !== "ok" || extension.role !== "extension" || extension.extension !== "_example") {
+      throw new Error("Repository-path package boundary did not execute");
     }
     const asset = protocol.resolveAssetReference("guides/topic.md", "_assets/x.png");
     if (asset.status !== "asset" || asset.path !== "guides/_assets/x.png") {

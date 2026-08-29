@@ -64,6 +64,18 @@ describe("Content awareness manifest", () => {
     ).resolves.toBeNull();
   });
 
+  it("does not promote agent context or extension payload into Content positions", async () => {
+    await writeAgent({ "foundation.md": "# Foundation" });
+    await fs.mkdir(join(tmp, "_example", "nested"), { recursive: true });
+
+    await expect(
+      assembleContentAwareness({ position: join(tmp, "_agent"), lastSha: null }),
+    ).resolves.toBeNull();
+    await expect(
+      assembleContentAwareness({ position: join(tmp, "_example", "nested"), lastSha: null }),
+    ).resolves.toBeNull();
+  });
+
   it("assembles structured facts and preserves the canonical full render", async () => {
     await writeAgent({
       "foundation.md": "---\nname: Foundation\nsummary: Root agreement.\n---\n# Foundation",
@@ -81,6 +93,8 @@ describe("Content awareness manifest", () => {
     await fs.writeFile(join(tmp, "docs", "design.md"), "# Design", "utf-8");
     await fs.mkdir(join(tmp, "_assets"));
     await fs.writeFile(join(tmp, "_assets", "payload.md"), "# Not knowledge", "utf-8");
+    await fs.mkdir(join(tmp, "_example"));
+    await fs.writeFile(join(tmp, "_example", "payload.md"), "# Also not knowledge", "utf-8");
     await fs.writeFile(join(tmp, "README.md"), "# Space", "utf-8");
     initGit();
     commit("seed");

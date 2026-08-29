@@ -10,7 +10,7 @@ import type {
   PathRevisionReadResult,
 } from "./local-effects.js";
 import { validateLocalEffectPath } from "./local-effects.js";
-import { ASSET_DIRECTORY } from "./assets.js";
+import { classifyRepositoryPath } from "./repository-path.js";
 
 /**
  * Local read-only git primitives for orientation and capture state.
@@ -448,20 +448,19 @@ function detail(error: unknown): string {
 }
 
 /**
- * Shared protocol content: Markdown, agent context, or supporting payload.
- * `_assets/` adds binary payload recognition without changing pre-v0.10
- * Markdown or nested `_agent` visibility.
+ * Shared protocol path already selected in Git: Markdown, agent context, or an
+ * opaque extension payload. This predicate classifies only; it never stages.
+ * Backslashes are accepted here as a host-path compatibility adapter around
+ * the portable `/`-only classifier.
  */
 export function isIdeaspacePath(path: string): boolean {
-  const normalized = path.replace(/\\/g, "/");
-  const segments = normalized.split("/");
-  if (normalized.endsWith(".md") || segments.includes("_agent")) return true;
-
-  const directorySegments = segments.slice(0, -1);
-  const firstInfrastructure = directorySegments.find(
-    (segment) => segment.startsWith("_") || segment.toLowerCase() === ".git",
+  const classification = classifyRepositoryPath(path.replace(/\\/g, "/"), "file");
+  return (
+    classification.status === "ok" &&
+    (classification.role === "knowledge" ||
+      classification.role === "agent-context" ||
+      classification.role === "extension")
   );
-  return firstInfrastructure === ASSET_DIRECTORY;
 }
 
 /** Staged shared protocol paths, repo-relative, in git's deterministic output order. */

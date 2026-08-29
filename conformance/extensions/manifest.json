@@ -1,0 +1,158 @@
+{
+  "format": "ideaspaces-extensions/v1",
+  "required_coverage": [
+    "ordinary_knowledge",
+    "ordinary_untyped",
+    "target_kind",
+    "exact_core_name",
+    "exact_case",
+    "first_owner",
+    "reserved_git",
+    "invalid_input",
+    "unknown_extension_opacity",
+    "malformed_payload",
+    "quiet_ignore"
+  ],
+  "vectors": [
+    {
+      "id": "ordinary-files",
+      "operation": "classify_cases",
+      "covers": ["ordinary_knowledge", "ordinary_untyped"],
+      "cases": [
+        {
+          "input": { "path": "notes/topic.md", "kind": "file" },
+          "expected": { "status": "ok", "role": "knowledge" }
+        },
+        {
+          "input": { "path": "notes/data.bin", "kind": "file" },
+          "expected": { "status": "ok", "role": "ordinary" }
+        },
+        {
+          "input": { "path": "notes", "kind": "directory" },
+          "expected": { "status": "ok", "role": "ordinary" }
+        }
+      ]
+    },
+    {
+      "id": "terminal-name-needs-directory-kind",
+      "operation": "classify_cases",
+      "covers": ["target_kind", "ordinary_knowledge"],
+      "cases": [
+        {
+          "input": { "path": "_assets", "kind": "file" },
+          "expected": { "status": "ok", "role": "ordinary" }
+        },
+        {
+          "input": { "path": "_assets", "kind": "directory" },
+          "expected": { "status": "ok", "role": "extension", "extension": "_assets" }
+        },
+        {
+          "input": { "path": "_assets.md", "kind": "file" },
+          "expected": { "status": "ok", "role": "knowledge" }
+        }
+      ]
+    },
+    {
+      "id": "core-agent-is-exact",
+      "operation": "classify_cases",
+      "covers": ["exact_core_name", "exact_case"],
+      "cases": [
+        {
+          "input": { "path": "_agent/guide.md", "kind": "file" },
+          "expected": { "status": "ok", "role": "agent-context" }
+        },
+        {
+          "input": { "path": "_Agent/guide.md", "kind": "file" },
+          "expected": { "status": "ok", "role": "extension", "extension": "_Agent" }
+        },
+        {
+          "input": { "path": "_Assets/image.png", "kind": "file" },
+          "expected": { "status": "ok", "role": "extension", "extension": "_Assets" }
+        }
+      ]
+    },
+    {
+      "id": "first-owning-boundary-wins",
+      "operation": "classify_cases",
+      "covers": ["first_owner", "exact_core_name"],
+      "cases": [
+        {
+          "input": { "path": "_agent/_assets/x.png", "kind": "file" },
+          "expected": { "status": "ok", "role": "agent-context" }
+        },
+        {
+          "input": { "path": "_assets/_agent/x.md", "kind": "file" },
+          "expected": { "status": "ok", "role": "extension", "extension": "_assets" }
+        },
+        {
+          "input": { "path": "_scratch/_assets/x.png", "kind": "file" },
+          "expected": { "status": "ok", "role": "extension", "extension": "_scratch" }
+        }
+      ]
+    },
+    {
+      "id": "git-reservation-wins",
+      "operation": "classify_cases",
+      "covers": ["reserved_git", "first_owner"],
+      "cases": [
+        {
+          "input": { "path": ".git/_assets/x.png", "kind": "file" },
+          "expected": { "status": "ok", "role": "reserved" }
+        },
+        {
+          "input": { "path": ".GIT/_agent/guide.md", "kind": "file" },
+          "expected": { "status": "ok", "role": "reserved" }
+        }
+      ]
+    },
+    {
+      "id": "invalid-portable-input",
+      "operation": "classify_cases",
+      "covers": ["invalid_input"],
+      "cases": [
+        {
+          "input": { "path": null, "kind": "file" },
+          "expected": { "status": "invalid", "code": "invalid_path" }
+        },
+        {
+          "input": { "path": "", "kind": "file" },
+          "expected": { "status": "invalid", "code": "invalid_path" }
+        },
+        {
+          "input": { "path": "/_assets/x", "kind": "file" },
+          "expected": { "status": "invalid", "code": "invalid_path" }
+        },
+        {
+          "input": { "path": "a/../_assets/x", "kind": "file" },
+          "expected": { "status": "invalid", "code": "invalid_path" }
+        },
+        {
+          "input": { "path": "a\\_assets\\x", "kind": "file" },
+          "expected": { "status": "invalid", "code": "invalid_path" }
+        },
+        {
+          "input": { "path": "_assets/x", "kind": "other" },
+          "expected": { "status": "invalid", "code": "invalid_kind" }
+        }
+      ]
+    },
+    {
+      "id": "unknown-extension-is-quiet-and-opaque",
+      "operation": "validate_space",
+      "covers": ["unknown_extension_opacity", "malformed_payload", "quiet_ignore", "exact_case"],
+      "tree": {
+        "_agent/foundation.md": "# Foundation\n",
+        "knowledge.md": "# Knowledge\n",
+        "notes/knowledge.md": "# Nested knowledge\n",
+        "_example/broken.md": "---\nname: [malformed\n",
+        "notes/_example/broken.md": "---\nname: [nested malformed\n",
+        "_Agent/broken.md": "---\nname: [case malformed\n"
+      },
+      "expected": {
+        "ok": true,
+        "notes_checked": 2,
+        "infrastructure_warnings": []
+      }
+    }
+  ]
+}

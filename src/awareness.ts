@@ -1,5 +1,5 @@
 import { promises as fs } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import type {
   ComposedContract,
   ContractFile,
@@ -9,7 +9,7 @@ import type {
 import { composeContractAlongPath } from "./space.js";
 import { stripFrontmatter, extractDescription } from "./frontmatter.js";
 import { summarizeMarkdown } from "./markdown-inspection.js";
-import { ASSET_DIRECTORY } from "./assets.js";
+import { classifyRepositoryPath } from "./repository-path.js";
 import {
   gitState,
   recentActivity,
@@ -196,11 +196,13 @@ interface AwarenessSections {
   activity: ContentAwarenessActivity | null;
 }
 
-const SKIP_DIRS: ReadonlySet<string> = new Set([
-  "_agent",
-  ASSET_DIRECTORY,
-  ...DEFAULT_IGNORED_DIRECTORIES,
-]);
+const SKIP_DIRS: ReadonlySet<string> = new Set(DEFAULT_IGNORED_DIRECTORIES);
+
+function isContentDirectoryName(name: string): boolean {
+  if (SKIP_DIRS.has(name)) return false;
+  const classification = classifyRepositoryPath(name, "directory");
+  return classification.status === "ok" && classification.role === "ordinary";
+}
 
 const CONTRACT_ORDER = ["foundation", "guide", "purpose", "now", "next"] as const;
 const LEGACY_AWARENESS_SECTIONS: readonly ContentAwarenessSection[] = [
@@ -227,11 +229,27 @@ export async function assembleContentAwareness(
   // reporting its toplevel. Canonicalize the focus too so the relative cwd
   // cannot escape into a synthetic `../../…` path.
   const position = await fs.realpath(requestedPosition).catch(() => requestedPosition);
-  const [repoRoot, composed] = await Promise.all([
-    resolveRepoRoot(position),
-    composeContractAlongPath(position),
-  ]);
+  // Resolve the repository boundary before composing contracts. Starting both
+  // reads in parallel would let composition inspect `_agent/` payload inside an
+  // extension before the focus is rejected, violating extension opacity.
+  const repoRoot = await resolveRepoRoot(position);
+  if (repoRoot) {
+    const repositoryPath = relative(repoRoot, position).split(sep).join("/");
+    if (repositoryPath) {
+      const classification = classifyRepositoryPath(repositoryPath, "directory");
+      if (classification.status !== "ok" || classification.role !== "ordinary") return null;
+    }
+  }
+
+  const composed = await composeContractAlongPath(position);
   if (!composed.spaceRoot) return null;
+  if (!repoRoot) {
+    const spacePath = relative(composed.spaceRoot, position).split(sep).join("/");
+    if (spacePath) {
+      const classification = classifyRepositoryPath(spacePath, "directory");
+      if (classification.status !== "ok" || classification.role !== "ordinary") return null;
+    }
+  }
 
   const base = repoRoot ?? composed.spaceRoot;
   const lastShaPromise: Promise<string | undefined> =
@@ -689,7 +707,7 @@ async function listTreeLevel(
   }
 
   const dirs = raw
-    .filter((entry) => entry.isDir && !SKIP_DIRS.has(entry.name))
+    .filter((entry) => entry.isDir && isContentDirectoryName(entry.name))
     .map((entry) => entry.name)
     .sort();
   const atTop = levelsLeft === opts.depth;
@@ -749,7 +767,7 @@ async function countMarkdown(dir: string): Promise<number> {
   for (const entry of dirents) {
     if (entry.name.startsWith(".")) continue;
     if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) continue;
+      if (!isContentDirectoryName(entry.name)) continue;
       count += await countMarkdown(join(dir, entry.name));
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       count += 1;
