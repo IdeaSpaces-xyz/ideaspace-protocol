@@ -21,6 +21,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./assets": {
+      "types": "./dist/assets.d.ts",
+      "import": "./dist/assets.js"
+    },
     "./local-effects": {
       "types": "./dist/local-effects-runtime.d.ts",
       "import": "./dist/local-effects-runtime.js"

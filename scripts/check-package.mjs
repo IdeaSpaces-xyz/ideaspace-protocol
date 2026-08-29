@@ -145,6 +145,7 @@ try {
   const exportKeys = Object.keys(pkg.exports ?? {});
   const expectedExports = [
     ".",
+    "./assets",
     "./local-effects",
     "./schema/frontmatter",
     "./schema/repository-path",
@@ -196,6 +197,7 @@ try {
   const probe = `
     import { createRequire } from "node:module";
     import * as protocol from "@ideaspaces/protocol";
+    import * as assetsRuntime from "@ideaspaces/protocol/assets";
     import * as localEffects from "@ideaspaces/protocol/local-effects";
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
@@ -276,6 +278,10 @@ try {
     const asset = protocol.resolveAssetReference("guides/topic.md", "_assets/x.png");
     if (asset.status !== "asset" || asset.path !== "guides/_assets/x.png") {
       throw new Error("Assets package boundary did not execute");
+    }
+    const narrowAsset = assetsRuntime.resolveAssetReference("guides/topic.md", "_assets/x.png");
+    if (narrowAsset.status !== "asset" || narrowAsset.path !== "guides/_assets/x.png") {
+      throw new Error("Narrow assets package boundary did not execute");
     }
     const aligned = protocol.evaluateRootIdentity({
       declaration: "n_0123456789abcdef01234567",
