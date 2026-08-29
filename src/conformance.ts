@@ -352,7 +352,9 @@ async function* walkSkillPositions(dir: string, isRoot: boolean): AsyncGenerator
   }
   for (const entry of children.sort((a, b) => a.name.localeCompare(b.name))) {
     if (!entry.isDirectory()) continue;
-    if (entry.name.startsWith(".") || entry.name.startsWith("_") || entry.name === "node_modules") continue;
+    if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+    const classification = classifyRepositoryPath(entry.name, "directory");
+    if (classification.status !== "ok" || classification.role !== "ordinary") continue;
     yield* walkSkillPositions(join(dir, entry.name), false);
   }
 }
