@@ -170,6 +170,8 @@ A tool or agent that claims to inhabit ideaspaces:
 - Treat `_agent/schema.md` as instance-shape guidance, and a schema mismatch as a drift signal — never a write rejection.
 - Write per-agent records only under its own `_agent/<agent-id>/`.
 
+Every conformant repository reader MUST pass every required coverage vector in [`conformance/extensions/manifest.json`](conformance/extensions/manifest.json), including explicit target kind, exact core naming, first-owner precedence, reserved Git state, invalid portable input, and quiet opacity for unknown extensions.
+
 A tool that claims **local-effect conformance** additionally MUST pass every required coverage vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json), including per-path revision CAS, symlink refusal, semantic frontmatter preservation, exact commit membership, unselected-state preservation, explicit identity, and honest partial failure.
 
 A tool that claims **root-identity conformance** additionally MUST pass every required coverage vector in [`conformance/root-identity/manifest.json`](conformance/root-identity/manifest.json), including optional absence, current and legacy forms, 96-bit minting, lazy legacy alignment, drift, ambiguity, and malformed evidence.

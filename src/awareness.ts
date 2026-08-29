@@ -229,6 +229,9 @@ export async function assembleContentAwareness(
   // reporting its toplevel. Canonicalize the focus too so the relative cwd
   // cannot escape into a synthetic `../../…` path.
   const position = await fs.realpath(requestedPosition).catch(() => requestedPosition);
+  // Resolve the repository boundary before composing contracts. Starting both
+  // reads in parallel would let composition inspect `_agent/` payload inside an
+  // extension before the focus is rejected, violating extension opacity.
   const repoRoot = await resolveRepoRoot(position);
   if (repoRoot) {
     const repositoryPath = relative(repoRoot, position).split(sep).join("/");
