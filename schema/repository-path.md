@@ -44,4 +44,4 @@ Unknown extensions are opaque and quiet. Generic Content readers do not descend 
 
 Classification reports role only. It does not decide whether a path is ignored, tracked, selected, staged, committed, copied, or published. Those decisions remain with effective Git ignore rules, tracked history, and explicit caller-owned path selection.
 
-The language-neutral vectors are [`../conformance/extensions/manifest.json`](../conformance/extensions/manifest.json).
+The language-neutral base vectors are [`../conformance/extensions/manifest.json`](../conformance/extensions/manifest.json). A named extension publishes its semantics separately by following [`extensions.md`](extensions.md); doing so does not change this classifier.

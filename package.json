@@ -1,6 +1,6 @@
 {
   "name": "@ideaspaces/protocol",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "The open standard for how agents turn useful work into durable, portable knowledge",
   "keywords": [
     "ideaspaces",
@@ -31,6 +31,7 @@
     },
     "./schema/frontmatter": "./schema/frontmatter.schema.json",
     "./schema/repository-path": "./schema/repository-path.md",
+    "./schema/extensions": "./schema/extensions.md",
     "./schema/assets": "./schema/assets.md",
     "./schema/local-effects": "./schema/local-effects.md",
     "./schema/root-identity": "./schema/root-identity.md",
