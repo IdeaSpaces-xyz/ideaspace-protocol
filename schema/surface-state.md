@@ -4,14 +4,14 @@
 
 ## The namespace move, twice more
 
-[SPEC.md](../SPEC.md) invariant 6 reserves the underscore namespace **inside** a space: any `_`-prefixed folder is infrastructure, loaded by position, and a conformant agent gracefully ignores one it doesn't understand. The same move applies in two namespaces that live **outside** the content tree, where surfaces keep per-user and per-repo coordination state:
+[SPEC.md](../SPEC.md) invariant 6 reserves the underscore namespace **inside** a space: exact `_agent/` is core context, every other `_`-prefixed directory is an opaque extension, and a conformant agent quietly ignores one it doesn't understand. The same move applies in two namespaces that live **outside** the content tree, where surfaces keep per-user and per-repo coordination state:
 
 | Namespace | Where | Holds |
 |---|---|---|
 | `~/.ideaspaces/` | user home | per-project caches — the session-id bridge, the open-Change record |
 | `refs/ideaspaces/` | git refs | per-repo markers — the last-seen ref |
 
-The reservations carry the same guarantees as the underscore rule: a surface **owns writes** to these; the protocol library **derives and reads** (never writes — the read-only shape-primitive rule); and a surface gracefully ignores a key it doesn't understand. A surface that gets the derivation wrong doesn't corrupt anything — it just fails to see what another surface wrote, which the golden values below exist to prevent.
+The reservations carry the same guarantees as the underscore rule: a surface **owns writes** to these; the protocol library **derives and reads** (never writes — the read-only shape-primitive rule); and a surface quietly ignores a key it doesn't understand. A surface that gets the derivation wrong doesn't corrupt anything — it just fails to see what another surface wrote, which the golden values below exist to prevent.
 
 ## Per-project cache key
 
