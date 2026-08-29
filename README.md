@@ -35,7 +35,7 @@ This repository is both the definition and a conformant example. [Browse it as a
 |---|---|
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
 | [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the agent operating loop and shared intent skills for orientation, deliberate capture, directional sync, and reflection. |
-| [`schema/`](schema/) | Language-neutral contract — frontmatter, generic repository-path ownership, `_agent/`, optional `_assets/`, root identity, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
+| [`schema/`](schema/) | Language-neutral contract — frontmatter, generic repository-path ownership, named-extension documentation, `_agent/`, optional `_assets/`, root identity, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
 | [`src/`](src/) | Reference TypeScript implementation — frontmatter, supporting-material resolution, root identity, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect validation plus the opt-in effect runtime, drift, and the skill catalog. |
 | [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral extension-boundary/assets/root-identity/local-effect vectors shared by independent runtimes. |
 | [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
@@ -96,6 +96,11 @@ classifyRepositoryPath("_example/payload.md", "file");
 classifyRepositoryPath("_assets", "file");
 // { status: "ok", role: "ordinary" }
 ```
+
+To publish semantics for `_foo/`, document its exact placement, payload, authored references, safe
+unaware behavior, portable operations and vectors, and its own compatible format evolution. The
+minimal boundary and worked `_assets/` example are in
+[`schema/extensions.md`](schema/extensions.md); they require no registry or loader.
 
 Resolve one already-extracted relative asset path without filesystem lookup or fallback:
 
@@ -202,7 +207,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.11.0 — early and provisional.** One pure repository-path classifier now makes exact `_agent` core and every other first underscore-prefixed directory a quiet opaque extension boundary. Generic Content readers share that rule without knowing named extensions; classification remains separate from Git mutation. Exact `_assets/` retains its optional aware-reader resolver and vectors unchanged. Optional root identity remains progressive, and no npm release is implied by the repository version. Pin a version and expect changes before 1.0.
+**v0.12.0 — early and provisional.** Named extensions now have one bounded documentation path: publish the exact name and placement, payload, authored references, unaware behavior, portable operations and vectors, and extension-owned compatible format evolution. `_assets/` is the worked standard-extension example. The base classifier, asset resolver and vectors, package compatibility, and optional root identity remain unchanged; no registry, manifest, package system, or loader is introduced, and no npm release is implied by the repository version. Pin a version and expect changes before 1.0.
 
 ## Develop
 

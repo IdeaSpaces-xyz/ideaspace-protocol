@@ -112,6 +112,7 @@ const expected = [
   "schema/agent-contract.md",
   "schema/assets.md",
   "schema/content-awareness.md",
+  "schema/extensions.md",
   "schema/frontmatter.schema.json",
   "schema/local-effects.md",
   "schema/markdown-inspection.md",
@@ -149,6 +150,7 @@ try {
     "./local-effects",
     "./schema/frontmatter",
     "./schema/repository-path",
+    "./schema/extensions",
     "./schema/assets",
     "./schema/local-effects",
     "./schema/root-identity",
@@ -206,6 +208,7 @@ try {
     const effects = require("@ideaspaces/protocol/conformance/local-effects");
     const rootIdentity = require("@ideaspaces/protocol/conformance/root-identity");
     const repositoryPathSchema = require.resolve("@ideaspaces/protocol/schema/repository-path");
+    const extensionsSchema = require.resolve("@ideaspaces/protocol/schema/extensions");
     const assetsSchema = require.resolve("@ideaspaces/protocol/schema/assets");
     const localEffectsSchema = require.resolve("@ideaspaces/protocol/schema/local-effects");
     const rootIdentitySchema = require.resolve("@ideaspaces/protocol/schema/root-identity");
@@ -261,6 +264,9 @@ try {
     }
     if (!repositoryPathSchema.endsWith("schema/repository-path.md")) {
       throw new Error("Repository-path schema export did not resolve");
+    }
+    if (!extensionsSchema.endsWith("schema/extensions.md")) {
+      throw new Error("Named-extension schema export did not resolve");
     }
     if (!assetsSchema.endsWith("schema/assets.md")) {
       throw new Error("Assets schema export did not resolve");
