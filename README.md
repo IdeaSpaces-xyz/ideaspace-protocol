@@ -100,7 +100,8 @@ classifyRepositoryPath("_assets", "file");
 Resolve one already-extracted relative asset path without filesystem lookup or fallback:
 
 ```ts
-import { resolveAssetReference } from "@ideaspaces/protocol";
+// Narrow browser-safe entrypoint; the package root exports this too.
+import { resolveAssetReference } from "@ideaspaces/protocol/assets";
 
 resolveAssetReference("guides/topic.md", "_assets/diagram.png");
 // { status: "asset", path: "guides/_assets/diagram.png" }
