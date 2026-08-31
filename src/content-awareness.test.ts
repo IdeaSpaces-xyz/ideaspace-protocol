@@ -386,6 +386,23 @@ describe("Content awareness manifest", () => {
     expect(delta?.children).toBeUndefined();
   });
 
+  it.skipIf(process.platform === "win32")(
+    "fails an explicit tree walk rather than silently treating unreadable territory as empty",
+    async () => {
+      const locked = join(tmp, "locked");
+      await fs.mkdir(locked);
+      await fs.writeFile(join(locked, "hidden.md"), "# Hidden", "utf-8");
+      await fs.chmod(locked, 0o000);
+      try {
+        await expect(
+          assembleContentTree({ position: tmp, depth: "full" }),
+        ).rejects.toThrow("Cannot count Content tree directory");
+      } finally {
+        await fs.chmod(locked, 0o700);
+      }
+    },
+  );
+
   it("caps entries per directory with honest omitted counts", async () => {
     await writeAgent({ "foundation.md": "Foundation" });
     for (const name of ["a.md", "b.md", "c.md", "d.md"]) {

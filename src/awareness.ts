@@ -248,6 +248,7 @@ export async function assembleContentTree(
     maxEntries: opts.maxEntries ?? (depth === "full" ? Infinity : 50),
     summaries: true,
     summaryLength: opts.summaryExcerptLength ?? 200,
+    strict: true,
   });
 }
 
@@ -323,6 +324,7 @@ export async function assembleContentAwareness(
         maxEntries: treeMaxEntries,
         summaries: true,
         summaryLength: opts.summaryExcerptLength ?? 200,
+        strict: false,
       },
     }),
   );
@@ -411,6 +413,7 @@ async function readAwarenessSections(
     maxEntries: 50,
     summaries: true,
     summaryLength: summaryExcerptLength,
+    strict: false,
   };
 
   const now = extractNow(contract, nowExcerptLength);
@@ -685,6 +688,8 @@ interface BuildTreeOpts {
   summaries: boolean;
   /** Cap on summary excerpt length. */
   summaryLength: number;
+  /** Fail on an unreadable directory instead of treating it as absent. */
+  strict: boolean;
 }
 
 function normalizeContentTreeDepth(depth: ContentTreeDepth | undefined): ContentTreeDepth {
@@ -697,6 +702,7 @@ const LEGACY_TREE_OPTS: BuildTreeOpts = {
   maxEntries: Infinity,
   summaries: false,
   summaryLength: 200,
+  strict: false,
 };
 
 /** Summary-rung text for one child: a directory's README summary, a file's own. */
@@ -719,7 +725,7 @@ async function buildTree(
 ): Promise<ContentAwarenessTree | null> {
   const listed = await listTreeLevel(root, opts, opts.depth, true);
   if (!listed) return null;
-  const totalMarkdownFiles = await countMarkdown(root);
+  const totalMarkdownFiles = await countMarkdown(root, opts.strict);
   return {
     totalMarkdownFiles,
     entries: listed.entries,
@@ -745,7 +751,12 @@ async function listTreeLevel(
     raw = dirents
       .filter((entry) => !entry.name.startsWith(".") || entry.name === ".gitignore")
       .map((entry) => ({ name: entry.name, isDir: entry.isDirectory() }));
-  } catch {
+  } catch (error) {
+    if (opts.strict) {
+      throw new Error(
+        `Cannot read Content tree directory ${dir}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
     return null;
   }
 
@@ -774,7 +785,7 @@ async function listTreeLevel(
     shown.map(async ({ name, isDir }): Promise<ContentAwarenessTreeEntry> => {
       const path = join(dir, name);
       const entry: ContentAwarenessTreeEntry = isDir
-        ? { name, kind: "directory", markdownFiles: await countMarkdown(path) }
+        ? { name, kind: "directory", markdownFiles: await countMarkdown(path, opts.strict) }
         : { name, kind: "markdown" };
       if (withSummaries) {
         const summary = await childSummary(path, isDir, opts.summaryLength);
@@ -796,7 +807,7 @@ async function listTreeLevel(
   return { entries, omitted };
 }
 
-async function countMarkdown(dir: string): Promise<number> {
+async function countMarkdown(dir: string, strict = false): Promise<number> {
   let count = 0;
   let dirents: Array<{
     name: string;
@@ -805,14 +816,19 @@ async function countMarkdown(dir: string): Promise<number> {
   }>;
   try {
     dirents = await fs.readdir(dir, { withFileTypes: true });
-  } catch {
+  } catch (error) {
+    if (strict) {
+      throw new Error(
+        `Cannot count Content tree directory ${dir}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
     return 0;
   }
   for (const entry of dirents) {
     if (entry.name.startsWith(".")) continue;
     if (entry.isDirectory()) {
       if (!isContentDirectoryName(entry.name)) continue;
-      count += await countMarkdown(join(dir, entry.name));
+      count += await countMarkdown(join(dir, entry.name), strict);
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       count += 1;
     }
