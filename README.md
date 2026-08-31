@@ -35,9 +35,9 @@ This repository is both the definition and a conformant example. [Browse it as a
 |---|---|
 | [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
 | [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the agent operating loop and shared intent skills for orientation, deliberate capture, directional sync, and reflection. |
-| [`schema/`](schema/) | Language-neutral contract — frontmatter, generic repository-path ownership, named-extension documentation, `_agent/`, optional `_assets/`, root identity, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
-| [`src/`](src/) | Reference TypeScript implementation — frontmatter, supporting-material resolution, root identity, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect validation plus the opt-in effect runtime, drift, and the skill catalog. |
-| [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral extension-boundary/assets/root-identity/local-effect vectors shared by independent runtimes. |
+| [`schema/`](schema/) | Language-neutral contract — frontmatter, provisional Maps, generic repository-path ownership, named-extension documentation, `_agent/`, optional `_assets/`, root identity, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
+| [`src/`](src/) | Reference TypeScript implementation — frontmatter and Map parsing, supporting-material resolution, root identity, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect validation plus the opt-in effect runtime, drift, and the skill catalog. |
+| [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral extension-boundary/assets/root-identity/Maps/local-effect vectors shared by independent runtimes. |
 | [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
 
 ## Concepts in 30 seconds
@@ -47,6 +47,7 @@ This repository is both the definition and a conformant example. [Browse it as a
 - **The `_agent/` contract.** `foundation.md` (root handshake), `guide.md`, `purpose.md`, `now.md`, `next.md`, and optional `schema.md` (the shape of Notes in the folder — guidance, not validation). Give it a good surface: loaded at depth 0, with depth on demand.
 - **Fractal.** `_agent/` can appear at any position and composes along the path: general at the root, specific as you descend.
 - **Space identity, progressively.** A root foundation may carry optional `root_node_id`; missing identity remains valid, clone retains it, and fork remints it.
+- **Maps, optionally.** A knowledge Note may carry ordered addresses, exact root pins, and representation ceilings in a provisional `map` block; unaware readers still read its Markdown legend.
 - **Provenance in git.** The author is the person; an agent that helped adds a `Co-authored-by:` trailer. Provenance rides in git, not in knowledge-Note frontmatter.
 
 The full, normative version is [`SPEC.md`](SPEC.md).
@@ -190,7 +191,7 @@ The TypeScript library is the *reference* implementation, not the only one. Othe
 
 ## Conformance
 
-A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance), executes the base extension-boundary vectors, and declares the spec version it targets. Assets, root-identity, and local-effect implementations separately execute every required vector in their respective manifests under [`conformance/`](conformance/). The kit keeps generic repository reading independent from optional named-extension semantics.
+A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance), executes the base extension-boundary vectors, and declares the spec version it targets. Assets, root-identity, provisional Map readers, and local-effect implementations separately execute every required vector in their respective manifests under [`conformance/`](conformance/). The kit keeps generic repository reading independent from optional layers and named-extension semantics.
 
 ## Ecosystem
 
@@ -207,7 +208,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.12.0 — early and provisional.** Named extensions now have one bounded documentation path: publish the exact name and placement, payload, authored references, unaware behavior, portable operations and vectors, and extension-owned compatible format evolution. `_assets/` is the worked standard-extension example. The base classifier, asset resolver and vectors, package compatibility, and optional root identity remain unchanged; no registry, manifest, package system, or loader is introduced, and no npm release is implied by the repository version. Pin a version and expect changes before 1.0.
+**v0.13.0 — early and provisional.** Knowledge Notes can opt into the first file-first Map shape: ordered Space positions and open external addresses, exact Git pins, representation ceilings, canonical remote normalization, bounded recursive walking, and language-neutral parse vectors. The block adds no base repository-conformance requirement; unaware readers keep the Markdown legend, malformed guidance remains projection drift, and hosted versions, access, transport, and ingestion stay outside the protocol. Map graduation still waits on two independent harnesses and the export→walk→import round trip. Pin a version and expect changes before 1.0.
 
 ## Develop
 

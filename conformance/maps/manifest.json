@@ -1,0 +1,235 @@
+{
+  "format": "ideaspaces-maps/v1",
+  "depths": ["name", "summary", "surface", "children", "full"],
+  "required_coverage": [
+    "missing_allowed",
+    "empty_progressive",
+    "canonical_remote",
+    "remote_normalization",
+    "root_node_id_only",
+    "both_root_identities",
+    "exact_pin",
+    "ordered_positions",
+    "all_depths",
+    "open_external_address",
+    "external_depth_ceiling",
+    "invalid_root_identity",
+    "invalid_pin",
+    "invalid_root_index",
+    "invalid_position",
+    "graceful_invalid_block"
+  ],
+  "vectors": [
+    {
+      "id": "parse-missing",
+      "operation": "parse",
+      "covers": ["missing_allowed"],
+      "expected": { "status": "absent" }
+    },
+    {
+      "id": "parse-empty-progressive-block",
+      "operation": "parse",
+      "covers": ["empty_progressive"],
+      "input": {},
+      "expected": {
+        "status": "valid",
+        "map": { "roots": [], "members": [] }
+      }
+    },
+    {
+      "id": "normalize-common-remotes",
+      "operation": "canonicalize_space_cases",
+      "covers": ["canonical_remote", "remote_normalization"],
+      "cases": [
+        "git.example.com/Acme/research",
+        "https://git.example.com/Acme/research.git",
+        "ssh://git@git.example.com/Acme/research.git",
+        "git@git.example.com:Acme/research.git"
+      ],
+      "expected": { "status": "valid", "space": "git.example.com/Acme/research" }
+    },
+    {
+      "id": "parse-root-node-id-only",
+      "operation": "parse",
+      "covers": ["root_node_id_only", "exact_pin"],
+      "input": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [
+            {
+              "root_node_id": "n_0123456789abcdef01234567",
+              "sha": "1111111111111111111111111111111111111111"
+            }
+          ],
+          "members": []
+        }
+      }
+    },
+    {
+      "id": "parse-both-identities-and-ordered-depths",
+      "operation": "parse",
+      "covers": ["both_root_identities", "ordered_positions", "all_depths"],
+      "input": {
+        "roots": [
+          {
+            "space": "https://GIT.EXAMPLE.COM/Acme/research.git",
+            "root_node_id": "n_0123456789ab",
+            "sha": "2222222222222222222222222222222222222222"
+          }
+        ],
+        "members": [
+          { "space": 0, "position": ".", "depth": "name" },
+          { "space": 0, "position": "one.md", "depth": "summary" },
+          { "space": 0, "position": "two", "depth": "surface" },
+          { "space": 0, "position": "three/README.md", "depth": "children" },
+          { "space": 0, "position": "four/five.md", "depth": "full" }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [
+            {
+              "space": "git.example.com/Acme/research",
+              "root_node_id": "n_0123456789ab",
+              "sha": "2222222222222222222222222222222222222222"
+            }
+          ],
+          "members": [
+            { "space": 0, "position": ".", "depth": "name" },
+            { "space": 0, "position": "one.md", "depth": "summary" },
+            { "space": 0, "position": "two", "depth": "surface" },
+            { "space": 0, "position": "three/README.md", "depth": "children" },
+            { "space": 0, "position": "four/five.md", "depth": "full" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parse-open-external-address",
+      "operation": "parse",
+      "covers": ["open_external_address", "external_depth_ceiling"],
+      "input": {
+        "members": [
+          {
+            "address": "https://example.com/reference",
+            "name": "External reference",
+            "summary": "Useful context outside the Space.",
+            "depth": "summary"
+          }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "members": [
+            {
+              "address": "https://example.com/reference",
+              "name": "External reference",
+              "summary": "Useful context outside the Space.",
+              "depth": "summary"
+            }
+          ],
+          "roots": []
+        }
+      }
+    },
+    {
+      "id": "reject-invalid-root-identity",
+      "operation": "parse",
+      "covers": ["invalid_root_identity", "graceful_invalid_block"],
+      "input": {
+        "roots": [
+          {
+            "root_node_id": "node-not-portable",
+            "sha": "3333333333333333333333333333333333333333"
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          { "path": "map.roots[0].root_node_id", "code": "invalid_root_node_id" }
+        ]
+      }
+    },
+    {
+      "id": "reject-ref-as-pin",
+      "operation": "parse",
+      "covers": ["invalid_pin", "graceful_invalid_block"],
+      "input": {
+        "roots": [
+          { "space": "git.example.com/acme/research", "sha": "main" }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          { "path": "map.roots[0].sha", "code": "invalid_pin" }
+        ]
+      }
+    },
+    {
+      "id": "reject-unresolved-root-index",
+      "operation": "parse",
+      "covers": ["invalid_root_index", "graceful_invalid_block"],
+      "input": {
+        "members": [
+          { "space": 0, "position": "note.md", "depth": "full" }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          { "path": "map.members[0].space", "code": "invalid_root_index" }
+        ]
+      }
+    },
+    {
+      "id": "reject-non-position-path",
+      "operation": "parse",
+      "covers": ["invalid_position", "graceful_invalid_block"],
+      "input": {
+        "roots": [
+          {
+            "space": "git.example.com/acme/research",
+            "sha": "4444444444444444444444444444444444444444"
+          }
+        ],
+        "members": [
+          { "space": 0, "position": "../outside.md", "depth": "full" }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          { "path": "map.members[0].position", "code": "invalid_position" }
+        ]
+      }
+    },
+    {
+      "id": "reject-external-depth-past-summary",
+      "operation": "parse",
+      "covers": ["external_depth_ceiling", "graceful_invalid_block"],
+      "input": {
+        "members": [
+          { "address": "https://example.com/reference", "depth": "surface" }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          { "path": "map.members[0].depth", "code": "invalid_depth" }
+        ]
+      }
+    }
+  ]
+}

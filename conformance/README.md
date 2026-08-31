@@ -10,6 +10,8 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`root-identity/manifest.json`** — language-neutral vectors for optional Space identity: current and legacy reads, deterministic 96-bit generation, absent/local-only/legacy-unstamped/aligned states, and refusal to select an ID from drift, ambiguity, or malformed evidence.
 
+- **`maps/manifest.json`** — language-neutral vectors for the provisional `map` frontmatter block: optional absence, canonical remote normalization, remote- or `root_node_id`-addressed pinned roots, ordered internal positions, all five representation ceilings, open external addresses, and graceful refusal of an invalid Map projection without rejecting the Note.
+
 - **`reference-space/`** — a small, known-good conformant ideaspace: a root
   `_agent/` five-file contract, a portable flat-form `_agent/skills/` entry,
   READMEs along a path, a Note with valid Layer-1+2 frontmatter, a recognized
@@ -54,5 +56,6 @@ lib here, or another language/runtime) actually conforms. Base extension-boundar
 root-identity, and local-effect conformance are distinct claims: every repository reader executes the
 extension-boundary vectors without knowing named extension semantics; an assets implementation also
 executes the assets vectors; identity absence remains valid for an ordinary reader; an identity
-implementation executes the root-identity vectors; and an effect implementation executes every
-local-effect manifest coverage tag.
+implementation executes the root-identity vectors; a provisional Map reader executes the Map vectors
+without adding a repository-validation gate; and an effect implementation executes every local-effect
+manifest coverage tag.

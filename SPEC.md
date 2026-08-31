@@ -86,6 +86,28 @@ The seven requirements above are all an agent needs to conform. This is the mode
 
 ---
 
+## Maps (provisional opt-in layer)
+
+A knowledge Note MAY carry an optional `map` frontmatter block: ordered addresses plus exact Git
+pins and representation ceilings, with its Markdown body serving as the human-readable legend. The
+block adds a navigation layer without changing the repository model. A reader that does not
+understand Maps ignores the block and reads the Note; an invalid block is projection drift, not a
+base repository-conformance failure.
+
+Space-position members use a root index, canonical repository-relative position, and one depth name:
+`name`, `summary`, `surface`, `children`, or `full`. Roots are pinned once by a full commit object id
+and addressed by canonical remote locator, portable `root_node_id`, or both. Open external members
+reuse the `<type>:<id>` address grammar and carry at most name/summary representation; they introduce
+no member taxonomy or provider registry. Declared depth is a disclosure ceiling, never access.
+
+The block is a stateless portable snapshot. Hosted versions, cursors, deltas, Grants, ingestion,
+transport, and live derived projections remain coordination or harness concerns. Import never fetches
+an unknown remote merely because a map-note names it. The full provisional shape, normalization,
+bounded recursion rule, safe degradation behavior, and language-neutral parse vectors are in
+[`schema/maps.md`](schema/maps.md) and [`conformance/maps/manifest.json`](conformance/maps/manifest.json).
+
+---
+
 ## Identity
 
 ### Space identity
@@ -175,6 +197,8 @@ Every conformant repository reader MUST pass every required coverage vector in [
 A tool that claims **local-effect conformance** additionally MUST pass every required coverage vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json), including per-path revision CAS, symlink refusal, semantic frontmatter preservation, exact commit membership, unselected-state preservation, explicit identity, and honest partial failure.
 
 A tool that claims **root-identity conformance** additionally MUST pass every required coverage vector in [`conformance/root-identity/manifest.json`](conformance/root-identity/manifest.json), including optional absence, current and legacy forms, 96-bit minting, lazy legacy alignment, drift, ambiguity, and malformed evidence.
+
+A tool that claims provisional **Map parsing compatibility** additionally MUST pass every required coverage vector in [`conformance/maps/manifest.json`](conformance/maps/manifest.json), including optional absence, both root-address forms, remote normalization, exact pins, ordered members, the five depth names, open external addresses, root-index safety, and graceful invalid-block handling. This adds no base repository-conformance requirement.
 
 A tool that claims **assets conformance** additionally MUST pass every required coverage vector in [`conformance/assets/manifest.json`](conformance/assets/manifest.json), including exact recognition, relative resolution from the containing Markdown file, explicit authored selection when root and nested folders coexist, root escape, and repository-validator skipping. The pure language-neutral operation and its boundary are normative in [`schema/assets.md`](schema/assets.md).
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ideaspaces.xyz/schema/frontmatter.schema.json",
   "title": "Ideaspace Note frontmatter (Layer 1)",
-  "description": "The portable, author-owned frontmatter of a knowledge Note — what travels in the file (subject), as opposed to provenance (git) and platform identity (the map). PROVISIONAL, v0.4.8. Per the spec, an absent field is a drift signal, not an error — nothing is strictly required. Additional fields are allowed so the leaf stays extensible.",
+  "description": "The portable, author-owned frontmatter of a knowledge Note — what travels in the file, as opposed to provenance in git or hosted coordination state. PROVISIONAL, v0.13.0. Per the spec, an absent field is a drift signal, not an error — nothing is strictly required. Additional fields are allowed so the leaf stays extensible.",
   "type": "object",
   "properties": {
     "name": {
@@ -27,13 +27,98 @@
       "type": "array",
       "items": { "type": "string" },
       "description": "Flat classifiers within the directory model."
+    },
+    "map": {
+      "$ref": "#/$defs/map",
+      "description": "Optional provisional Map projection. Invalid Map guidance does not make the surrounding Note unreadable or add a base repository-conformance failure."
+    }
+  },
+  "$defs": {
+    "map": {
+      "type": "object",
+      "properties": {
+        "roots": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/mapRoot" }
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/mapPositionMember" },
+              { "$ref": "#/$defs/mapAddressMember" }
+            ]
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "mapRoot": {
+      "type": "object",
+      "properties": {
+        "space": {
+          "type": "string",
+          "pattern": "^[a-z0-9](?:[a-z0-9.\\-]*[a-z0-9])?(?::[0-9]+)?/[^\\\\\\s?#]+(?:/[^\\\\\\s?#]+)*$",
+          "description": "Canonical remote locator: lowercase host plus repository path, without scheme, credentials, query, fragment, trailing slash, or .git."
+        },
+        "root_node_id": {
+          "type": "string",
+          "pattern": "^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$"
+        },
+        "sha": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
+          "description": "Full resolved Git commit object id, never a ref."
+        }
+      },
+      "required": ["sha"],
+      "anyOf": [
+        { "required": ["space"] },
+        { "required": ["root_node_id"] }
+      ],
+      "additionalProperties": true
+    },
+    "mapPositionMember": {
+      "type": "object",
+      "properties": {
+        "space": { "type": "integer", "minimum": 0 },
+        "position": { "type": "string", "minLength": 1 },
+        "depth": { "$ref": "#/$defs/mapDepth" }
+      },
+      "required": ["space", "position", "depth"],
+      "not": { "required": ["address"] },
+      "additionalProperties": true
+    },
+    "mapAddressMember": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*:.+$"
+        },
+        "name": { "type": "string" },
+        "summary": { "type": "string" },
+        "depth": { "enum": ["name", "summary"] }
+      },
+      "required": ["address"],
+      "not": {
+        "anyOf": [
+          { "required": ["space"] },
+          { "required": ["position"] }
+        ]
+      },
+      "additionalProperties": true
+    },
+    "mapDepth": {
+      "enum": ["name", "summary", "surface", "children", "full"]
     }
   },
   "required": [],
   "additionalProperties": true,
   "x-status": "provisional and public — expect breaking changes before 1.0",
   "x-notes": [
-    "Subject rides in frontmatter (this schema); provenance (author, co-author, Change-Id) rides in git; internal platform handles ride in the platform's map, never the file.",
+    "Subject and optional portable Map guidance ride in frontmatter; provenance (author, co-author, Change-Id) rides in git; internal platform storage handles never enter the file.",
+    "A declared map block follows schema/maps.md. It is provisional guidance: malformed Map data is drift local to that projection, not a rejected Note or base repository-conformance failure.",
     "Other fields are permitted via additionalProperties but are not standardized here.",
     "The attached_to type namespace is platform-defined: the protocol fixes the `<type>:<id>` shape only. x-platform-type-examples lists illustrative types; each platform declares the ones it resolves."
   ]
