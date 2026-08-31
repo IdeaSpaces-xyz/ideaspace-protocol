@@ -51,6 +51,16 @@ The manifest contains structured values, not rendered section strings. It is
 bounded at assembly where unbounded history would otherwise enter context;
 rendering may apply a further display cap to stale-doc signals.
 
+The reference library also exposes the same tree assembler without requiring an
+`_agent/` contract. Numeric depths retain the 1..4 portable probe cap and the
+default per-directory cap of 50. A caller may request `depth: "full"` as an
+explicit local diagnostic walk; that mode walks to leaves, defaults to no
+per-directory cap, and carries summary-rung handles at every visited level.
+It does not change ambient awareness or the bounded recursive Map operation in
+[`maps.md`](maps.md): full-depth is deliberate local enumeration, never an
+interpretation of Map member `depth: full`, and returned values remain handles
+rather than embedded content bodies.
+
 ## Canonical sections
 
 The renderer recognizes these stable section ids, in this fixed order:
