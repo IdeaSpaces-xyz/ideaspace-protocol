@@ -61,6 +61,7 @@ npm install @ideaspaces/protocol
 ```ts
 import {
   assembleContentAwareness,
+  assembleContentTree,
   renderContentAwareness,
 } from "@ideaspaces/protocol";
 
@@ -71,6 +72,13 @@ if (!manifest) throw new Error("No ideaspace contract resolves here");
 const text = renderContentAwareness(manifest);
 const stable = renderContentAwareness(manifest, {
   sections: ["position", "now", "tree", "contract", "skills"],
+});
+
+// Explicit local enumeration uses the same tree walker without requiring a
+// contract. Ambient awareness remains bounded to depth 1..4.
+const completeTree = await assembleContentTree({
+  position: process.cwd(),
+  depth: "full",
 });
 ```
 
@@ -208,7 +216,7 @@ The protocol owns the portable repository shape and operating-loop semantics. Pl
 
 ## Status
 
-**v0.13.0 — early and provisional.** Knowledge Notes can opt into the first file-first Map shape: ordered Space positions and open external addresses, exact Git pins, representation ceilings, canonical remote normalization, bounded recursive walking, and language-neutral parse vectors. The block adds no base repository-conformance requirement; unaware readers keep the Markdown legend, malformed guidance remains projection drift, and hosted versions, access, transport, and ingestion stay outside the protocol. Map graduation still waits on two independent harnesses and the export→walk→import round trip. Pin a version and expect changes before 1.0.
+**v0.13.1 — early and provisional.** Knowledge Notes can opt into the first file-first Map shape: ordered Space positions and open external addresses, exact Git pins, representation ceilings, canonical remote normalization, bounded recursive walking, and language-neutral parse vectors. The shared Content tree assembler now also supports an explicit contract-free `full` local diagnostic walk without weakening ambient depth bounds. The Map block adds no base repository-conformance requirement; unaware readers keep the Markdown legend, malformed guidance remains projection drift, and hosted versions, access, transport, and ingestion stay outside the protocol. Map graduation still waits on two independent harnesses and the export→walk→import round trip. Pin a version and expect changes before 1.0.
 
 ## Develop
 

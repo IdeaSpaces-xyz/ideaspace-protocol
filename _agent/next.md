@@ -1,13 +1,13 @@
 ---
 name: Next
-summary: Queued — prove the provisional Map shape through independent file readers and the hosted round trip, while carrying root identity and `_assets/` into their consumers.
+summary: Queued — carry the shared full-depth Content tree into the derived CLI Map, then prove the provisional Map shape through the desktop reader and hosted round trip.
 ---
 # Next
 
 Root identity is now protocol-owned without becoming a migration gate. Local effects are adopted by
 the TypeScript consumers. The next work belongs at the boundaries that consume those shapes:
 
-- **Map harnesses and graduation.** CLI launch mounts a map-note, the plugin mints one at capture, and desktop walks one independently. The hosted register then proves export → portable walk → import over Git positions. Only that two-harness round trip graduates `schema/maps.md` toward normative; external addresses remain preserved or explicitly declined, never silently dropped.
+- **Map harnesses and graduation.** CLI launch mounts a map-note and the plugin mints one at capture. The derived CLI Map now consumes `assembleContentTree` for its explicit full local walk; desktop remains the independent second reader. The hosted register then proves export → portable walk → import over Git positions. Only that two-harness round trip graduates `schema/maps.md` toward normative; external addresses remain preserved or explicitly declined, never silently dropped.
 - **Keeper adoption and local lifecycle.** A local-first Space supplies its declared current ID for
   atomic adoption; a Keeper-first legacy Space retains the ID Keeper already minted. CLI create,
   publish, clone, and fork then implement the one-minter lifecycle. Existing hosted checkouts may

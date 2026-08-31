@@ -45,6 +45,19 @@ export interface AssembleAwarenessOpts {
   summaryExcerptLength?: number;
 }
 
+export type ContentTreeDepth = number | "full";
+
+export interface AssembleContentTreeOpts {
+  /** Absolute or cwd-relative local directory to map. No `_agent/` contract is required. */
+  position: string;
+  /** Bounded probes clamp to [1, 4]; `full` walks every content directory explicitly. */
+  depth?: ContentTreeDepth;
+  /** Per-directory cap. Defaults to 50 for bounded probes and no cap for `full`. */
+  maxEntries?: number;
+  /** Cap on each summary-rung excerpt. Default: 200 characters. */
+  summaryExcerptLength?: number;
+}
+
 export interface AssembleContentAwarenessOpts {
   /** Absolute or cwd-relative directory at which awareness is focused. */
   position: string;
@@ -121,12 +134,13 @@ export interface ContentAwarenessTreeEntry {
   /** Recursive markdown count for directories; absent for markdown files. */
   markdownFiles?: number;
   /**
-   * Summary-rung handle text at level 1 — a directory's README summary or a
-   * file's frontmatter summary / first content line. Absent below level 1
-   * (deeper levels are name-rung outline) and in the legacy block.
+   * Summary-rung handle text — at level 1 for bounded probes, and at every
+   * visited level for an explicit full-depth tree. A directory uses its README
+   * summary; a file uses frontmatter summary / first content line. Absent from
+   * bounded levels below 1 (name-rung outline) and from the legacy block.
    */
   summary?: string | null;
-  /** Probe outline below this directory when `treeDepth > 1`. Name-rung only. */
+  /** Probe outline below this directory; name-rung only below level 1 unless full-depth. */
   children?: ContentAwarenessTreeEntry[];
   /** Children over the per-directory cap, when truncated. Always rendered. */
   omittedChildren?: number;
@@ -215,6 +229,29 @@ const LEGACY_AWARENESS_SECTIONS: readonly ContentAwarenessSection[] = [
 const DEFAULT_MAX_DRIFT = 10;
 
 /**
+ * Assemble only the local content tree for one directory.
+ *
+ * This is the contract-free tree seam shared by ambient awareness and explicit
+ * derived-Map consumers. Numeric depth retains the portable [1, 4] probe cap;
+ * `full` is an explicit local diagnostic walk, not ambient orientation. Full
+ * walks default to no per-directory cap and still return handles only — never
+ * embedded member bodies.
+ */
+export async function assembleContentTree(
+  opts: AssembleContentTreeOpts,
+): Promise<ContentAwarenessTree | null> {
+  const requestedPosition = resolve(opts.position);
+  const position = await fs.realpath(requestedPosition).catch(() => requestedPosition);
+  const depth = normalizeContentTreeDepth(opts.depth);
+  return buildTree(position, {
+    depth,
+    maxEntries: opts.maxEntries ?? (depth === "full" ? Infinity : 50),
+    summaries: true,
+    summaryLength: opts.summaryExcerptLength ?? 200,
+  });
+}
+
+/**
  * Assemble the structured local Content awareness at one position.
  *
  * Returns `null` when no foundation-marked ideaspace resolves. All reads are
@@ -268,9 +305,8 @@ export async function assembleContentAwareness(
         staleDocSignals(repoRoot, docs),
       )
     : Promise.resolve([]);
-  // Probe depth is soft-capped, never rejected: a wild value clamps to the
-  // ladder's bounds the way Keeper's navigate does.
-  const treeDepth = Math.min(4, Math.max(1, Math.trunc(opts.treeDepth ?? 1)));
+  // Ambient awareness never requests the explicit full diagnostic walk.
+  const treeDepth = normalizeContentTreeDepth(opts.treeDepth) as number;
   const treeMaxEntries = opts.treeMaxEntries ?? 50;
   const sectionsPromise = lastShaPromise.then((lastSha) =>
     readAwarenessSections({
@@ -641,14 +677,19 @@ function truncate(value: string, max: number): string {
 }
 
 interface BuildTreeOpts {
-  /** Levels to pull; 1 is the position's own children. Caller pre-clamps. */
-  depth: number;
+  /** Levels to pull; 1 is the position's own children. `full` walks to leaves. */
+  depth: ContentTreeDepth;
   /** Per-directory display cap; `Infinity` disables (legacy block). */
   maxEntries: number;
   /** Summary-rung handles at level 1. Off for the legacy block and below level 1. */
   summaries: boolean;
   /** Cap on summary excerpt length. */
   summaryLength: number;
+}
+
+function normalizeContentTreeDepth(depth: ContentTreeDepth | undefined): ContentTreeDepth {
+  if (depth === "full") return "full";
+  return Math.min(4, Math.max(1, Math.trunc(depth ?? 1)));
 }
 
 const LEGACY_TREE_OPTS: BuildTreeOpts = {
@@ -676,7 +717,7 @@ async function buildTree(
   root: string,
   opts: BuildTreeOpts,
 ): Promise<ContentAwarenessTree | null> {
-  const listed = await listTreeLevel(root, opts, opts.depth);
+  const listed = await listTreeLevel(root, opts, opts.depth, true);
   if (!listed) return null;
   const totalMarkdownFiles = await countMarkdown(root);
   return {
@@ -689,12 +730,14 @@ async function buildTree(
 /**
  * One directory level of the map, at handle depth. Level `opts.depth` (the
  * position's own children) may carry summary-rung handles; every level below
- * is a name-rung probe outline — more map, never content.
+ * a bounded probe is a name-rung outline. Explicit `full` carries summary-rung
+ * handles at every level while walking to leaves — more map, never embedded content.
  */
 async function listTreeLevel(
   dir: string,
   opts: BuildTreeOpts,
-  levelsLeft: number,
+  levelsLeft: ContentTreeDepth,
+  topLevel: boolean,
 ): Promise<{ entries: ContentAwarenessTreeEntry[]; omitted: number } | null> {
   let raw: Array<{ name: string; isDir: boolean }>;
   try {
@@ -710,12 +753,11 @@ async function listTreeLevel(
     .filter((entry) => entry.isDir && isContentDirectoryName(entry.name))
     .map((entry) => entry.name)
     .sort();
-  const atTop = levelsLeft === opts.depth;
   const files = raw
     .filter((entry) => !entry.isDir && entry.name.endsWith(".md"))
     // Below level 1 the parent's line already carries its README summary —
     // listing README again in the probe outline is noise (Keeper parity).
-    .filter((entry) => atTop || entry.name !== "README.md")
+    .filter((entry) => topLevel || entry.name !== "README.md")
     .map((entry) => entry.name)
     .sort();
   if (!dirs.length && !files.length) return null;
@@ -726,7 +768,7 @@ async function listTreeLevel(
   ];
   const shown = Number.isFinite(opts.maxEntries) ? all.slice(0, opts.maxEntries) : all;
   const omitted = all.length - shown.length;
-  const withSummaries = opts.summaries && atTop;
+  const withSummaries = opts.summaries && (topLevel || opts.depth === "full");
 
   const entries = await Promise.all(
     shown.map(async ({ name, isDir }): Promise<ContentAwarenessTreeEntry> => {
@@ -738,8 +780,10 @@ async function listTreeLevel(
         const summary = await childSummary(path, isDir, opts.summaryLength);
         if (summary) entry.summary = summary;
       }
-      if (isDir && levelsLeft > 1) {
-        const deeper = await listTreeLevel(path, opts, levelsLeft - 1);
+      const shouldDescend = levelsLeft === "full" || levelsLeft > 1;
+      if (isDir && shouldDescend) {
+        const nextDepth = levelsLeft === "full" ? "full" : levelsLeft - 1;
+        const deeper = await listTreeLevel(path, opts, nextDepth, false);
         if (deeper) {
           entry.children = deeper.entries;
           if (deeper.omitted) entry.omittedChildren = deeper.omitted;

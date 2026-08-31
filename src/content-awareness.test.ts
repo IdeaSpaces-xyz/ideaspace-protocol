@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   assembleContentAwareness,
+  assembleContentTree,
   renderContentAwareness,
 } from "./awareness.js";
 
@@ -337,6 +338,52 @@ describe("Content awareness manifest", () => {
         "  overview.md — Top file.",
       ].join("\n"),
     );
+  });
+
+  it("walks a contract-free content tree explicitly to full depth without the ambient cap", async () => {
+    const deep = join(tmp, "alpha", "bravo", "charlie", "delta", "echo");
+    await fs.mkdir(deep, { recursive: true });
+    await fs.writeFile(
+      join(tmp, "alpha", "README.md"),
+      "---\nname: Alpha\nsummary: Alpha branch.\n---\n# Alpha",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(deep, "finding.md"),
+      "---\nname: Finding\nsummary: Deep finding.\n---\n# Finding",
+      "utf-8",
+    );
+    await fs.mkdir(join(tmp, "_assets"), { recursive: true });
+    await fs.writeFile(join(tmp, "_assets", "hidden.md"), "# Hidden", "utf-8");
+    await Promise.all(
+      Array.from({ length: 51 }, (_, index) =>
+        fs.writeFile(join(tmp, `top-${String(index).padStart(2, "0")}.md`), "", "utf-8"),
+      ),
+    );
+
+    const full = await assembleContentTree({ position: tmp, depth: "full" });
+    expect(full?.totalMarkdownFiles).toBe(53);
+    expect(full?.entries).toHaveLength(52);
+    expect(full?.omittedEntries).toBeUndefined();
+    const alpha = full?.entries[0];
+    expect(alpha).toMatchObject({
+      name: "alpha",
+      kind: "directory",
+      markdownFiles: 2,
+      summary: "Alpha branch.",
+    });
+    const finding = alpha?.children?.[0].children?.[0].children?.[0].children?.[0]
+      .children?.[0];
+    expect(finding).toMatchObject({
+      name: "finding.md",
+      kind: "markdown",
+      summary: "Deep finding.",
+    });
+
+    const bounded = await assembleContentTree({ position: tmp, depth: 99 });
+    const delta = bounded?.entries[0].children?.[0].children?.[0].children?.[0];
+    expect(delta?.name).toBe("delta");
+    expect(delta?.children).toBeUndefined();
   });
 
   it("caps entries per directory with honest omitted counts", async () => {

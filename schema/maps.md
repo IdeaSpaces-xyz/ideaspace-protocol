@@ -141,7 +141,10 @@ explicitly decline the import; it MUST NOT silently drop them.
 map-note. A portable bounded reader accepts a probe depth from 1 through 4, defaults to 1 for ambient
 orientation, and never interprets `full` as unbounded recursion. When more nested Map levels exist,
 it reports the number omitted rather than silently cutting the walk. A harness may offer a larger
-explicit diagnostic walk, but that is outside the bounded portable operation.
+explicit diagnostic walk, but that is outside the bounded portable operation. The reference
+library's `assembleContentTree({ depth: "full" })` is such a diagnostic for one local repository
+content tree; it does not recurse through map-notes and never changes the meaning of member
+`depth: full`.
 
 Cycles are prevented by a walk's visited `(root pin, position)` set. Repeating an already-visited
 map-note reports a reference to the earlier coordinate instead of expanding it again.

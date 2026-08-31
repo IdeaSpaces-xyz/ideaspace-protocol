@@ -23,6 +23,7 @@ export type {
 export {
   assembleAwareness,
   assembleContentAwareness,
+  assembleContentTree,
   renderContentAwareness,
   discoverSkillEntries,
   CONTENT_AWARENESS_SECTIONS,
@@ -31,6 +32,8 @@ export type {
   SkillEntry,
   AssembleAwarenessOpts,
   AssembleContentAwarenessOpts,
+  AssembleContentTreeOpts,
+  ContentTreeDepth,
   RenderContentAwarenessOpts,
   ContentAwarenessSection,
   ContentAwarenessPosition,
