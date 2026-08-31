@@ -174,6 +174,26 @@ export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
 export { ASSET_DIRECTORY, resolveAssetReference } from "./assets.js";
 export type { AssetReferenceResolution } from "./assets.js";
 
+// Portable Map frontmatter — ordered addresses, exact Git pins, representation
+// ceilings, and remote normalization. No fetch, access, or hosted lifecycle.
+export {
+  MAP_DEPTHS,
+  canonicalizeMapSpace,
+  parseMap,
+} from "./maps.js";
+export type {
+  MapDepth,
+  MapRoot,
+  MapPositionMember,
+  MapAddressMember,
+  MapMember,
+  MapBlock,
+  MapParseIssueCode,
+  MapParseIssue,
+  MapParseResult,
+  MapSpaceNormalization,
+} from "./maps.js";
+
 // Portable Space root identity — optional foundation declaration, current and
 // legacy forms, deterministic 96-bit formatting, and pure lazy-alignment
 // evaluation over caller-supplied trusted evidence. No discovery or mutation.
