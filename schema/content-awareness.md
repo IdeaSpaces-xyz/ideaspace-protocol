@@ -59,7 +59,9 @@ per-directory cap, and carries summary-rung handles at every visited level.
 It does not change ambient awareness or the bounded recursive Map operation in
 [`maps.md`](maps.md): full-depth is deliberate local enumeration, never an
 interpretation of Map member `depth: full`, and returned values remain handles
-rather than embedded content bodies.
+rather than embedded content bodies. The explicit tree adapter fails when any
+selected content directory cannot be read; only ambient awareness retains the
+best-effort behavior appropriate to orientation.
 
 ## Canonical sections
 
