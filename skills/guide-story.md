@@ -43,11 +43,12 @@ the person who has to remember and re-explain everything.
   you before anything leaves your machine.
 - **Nothing is thrown away.** Every version is kept, so you can always look back at what changed
   and when.
-- **It's yours, on your machine.** It works with no account and no internet. Putting it online,
+- **It's yours, on your machine.** Ordinary files on your own computer, no account required.
+  Putting it online,
   sharing it with someone, reaching it from another computer — all optional, added later if you
   want them.
 
-## The bit to emphasize
+## How to start
 
 You don't design a space up front. You capture one real thing, then another, and the structure
 appears from what's actually there. The instinct to plan the folders first is the wrong one.

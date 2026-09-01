@@ -15,8 +15,9 @@ way.
 ## Keep a space
 
 Start a place for what you know: a knowledge base, notes on a topic, a vault for transcripts, a
-record of your team's numbers, an assistant with a role. Say what you want to keep or who you
-want to work with, and the space gets set up around it — whiteboard included.
+record of your team's numbers — or an assistant with a role. Say what you want to keep or who you
+want to work with, and the space gets set up around it — whiteboard included: the short note that says what this place
+is about and where things stand.
 
 ## Save things
 
@@ -33,8 +34,8 @@ looked — without you re-explaining anything.
 ## Stay current
 
 When a space is shared with other people, their saved work and yours flow through the same
-place. Ask whether there's anything new, get the latest, send yours — the space stays one
-understanding rather than diverging copies.
+place. Ask whether there's anything new, get the latest, send yours — so everyone is
+building on the same space, not on diverging copies.
 
 ## Share it
 
