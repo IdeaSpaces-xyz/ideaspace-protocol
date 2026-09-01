@@ -7,13 +7,17 @@ const EXPECTED = [
   "form-perspective",
   "form-primitive",
   "guide",
+  "guide-bigger-picture",
+  "guide-jobs",
+  "guide-story",
+  "guide-working",
   "purpose-elicitation",
   "repo-context",
   "writing",
 ].sort();
 
 describe("listSkills", () => {
-  it("returns the 8 universal skills, each with a description", async () => {
+  it("returns the 12 catalog entries, each with a description", async () => {
     const skills = await listSkills();
     expect(skills.map((s) => s.name)).toEqual(EXPECTED);
     for (const s of skills) {
@@ -36,6 +40,19 @@ describe("readSkill", () => {
 
   it("rejects path-traversal names", async () => {
     await expect(readSkill("../package")).rejects.toThrow(/Invalid skill name/);
+  });
+
+  it("every guidance rung ends with where to go deeper", async () => {
+    const handoffs: Record<string, RegExp> = {
+      "guide-story": /guide-jobs/,
+      "guide-jobs": /guide-working/,
+      "guide-working": /guide-bigger-picture/,
+      "guide-bigger-picture": /SPEC\.md/,
+    };
+    for (const [name, next] of Object.entries(handoffs)) {
+      const { content } = await readSkill(name);
+      expect(next.test(content), `${name} should hand off deeper`).toBe(true);
+    }
   });
 });
 

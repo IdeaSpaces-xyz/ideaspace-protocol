@@ -65,6 +65,23 @@ Skills outside the daily loop:
 - **`is-space`** — compatibility and contract reference.
 - **`is-writing`** — the Note-writing standard used during capture.
 
+## The guidance ladder
+
+Beside the operating protocols, the catalog carries four **guidance** entries — not verbs an
+agent performs, but layers it explains from when a person asks what this is. Progressive
+disclosure for humans: start at the rung matching the person, offer one step deeper, never dump
+the ladder.
+
+| Rung | Entry | Answers |
+|---|---|---|
+| The story | [`guide-story`](skills/guide-story.md) | "What is this?" — the workshop and the whiteboard, for someone who has never heard of it |
+| The jobs | [`guide-jobs`](skills/guide-jobs.md) | "What can I do here? How can you help me?" — six jobs in plain words |
+| Working here | [`guide-working`](skills/guide-working.md) | "How do I use this?" — the rhythm, asking in your own words, when the assistant acts vs. checks |
+| The bigger picture | [`guide-bigger-picture`](skills/guide-bigger-picture.md) | "Where does this lead?" — knowledge as a process people and agents map and navigate together |
+
+Surfaces route into the ladder through a guidance-door entrypoint; each rung ends with where to
+go deeper, and the top rung hands off to `SPEC.md`.
+
 ## One home for shared substance
 
 A skill has two layers with different homes:
