@@ -105,9 +105,9 @@ Primitives go in `_agent/` at the level where they apply. Everything in `_agent/
 
 ## Creating Agents
 
-A full agent definition is not a special file — it is a **vantage-shaped space**: an ideaspace whose five-file `_agent/` contract *is* the character. When the user wants a specialized agent (not just an instruction), create a dedicated space (its own folder or repo) and write its contract:
+A full agent definition is not a special file — it is a **space that is the agent's point of view**: an ideaspace whose five-file `_agent/` contract *is* the character. When the user wants a specialized agent (not just an instruction), create a dedicated space (its own folder or repo) and write its contract:
 
-- `_agent/foundation.md` — what this agent is, its character, its boundaries. State plainly that the space is a vantage, not a subject: an agent launched here inhabits it.
+- `_agent/foundation.md` — what this agent is, its character, its boundaries. State plainly that the space is the agent's point of view, not a subject to study: an agent launched here inhabits it.
 - `_agent/guide.md` — how work goes when inhabiting it.
 - `_agent/skills/` — the procedures this agent can repeat.
 - `_agent/purpose.md` and `_agent/now.md` — the agent's own direction, as they emerge.
