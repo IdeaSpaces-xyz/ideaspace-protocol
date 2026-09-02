@@ -44,9 +44,8 @@ the person who has to remember and re-explain everything.
 - **Nothing is thrown away.** Every version is kept, so you can always look back at what changed
   and when.
 - **It's yours, on your machine.** Ordinary files on your own computer, no account required.
-  Putting it online,
-  sharing it with someone, reaching it from another computer — all optional, added later if you
-  want them.
+  Putting it online, sharing it with someone, reaching it from another computer — all optional,
+  added later if you want them.
 
 ## How to start
 
