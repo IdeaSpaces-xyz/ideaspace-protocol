@@ -16,8 +16,8 @@ way.
 
 Start a place for what you know: a knowledge base, notes on a topic, a vault for transcripts, a
 record of your team's numbers — or an assistant with a role. Say what you want to keep or who you
-want to work with, and the space gets set up around it — whiteboard included: the short note that says what this place
-is about and where things stand.
+want to work with, and the space gets set up around it — whiteboard included: the short note that
+says what this place is about and where things stand.
 
 ## Save things
 
