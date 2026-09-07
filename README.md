@@ -15,6 +15,8 @@ This repository is the standard: the spec, a machine-readable schema, a referenc
 
 [How it works](https://ideaspaces.xyz/how-it-works) · [Use with Claude Code, Codex, or Cowork](https://github.com/IdeaSpaces-xyz/claude-code-plugin) · [Use with Pi](https://github.com/IdeaSpaces-xyz/pi-is-space) · [CLI](https://github.com/IdeaSpaces-xyz/cli) · [Read the spec](SPEC.md)
 
+Hosting at [ideaspaces.xyz](https://ideaspaces.xyz) is optional: sharing, access control, and public spaces. Nothing above needs it.
+
 ## The shape
 
 One rule about a directory. Anything not prefixed with an underscore is **content**: plain Markdown, for anyone. `_agent/` is **how to work here**. Any other underscore folder is an extension, and a tool that does not recognise it leaves it alone.
@@ -36,7 +38,7 @@ One rule about a directory. Anything not prefixed with an underscore is **conten
 └─ pricing/             a folder inside it
    ├─ model.md
    └─ _agent/           composes on the one above
-      └─ guide.md       no number without a source
+      └─ guide.md       adds the rules for this folder
 ```
 
 `_agent/` can appear at any depth. A deeper one composes on the one above: general at the root, specific as you descend. That is why the same tools work everywhere; every folder has the same shape. A missing file is a signal, not an error. No `purpose.md` means nobody has written down why the place exists yet.
