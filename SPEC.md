@@ -100,10 +100,18 @@ and addressed by canonical remote locator, portable `root_node_id`, or both. Ope
 reuse the `<type>:<id>` address grammar and carry at most name/summary representation; they introduce
 no member taxonomy or provider registry. Declared depth is a disclosure ceiling, never access.
 
-The block is a stateless portable snapshot. Hosted versions, cursors, deltas, Grants, ingestion,
-transport, and live derived projections remain coordination or harness concerns. Import never fetches
-an unknown remote merely because a map-note names it. The full provisional shape, normalization,
-bounded recursion rule, safe degradation behavior, and language-neutral parse vectors are in
+Either member form MAY carry observed `disclosure.name` and `disclosure.summary`, distinct from
+curator-authored top-level labels. Declared depth remains a ceiling, not requested or observed detail;
+a name-only ceiling forbids an observed summary. Preserving the view fixes supplied disclosure,
+not live entity state. Query operations and requested detail stay outside the Map.
+
+The same stateless shape serves a projected view and a preserved selection. A pure builder validates
+and normalizes selected roots/members; it does not resolve them or sanitize unknown fields. Hosted
+versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer concerns.
+Import never fetches an unknown remote merely because a map-note names it. Sharing checks actual
+payload disclosure and remote usability separately; machine-local bindings are not portable context.
+The full provisional shape, normalization, bounded recursion rule, safe degradation behavior, and
+language-neutral parse/build vectors are in
 [`schema/maps.md`](schema/maps.md) and [`conformance/maps/manifest.json`](conformance/maps/manifest.json).
 
 ---
@@ -198,7 +206,7 @@ A tool that claims **local-effect conformance** additionally MUST pass every req
 
 A tool that claims **root-identity conformance** additionally MUST pass every required coverage vector in [`conformance/root-identity/manifest.json`](conformance/root-identity/manifest.json), including optional absence, current and legacy forms, 96-bit minting, lazy legacy alignment, drift, ambiguity, and malformed evidence.
 
-A tool that claims provisional **Map parsing compatibility** additionally MUST pass every required coverage vector in [`conformance/maps/manifest.json`](conformance/maps/manifest.json), including optional absence, both root-address forms, remote normalization, exact pins, ordered members, the five depth names, open external addresses, root-index safety, and graceful invalid-block handling. This adds no base repository-conformance requirement.
+A tool that claims provisional **Map parsing compatibility** additionally MUST pass every required coverage vector in [`conformance/maps/manifest.json`](conformance/maps/manifest.json), including optional absence, both root-address forms, remote normalization, exact pins, ordered members, the five depth names, open external addresses, observed disclosure versus annotations, root-index safety, and graceful invalid-block handling. Parse-only readers parse the input of build vectors; construction implementations also build them and parse successful output back equal. This adds no base repository-conformance requirement.
 
 A tool that claims **assets conformance** additionally MUST pass every required coverage vector in [`conformance/assets/manifest.json`](conformance/assets/manifest.json), including exact recognition, relative resolution from the containing Markdown file, explicit authored selection when root and nested folders coexist, root escape, and repository-validator skipping. The pure language-neutral operation and its boundary are normative in [`schema/assets.md`](schema/assets.md).
 

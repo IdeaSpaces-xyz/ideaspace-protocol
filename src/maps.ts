@@ -21,6 +21,12 @@ export interface MapRoot extends Record<string, unknown> {
   sha: string;
 }
 
+/** Observed target information, distinct from a curator's labels. Not a live-state guarantee. */
+export interface MapDisclosure extends Record<string, unknown> {
+  name?: string;
+  summary?: string;
+}
+
 export interface MapPositionMember extends Record<string, unknown> {
   /** Zero-based index into `roots`. */
   space: number;
@@ -28,6 +34,8 @@ export interface MapPositionMember extends Record<string, unknown> {
   position: string;
   /** Maximum representation a reader may disclose. */
   depth: MapDepth;
+  /** Observed name/summary; top-level name/summary remain curator-authored annotations. */
+  disclosure?: MapDisclosure;
 }
 
 export interface MapAddressMember extends Record<string, unknown> {
@@ -37,6 +45,7 @@ export interface MapAddressMember extends Record<string, unknown> {
   summary?: string;
   /** External addresses can promise no representation beyond summary. */
   depth?: "name" | "summary";
+  disclosure?: MapDisclosure;
 }
 
 export type MapMember = MapPositionMember | MapAddressMember;
@@ -44,6 +53,12 @@ export type MapMember = MapPositionMember | MapAddressMember;
 export interface MapBlock extends Record<string, unknown> {
   roots: MapRoot[];
   members: MapMember[];
+}
+
+/** Ordered, already-selected inputs. Construction does not discover, fetch, or grant anything. */
+export interface MapBuildInput extends Record<string, unknown> {
+  roots?: readonly MapRoot[];
+  members?: readonly MapMember[];
 }
 
 export type MapParseIssueCode =
@@ -62,17 +77,20 @@ export type MapParseIssueCode =
   | "invalid_depth"
   | "invalid_address"
   | "invalid_name"
-  | "invalid_summary";
+  | "invalid_summary"
+  | "invalid_disclosure"
+  | "disclosure_exceeds_depth";
 
 export interface MapParseIssue {
   path: string;
   code: MapParseIssueCode;
 }
 
-export type MapParseResult =
-  | { status: "absent" }
+export type MapBuildResult =
   | { status: "valid"; map: MapBlock }
   | { status: "invalid"; issues: MapParseIssue[] };
+
+export type MapParseResult = { status: "absent" } | MapBuildResult;
 
 export type MapSpaceNormalization =
   | { status: "valid"; space: string }
@@ -135,6 +153,19 @@ export function canonicalizeMapSpace(value: unknown): MapSpaceNormalization {
 /** Parse an optional `map` frontmatter value into its portable standard projection. */
 export function parseMap(value: unknown): MapParseResult {
   if (value === undefined) return { status: "absent" };
+  return parseMapBlock(value);
+}
+
+/**
+ * Build a normalized Map from ordered selections, using the parser's validation.
+ * Does not inspect local bindings, verify remote availability, or sanitize unknown fields.
+ * Invalid input yields issues, never a partial Map. No input is mutated.
+ */
+export function buildMap(input: MapBuildInput): MapBuildResult {
+  return parseMapBlock(input);
+}
+
+function parseMapBlock(value: unknown): MapBuildResult {
   if (!isRecord(value)) {
     return { status: "invalid", issues: [{ path: "map", code: "invalid_map_type" }] };
   }
@@ -226,6 +257,8 @@ function parseMembers(
       continue;
     }
 
+    validateDisclosure(input, base, issues);
+
     if (isAddress) {
       if (typeof input.address !== "string" || !ADDRESS_PATTERN.test(input.address)) {
         issues.push({ path: `${base}.address`, code: "invalid_address" });
@@ -255,6 +288,27 @@ function parseMembers(
     members.push(input as MapPositionMember);
   }
   return members;
+}
+
+function validateDisclosure(
+  member: Record<string, unknown>,
+  base: string,
+  issues: MapParseIssue[],
+): void {
+  if (!("disclosure" in member)) return;
+  const disclosure = member.disclosure;
+  if (!isRecord(disclosure)) {
+    issues.push({ path: `${base}.disclosure`, code: "invalid_disclosure" });
+    return;
+  }
+  for (const field of ["name", "summary"] as const) {
+    if (field in disclosure && typeof disclosure[field] !== "string") {
+      issues.push({ path: `${base}.disclosure.${field}`, code: `invalid_${field}` });
+    }
+  }
+  if (member.depth === "name" && "summary" in disclosure) {
+    issues.push({ path: `${base}.disclosure.summary`, code: "disclosure_exceeds_depth" });
+  }
 }
 
 function isMapPosition(value: unknown): value is string {
