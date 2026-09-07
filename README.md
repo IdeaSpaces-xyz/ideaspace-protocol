@@ -2,229 +2,103 @@
 
 [![CI](https://github.com/IdeaSpaces-xyz/ideaspace-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/IdeaSpaces-xyz/ideaspace-protocol/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@ideaspaces/protocol?label=npm)](https://www.npmjs.com/package/@ideaspaces/protocol)
-[![Node.js](https://img.shields.io/node/v/@ideaspaces/protocol)](package.json)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status: provisional](https://img.shields.io/badge/protocol-provisional-orange.svg)](#status)
 
-> The open standard for how agents turn useful work into durable, portable knowledge.
+> An agent is a folder. This is the shape of that folder.
 
-[Use with Claude Code or Cowork](https://github.com/IdeaSpaces-xyz/claude-code-plugin) · [Use with Pi](https://github.com/IdeaSpaces-xyz/pi-is-space) · [Explore this repo as an Ideaspace](https://ideaspaces.xyz/spaces/n_64dbf7878f05362337a6cda6) · [Install the library](https://www.npmjs.com/package/@ideaspaces/protocol) · [Read the spec](SPEC.md)
+An ideaspace is a folder of Markdown under git that holds two things: **your knowledge**, and **how to work with it**. Open an agent inside it and that's who you're talking to. The instructions live in the folder, not in the model or the tool that runs it, so any agent that knows the shape can work in any folder that has it, and the folder outlives both.
 
-Agents produce decisions, findings, plans, and context while they work. Most of it disappears with the conversation. The Ideaspace Protocol gives agents a shared way to preserve what matters as ordinary Markdown with git history, so knowledge remains inspectable, editable, and useful to the next person or agent.
+Instruction files such as `CLAUDE.md` and `AGENTS.md` proved that agents read guidance kept in the repo, and found the ceiling: one file, holding everything, followed worse the longer it grows. So the file grows up into a folder. `_agent/` sits beside the knowledge and holds how to work here in a few small files, and the agent picks up only the piece the task needs.
 
-The standard has two parts:
+This repository is the standard: the spec, a machine-readable schema, a reference TypeScript library, and a conformance kit, kept together so they cannot drift apart. It is an ideaspace itself.
 
-- **A predictable place for knowledge.** An ideaspace is a folder of Markdown under git. Knowledge lives in `.md` files, how-to-work in exact `_agent/`, optional payload in opaque extension containers, and git carries identity and history. Exact `_assets/` is the first standard extension.
-- **A predictable way to maintain it.** Agents follow the same operating loop: arrive → orient → inspect → act → capture → push/pull → reflect. Capture is deliberate: agree on what changed, write it down, then commit it explicitly.
+[How it works](https://ideaspaces.xyz/how-it-works) · [Use with Claude Code, Codex, or Cowork](https://github.com/IdeaSpaces-xyz/claude-code-plugin) · [Use with Pi](https://github.com/IdeaSpaces-xyz/pi-is-space) · [CLI](https://github.com/IdeaSpaces-xyz/cli) · [Read the spec](SPEC.md)
 
-This is not merely a data format for retrieval. It is an *inhabitation contract*: a shared place and a shared way for agents to work there.
+Hosting at [ideaspaces.xyz](https://ideaspaces.xyz) is optional: sharing, access control, and public spaces. Nothing above needs it.
 
-This repository keeps the normative spec and skills, machine-readable schema, reference TypeScript library, and conformance kit together. Most people adopt the standard through a plugin; implementers use this package to build another conformant surface.
+## The shape
 
-## Why this exists
+One rule about a directory. Anything not prefixed with an underscore is **content**: plain Markdown, for anyone. `_agent/` is **how to work here**. Any other underscore folder is an extension, and a tool that does not recognise it leaves it alone.
 
-Agent context is usually trapped in a product, a prompt, or a transcript. A fixed repository shape makes the knowledge and the agreement for working with it portable. People keep ordinary files and full history; agents get a predictable way to orient and act without every repository inventing its own instructions.
+```
+~/space/
+├─ README.md            what this place is
+├─ decisions.md         content — for anyone
+├─ findings.md
+│
+├─ _agent/              how to work here
+│  ├─ foundation.md     what kind of place; one per space, at its root
+│  ├─ purpose.md        why it exists
+│  ├─ guide.md          how we work
+│  ├─ now.md            the current focus
+│  ├─ next.md           what's queued
+│  └─ skills/           procedures for here, loaded only when used
+│
+└─ pricing/             a folder inside it
+   ├─ model.md
+   └─ _agent/           composes on the one above
+      └─ guide.md       adds the rules for this folder
+```
 
-## Experience the protocol
+`_agent/` can appear at any depth. A deeper one composes on the one above: general at the root, specific as you descend. That is why the same tools work everywhere; every folder has the same shape. A missing file is a signal, not an error. No `purpose.md` means nobody has written down why the place exists yet.
 
-This repository is both the definition and a conformant example. [Browse it as a public Ideaspace](https://ideaspaces.xyz/spaces/n_64dbf7878f05362337a6cda6), navigate the same Markdown as structured knowledge, ask it questions with your own agent, or copy it into your account. Its [root `_agent/` contract](https://github.com/IdeaSpaces-xyz/ideaspace-protocol/tree/main/_agent) dogfoods the protocol it defines.
+## What a conformant tool does
+
+1. **Arrive.** Read `_agent/` from the root down to where it stands, the tree, and what changed since last time. Summaries first; whole files on demand.
+2. **Work.** Read one document, one section at a time, following the guide and the skills that apply here.
+3. **Write back.** When understanding changes, write it down as Markdown, agreed with the person.
+4. **Commit.** Git records who changed what and when. The person is the author; an agent that helped is a co-author.
+
+Git is the history and the provenance. "What did we believe in March, and why did it change?" is `git log`.
 
 ## What's here
 
 | Path | What |
 |---|---|
-| [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, two layers, conformance (MUST/SHOULD). |
-| [`SKILLS.md`](SKILLS.md) | **Normative.** The ability layer — the agent operating loop and shared intent skills for orientation, deliberate capture, directional sync, and reflection. |
-| [`schema/`](schema/) | Language-neutral contract — frontmatter, provisional Maps, generic repository-path ownership, named-extension documentation, `_agent/`, optional `_assets/`, root identity, Change/surface state, structured Content awareness, local workspace handles, and local repository effects. |
-| [`src/`](src/) | Reference TypeScript implementation — frontmatter and Map parsing, supporting-material resolution, root identity, contract/path reads, structured awareness assembly/rendering, workspace handles, git state, local-effect validation plus the opt-in effect runtime, drift, and the skill catalog. |
-| [`conformance/`](conformance/) | A reference conformant space, a space validator, and language-neutral extension-boundary/assets/root-identity/Maps/local-effect vectors shared by independent runtimes. |
-| [`VERSION`](VERSION) | Current spec version. Tools declare conformance to a version. |
+| [`SPEC.md`](SPEC.md) | **Normative.** The shape, identity, and what a tool must and should do. |
+| [`SKILLS.md`](SKILLS.md) | **Normative.** How an agent arrives, works, writes back, and syncs. |
+| [`schema/`](schema/) | The language-neutral contract: frontmatter, paths, `_agent/`, `_assets/`, identity, local writes, and the provisional `map` block. |
+| [`src/`](src/) | The reference TypeScript implementation. |
+| [`conformance/`](conformance/) | A reference space, a validator, and vectors any implementation can run. |
+| [`VERSION`](VERSION) | The spec version tools declare against. |
 
-## Concepts in 30 seconds
-
-- **Position.** Every content directory is a position, presenting as *summary → surface → children*. Its surface — a `README.md`, a repo's root README, or a lone `.md` file — says what it is, for everyone. Leading-underscore extension containers belong to the containing position instead.
-- **Base roles.** Plain `.md` files outside extensions are *knowledge*; exact `_agent/` is *agent context*; ordinary paths stay untyped; every other `_`-prefixed directory is opaque extension payload. Exact `_assets/` optionally gives referenced payload a standard aware-reader contract.
-- **The `_agent/` contract.** `foundation.md` (root handshake), `guide.md`, `purpose.md`, `now.md`, `next.md`, and optional `schema.md` (the shape of Notes in the folder — guidance, not validation). Give it a good surface: loaded at depth 0, with depth on demand.
-- **Fractal.** `_agent/` can appear at any position and composes along the path: general at the root, specific as you descend.
-- **Space identity, progressively.** A root foundation may carry optional `root_node_id`; missing identity remains valid, clone retains it, and fork remints it.
-- **Maps, optionally.** A knowledge Note may carry ordered addresses, exact root pins, and representation ceilings in a provisional `map` block; unaware readers still read its Markdown legend.
-- **Provenance in git.** The author is the person; an agent that helped adds a `Co-authored-by:` trailer. Provenance rides in git, not in knowledge-Note frontmatter.
-
-The full, normative version is [`SPEC.md`](SPEC.md).
-
-## Using the reference library
+## The reference library
 
 ```bash
 npm install @ideaspaces/protocol
 ```
 
+One function reads a folder and renders what an agent should see on arrival. The same function serves the Claude Code plugin's session hook and Pi's session start.
+
 ```ts
-import {
-  assembleContentAwareness,
-  assembleContentTree,
-  renderContentAwareness,
-} from "@ideaspaces/protocol";
+import { assembleContentAwareness, renderContentAwareness } from "@ideaspaces/protocol";
 
 const manifest = await assembleContentAwareness({ position: process.cwd() });
-if (!manifest) throw new Error("No ideaspace contract resolves here");
+if (!manifest) throw new Error("No ideaspace here");
 
-// Render all canonical sections, or select a subset for harness placement.
 const text = renderContentAwareness(manifest);
-const stable = renderContentAwareness(manifest, {
-  sections: ["position", "now", "tree", "contract", "skills"],
-});
-
-// Explicit local enumeration uses the same tree walker without requiring a
-// contract. Ambient awareness remains bounded to depth 1..4.
-const completeTree = await assembleContentTree({
-  position: process.cwd(),
-  depth: "full",
-});
 ```
 
-Inspect one Markdown document without defaulting to its full body:
+The library also walks the full tree, reads one section of a document, classifies paths, resolves supporting files, evaluates a space's identity, and performs safe local writes through the explicit `local-effects` subpath with a git runner you supply. Each export is documented in [`src/`](src/) and proved by [`conformance/`](conformance/).
 
-```ts
-import { inspectMarkdownFile } from "@ideaspaces/protocol";
-
-const outline = await inspectMarkdownFile("work/Next.md", { mode: "outline" });
-const section = await inspectMarkdownFile("work/Next.md", {
-  mode: "section",
-  heading: "Current window",
-});
-```
-
-Classify a repository path without consulting the filesystem or knowing named extensions:
-
-```ts
-import { classifyRepositoryPath } from "@ideaspaces/protocol";
-
-classifyRepositoryPath("_example/payload.md", "file");
-// { status: "ok", role: "extension", extension: "_example" }
-
-classifyRepositoryPath("_assets", "file");
-// { status: "ok", role: "ordinary" }
-```
-
-To publish semantics for `_foo/`, document its exact placement, payload, authored references, safe
-unaware behavior, portable operations and vectors, and its own compatible format evolution. The
-minimal boundary and worked `_assets/` example are in
-[`schema/extensions.md`](schema/extensions.md); they require no registry or loader.
-
-Resolve one already-extracted relative asset path without filesystem lookup or fallback:
-
-```ts
-// Narrow browser-safe entrypoint; the package root exports this too.
-import { resolveAssetReference } from "@ideaspaces/protocol/assets";
-
-resolveAssetReference("guides/topic.md", "_assets/diagram.png");
-// { status: "asset", path: "guides/_assets/diagram.png" }
-
-resolveAssetReference("guides/topic.md", "../_assets/diagram.png");
-// { status: "asset", path: "_assets/diagram.png" }
-```
-
-Evaluate optional root identity without discovering remotes or contacting a host:
-
-```ts
-import { evaluateRootIdentity, mintRootNodeId } from "@ideaspaces/protocol";
-
-const localId = mintRootNodeId();
-const state = evaluateRootIdentity({
-  declaration: localId,
-  canonicalOrigin: localId,
-});
-console.log(state.state); // aligned
-```
-
-Local harnesses can also read neutral, unrendered workspace handles without
-assigning protocol-level home/mount/POV roles:
-
-```ts
-import {
-  readRootHandle,
-  readWorkspaceRepositories,
-} from "@ideaspaces/protocol";
-
-const home = await readRootHandle(process.cwd());
-const repositories = await readWorkspaceRepositories("../");
-```
-
-The package root exports pure local-effect request/result types and validators, plus the read-only `pathRevision(root, path, git)` fact. Mutation is available only through the explicit `@ideaspaces/protocol/local-effects` subpath. Both reads and effects receive caller-supplied capabilities; the package never discovers a Git executable.
-
-```ts
-import { validateWriteMarkdownRequest } from "@ideaspaces/protocol";
-
-const checked = validateWriteMarkdownRequest({
-  operation: "write_markdown",
-  root: "/canonical/worktree",
-  path: "notes/a.md",
-  expected_revision: { worktree: null, index: null, head: null },
-  frontmatter: { mode: "preserve", set: { name: "A" }, remove: [] },
-  body: "# A\n",
-  stage: true,
-});
-if (!checked.ok) console.error(checked.issues);
-```
-
-```ts
-import { pathRevision, type LocalGitRunner } from "@ideaspaces/protocol";
-import {
-  nodeLocalEffectFileSystem,
-  writeMarkdown,
-} from "@ideaspaces/protocol/local-effects";
-
-// The host chooses and injects a stock-Git runner; the protocol does not
-// discover an executable, identity, credentials, or network configuration.
-declare const git: LocalGitRunner;
-const reviewed = await pathRevision("/canonical/worktree", "notes/a.md", git);
-if (reviewed.status === "ok") {
-  const result = await writeMarkdown(
-    {
-      operation: "write_markdown",
-      root: "/canonical/worktree",
-      path: "notes/a.md",
-      expected_revision: reviewed.revision,
-      frontmatter: { mode: "preserve", set: { name: "A" }, remove: [] },
-      body: "# A\n",
-      stage: true,
-    },
-    { git, filesystem: nodeLocalEffectFileSystem },
-  );
-  console.log(result.status);
-}
-```
-
-The TypeScript library is the *reference* implementation, not the only one. Other languages conform to the language-neutral core — [`SPEC.md`](SPEC.md), [`schema/`](schema/), and the conformance fixtures.
+TypeScript is the reference implementation, not the requirement. Other languages conform to [`SPEC.md`](SPEC.md), [`schema/`](schema/), and the vectors.
 
 ## Conformance
 
-A tool that claims to inhabit ideaspaces follows the **MUST/SHOULD** in [`SPEC.md`](SPEC.md#conformance), executes the base extension-boundary vectors, and declares the spec version it targets. Assets, root-identity, provisional Map readers, and local-effect implementations separately execute every required vector in their respective manifests under [`conformance/`](conformance/). The kit keeps generic repository reading independent from optional layers and named-extension semantics.
-
-## Ecosystem
-
-The protocol owns the portable repository shape and operating-loop semantics. Plugins make that standard native to an agent harness; the CLI implements shared capture, commit, and sync mechanics; each surface keeps its own tools, permissions, placement, and lifecycle behavior.
-
-| Project | Role |
-|---|---|
-| **Ideaspace Protocol** | Spec, schema, reference library, skills, and conformance kit — this repository. |
-| [Claude Code plugin](https://github.com/IdeaSpaces-xyz/claude-code-plugin) | The recommended local-first path for Claude Code and Cowork; includes the Ideaspace skills and MCP tools. |
-| [Pi extension](https://github.com/IdeaSpaces-xyz/pi-is-space) | Protocol-backed awareness, capture, and sync in Pi. |
-| [CLI](https://github.com/IdeaSpaces-xyz/cli) | Create, publish, clone, push, pull, and automate spaces from the terminal. |
-| [SDK](https://github.com/IdeaSpaces-xyz/sdk) | Keeper transport types and Pi-to-Keeper translation; not a protocol compatibility layer. |
-| [IdeaSpaces](https://ideaspaces.xyz) | Optional hosting for sharing, access control, public exploration, and search across spaces. |
+A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in [`SPEC.md`](SPEC.md#conformance), passes the base vectors, and declares the spec version it targets. The optional layers, `_assets/`, identity, local writes, and the provisional `map` block, each have their own vectors, so a tool can conform to the base without any of them.
 
 ## Status
 
-**v0.13.1 — early and provisional.** Knowledge Notes can opt into the first file-first Map shape: ordered Space positions and open external addresses, exact Git pins, representation ceilings, canonical remote normalization, bounded recursive walking, and language-neutral parse vectors. The shared Content tree assembler now also supports an explicit contract-free `full` local diagnostic walk without weakening ambient depth bounds. The Map block adds no base repository-conformance requirement; unaware readers keep the Markdown legend, malformed guidance remains projection drift, and hosted versions, access, transport, and ingestion stay outside the protocol. Map graduation still waits on two independent harnesses and the export→walk→import round trip. Pin a version and expect changes before 1.0.
+**v0.13.5, provisional.** The base shape, Markdown beside `_agent/` composing at every depth, has held since v0.1.0. The optional layers still move. Pin a version.
 
 ## Develop
 
 ```bash
 npm ci
-npm run build      # build the reference library (ESM → dist/)
-npm test           # run the suite (vitest)
-npx tsc --noEmit   # typecheck
+npm run build      # ESM → dist/
+npm test           # vitest
+npx tsc --noEmit
 ```
 
 See [`_agent/guide.md`](_agent/guide.md) for how to work in this repo.
