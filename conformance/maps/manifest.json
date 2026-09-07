@@ -17,9 +17,76 @@
     "invalid_pin",
     "invalid_root_index",
     "invalid_position",
-    "graceful_invalid_block"
+    "graceful_invalid_block",
+    "emit",
+    "observed_disclosure",
+    "curator_separation",
+    "unknown_type",
+    "unknown_fields",
+    "invalid_disclosure",
+    "disclosure_ceiling"
   ],
   "vectors": [
+    {
+      "id": "build-mixed-note-and-entity",
+      "operation": "build",
+      "covers": ["emit", "observed_disclosure", "curator_separation"],
+      "input": {
+        "roots": [{ "space": "https://GIT.EXAMPLE.COM/team/research.git", "sha": "1111111111111111111111111111111111111111" }],
+        "members": [
+          { "space": 0, "position": "decision.md", "depth": "surface", "summary": "Why I selected this Note.", "disclosure": { "name": "Decision", "summary": "The Note's observed summary." } },
+          { "address": "hostname:example.org", "depth": "summary", "name": "Relevant organization", "disclosure": { "name": "Example", "summary": "The observed entity profile." } }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [{ "space": "git.example.com/team/research", "sha": "1111111111111111111111111111111111111111" }],
+          "members": [
+            { "space": 0, "position": "decision.md", "depth": "surface", "summary": "Why I selected this Note.", "disclosure": { "name": "Decision", "summary": "The Note's observed summary." } },
+            { "address": "hostname:example.org", "depth": "summary", "name": "Relevant organization", "disclosure": { "name": "Example", "summary": "The observed entity profile." } }
+          ]
+        }
+      }
+    },
+    {
+      "id": "build-unknown-rootless-entity",
+      "operation": "build",
+      "covers": ["emit", "unknown_type", "unknown_fields"],
+      "input": {
+        "members": [{ "address": "custom:opaque-target", "depth": "name", "disclosure": { "name": "Unrecognized target", "custom_hint": "preserved, not interpreted" }, "custom_member": 7 }],
+        "custom_map": true
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [],
+          "members": [{ "address": "custom:opaque-target", "depth": "name", "disclosure": { "name": "Unrecognized target", "custom_hint": "preserved, not interpreted" }, "custom_member": 7 }],
+          "custom_map": true
+        }
+      }
+    },
+    {
+      "id": "reject-malformed-disclosure",
+      "operation": "build",
+      "covers": ["invalid_disclosure", "graceful_invalid_block"],
+      "input": { "members": [{ "address": "hostname:example.org", "disclosure": "not an observation object" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].disclosure", "code": "invalid_disclosure" }] }
+    },
+    {
+      "id": "reject-non-string-observed-summary",
+      "operation": "parse",
+      "covers": ["invalid_disclosure"],
+      "input": { "members": [{ "address": "hostname:example.org", "disclosure": { "summary": 42 } }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].disclosure.summary", "code": "invalid_summary" }] }
+    },
+    {
+      "id": "reject-summary-beyond-name-ceiling",
+      "operation": "build",
+      "covers": ["disclosure_ceiling"],
+      "input": { "members": [{ "address": "hostname:example.org", "depth": "name", "disclosure": { "summary": "More than the declared ceiling." } }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].disclosure.summary", "code": "disclosure_exceeds_depth" }] }
+    },
     {
       "id": "parse-missing",
       "operation": "parse",

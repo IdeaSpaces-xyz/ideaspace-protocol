@@ -210,6 +210,7 @@ try {
 
   const probe = `
     import { createRequire } from "node:module";
+    import { deepStrictEqual } from "node:assert";
     import * as protocol from "@ideaspaces/protocol";
     import * as assetsRuntime from "@ideaspaces/protocol/assets";
     import * as localEffects from "@ideaspaces/protocol/local-effects";
@@ -233,6 +234,7 @@ try {
       "inspectMarkdown",
       "inspectMarkdownFile",
       "canonicalizeMapSpace",
+      "buildMap",
       "evaluateRootIdentity",
       "mintRootNodeId",
       "parseMap",
@@ -320,6 +322,11 @@ try {
     });
     if (map.status !== "valid" || map.map.roots[0].space !== "git.example.com/acme/research") {
       throw new Error("Map package boundary did not execute");
+    }
+    for (const vector of maps.vectors.filter((v) => v.operation === "build")) {
+      const result = protocol.buildMap(vector.input);
+      deepStrictEqual(result, vector.expected, vector.id);
+      if (result.status === "valid") deepStrictEqual(protocol.parseMap(result.map), result);
     }
     const aligned = protocol.evaluateRootIdentity({
       declaration: "n_0123456789abcdef01234567",

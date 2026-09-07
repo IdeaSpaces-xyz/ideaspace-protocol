@@ -10,7 +10,7 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`root-identity/manifest.json`** — language-neutral vectors for optional Space identity: current and legacy reads, deterministic 96-bit generation, absent/local-only/legacy-unstamped/aligned states, and refusal to select an ID from drift, ambiguity, or malformed evidence.
 
-- **`maps/manifest.json`** — language-neutral vectors for the provisional `map` frontmatter block: optional absence, canonical remote normalization, remote- or `root_node_id`-addressed pinned roots, ordered internal positions, all five representation ceilings, open external addresses, and graceful refusal of an invalid Map projection without rejecting the Note.
+- **`maps/manifest.json`** — language-neutral parse/build vectors for the provisional `map` block: pinned positions and rootless external addresses, all five ceilings, observed name/summary distinct from curator annotations, unknown types/fields, and graceful invalid-block refusal. Parse-only readers parse both `parse` and `build` inputs; constructors additionally build the `build` inputs and parse valid output back equal. These are pure representation checks, not remote-availability or authorization tests.
 
 - **`reference-space/`** — a small, known-good conformant ideaspace: a root
   `_agent/` five-file contract, a portable flat-form `_agent/skills/` entry,

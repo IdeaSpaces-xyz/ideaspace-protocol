@@ -1,21 +1,23 @@
 # Maps
 
-> Portable contract for the optional `map` block on a knowledge Note. **Provisional, v0.13.0.**
+> Portable contract for the optional `map` block on a knowledge Note. **Provisional, v0.14.0.**
 
 A Map is an ordered navigation layer over addresses. It combines three proven ideas without becoming
 another repository model: exact pins from manifests and lockfiles, curated link maps, and links that
 may resolve only after a reader gains access. It rides ordinary Markdown frontmatter, uses the
-protocol's existing position and identity grammar, and embeds no member content.
+protocol's existing position and address grammar, and may carry observed names and summaries.
+It does not embed member bodies or export a platform identity registry.
 
 The two dimensions that distinguish it from a link list are auditable. A representation rung is a
 ceiling a reader can compare with what it actually disclosed; a pin is a resolved Git commit object
 id a reader can inspect with bare Git. Mutable intent and exact resolution remain separate, as they
 do in manifests and lockfiles. Pins are data, never a workflow that operates another checkout.
 
-This page standardizes the portable **mounted register**: a curated map-note stored in a Space. The
-same ordered object may also be sent as an exact frozen coordinate or projected live by a harness,
-but Grants, hosted versions, cursors, deltas, forks, ingestion, and transport remain outside the
-protocol.
+The same member language serves a curated map-note, a projected view, and a preserved selection.
+A query operation acts against a Map and may return another Map; search terms, filters, requested
+detail, and target resolution remain outside the block. A question may accompany a preserved Map,
+but Grants, hosted versions, cursors, deltas, ingestion, persistence, and transport remain outside
+this contract. A projected view need not be stored to be useful.
 
 ## Frontmatter shape
 
@@ -135,6 +137,75 @@ The portable round trip is exact over Space positions. External addresses are pr
 map-note, but a hosted store that cannot ingest them MUST either preserve them as address-only or
 explicitly decline the import; it MUST NOT silently drop them.
 
+## Observed disclosure and curator annotations
+
+Either member form MAY carry `disclosure`, an object with optional string `name` and `summary`.
+These fields record target information observed by the producing reader. They do not identify a
+resolver, prove freshness, grant access, or certify that the observation is accurate. Unknown
+fields are preserved but have no base meaning or implied operations.
+
+Top-level member `name` and `summary` remain curator-authored annotations. Readers MUST NOT replace
+these with retrieved fields, or treat them as verified target information. A legacy member without
+`disclosure` has no declared observation; readers MUST NOT synthesize one from its annotations.
+
+```yaml
+roots:
+  - space: git.example.com/team/research
+    sha: 1111111111111111111111111111111111111111
+members:
+  - space: 0
+    position: decision.md
+    depth: surface
+    summary: Why I selected this Note.
+    disclosure:
+      name: Decision
+      summary: The Note's observed summary.
+  - address: hostname:example.org
+    depth: summary
+    name: Relevant organization
+    disclosure:
+      name: Example
+      summary: The observed entity profile.
+```
+
+`depth` remains a **ceiling**, not a request and not an assertion that all permitted detail is
+present. The first member above permits a surface read but supplies only name/summary. When
+`depth` is `name`, observed `disclosure.summary` MUST be absent, even if empty. External addresses
+with no declared depth may carry name/summary but promise nothing beyond summary. Curator
+annotations are explicit authored disclosure, not permission to fetch more target content.
+
+An entity address needs no Git root; an entity-only Map may have `roots: []`. The protocol does not
+require a known type registry to display supplied information. An unknown address type remains
+opaque, and neither its type nor its appearance in the Map implies Space membership or permission
+to message, invoke, or read the target.
+
+Preserving a Map preserves the ordered references, annotations, and supplied observations. It does
+not freeze live entities. A later authorized read can return a new observation without rewriting
+the preserved view. Git-backed observations that claim an exact pin must describe that pin, not
+uncommitted working-tree content; verifying this is the producing harness's responsibility.
+
+## Building a view
+
+`buildMap(input)` is the reference constructor over already-selected roots and members. Its input
+has the same shape as the block, with either array optionally absent. It normalizes roots, preserves
+order and unknown fields, and returns `{status: "valid", map}` or `{status: "invalid", issues}`.
+Unlike optional `parseMap(undefined)`, building absent/non-object input is an error. Construction is
+pure, never mutates its input, and never returns a partial Map. It does not persist or freeze the
+result; callers own its lifecycle. For valid output, `parseMap(result.map)` MUST equal `result`.
+
+The builder neither invents a universal local root nor discovers targets from a tree. Private
+checkout bindings and working-tree diagnostics belong in harness state, outside the portable
+selection. Existing optional `root_node_id` remains supported; ordinary remote Git references do
+not require it.
+
+**Parsing/building is not safe export.** Unknown fields are preserved, including unrecognized
+machine-local data. A sender MUST review the actual selected payload, exclude private bindings and
+credentials, verify the intended remote and exact selected content, and apply disclosure/access
+rules independently. It MUST NOT infer availability or authority from parser success, a matching
+object id, or a configured remote. Missing remote content, dirty selected bytes, or unavailable
+pins must not cause silent upload, repinning, or publication. These are consumer checks; the
+protocol library does no filesystem or network I/O for Maps.
+
 ## Bounded walking
 
 `depth` is representation, not recursion. Recursive walking follows a member that is itself a
@@ -153,9 +224,12 @@ map-note reports a reference to the earlier coordinate instead of expanding it a
 
 The `map` block is provisional and adds no base repository-conformance requirement. An implementation
 claiming provisional Map parsing compatibility executes every required coverage tag in
-[`../conformance/maps/manifest.json`](../conformance/maps/manifest.json). Those vectors cover
-optional absence, both root identities, remote normalization, exact pins, ordered internal members,
-open external addresses, the five depth names, root-index safety, and graceful invalid-block handling.
+[`../conformance/maps/manifest.json`](../conformance/maps/manifest.json), parsing the input of both
+`parse` and `build` vectors. A Map construction implementation additionally executes `build` vectors
+through its constructor and parses successful output back equal. Those vectors cover optional
+absence, both root identities, remote normalization, exact pins, ordered positions and external
+addresses, the five ceilings, observed disclosure versus annotations, unknown types/fields, and
+graceful invalid-block handling. They validate representation, not live availability or permission.
 
 Breaking changes remain allowed before 1.0. This page graduates toward normative only after two
 independent harnesses converge and the round trip passes: hosted Map export → map-note → independent

@@ -183,9 +183,13 @@ export {
   MAP_DEPTHS,
   canonicalizeMapSpace,
   parseMap,
+  buildMap,
 } from "./maps.js";
 export type {
   MapDepth,
+  MapDisclosure,
+  MapBuildInput,
+  MapBuildResult,
   MapRoot,
   MapPositionMember,
   MapAddressMember,
