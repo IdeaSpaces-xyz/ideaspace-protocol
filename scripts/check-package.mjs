@@ -233,7 +233,7 @@ try {
       "composeContractAlongPath",
       "inspectMarkdown",
       "inspectMarkdownFile",
-      "canonicalizeMapSpace",
+      "parseCanonicalRepoUrl",
       "buildMap",
       "evaluateRootIdentity",
       "mintRootNodeId",
@@ -280,7 +280,7 @@ try {
     if (rootIdentity?.format !== "ideaspaces-root-identity/v1" || !rootIdentity.required_coverage?.length) {
       throw new Error("Root-identity conformance manifest did not load");
     }
-    if (maps?.format !== "ideaspaces-maps/v1" || !maps.required_coverage?.length) {
+    if (maps?.format !== "ideaspaces-maps/v2" || !maps.required_coverage?.length) {
       throw new Error("Map conformance manifest did not load");
     }
     if (!repositoryPathSchema.endsWith("schema/repository-path.md")) {
@@ -315,12 +315,16 @@ try {
     }
     const map = protocol.parseMap({
       roots: [{
-        space: "https://git.example.com/acme/research.git",
+        repo: "https://ideaspaces.example/repos/n_0123456789abcdef01234567",
         sha: "1111111111111111111111111111111111111111",
       }],
-      members: [{ space: 0, position: "note.md", depth: "full" }],
+      members: [{ root: 0, position: "note.md", depth: "full" }],
     });
-    if (map.status !== "valid" || map.map.roots[0].space !== "git.example.com/acme/research") {
+    if (
+      map.status !== "valid" ||
+      map.map.roots[0].repo !== "https://ideaspaces.example/repos/n_0123456789abcdef01234567" ||
+      map.map.roots[0].root_node_id !== "n_0123456789abcdef01234567"
+    ) {
       throw new Error("Map package boundary did not execute");
     }
     for (const vector of maps.vectors.filter((v) => v.operation === "build")) {

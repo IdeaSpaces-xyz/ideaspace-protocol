@@ -13,9 +13,9 @@ export const MAP_DEPTHS = ["name", "summary", "surface", "children", "full"] as 
 export type MapDepth = (typeof MAP_DEPTHS)[number];
 
 export interface MapRoot extends Record<string, unknown> {
-  /** Canonical remote locator: lowercase host plus repository path, without scheme or `.git`. */
-  space?: string;
-  /** Portable Space identity; current and legacy reader forms are accepted. */
+  /** Canonical absolute repository URL: `<web-origin>/repos/{root_node_id}`. */
+  repo?: string;
+  /** Portable repository-root identity; current and legacy reader forms are accepted. */
   root_node_id?: string;
   /** Full resolved Git commit object id. */
   sha: string;
@@ -29,7 +29,7 @@ export interface MapDisclosure extends Record<string, unknown> {
 
 export interface MapPositionMember extends Record<string, unknown> {
   /** Zero-based index into `roots`. */
-  space: number;
+  root: number;
   /** Portable repository-relative protocol position, or `.` for the root. */
   position: string;
   /** Maximum representation a reader may disclose. */
@@ -66,8 +66,10 @@ export type MapParseIssueCode =
   | "invalid_roots_type"
   | "invalid_root_type"
   | "missing_root_identity"
-  | "invalid_space"
+  | "invalid_repo"
   | "invalid_root_node_id"
+  | "root_identity_mismatch"
+  | "retired_space_field"
   | "invalid_pin"
   | "invalid_members_type"
   | "invalid_member_type"
@@ -92,62 +94,51 @@ export type MapBuildResult =
 
 export type MapParseResult = { status: "absent" } | MapBuildResult;
 
-export type MapSpaceNormalization =
-  | { status: "valid"; space: string }
-  | { status: "invalid"; code: "invalid_space" };
+export type CanonicalRepoUrlParseResult =
+  | { status: "valid"; repo: string; rootNodeId: string }
+  | { status: "invalid"; code: "invalid_repo" };
 
 const DEPTHS = new Set<string>(MAP_DEPTHS);
 const ADDRESS_PATTERN = /^[a-z][a-z0-9_]*:.+$/;
 const PIN_PATTERN = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
-const HOST_PATTERN = /^(?:\[[0-9a-f:.]+\]|[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::[0-9]+)?$/;
-const URL_PROTOCOLS = new Set(["http:", "https:", "ssh:", "git:"]);
+const REPO_PATH_PATTERN = /^\/repos\/(n_(?:[0-9a-f]{12}|[0-9a-f]{24}))$/;
+const HTTP_LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 /**
- * Normalize a Git remote to the portable Map form `host[:port]/path`.
+ * Validate and preserve a canonical absolute repository URL.
  *
- * Common HTTP(S), SSH, Git, and scp-style remotes converge. Credentials,
- * scheme, a leading slash, trailing slash, and one `.git` suffix do not enter
- * the identity. Local/file remotes, queries, fragments, dot segments, and
- * whitespace are refused.
+ * The path is exactly `/repos/{root_node_id}`. HTTPS is required except for
+ * configured-style loopback development URLs, which may use HTTP and a port.
+ * Credentials, query, fragment, encoding, aliases, and non-canonical URL forms
+ * are refused. Origin trust and authorization remain consumer concerns.
  */
-export function canonicalizeMapSpace(value: unknown): MapSpaceNormalization {
+export function parseCanonicalRepoUrl(value: unknown): CanonicalRepoUrlParseResult {
   if (typeof value !== "string" || value.length === 0 || value.trim() !== value) {
-    return invalidSpace();
+    return invalidRepo();
   }
 
-  let host = "";
-  let path = "";
-
-  if (value.includes("://")) {
-    let url: URL;
-    try {
-      url = new URL(value);
-    } catch {
-      return invalidSpace();
-    }
-    if (!URL_PROTOCOLS.has(url.protocol) || url.search || url.hash || !url.hostname) {
-      return invalidSpace();
-    }
-    const port = normalizedPort(url.protocol, url.port);
-    host = `${url.hostname.toLowerCase()}${port ? `:${port}` : ""}`;
-    path = url.pathname.replace(/^\/+/, "");
-  } else {
-    const canonical = value.match(/^([^/@:\s]+(?::[0-9]+)?)\/(.+)$/);
-    if (canonical) {
-      host = canonical[1]!.toLowerCase();
-      path = canonical[2]!;
-    } else {
-      const scp = value.match(/^(?:[^@/:\s]+@)?([^/:\s]+):(.+)$/);
-      if (!scp) return invalidSpace();
-      host = scp[1]!.toLowerCase();
-      path = scp[2]!;
-    }
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return invalidRepo();
+  }
+  if (
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    (url.protocol !== "https:" &&
+      !(url.protocol === "http:" && HTTP_LOOPBACK_HOSTS.has(url.hostname)))
+  ) {
+    return invalidRepo();
   }
 
-  if (!HOST_PATTERN.test(host)) return invalidSpace();
-  const normalizedPath = normalizeRemotePath(path);
-  if (normalizedPath === null) return invalidSpace();
-  return { status: "valid", space: `${host}/${normalizedPath}` };
+  const pathMatch = url.pathname.match(REPO_PATH_PATTERN);
+  if (!pathMatch || `${url.origin}${url.pathname}` !== value) return invalidRepo();
+  const parsed = parseRootNodeId(pathMatch[1]);
+  if (parsed.status !== "valid") return invalidRepo();
+  return { status: "valid", repo: value, rootNodeId: parsed.rootNodeId };
 }
 
 /** Parse an optional `map` frontmatter value into its portable standard projection. */
@@ -193,36 +184,50 @@ function parseRoots(value: unknown, issues: MapParseIssue[]): MapRoot[] {
       continue;
     }
 
-    let space: string | undefined;
     if ("space" in input) {
-      const normalized = canonicalizeMapSpace(input.space);
+      issues.push({ path: `${base}.space`, code: "retired_space_field" });
+    }
+
+    let repo: string | undefined;
+    let repoRootNodeId: string | undefined;
+    if ("repo" in input) {
+      const normalized = parseCanonicalRepoUrl(input.repo);
       if (normalized.status === "invalid") {
-        issues.push({ path: `${base}.space`, code: "invalid_space" });
+        issues.push({ path: `${base}.repo`, code: "invalid_repo" });
       } else {
-        space = normalized.space;
+        repo = normalized.repo;
+        repoRootNodeId = normalized.rootNodeId;
       }
     }
 
-    let rootNodeId: string | undefined;
+    let declaredRootNodeId: string | undefined;
     if ("root_node_id" in input) {
       const parsed = parseRootNodeId(input.root_node_id);
       if (parsed.status !== "valid") {
         issues.push({ path: `${base}.root_node_id`, code: "invalid_root_node_id" });
       } else {
-        rootNodeId = parsed.rootNodeId;
+        declaredRootNodeId = parsed.rootNodeId;
       }
     }
 
-    if (!("space" in input) && !("root_node_id" in input)) {
+    if (!("repo" in input) && !("root_node_id" in input) && !("space" in input)) {
       issues.push({ path: base, code: "missing_root_identity" });
+    }
+    if (
+      repoRootNodeId !== undefined &&
+      declaredRootNodeId !== undefined &&
+      repoRootNodeId !== declaredRootNodeId
+    ) {
+      issues.push({ path: base, code: "root_identity_mismatch" });
     }
     if (typeof input.sha !== "string" || !PIN_PATTERN.test(input.sha)) {
       issues.push({ path: `${base}.sha`, code: "invalid_pin" });
     }
 
+    const rootNodeId = declaredRootNodeId ?? repoRootNodeId;
     roots.push({
       ...input,
-      ...(space === undefined ? {} : { space }),
+      ...(repo === undefined ? {} : { repo }),
       ...(rootNodeId === undefined ? {} : { root_node_id: rootNodeId }),
       sha: typeof input.sha === "string" ? input.sha : "",
     });
@@ -250,8 +255,13 @@ function parseMembers(
       continue;
     }
 
+    if ("space" in input) {
+      issues.push({ path: `${base}.space`, code: "retired_space_field" });
+      continue;
+    }
+
     const isAddress = "address" in input;
-    const isPosition = "space" in input || "position" in input;
+    const isPosition = "root" in input || "position" in input;
     if (isAddress === isPosition) {
       issues.push({ path: base, code: "invalid_member_shape" });
       continue;
@@ -276,8 +286,8 @@ function parseMembers(
       continue;
     }
 
-    if (!Number.isInteger(input.space) || (input.space as number) < 0 || (input.space as number) >= rootCount) {
-      issues.push({ path: `${base}.space`, code: "invalid_root_index" });
+    if (!Number.isInteger(input.root) || (input.root as number) < 0 || (input.root as number) >= rootCount) {
+      issues.push({ path: `${base}.root`, code: "invalid_root_index" });
     }
     if (!isMapPosition(input.position)) {
       issues.push({ path: `${base}.position`, code: "invalid_position" });
@@ -330,37 +340,8 @@ function isMapPosition(value: unknown): value is string {
   );
 }
 
-function normalizeRemotePath(value: string): string | null {
-  if (
-    value.length === 0 ||
-    /[\s\\?#\0]/.test(value) ||
-    value.includes("//")
-  ) {
-    return null;
-  }
-  let path = value.replace(/^\/+|\/+$/g, "");
-  if (path.endsWith(".git")) path = path.slice(0, -4);
-  if (!path) return null;
-  const segments = path.split("/");
-  if (segments.some((segment) => !segment || segment === "." || segment === "..")) return null;
-  return segments.join("/");
-}
-
-function normalizedPort(protocol: string, port: string): string {
-  if (!port) return "";
-  if (
-    (protocol === "http:" && port === "80") ||
-    (protocol === "https:" && port === "443") ||
-    (protocol === "ssh:" && port === "22") ||
-    (protocol === "git:" && port === "9418")
-  ) {
-    return "";
-  }
-  return port;
-}
-
-function invalidSpace(): MapSpaceNormalization {
-  return { status: "invalid", code: "invalid_space" };
+function invalidRepo(): CanonicalRepoUrlParseResult {
+  return { status: "invalid", code: "invalid_repo" };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

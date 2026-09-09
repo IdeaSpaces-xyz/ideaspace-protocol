@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   MAP_DEPTHS,
   buildMap,
-  canonicalizeMapSpace,
+  parseCanonicalRepoUrl,
   type MapBuildInput,
   parseMap,
   type MapParseResult,
-  type MapSpaceNormalization,
+  type CanonicalRepoUrlParseResult,
 } from "./maps.js";
 
 interface ParseVector {
@@ -18,15 +18,15 @@ interface ParseVector {
   expected: MapParseResult;
 }
 
-interface CanonicalizeCasesVector {
+interface ParseRepoUrlCasesVector {
   id: string;
-  operation: "canonicalize_space_cases";
+  operation: "parse_repo_url_cases";
   covers: string[];
   cases: unknown[];
-  expected: MapSpaceNormalization;
+  expected: CanonicalRepoUrlParseResult;
 }
 
-type MapVector = ParseVector | CanonicalizeCasesVector;
+type MapVector = ParseVector | ParseRepoUrlCasesVector;
 
 const manifest = JSON.parse(
   readFileSync(new URL("../conformance/maps/manifest.json", import.meta.url), "utf-8"),
@@ -38,18 +38,23 @@ const manifest = JSON.parse(
 };
 
 describe("Map primitives", () => {
-  it("normalizes common remote syntax without carrying credentials or transport", () => {
-    expect(canonicalizeMapSpace("https://person@git.example.com/Acme/research.git")).toEqual({
+  it("accepts HTTPS repo URLs and only loopback HTTP", () => {
+    expect(parseCanonicalRepoUrl("https://ideaspaces.example/repos/n_0123456789abcdef01234567")).toEqual({
       status: "valid",
-      space: "git.example.com/Acme/research",
+      repo: "https://ideaspaces.example/repos/n_0123456789abcdef01234567",
+      rootNodeId: "n_0123456789abcdef01234567",
     });
-    expect(canonicalizeMapSpace("git.example.com:2222/Acme/research.git")).toEqual({
-      status: "valid",
-      space: "git.example.com:2222/Acme/research",
-    });
-    expect(canonicalizeMapSpace("file:///tmp/research")).toEqual({
+    for (const host of ["localhost", "127.0.0.1", "[::1]"]) {
+      const repo = `http://${host}:3000/repos/n_0123456789abcdef01234567`;
+      expect(parseCanonicalRepoUrl(repo)).toEqual({
+        status: "valid",
+        repo,
+        rootNodeId: "n_0123456789abcdef01234567",
+      });
+    }
+    expect(parseCanonicalRepoUrl("http://ideaspaces.example/repos/n_0123456789abcdef01234567")).toEqual({
       status: "invalid",
-      code: "invalid_space",
+      code: "invalid_repo",
     });
   });
 
@@ -70,7 +75,10 @@ describe("Map primitives", () => {
 });
 
 describe("Map construction and disclosure", () => {
-  const root = { space: "https://git.example.com/team/repo.git", sha: "a".repeat(40) };
+  const root = {
+    repo: "https://ideaspaces.example/repos/n_0123456789abcdef01234567",
+    sha: "a".repeat(40),
+  };
 
   it("constructs an empty selection without claiming optional absence", () => {
     expect(buildMap({})).toEqual({ status: "valid", map: { roots: [], members: [] } });
@@ -82,14 +90,14 @@ describe("Map construction and disclosure", () => {
 
   it("does not mutate frozen inputs or change annotations into observations", () => {
     const member = Object.freeze({
-      space: 0, position: "note.md", depth: "full" as const,
+      root: 0, position: "note.md", depth: "full" as const,
       summary: "Curator context", disclosure: Object.freeze({ name: "Observed name" }),
     });
     const input = Object.freeze({
       roots: Object.freeze([Object.freeze(root)]), members: Object.freeze([member]),
     });
     const result = buildMap(input);
-    expect(root.space).toBe("https://git.example.com/team/repo.git");
+    expect(root.repo).toBe("https://ideaspaces.example/repos/n_0123456789abcdef01234567");
     expect(result.status).toBe("valid");
     if (result.status !== "valid") return;
     expect(result.map.members[0]).toEqual(member);
@@ -99,7 +107,7 @@ describe("Map construction and disclosure", () => {
 
   it.each([null, [], "summary", 1])("rejects invalid position disclosure %j", (disclosure) => {
     const result = parseMap({ roots: [root], members: [
-      { space: 0, position: "note.md", depth: "full", disclosure },
+      { root: 0, position: "note.md", depth: "full", disclosure },
     ] });
     expect(result).toEqual({ status: "invalid", issues: [
       { path: "map.members[0].disclosure", code: "invalid_disclosure" },
@@ -117,7 +125,7 @@ describe("Map construction and disclosure", () => {
 
   it("enforces a position's name ceiling, not just an external address ceiling", () => {
     expect(parseMap({ roots: [root], members: [
-      { space: 0, position: "note.md", depth: "name", disclosure: { summary: "" } },
+      { root: 0, position: "note.md", depth: "name", disclosure: { summary: "" } },
     ] })).toEqual({ status: "invalid", issues: [
       { path: "map.members[0].disclosure.summary", code: "disclosure_exceeds_depth" },
     ] });
@@ -143,7 +151,7 @@ describe("Map construction and disclosure", () => {
 
 describe("Map conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
-    expect(manifest.format).toBe("ideaspaces-maps/v1");
+    expect(manifest.format).toBe("ideaspaces-maps/v2");
     expect(manifest.depths).toEqual(MAP_DEPTHS);
     const covered = new Set(manifest.vectors.flatMap((vector) => vector.covers));
     for (const requirement of manifest.required_coverage) {
@@ -164,9 +172,9 @@ describe("Map conformance manifest", () => {
         if (result.status === "valid") expect(parseMap(result.map)).toEqual(result);
         break;
       }
-      case "canonicalize_space_cases":
+      case "parse_repo_url_cases":
         for (const input of vector.cases) {
-          expect(canonicalizeMapSpace(input), String(input)).toEqual(vector.expected);
+          expect(parseCanonicalRepoUrl(input), String(input)).toEqual(vector.expected);
         }
         break;
     }

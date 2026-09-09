@@ -1,13 +1,15 @@
 {
-  "format": "ideaspaces-maps/v1",
+  "format": "ideaspaces-maps/v2",
   "depths": ["name", "summary", "surface", "children", "full"],
   "required_coverage": [
     "missing_allowed",
     "empty_progressive",
-    "canonical_remote",
-    "remote_normalization",
+    "canonical_repo_url",
+    "loopback_http",
+    "reject_noncanonical_repo",
     "root_node_id_only",
     "both_root_identities",
+    "root_identity_agreement",
     "exact_pin",
     "ordered_positions",
     "all_depths",
@@ -17,6 +19,7 @@
     "invalid_pin",
     "invalid_root_index",
     "invalid_position",
+    "retired_space_field",
     "graceful_invalid_block",
     "emit",
     "observed_disclosure",
@@ -30,20 +33,20 @@
     {
       "id": "build-mixed-note-and-entity",
       "operation": "build",
-      "covers": ["emit", "observed_disclosure", "curator_separation"],
+      "covers": ["emit", "observed_disclosure", "curator_separation", "canonical_repo_url"],
       "input": {
-        "roots": [{ "space": "https://GIT.EXAMPLE.COM/team/research.git", "sha": "1111111111111111111111111111111111111111" }],
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
         "members": [
-          { "space": 0, "position": "decision.md", "depth": "surface", "summary": "Why I selected this Note.", "disclosure": { "name": "Decision", "summary": "The Note's observed summary." } },
+          { "root": 0, "position": "decision.md", "depth": "surface", "summary": "Why I selected this Note.", "disclosure": { "name": "Decision", "summary": "The Note's observed summary." } },
           { "address": "hostname:example.org", "depth": "summary", "name": "Relevant organization", "disclosure": { "name": "Example", "summary": "The observed entity profile." } }
         ]
       },
       "expected": {
         "status": "valid",
         "map": {
-          "roots": [{ "space": "git.example.com/team/research", "sha": "1111111111111111111111111111111111111111" }],
+          "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
           "members": [
-            { "space": 0, "position": "decision.md", "depth": "surface", "summary": "Why I selected this Note.", "disclosure": { "name": "Decision", "summary": "The Note's observed summary." } },
+            { "root": 0, "position": "decision.md", "depth": "surface", "summary": "Why I selected this Note.", "disclosure": { "name": "Decision", "summary": "The Note's observed summary." } },
             { "address": "hostname:example.org", "depth": "summary", "name": "Relevant organization", "disclosure": { "name": "Example", "summary": "The observed entity profile." } }
           ]
         }
@@ -98,205 +101,168 @@
       "operation": "parse",
       "covers": ["empty_progressive"],
       "input": {},
-      "expected": {
-        "status": "valid",
-        "map": { "roots": [], "members": [] }
-      }
+      "expected": { "status": "valid", "map": { "roots": [], "members": [] } }
     },
     {
-      "id": "normalize-common-remotes",
-      "operation": "canonicalize_space_cases",
-      "covers": ["canonical_remote", "remote_normalization"],
+      "id": "accept-canonical-repo-url",
+      "operation": "parse_repo_url_cases",
+      "covers": ["canonical_repo_url"],
+      "cases": ["https://ideaspaces.example/repos/n_0123456789abcdef01234567"],
+      "expected": { "status": "valid", "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "rootNodeId": "n_0123456789abcdef01234567" }
+    },
+    {
+      "id": "accept-loopback-http",
+      "operation": "parse_repo_url_cases",
+      "covers": ["loopback_http"],
+      "cases": ["http://localhost:3000/repos/n_0123456789abcdef01234567"],
+      "expected": { "status": "valid", "repo": "http://localhost:3000/repos/n_0123456789abcdef01234567", "rootNodeId": "n_0123456789abcdef01234567" }
+    },
+    {
+      "id": "accept-loopback-ipv4-http",
+      "operation": "parse_repo_url_cases",
+      "covers": ["loopback_http"],
+      "cases": ["http://127.0.0.1:3000/repos/n_0123456789abcdef01234567"],
+      "expected": { "status": "valid", "repo": "http://127.0.0.1:3000/repos/n_0123456789abcdef01234567", "rootNodeId": "n_0123456789abcdef01234567" }
+    },
+    {
+      "id": "accept-loopback-ipv6-http",
+      "operation": "parse_repo_url_cases",
+      "covers": ["loopback_http"],
+      "cases": ["http://[::1]:3000/repos/n_0123456789abcdef01234567"],
+      "expected": { "status": "valid", "repo": "http://[::1]:3000/repos/n_0123456789abcdef01234567", "rootNodeId": "n_0123456789abcdef01234567" }
+    },
+    {
+      "id": "reject-noncanonical-repo-urls",
+      "operation": "parse_repo_url_cases",
+      "covers": ["reject_noncanonical_repo", "graceful_invalid_block"],
       "cases": [
-        "git.example.com/Acme/research",
-        "https://git.example.com/Acme/research.git",
-        "ssh://git@git.example.com/Acme/research.git",
-        "git@git.example.com:Acme/research.git"
+        "git.example.com/team/research",
+        "https://git.example.com/team/research.git",
+        "http://ideaspaces.example/repos/n_0123456789abcdef01234567",
+        "https://IDEASPACES.EXAMPLE/repos/n_0123456789abcdef01234567",
+        "https://ideaspaces.example:443/repos/n_0123456789abcdef01234567",
+        "http://localhost:80/repos/n_0123456789abcdef01234567",
+        "https://ideaspaces.example/repos/n_0123456789abcdef01234567/",
+        "https://ideaspaces.example/repos/n_0123456789abcdef01234567?view=tree",
+        "https://person@ideaspaces.example/repos/n_0123456789abcdef01234567",
+        "https://ideaspaces.example/repos/%6e_0123456789abcdef01234567",
+        "https://ideaspaces.example/other/../repos/n_0123456789abcdef01234567",
+        "https://ideaspaces.example/spaces/n_0123456789abcdef01234567"
       ],
-      "expected": { "status": "valid", "space": "git.example.com/Acme/research" }
+      "expected": { "status": "invalid", "code": "invalid_repo" }
     },
     {
       "id": "parse-root-node-id-only",
       "operation": "parse",
       "covers": ["root_node_id_only", "exact_pin"],
       "input": {
-        "roots": [
-          {
-            "root_node_id": "n_0123456789abcdef01234567",
-            "sha": "1111111111111111111111111111111111111111"
-          }
-        ]
+        "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }]
       },
       "expected": {
         "status": "valid",
-        "map": {
-          "roots": [
-            {
-              "root_node_id": "n_0123456789abcdef01234567",
-              "sha": "1111111111111111111111111111111111111111"
-            }
-          ],
-          "members": []
-        }
+        "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }], "members": [] }
       }
     },
     {
       "id": "parse-both-identities-and-ordered-depths",
       "operation": "parse",
-      "covers": ["both_root_identities", "ordered_positions", "all_depths"],
+      "covers": ["both_root_identities", "root_identity_agreement", "ordered_positions", "all_depths"],
       "input": {
-        "roots": [
-          {
-            "space": "https://GIT.EXAMPLE.COM/Acme/research.git",
-            "root_node_id": "n_0123456789ab",
-            "sha": "2222222222222222222222222222222222222222"
-          }
-        ],
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789ab", "root_node_id": "n_0123456789ab", "sha": "2222222222222222222222222222222222222222" }],
         "members": [
-          { "space": 0, "position": ".", "depth": "name" },
-          { "space": 0, "position": "one.md", "depth": "summary" },
-          { "space": 0, "position": "two", "depth": "surface" },
-          { "space": 0, "position": "three/README.md", "depth": "children" },
-          { "space": 0, "position": "four/five.md", "depth": "full" }
+          { "root": 0, "position": ".", "depth": "name" },
+          { "root": 0, "position": "one.md", "depth": "summary" },
+          { "root": 0, "position": "two", "depth": "surface" },
+          { "root": 0, "position": "three/README.md", "depth": "children" },
+          { "root": 0, "position": "four/five.md", "depth": "full" }
         ]
       },
       "expected": {
         "status": "valid",
         "map": {
-          "roots": [
-            {
-              "space": "git.example.com/Acme/research",
-              "root_node_id": "n_0123456789ab",
-              "sha": "2222222222222222222222222222222222222222"
-            }
-          ],
+          "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789ab", "root_node_id": "n_0123456789ab", "sha": "2222222222222222222222222222222222222222" }],
           "members": [
-            { "space": 0, "position": ".", "depth": "name" },
-            { "space": 0, "position": "one.md", "depth": "summary" },
-            { "space": 0, "position": "two", "depth": "surface" },
-            { "space": 0, "position": "three/README.md", "depth": "children" },
-            { "space": 0, "position": "four/five.md", "depth": "full" }
+            { "root": 0, "position": ".", "depth": "name" },
+            { "root": 0, "position": "one.md", "depth": "summary" },
+            { "root": 0, "position": "two", "depth": "surface" },
+            { "root": 0, "position": "three/README.md", "depth": "children" },
+            { "root": 0, "position": "four/five.md", "depth": "full" }
           ]
         }
       }
+    },
+    {
+      "id": "reject-root-identity-mismatch",
+      "operation": "parse",
+      "covers": ["root_identity_agreement", "graceful_invalid_block"],
+      "input": {
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "root_node_id": "n_fedcba9876543210fedcba98", "sha": "2222222222222222222222222222222222222222" }]
+      },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.roots[0]", "code": "root_identity_mismatch" }] }
     },
     {
       "id": "parse-open-external-address",
       "operation": "parse",
       "covers": ["open_external_address", "external_depth_ceiling"],
       "input": {
-        "members": [
-          {
-            "address": "https://example.com/reference",
-            "name": "External reference",
-            "summary": "Useful context outside the Space.",
-            "depth": "summary"
-          }
-        ]
+        "members": [{ "address": "https://example.com/reference", "name": "External reference", "summary": "Useful context outside the repository.", "depth": "summary" }]
       },
       "expected": {
         "status": "valid",
-        "map": {
-          "members": [
-            {
-              "address": "https://example.com/reference",
-              "name": "External reference",
-              "summary": "Useful context outside the Space.",
-              "depth": "summary"
-            }
-          ],
-          "roots": []
-        }
+        "map": { "members": [{ "address": "https://example.com/reference", "name": "External reference", "summary": "Useful context outside the repository.", "depth": "summary" }], "roots": [] }
       }
     },
     {
       "id": "reject-invalid-root-identity",
       "operation": "parse",
       "covers": ["invalid_root_identity", "graceful_invalid_block"],
-      "input": {
-        "roots": [
-          {
-            "root_node_id": "node-not-portable",
-            "sha": "3333333333333333333333333333333333333333"
-          }
-        ]
-      },
-      "expected": {
-        "status": "invalid",
-        "issues": [
-          { "path": "map.roots[0].root_node_id", "code": "invalid_root_node_id" }
-        ]
-      }
+      "input": { "roots": [{ "root_node_id": "node-not-portable", "sha": "3333333333333333333333333333333333333333" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.roots[0].root_node_id", "code": "invalid_root_node_id" }] }
     },
     {
       "id": "reject-ref-as-pin",
       "operation": "parse",
       "covers": ["invalid_pin", "graceful_invalid_block"],
-      "input": {
-        "roots": [
-          { "space": "git.example.com/acme/research", "sha": "main" }
-        ]
-      },
-      "expected": {
-        "status": "invalid",
-        "issues": [
-          { "path": "map.roots[0].sha", "code": "invalid_pin" }
-        ]
-      }
+      "input": { "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "main" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.roots[0].sha", "code": "invalid_pin" }] }
+    },
+    {
+      "id": "reject-retired-root-space-field",
+      "operation": "parse",
+      "covers": ["retired_space_field", "graceful_invalid_block"],
+      "input": { "roots": [{ "space": "git.example.com/acme/research", "sha": "4444444444444444444444444444444444444444" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.roots[0].space", "code": "retired_space_field" }] }
+    },
+    {
+      "id": "reject-retired-member-space-field",
+      "operation": "parse",
+      "covers": ["retired_space_field", "graceful_invalid_block"],
+      "input": { "members": [{ "space": 0, "position": "note.md", "depth": "full" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].space", "code": "retired_space_field" }] }
     },
     {
       "id": "reject-unresolved-root-index",
       "operation": "parse",
       "covers": ["invalid_root_index", "graceful_invalid_block"],
-      "input": {
-        "members": [
-          { "space": 0, "position": "note.md", "depth": "full" }
-        ]
-      },
-      "expected": {
-        "status": "invalid",
-        "issues": [
-          { "path": "map.members[0].space", "code": "invalid_root_index" }
-        ]
-      }
+      "input": { "members": [{ "root": 0, "position": "note.md", "depth": "full" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].root", "code": "invalid_root_index" }] }
     },
     {
       "id": "reject-non-position-path",
       "operation": "parse",
       "covers": ["invalid_position", "graceful_invalid_block"],
       "input": {
-        "roots": [
-          {
-            "space": "git.example.com/acme/research",
-            "sha": "4444444444444444444444444444444444444444"
-          }
-        ],
-        "members": [
-          { "space": 0, "position": "../outside.md", "depth": "full" }
-        ]
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "4444444444444444444444444444444444444444" }],
+        "members": [{ "root": 0, "position": "../outside.md", "depth": "full" }]
       },
-      "expected": {
-        "status": "invalid",
-        "issues": [
-          { "path": "map.members[0].position", "code": "invalid_position" }
-        ]
-      }
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].position", "code": "invalid_position" }] }
     },
     {
       "id": "reject-external-depth-past-summary",
       "operation": "parse",
       "covers": ["external_depth_ceiling", "graceful_invalid_block"],
-      "input": {
-        "members": [
-          { "address": "https://example.com/reference", "depth": "surface" }
-        ]
-      },
-      "expected": {
-        "status": "invalid",
-        "issues": [
-          { "path": "map.members[0].depth", "code": "invalid_depth" }
-        ]
-      }
+      "input": { "members": [{ "address": "https://example.com/reference", "depth": "surface" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].depth", "code": "invalid_depth" }] }
     }
   ]
 }
