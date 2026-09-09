@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ideaspaces.xyz/schema/frontmatter.schema.json",
   "title": "Ideaspace Note frontmatter (Layer 1)",
-  "description": "The portable, author-owned frontmatter of a knowledge Note — what travels in the file, as opposed to provenance in git or hosted coordination state. PROVISIONAL, v0.14.0. Per the spec, an absent field is a drift signal, not an error — nothing is strictly required. Additional fields are allowed so the leaf stays extensible.",
+  "description": "The portable, author-owned frontmatter of a knowledge Note — what travels in the file, as opposed to provenance in git or hosted coordination state. PROVISIONAL, v0.15.0. Per the spec, an absent field is a drift signal, not an error — nothing is strictly required. Additional fields are allowed so the leaf stays extensible.",
   "type": "object",
   "properties": {
     "name": {
@@ -56,11 +56,13 @@
     "mapRoot": {
       "type": "object",
       "properties": {
-        "space": {
+        "repo": {
           "type": "string",
-          "pattern": "^[a-z0-9](?:[a-z0-9.\\-]*[a-z0-9])?(?::[0-9]+)?/[^\\\\\\s?#]+(?:/[^\\\\\\s?#]+)*$",
-          "description": "Canonical remote locator: lowercase host plus repository path, without scheme, credentials, query, fragment, trailing slash, or .git."
+          "format": "uri",
+          "pattern": "^(?:https://[^/?#@]+|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[0-9]+)?)/repos/n_(?:[0-9a-f]{12}|[0-9a-f]{24})$",
+          "description": "Canonical absolute repository URL. HTTPS is required except for loopback HTTP development origins."
         },
+        "space": false,
         "root_node_id": {
           "type": "string",
           "pattern": "^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$"
@@ -73,7 +75,7 @@
       },
       "required": ["sha"],
       "anyOf": [
-        { "required": ["space"] },
+        { "required": ["repo"] },
         { "required": ["root_node_id"] }
       ],
       "additionalProperties": true
@@ -81,13 +83,14 @@
     "mapPositionMember": {
       "type": "object",
       "properties": {
-        "space": { "type": "integer", "minimum": 0 },
+        "root": { "type": "integer", "minimum": 0 },
+        "space": false,
         "position": { "type": "string", "minLength": 1 },
         "depth": { "$ref": "#/$defs/mapDepth" },
         "disclosure": { "$ref": "#/$defs/mapDisclosure" }
       },
       "allOf": [{ "$ref": "#/$defs/mapDisclosureCeiling" }],
-      "required": ["space", "position", "depth"],
+      "required": ["root", "position", "depth"],
       "not": { "required": ["address"] },
       "additionalProperties": true
     },
@@ -107,6 +110,7 @@
       "required": ["address"],
       "not": {
         "anyOf": [
+          { "required": ["root"] },
           { "required": ["space"] },
           { "required": ["position"] }
         ]

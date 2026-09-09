@@ -1,6 +1,6 @@
 # Maps
 
-> Portable contract for the optional `map` block on a knowledge Note. **Provisional, v0.14.0.**
+> Portable contract for the optional `map` block on a knowledge Note. **Provisional, v0.15.0.**
 
 A Map is an ordered navigation layer over addresses. It combines three proven ideas without becoming
 another repository model: exact pins from manifests and lockfiles, curated link maps, and links that
@@ -30,19 +30,19 @@ name: EU regulatory landscape — what I found
 summary: The useful paths and external references from this inquiry.
 map:
   roots:
-    - space: git.ideaspaces.xyz/acme/research
+    - repo: https://ideaspaces.xyz/repos/n_0123456789abcdef01234567
       root_node_id: n_0123456789abcdef01234567
       sha: 4f2a91c70d0a8d87c6c2a99649bdfdd5cbe9d732
   members:
-    - space: 0
+    - root: 0
       position: startups/health-tech
       depth: surface
-    - space: 0
+    - root: 0
       position: startups/health-tech/regulatory-landscape.md
       depth: full
     - address: https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1689
       name: EU Artificial Intelligence Act
-      summary: Primary legal text outside the mounted Space.
+      summary: Primary legal text outside the pinned repositories.
       depth: summary
 ---
 
@@ -62,32 +62,29 @@ curated meaning and MUST be preserved.
 
 Each root carries:
 
-- `space` and `root_node_id`, each optional but at least one present;
+- `repo` and `root_node_id`, each optional but at least one present;
 - `sha`, a full resolved commit object id, never a ref, branch, or tag.
 
-`space` is a canonical remote locator: lowercase `host[:port]` plus repository path, without scheme,
-credentials, query, fragment, trailing slash, or `.git`. Repository-path case is preserved. These
-common locators therefore identify the same root:
+`repo` is the ordinary absolute URL for the repository:
 
 ```text
-https://git.example.com/Acme/research.git
-ssh://git@git.example.com/Acme/research.git
-git@git.example.com:Acme/research.git
-git.example.com/Acme/research
+https://ideaspaces.xyz/repos/n_0123456789abcdef01234567
 ```
 
-Their canonical form is `git.example.com/Acme/research`. Default ports 80 for HTTP, 443 for HTTPS,
-22 for SSH, and 9418 for Git are omitted; other ports remain. Local paths and `file:` remotes have no
-portable remote identity and are refused.
+Its path is exactly `/repos/{root_node_id}`. The URL has no credentials, query, fragment, encoded or
+dot segments, or trailing slash. HTTPS is required except for local development: HTTP is valid only
+when the host is exactly `localhost`, `127.0.0.1`, or `[::1]`, with an optional port. A platform also
+requires the URL origin to equal its configured web origin; that deployment-specific trust check is
+outside this pure shape.
 
 `root_node_id` follows [`root-identity.md`](root-identity.md). It survives moves and addresses local
-or unpublished roots once a reader already knows them. The remote form covers hosted roots without
-requiring identity adoption. When both are present they are two claims about one root; a harness that
-knows they conflict MUST surface drift and MUST NOT guess a binding.
+or unpublished roots once a reader already knows them. A valid `repo` already carries this identity;
+a parser supplies `root_node_id` from the path when it is absent. When both are present they MUST
+match. A mismatch invalidates the Map projection rather than guessing a binding.
 
-Import is resolution, not discovery. A reader MUST resolve only roots already trusted in its local
-checkout or registry. A map-note alone never authorizes cloning, fetching, contacting, or trusting an
-unknown remote.
+A repo URL is an address, never authority or a fetch instruction. Import is resolution, not discovery.
+A reader resolves only roots already trusted in its local checkout or registry. A map-note alone never
+authorizes cloning, fetching, contacting, or trusting an unknown origin.
 
 Pins make one coherent moment per root. A member never carries its own SHA. Readers preserve the
 full object id and do not operate the checkout to match it. Bare Git is sufficient to inspect a
@@ -105,11 +102,11 @@ substituting another commit.
 
 There are two address forms and no member taxonomy.
 
-### Space positions
+### Repository positions
 
 A position member carries:
 
-- `space`: zero-based index into `roots`;
+- `root`: zero-based index into `roots`;
 - `position`: canonical repository-relative path, or `.` for the root;
 - `depth`: one of `name`, `summary`, `surface`, `children`, `full`.
 
@@ -124,7 +121,7 @@ reserved `.git` state.
 
 ### Open addresses
 
-A member outside a known Space carries `address` using the same open `<type>:<id>` grammar as
+A member outside a known repository carries `address` using the same open `<type>:<id>` grammar as
 `attached_to`. That overlap is grammar only: `attached_to` declares what a Note is about; Map
 membership declares what a curator included. URLs naturally use their scheme (`https:...`) and need
 no provider registry or member type.
@@ -133,7 +130,7 @@ An address member may carry `name`, `summary`, and `depth`. Its depth, when pres
 `summary`; an external address has no portable pin and promises no deeper representation. Resolution,
 fetching, rendering, and provider behavior belong to the harness.
 
-The portable round trip is exact over Space positions. External addresses are preserved in a
+The portable round trip is exact over repository positions. External addresses are preserved in a
 map-note, but a hosted store that cannot ingest them MUST either preserve them as address-only or
 explicitly decline the import; it MUST NOT silently drop them.
 
@@ -150,10 +147,11 @@ these with retrieved fields, or treat them as verified target information. A leg
 
 ```yaml
 roots:
-  - space: git.example.com/team/research
+  - repo: https://ideaspaces.example/repos/n_0123456789abcdef01234567
+    root_node_id: n_0123456789abcdef01234567
     sha: 1111111111111111111111111111111111111111
 members:
-  - space: 0
+  - root: 0
     position: decision.md
     depth: surface
     summary: Why I selected this Note.
@@ -176,7 +174,7 @@ annotations are explicit authored disclosure, not permission to fetch more targe
 
 An entity address needs no Git root; an entity-only Map may have `roots: []`. The protocol does not
 require a known type registry to display supplied information. An unknown address type remains
-opaque, and neither its type nor its appearance in the Map implies Space membership or permission
+opaque, and neither its type nor its appearance in the Map implies membership or permission
 to message, invoke, or read the target.
 
 Preserving a Map preserves the ordered references, annotations, and supplied observations. It does
@@ -195,14 +193,14 @@ result; callers own its lifecycle. For valid output, `parseMap(result.map)` MUST
 
 The builder neither invents a universal local root nor discovers targets from a tree. Private
 checkout bindings and working-tree diagnostics belong in harness state, outside the portable
-selection. Existing optional `root_node_id` remains supported; ordinary remote Git references do
-not require it.
+selection. Existing optional `root_node_id` remains supported for local or unpublished repositories.
+A hosted repository uses its canonical `repo` URL, which carries the same identity in its path.
 
 **Parsing/building is not safe export.** Unknown fields are preserved, including unrecognized
 machine-local data. A sender MUST review the actual selected payload, exclude private bindings and
-credentials, verify the intended remote and exact selected content, and apply disclosure/access
+credentials, verify the intended repository and exact selected content, and apply disclosure/access
 rules independently. It MUST NOT infer availability or authority from parser success, a matching
-object id, or a configured remote. Missing remote content, dirty selected bytes, or unavailable
+object id, or a configured origin. Missing repository content, dirty selected bytes, or unavailable
 pins must not cause silent upload, repinning, or publication. These are consumer checks; the
 protocol library does no filesystem or network I/O for Maps.
 
@@ -227,8 +225,9 @@ claiming provisional Map parsing compatibility executes every required coverage 
 [`../conformance/maps/manifest.json`](../conformance/maps/manifest.json), parsing the input of both
 `parse` and `build` vectors. A Map construction implementation additionally executes `build` vectors
 through its constructor and parses successful output back equal. Those vectors cover optional
-absence, both root identities, remote normalization, exact pins, ordered positions and external
-addresses, the five ceilings, observed disclosure versus annotations, unknown types/fields, and
+absence, canonical HTTPS and loopback-development repo URLs, matching root identities, exact pins,
+ordered positions and external addresses, the five ceilings, observed disclosure versus annotations,
+unknown types/fields, retired `space`-field refusal, and
 graceful invalid-block handling. They validate representation, not live availability or permission.
 
 Breaking changes remain allowed before 1.0. This page graduates toward normative only after two

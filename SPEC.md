@@ -94,11 +94,13 @@ block adds a navigation layer without changing the repository model. A reader th
 understand Maps ignores the block and reads the Note; an invalid block is projection drift, not a
 base repository-conformance failure.
 
-Space-position members use a root index, canonical repository-relative position, and one depth name:
-`name`, `summary`, `surface`, `children`, or `full`. Roots are pinned once by a full commit object id
-and addressed by canonical remote locator, portable `root_node_id`, or both. Open external members
-reuse the `<type>:<id>` address grammar and carry at most name/summary representation; they introduce
-no member taxonomy or provider registry. Declared depth is a disclosure ceiling, never access.
+Repository-position members use a root index, canonical repository-relative position, and one depth
+name: `name`, `summary`, `surface`, `children`, or `full`. Roots are pinned once by a full commit
+object id and addressed by an absolute canonical `/repos/{root_node_id}` web URL, portable
+`root_node_id`, or both. Production URLs use HTTPS; loopback development URLs may use HTTP. Open
+external members reuse the `<type>:<id>` address grammar and carry at most name/summary
+representation; they introduce no member taxonomy or provider registry. Declared depth is a
+disclosure ceiling, never access.
 
 Either member form MAY carry observed `disclosure.name` and `disclosure.summary`, distinct from
 curator-authored top-level labels. Declared depth remains a ceiling, not requested or observed detail;
@@ -108,8 +110,9 @@ not live entity state. Query operations and requested detail stay outside the Ma
 The same stateless shape serves a projected view and a preserved selection. A pure builder validates
 and normalizes selected roots/members; it does not resolve them or sanitize unknown fields. Hosted
 versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer concerns.
-Import never fetches an unknown remote merely because a map-note names it. Sharing checks actual
-payload disclosure and remote usability separately; machine-local bindings are not portable context.
+Import never fetches an unknown repository merely because a map-note names it. A repo URL is an
+address, never authority. Sharing checks actual payload disclosure and repository usability
+separately; machine-local bindings are not portable context.
 The full provisional shape, normalization, bounded recursion rule, safe degradation behavior, and
 language-neutral parse/build vectors are in
 [`schema/maps.md`](schema/maps.md) and [`conformance/maps/manifest.json`](conformance/maps/manifest.json).
@@ -206,7 +209,7 @@ A tool that claims **local-effect conformance** additionally MUST pass every req
 
 A tool that claims **root-identity conformance** additionally MUST pass every required coverage vector in [`conformance/root-identity/manifest.json`](conformance/root-identity/manifest.json), including optional absence, current and legacy forms, 96-bit minting, lazy legacy alignment, drift, ambiguity, and malformed evidence.
 
-A tool that claims provisional **Map parsing compatibility** additionally MUST pass every required coverage vector in [`conformance/maps/manifest.json`](conformance/maps/manifest.json), including optional absence, both root-address forms, remote normalization, exact pins, ordered members, the five depth names, open external addresses, observed disclosure versus annotations, root-index safety, and graceful invalid-block handling. Parse-only readers parse the input of build vectors; construction implementations also build them and parse successful output back equal. This adds no base repository-conformance requirement.
+A tool that claims provisional **Map parsing compatibility** additionally MUST pass every required coverage vector in [`conformance/maps/manifest.json`](conformance/maps/manifest.json), including optional absence, canonical HTTPS and loopback-development repo URLs, matching root identities, exact pins, ordered members, the five depth names, open external addresses, observed disclosure versus annotations, root-index safety, retired `space`-field refusal, and graceful invalid-block handling. Parse-only readers parse the input of build vectors; construction implementations also build them and parse successful output back equal. This adds no base repository-conformance requirement.
 
 A tool that claims **assets conformance** additionally MUST pass every required coverage vector in [`conformance/assets/manifest.json`](conformance/assets/manifest.json), including exact recognition, relative resolution from the containing Markdown file, explicit authored selection when root and nested folders coexist, root escape, and repository-validator skipping. The pure language-neutral operation and its boundary are normative in [`schema/assets.md`](schema/assets.md).
 
