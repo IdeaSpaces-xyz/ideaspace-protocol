@@ -118,6 +118,20 @@
       "expected": { "status": "valid", "repo": "http://localhost:3000/repos/n_0123456789abcdef01234567", "rootNodeId": "n_0123456789abcdef01234567" }
     },
     {
+      "id": "accept-loopback-ipv4-http",
+      "operation": "parse_repo_url_cases",
+      "covers": ["loopback_http"],
+      "cases": ["http://127.0.0.1:3000/repos/n_0123456789abcdef01234567"],
+      "expected": { "status": "valid", "repo": "http://127.0.0.1:3000/repos/n_0123456789abcdef01234567", "rootNodeId": "n_0123456789abcdef01234567" }
+    },
+    {
+      "id": "accept-loopback-ipv6-http",
+      "operation": "parse_repo_url_cases",
+      "covers": ["loopback_http"],
+      "cases": ["http://[::1]:3000/repos/n_0123456789abcdef01234567"],
+      "expected": { "status": "valid", "repo": "http://[::1]:3000/repos/n_0123456789abcdef01234567", "rootNodeId": "n_0123456789abcdef01234567" }
+    },
+    {
       "id": "reject-noncanonical-repo-urls",
       "operation": "parse_repo_url_cases",
       "covers": ["reject_noncanonical_repo", "graceful_invalid_block"],
