@@ -59,8 +59,12 @@
         "repo": {
           "type": "string",
           "format": "uri",
-          "pattern": "^(?:https://[^/?#@]+|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[0-9]+)?)/repos/n_(?:[0-9a-f]{12}|[0-9a-f]{24})$",
-          "description": "Canonical absolute repository URL. HTTPS is required except for loopback HTTP development origins."
+          "pattern": "^(?:https://(?:[a-z0-9](?:[a-z0-9.\\-]*[a-z0-9])?|\\[[0-9a-f:.]+\\])(?::[0-9]+)?|http://(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[0-9]+)?)/repos/n_(?:[0-9a-f]{12}|[0-9a-f]{24})$",
+          "allOf": [
+            { "not": { "pattern": "^https://[^/]+:443/repos/" } },
+            { "not": { "pattern": "^http://[^/]+:80/repos/" } }
+          ],
+          "description": "Canonical absolute repository URL with a lowercase host and no explicit default port. HTTPS is required except for loopback HTTP development origins."
         },
         "space": false,
         "root_node_id": {

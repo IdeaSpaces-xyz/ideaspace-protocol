@@ -71,9 +71,11 @@ Each root carries:
 https://ideaspaces.xyz/repos/n_0123456789abcdef01234567
 ```
 
-Its path is exactly `/repos/{root_node_id}`. The URL has no credentials, query, fragment, encoded or
-dot segments, or trailing slash. HTTPS is required except for local development: HTTP is valid only
-when the host is exactly `localhost`, `127.0.0.1`, or `[::1]`, with an optional port. A platform also
+Its path is exactly `/repos/{root_node_id}`. The host is lowercase and an explicit scheme-default
+port (`443` for HTTPS or `80` for HTTP) is omitted. The URL has no credentials, query, fragment,
+encoded or dot segments, or trailing slash. HTTPS is required except for local development: HTTP is
+valid only when the host is exactly `localhost`, `127.0.0.1`, or `[::1]`, with an optional non-default
+port. A platform also
 requires the URL origin to equal its configured web origin; that deployment-specific trust check is
 outside this pure shape.
 

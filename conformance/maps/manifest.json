@@ -126,6 +126,8 @@
         "https://git.example.com/team/research.git",
         "http://ideaspaces.example/repos/n_0123456789abcdef01234567",
         "https://IDEASPACES.EXAMPLE/repos/n_0123456789abcdef01234567",
+        "https://ideaspaces.example:443/repos/n_0123456789abcdef01234567",
+        "http://localhost:80/repos/n_0123456789abcdef01234567",
         "https://ideaspaces.example/repos/n_0123456789abcdef01234567/",
         "https://ideaspaces.example/repos/n_0123456789abcdef01234567?view=tree",
         "https://person@ideaspaces.example/repos/n_0123456789abcdef01234567",
