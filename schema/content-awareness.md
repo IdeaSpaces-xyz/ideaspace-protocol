@@ -1,71 +1,130 @@
 # Content awareness manifest
 
-The Content awareness manifest is the portable, read-only result of orienting at
-one directory in a cloned ideaspace. It separates **facts** from **placement**:
-the protocol assembles local markdown/git facts and defines their canonical text;
-a harness decides where that text enters its own context.
+The Content awareness adapter is the portable, read-only result of orienting at one local directory.
+It separates selected authority, loaded representation, prompt placement, and private runtime
+residency rather than collapsing them into one notion of context.
 
-This is the filesystem/git **Content adapter**. It is not a graph-wide manifest
-for conversations, spaces, actors, access, mounts, or remote repositories. Those
-concepts require a vantage outside a cloned content tree and remain platform or
-harness concerns.
+This is the filesystem/Git **Content adapter**. It is not a graph-wide manifest for conversations,
+actors, access, mounts, or remotes. Selecting a contract source does not prove consent or grant
+execution authority.
+
+## Selection result
+
+`assembleContentAwareness` accepts optional `contractSource: foundation | agreement` and returns one
+of:
+
+| Status | Meaning |
+|---|---|
+| `ok` | a successful manifest, including floor orientation |
+| `contract_choice_required` | both entrypoints resolve and the caller supplied no source |
+| `contract_source_unavailable` | the caller explicitly selected an entrypoint that does not resolve |
+| `contract_invalid` | selected Agreement frontmatter, identity, or `context.full` is malformed or unsafe |
+
+A directory inside exact `_agent/`, another underscore extension, or reserved Git state is not a
+Content position and returns no result. This is distinct from `ok` floor orientation.
+
+Exactly one available entrypoint selects automatically. If both exist, the protocol does not choose
+or merge them. The unselected entrypoint contributes neither body nor summary. A habitat may make an
+explicit policy choice; the CLI prefers Agreement unless explicitly overridden.
 
 ## Resolution
 
-Assembly starts from a directory position:
+Assembly starts from a canonical directory position:
 
-1. Canonicalize the position so symlinked ancestors and git's reported toplevel
-   share one coordinate system. If the requested directory is inside core agent
-   context, an extension, or reserved Git state, return no Content manifest;
-   never silently promote payload into a position or snap focus elsewhere.
-2. Compose the full `_agent/` contract stack up to the nearest
-   `foundation.md` boundary (ancestors retained; nearest instruction wins).
-3. If no foundation-marked space resolves, return no Content manifest.
-4. Read the root-to-position path context, local tree, stacked contract
-   summaries, path-composed operating-skill summaries, git state,
-   previous-session activity, and opted-in stale-doc signals.
-5. Report absent `purpose.md` and `now.md` as structured direction drift.
+1. Resolve the Git root when present and reject extension/core payload positions.
+2. Discover Foundation and Agreement candidates independently.
+3. Apply explicit selection or return a typed choice diagnostic.
+4. Resolve the selected ceiling:
+   - Foundation: the current nearest-Foundation rule;
+   - Agreement: nearest Agreement carrying `root_node_id`, otherwise Git root, otherwise the
+     outermost Agreement on the ancestor path;
+   - floor: Git root, otherwise the requested position.
+5. Read path context, bounded local tree, selected agent context, skills, Git state, prior-session
+   activity, and stale-doc signals.
 
-All operations are local reads. Assembly does not update the seen ref, write
-session state, mutate the working tree, or contact a remote.
+All operations are local reads. Assembly does not update the seen ref, persist frame selection,
+mutate the working tree, or contact a remote.
+
+## Foundation frame
+
+Foundation preserves the existing five-file stack and canonical rendering. `foundation.md` scopes;
+`guide.md`, `purpose.md`, `now.md`, and `next.md` layer with nearest-present effective values while
+all ancestors remain visible. Skills compose by name with deeper shadowing. Missing Purpose and Now
+remain structured drift signals.
+
+This arm is frozen for reproducible comparison while Agreement is proved.
+
+## Agreement frame
+
+Agreement loading is generic:
+
+- every selected `_agent/agreement.md` from root to position loads in full, root-first;
+- other direct `_agent/*.md` files load at summary;
+- files declared through `context.full` load in full;
+- `foundation.md` is absent;
+- skills load as name plus description, with deeper same-named skills shadowing ancestors;
+- Agreement mode does not assign special semantics to Purpose, Now, Guide, or Next.
+
+A full-load declaration is:
+
+```yaml
+context:
+  full:
+    - purpose.md
+```
+
+Entries are unique direct Markdown basenames relative to the declaring `_agent/`. Paths may not be
+absolute, nested, traversing, globbed, remote, or entrypoints. Every target must exist as a regular
+file. Any violation returns `contract_invalid` with stable issue codes; no partial Agreement frame is
+returned.
 
 ## Shape
 
-A manifest carries:
+An `ok` manifest carries:
 
 | Field | Meaning |
 |---|---|
-| `kind` | Constant `content`; distinguishes this adapter from future vantage types. |
-| `spaceRoot` | Absolute root selected by the nearest foundation boundary. |
-| `position` | Focus path, display base, optional git root, and structured root-to-focus path context. |
-| `now` | First meaningful line of effective `now.md`, plus its source path; absent when no Now resolves. |
-| `tree` | The position's content map at handle depth: directory/markdown entries carrying summary-rung handles at level 1 (README summary for directories, frontmatter summary for files), recursive markdown counts, and — when a caller passes `treeDepth` (soft-capped 1..4; ambient default 1) — a name-rung probe outline below, never summaries. Core `_agent/`, every extension container, reserved Git state, and local/build exclusions do not enter entries or counts. Per-directory soft cap (default 50) with honest omitted counts, carried and rendered. Probe depth pulls more map, not content. |
-| `contract` | Contract files along the composed root→position stack in foundation/guide/purpose/now/next order. Every level carrying a file appears, root-first per file, the deepest (effective) entry last; each carries source path, composing level, and summary. |
-| `skills` | `_agent/skills/` entries composed along the root→position stack — the union across levels, a deeper same-named skill shadowing its ancestor's — with names, source paths, composing levels, and summaries. Two forms: flat `<name>.md`, and Agent Skills-style `<name>/SKILL.md` directories (assets beside the entry point are not roster entries; the directory form wins over a same-named flat file). `<name>` is the portable skill id and must equal the entry's frontmatter `name`; display titles belong in Markdown headings. A skill's `description` frontmatter (its trigger condition) is the summary source, falling back to `summary`, then first body line. `README.md` is the folder's surface and never appears in the roster. |
-| `activity` | Total changed paths since the seen baseline, a bounded retained prefix, and omitted count; absent without a baseline or changes. |
-| `git` | Local branch/head/upstream/dirty/untracked facts; absent outside git. |
-| `staleDocs` | Raw stale or broken-reference signals from opted-in `code_paths`. |
-| `missingDirection` | Ordered subset of `purpose`, `now`. |
+| `status` | Constant `ok`. |
+| `kind` | Constant `content`. |
+| `contractSource` | `foundation`, `agreement`, or `null` at floor. |
+| `spaceRoot` | Absolute root selected by the active frame, or floor orientation base. |
+| `position` | Focus path, display base, optional Git root, root-to-focus path context, and `head` placement. |
+| `now` | Foundation-only first meaningful line of effective `now.md`, exact-byte revision, summary representation, and head placement. |
+| `tree` | Bounded position map. Root and entries carry head placement. |
+| `contract` | Selected agent-context entries with source path, source position, summary, `summary | full` representation, exact-byte revision, head placement, and exact content when full. Legacy `level` remains a deprecated alias for the composition source position. |
+| `skills` | Composed skill handles with name, source path/position, description-first summary, exact-byte revision when readable, summary representation, and head placement. |
+| `activity` | Bounded changed-path facts at tail placement. |
+| `git` | Local branch/head/upstream/dirty/untracked facts at tail placement; absent outside Git. |
+| `staleDocs` | Raw stale/broken signals at tail placement. |
+| `missingDirection` | Foundation-only ordered subset of `purpose`, `now`. |
 
-The manifest contains structured values, not rendered section strings. It is
-bounded at assembly where unbounded history would otherwise enter context;
-rendering may apply a further display cap to stale-doc signals.
+Revisions use `sha256:` plus the lowercase SHA-256 digest of the exact UTF-8 bytes read. A dirty file
+therefore has a distinct observable revision without pretending repository HEAD contains those bytes.
 
-The reference library also exposes the same tree assembler without requiring an
-`_agent/` contract. Numeric depths retain the 1..4 portable probe cap and the
-default per-directory cap of 50. A caller may request `depth: "full"` as an
-explicit local diagnostic walk; that mode walks to leaves, defaults to no
-per-directory cap, and carries summary-rung handles at every visited level.
-It does not change ambient awareness or the bounded recursive Map operation in
-[`maps.md`](maps.md): full-depth is deliberate local enumeration, never an
-interpretation of Map member `depth: full`, and returned values remain handles
-rather than embedded content bodies. The explicit tree adapter fails when any
-selected content directory cannot be read; only ambient awareness retains the
-best-effort behavior appropriate to orientation.
+## Representation, placement, depth, and residency
+
+- `summary | full` is the representation actually loaded.
+- `head | history | tail` is prompt placement.
+- Map depth is the maximum representation a reader may disclose.
+- Actual context-window residency is private Process state.
+
+These fields are not interchangeable. Prompt placement is not added to portable Map members. It is
+named `placement` because the compatibility field `level` already means filesystem composition
+position. This adapter emits active position context in the head and volatile Git/activity/drift in
+the tail. The later focus adapter emits reference context into history.
+
+## Tree behavior
+
+Tree depth defaults to 1 and numeric probes clamp to 1..4. Level 1 carries summary-rung handles;
+lower bounded levels carry names only. Per-directory caps are honest through omitted counts. Core
+`_agent/`, extensions, reserved Git state, and build/local exclusions do not enter entries or counts.
+
+The standalone tree assembler requires no contract. `depth: full` is an explicit local diagnostic
+walk to leaves with summary handles, not ambient awareness and not Map member `depth: full`.
 
 ## Canonical sections
 
-The renderer recognizes these stable section ids, in this fixed order:
+Rendering keeps this fixed order:
 
 1. `position`
 2. `now`
@@ -77,20 +136,16 @@ The renderer recognizes these stable section ids, in this fixed order:
 8. `stale-docs`
 9. `direction-drift`
 
-A caller may select any subset. Selection filters the canonical order; caller
-order does not reorder output. Empty sections disappear. Selecting all sections
-produces the standard local navigation block.
+A caller may select a subset without reordering it. Empty sections disappear. Full contract entries
+render their complete bytes inside the contract section; Foundation summary rendering remains
+unchanged. Selection diagnostics render actionable text without rendering either candidate.
 
-This lets one harness emit a single SessionStart block while another places
-stable and volatile subsets separately, without either reimplementing shared
-wording. Placement, cadence, provider payloads, Change/session lines, seen-ref
-writes, mounts, workspace roles, and remote tiers stay outside this schema.
+## Compatibility and conformance
 
-## Compatibility
+`assembleAwareness` remains a deprecated wrapper for the legacy
+`now → tree → contract → skills → activity` block. Foundation rendering remains byte-identical.
 
-The original `assembleAwareness` block is the subset `now → tree → contract →
-skills → activity`. Reference implementations may retain that API as a wrapper
-while consumers migrate to structured assembly and selective rendering.
-
-This schema describes a reference-library interchange shape; it does not add a
-new repository-conformance requirement to `SPEC.md`.
+Implementations claiming Content-awareness conformance execute every required coverage tag in
+[`../conformance/awareness/manifest.json`](../conformance/awareness/manifest.json). The vectors cover
+both single-source arms, explicit selection, choice and unavailable diagnostics, floor orientation,
+declared full loading, unselected-source absence, exact revisions, and prompt placement.

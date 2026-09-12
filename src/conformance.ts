@@ -3,14 +3,14 @@
  *
  * This checks the *shape* a space must have per [`../SPEC.md`](../SPEC.md)'s
  * Conformance section and [`../schema/agent-contract.md`](../schema/agent-contract.md):
- * a root `_agent/` (it's a space at all), the named-but-absent contract files as
- * drift signals, optional root identity, portable `_agent/skills/` identities,
+ * floor-level Content without `_agent/`, selectable root entrypoints, Foundation-only
+ * direction drift, optional root identity, Agreement full-load declarations, portable skill identities,
  * knowledge `.md` frontmatter against
  * [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json), and
  * quiet opacity for underscore-prefixed extension containers.
  *
- * It dogfoods the reference library — `readContract` / `CONTRACT_FILES` for the
- * `_agent/` contract and `inspectFrontmatterSyntax` for malformed-frontmatter
+ * It dogfoods the reference library — the frozen Foundation reader, Agreement
+ * composition, and `inspectFrontmatterSyntax` for malformed-frontmatter
  * detection — and adds only the schema-key checks the lib doesn't cover. The
  * frontmatter schema is *read at runtime* (not imported) so a non-TS runtime
  * could load the same JSON; key constraints are enforced with `yaml` + a single
@@ -23,6 +23,7 @@ import { promises as fs } from "node:fs";
 import { join, relative } from "node:path";
 import { parseDocument } from "yaml";
 import { CONTRACT_FILES, readContract } from "./space.js";
+import { composeAgreementAlongPath } from "./agreement.js";
 import { discoverSkillEntries } from "./awareness.js";
 import { inspectFrontmatterSyntax } from "./frontmatter.js";
 import { parseRootNodeId } from "./root-identity.js";
@@ -61,52 +62,73 @@ interface SchemaConstraints {
 /**
  * Validate a directory against the ideaspace shape.
  *
- * `ok` is true when no `error`-level issues are found; `warn`-level issues
- * (missing foundation/contract files, skipped infra folders) are drift signals
- * that never fail conformance.
+ * `ok` is true when no `error`-level issues are found. Foundation named-file
+ * warnings remain drift signals and never fail conformance; absent entrypoints
+ * are valid floor state.
  */
 export async function validateSpace(root: string): Promise<ConformanceReport> {
   const issues: ConformanceIssue[] = [];
 
-  // 1. Is this a space at all? Root must carry an `_agent/` directory.
+  // 1. Base Content conformance has a floor: `_agent/` and both contract
+  // entrypoints are optional. When agent context exists, validate each offered
+  // frame without selecting either as authority.
   const agentDir = join(root, "_agent");
-  if (!(await isDirectory(agentDir))) {
-    issues.push({
-      level: "error",
-      rule: "no-space",
-      path: ".",
-      detail: "no `_agent/` directory at root — this is not an ideaspace",
-    });
-    return { ok: false, issues, notesChecked: 0 };
-  }
+  const hasAgent = await isDirectory(agentDir);
+  const contract = hasAgent ? await readContract(agentDir) : {};
+  const agreementContent = hasAgent
+    ? await readFileOrNull(join(agentDir, "agreement.md"))
+    : null;
 
-  // 2. Foundation handshake + named-but-absent contract files (drift, not error).
-  const contract = await readContract(agentDir);
-  if (!contract.foundation) {
-    issues.push({
-      level: "warn",
-      rule: "no-foundation",
-      path: "_agent/foundation.md",
-      detail: "a space without a foundation is just folders — the handshake is missing",
-    });
-  } else {
-    checkFoundation(contract.foundation.content, issues);
-  }
-  for (const name of DRIFT_CONTRACT_FILES) {
-    if (!contract[name]) {
-      issues.push({
-        level: "warn",
-        rule: "contract-drift",
-        path: `_agent/${name}.md`,
-        detail: `named-but-absent \`${name}.md\` — direction may not be captured (drift signal, not an error)`,
-      });
+  let foundationRootNodeId: string | undefined;
+  if (contract.foundation) {
+    foundationRootNodeId = checkContractIdentity(
+      contract.foundation.content,
+      "_agent/foundation.md",
+      "foundation",
+      issues,
+    );
+    for (const name of DRIFT_CONTRACT_FILES) {
+      if (!contract[name]) {
+        issues.push({
+          level: "warn",
+          rule: "contract-drift",
+          path: `_agent/${name}.md`,
+          detail: `named-but-absent \`${name}.md\` — direction may not be captured (drift signal, not an error)`,
+        });
+      }
     }
   }
 
-  // 3. `_agent/skills/` ids and frontmatter names must be portable and identical.
-  await checkSkills(root, issues);
+  let agreementRootNodeId: string | undefined;
+  if (agreementContent !== null) {
+    const composed = await composeAgreementAlongPath(root, root);
+    agreementRootNodeId = composed.rootNodeId;
+    for (const issue of composed.issues) {
+      issues.push({
+        level: "error",
+        rule: `agreement-${issue.code.replaceAll("_", "-")}`,
+        path: relative(root, issue.path).replace(/\\/g, "/"),
+        detail: issue.detail,
+      });
+    }
+  }
+  if (
+    foundationRootNodeId &&
+    agreementRootNodeId &&
+    foundationRootNodeId !== agreementRootNodeId
+  ) {
+    issues.push({
+      level: "error",
+      rule: "root-node-id-conflict",
+      path: "_agent",
+      detail: "foundation.md and agreement.md declare different root_node_id values",
+    });
+  }
 
-  // 4. Knowledge `.md` frontmatter against the runtime-loaded schema.
+  // 2. `_agent/skills/` ids and frontmatter names must be portable and identical.
+  if (hasAgent) await checkSkills(root, issues);
+
+  // 3. Knowledge `.md` frontmatter against the runtime-loaded schema.
   const constraints = await loadSchemaConstraints();
   if (constraints.loadError) {
     issues.push({
@@ -159,23 +181,27 @@ async function loadSchemaConstraints(): Promise<SchemaConstraints> {
 }
 
 /** Validate optional root identity without requiring or minting it. */
-function checkFoundation(content: string, issues: ConformanceIssue[]): void {
-  const path = "_agent/foundation.md";
+function checkContractIdentity(
+  content: string,
+  path: string,
+  source: "foundation" | "agreement",
+  issues: ConformanceIssue[],
+): string | undefined {
   const syntax = inspectFrontmatterSyntax(content);
   if (syntax.status === "malformed") {
     issues.push({
       level: "error",
-      rule: "foundation-frontmatter-malformed",
+      rule: `${source}-frontmatter-malformed`,
       path,
-      detail: `foundation frontmatter does not parse: ${syntax.message}`,
+      detail: `${source} frontmatter does not parse: ${syntax.message}`,
     });
-    return;
+    return undefined;
   }
 
   const fm = parseFrontmatter(content);
-  if (fm === null || !("root_node_id" in fm)) return;
+  if (fm === null || !("root_node_id" in fm)) return undefined;
   const parsed = parseRootNodeId(fm.root_node_id);
-  if (parsed.status === "valid") return;
+  if (parsed.status === "valid") return parsed.rootNodeId;
   const detail = parsed.status === "invalid" && parsed.code === "invalid_format"
     ? "`root_node_id` must match ^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$"
     : "`root_node_id` must be a string when declared";
@@ -185,6 +211,7 @@ function checkFoundation(content: string, issues: ConformanceIssue[]): void {
     path,
     detail,
   });
+  return undefined;
 }
 
 /** Check one knowledge note's frontmatter syntax and schema-key constraints. */
@@ -336,7 +363,7 @@ async function* walkSkillEntries(root: string): AsyncGenerator<SkillEntrypoint> 
 }
 
 async function* walkSkillPositions(dir: string, isRoot: boolean): AsyncGenerator<SkillEntrypoint> {
-  if (!isRoot && await isFile(join(dir, "_agent", "foundation.md"))) return;
+  if (!isRoot && await startsNestedSpace(dir)) return;
 
   // Reuse awareness's canonical single-level scanner so directory-vs-flat
   // precedence, README exclusion, and regular-file checks cannot drift.
@@ -394,9 +421,9 @@ async function* walkDir(
   root: string,
   isRoot: boolean,
 ): AsyncGenerator<string> {
-  // A deeper foundation starts another space. Its knowledge and agent context
-  // are validated from that root, never as part of its parent's report.
-  if (!isRoot && await isFile(join(dir, "_agent", "foundation.md"))) return;
+  // A deeper Foundation, or an Agreement carrying identity, starts another
+  // Space. Its knowledge and context are validated from that root.
+  if (!isRoot && await startsNestedSpace(dir)) return;
 
   const entries = await fs.readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
@@ -413,6 +440,24 @@ async function* walkDir(
         yield abs;
       }
     }
+  }
+}
+
+async function startsNestedSpace(dir: string): Promise<boolean> {
+  if (await isFile(join(dir, "_agent", "foundation.md"))) return true;
+  const agreement = await readFileOrNull(join(dir, "_agent", "agreement.md"));
+  if (agreement === null) return false;
+  const frontmatter = parseFrontmatter(agreement);
+  if (!frontmatter || !("root_node_id" in frontmatter)) return false;
+  return parseRootNodeId(frontmatter.root_node_id).status === "valid";
+}
+
+async function readFileOrNull(path: string): Promise<string | null> {
+  try {
+    if (!(await fs.lstat(path)).isFile()) return null;
+    return await fs.readFile(path, "utf-8");
+  } catch {
+    return null;
   }
 }
 

@@ -54,12 +54,12 @@ describe("validateSpace — reference space", () => {
   });
 });
 
-describe("validateSpace — not a space", () => {
-  it("errors when there is no root _agent/ directory", async () => {
+describe("validateSpace — floor conformance", () => {
+  it("accepts a plain Markdown folder without _agent or a contract entrypoint", async () => {
     await fs.writeFile(join(tmp, "README.md"), "# Just folders", "utf-8");
     const report = await validateSpace(tmp);
-    expect(report.ok).toBe(false);
-    expect(report.issues.map((i) => i.rule)).toContain("no-space");
+    expect(report.ok).toBe(true);
+    expect(report.issues).toEqual([]);
   });
 });
 
@@ -165,6 +165,36 @@ describe("validateSpace — root identity", () => {
     expect(report.issues.map((issue) => issue.rule)).toContain("foundation-frontmatter-malformed");
     expect(report.ok).toBe(false);
   });
+
+  it("accepts identity in Agreement and rejects conflicting entrypoint identities", async () => {
+    await makeAgent(tmp, {
+      "foundation.md": "---\nroot_node_id: n_111111111111111111111111\n---\n# Foundation",
+      "agreement.md": "---\nroot_node_id: n_222222222222222222222222\n---\n# Agreement",
+    });
+
+    const report = await validateSpace(tmp);
+    expect(report.ok).toBe(false);
+    expect(report.issues.map((issue) => issue.rule)).toContain("root-node-id-conflict");
+
+    await fs.writeFile(
+      join(tmp, "_agent", "agreement.md"),
+      "---\nroot_node_id: n_111111111111111111111111\n---\n# Agreement",
+      "utf-8",
+    );
+    const aligned = await validateSpace(tmp);
+    expect(aligned.issues.map((issue) => issue.rule)).not.toContain("root-node-id-conflict");
+  });
+
+  it("validates Agreement context.full declarations", async () => {
+    await makeAgent(tmp, {
+      "agreement.md": "---\ncontext:\n  full:\n    - ../outside.md\n---\n# Agreement",
+    });
+    const report = await validateSpace(tmp);
+    expect(report.ok).toBe(false);
+    expect(report.issues.map((issue) => issue.rule)).toContain(
+      "agreement-invalid-full-load-path",
+    );
+  });
 });
 
 describe("validateSpace — skill identities", () => {
@@ -240,13 +270,17 @@ describe("validateSpace — skill identities", () => {
 });
 
 describe("validateSpace — drift signals", () => {
-  it("warns (not errors) on a missing foundation and contract files", async () => {
-    await makeAgent(tmp, { "guide.md": "# Guide" });
+  it("keeps Foundation's named-file drift without treating absent entrypoints as drift", async () => {
+    await makeAgent(tmp, { "foundation.md": "# Foundation" });
     const report = await validateSpace(tmp);
     expect(report.ok).toBe(true); // drift never fails conformance
     const warnRules = report.issues.filter((i) => i.level === "warn").map((i) => i.rule);
-    expect(warnRules).toContain("no-foundation");
     expect(warnRules).toContain("contract-drift");
+    expect(warnRules).not.toContain("no-foundation");
+
+    await fs.rm(join(tmp, "_agent", "foundation.md"));
+    const floor = await validateSpace(tmp);
+    expect(floor.issues.filter((issue) => issue.level === "warn")).toEqual([]);
   });
 });
 

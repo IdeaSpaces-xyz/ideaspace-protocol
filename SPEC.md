@@ -31,35 +31,64 @@ This is the **base layer**. Knowing the shape *is* awareness; its local-effect b
 **2. Base repository roles** at every position:
 
 - **Knowledge** — regular `.md` files outside extension containers. What we know. This is what accumulates and travels.
-- **Agent context** — the exact `_agent/` folder. How to work here. Read by position, never searched — its surface always, its depth on demand.
+- **Agent context** — the exact `_agent/` folder. Offered terms and working practices. Read through one selected Foundation or Agreement frame, never searched; absent entrypoints leave floor orientation.
 - **Ordinary material** — other files and directories. Legal repository content with no universal protocol interpretation.
 - **Extension payload** — descendants of any other `_`-prefixed directory. Opaque to the base reader: not a position, Note, surface, searchable knowledge, summary source, or ambient context.
 
 `README.md` describes the position for everyone; `_agent/` instructs the agent. A named extension may give its own payload a role without changing these base categories.
 
-**3. The `_agent/` contract.** An `_agent/` folder may carry:
+**3. The `_agent/` contract.** During Agreement migration, `_agent/foundation.md` and
+`_agent/agreement.md` are alternative entrypoints. A caller MAY select `foundation` or `agreement`.
+Exactly one available source selects automatically. When both resolve, the protocol requires an
+explicit choice and returns `contract_choice_required`; it never merges them or chooses precedence.
+An explicitly requested missing source returns `contract_source_unavailable`. The unselected
+entrypoint contributes neither body nor summary. Selection loads offered meaning—it proves neither
+consent nor authority.
 
-| File | Says |
-|---|---|
-| `foundation.md` | What this place is + what's here. The handshake. **One per space, at its root.** |
-| `guide.md` | How agent and human work together here. |
-| `purpose.md` | Why this space exists. The North Star. |
-| `now.md` | What's active. |
-| `next.md` | What's queued. |
+Foundation is the frozen compatibility arm. It retains the five names and current behavior:
+`foundation.md` scopes one Space; `guide.md`, `purpose.md`, `now.md`, and `next.md` layer along the
+path; every ancestor remains visible while the nearest instruction wins. Missing Purpose or Now is a
+drift signal. Existing Foundation rendering stays reproducible while consumers migrate.
 
-Optional: `schema.md` (the shape of Notes in this folder — guidance, not validation), `skills/` (how to do — flat `<name>.md` files or [Agent Skills](https://agentskills.io)-style `<name>/SKILL.md` directories with assets), `perspectives/` (how to see), `<agent-id>/` (per-agent records). A skill's identity is `<name>`: 1–64 lowercase ASCII letters, digits, or single hyphens, with no leading, trailing, or consecutive hyphen. Its frontmatter `name` MUST equal that identity; a human-readable title belongs in the Markdown heading.
+Agreement is the candidate arm. Every `agreement.md` from the selected root to the position loads in
+full, root-first. Other direct `_agent/*.md` files load at summary; the protocol gives names such as
+Guide, Purpose, Now, and Next no special meaning in this arm. An Agreement MAY load a direct sibling
+Markdown file in full through `context.full`:
 
-Not every position needs all of them — a branch might carry only `now.md`. **Give `_agent/` a good surface.** "Always loaded" means loaded at depth 0 — the surface — with depth disclosed on demand and closed again when it would overwhelm context. Small is the mindset, not a limit: `_agent/` can grow when there is need, and progressive disclosure keeps a rich one from flooding attention. Knowledge still carries weight in `.md` files; `_agent/` carries how-we-work.
+```yaml
+---
+context:
+  full:
+    - purpose.md
+---
+```
 
-**A named-but-absent file is a drift signal, not an error.** The contract names `purpose.md`; its absence means direction was never captured. Surface the gap.
+Entries MUST be unique direct Markdown basenames relative to that `_agent/`. Absolute, nested,
+traversing, globbed, remote, entrypoint, directory, symlink, and missing targets are invalid. A reader
+returns `contract_invalid` rather than a partial frame.
 
-**4. Fractal.** `_agent/` can appear at any position. Reading composes along the path — the agent carries the **full stack** from the space root down to its position: ancestors stay in view, each deeper level narrows or overrides for its branch, and on conflict the **nearest instruction wins**. Refinement never deletes ancestor context — a branch `guide.md` rides on the root guide, it does not replace it. A branch with no `_agent/` inherits its ancestors'. `skills/` compose the same way: the available set is the union along the path, a deeper same-named skill shadowing its ancestor's.
+Optional subfolders include `skills/` (flat `<name>.md` or [Agent
+Skills](https://agentskills.io)-style `<name>/SKILL.md`), `perspectives/`, and local per-agent records.
+Skills load as name plus description; the set composes along the path and a deeper same-named skill
+shadows its ancestor. A skill id is 1–64 lowercase ASCII letters, digits, or single hyphens, with no
+leading, trailing, or consecutive hyphen. Its frontmatter `name` MUST equal that id.
 
-The contract holds two kinds of thing. The four fractal files **layer** — they describe positions, and a deeper one narrows its ancestor. `foundation.md` **scopes** — one per space, it defines the whole branch beneath it and how to interpret everything in `_agent/` there. A deeper foundation does not refine the space; it ends it and starts a new one. Branches refine, they do not re-declare.
+**4. Fractal.** `_agent/` may appear at any position. In Agreement mode, every Agreement within the
+selected ceiling refines the active frame and loads in full. The nearest Agreement carrying
+`root_node_id` starts another Space; without identity it refines the current one. Without an identity
+ceiling, the Git root bounds composition; outside Git, the outermost Agreement on the ancestor path
+does. Foundation keeps its legacy scoping and layering unchanged.
 
-**5. The handshake.** `foundation.md` orients anyone arriving: what this place is, what areas and agreements exist, where to go for what. It **points, it does not reproduce** — one line per area, links for depth. A space without a foundation is just folders; with it, it is a legible place an agent can self-direct through instead of being told where to look.
+**5. Representation and placement.** `summary | full` says what representation was loaded.
+`head | history | tail` says where an awareness item belongs in the prompt. Map depth remains a
+disclosure ceiling, and actual context-window residency remains private Process state. Prompt
+placement is not Map data and is named `placement`; legacy `level` already names a filesystem
+composition position. Loaded agent-context entries carry source, representation, exact-byte
+revision, and placement.
 
-A root foundation MAY carry optional `root_node_id` frontmatter: the Space's portable opaque identity. Current writers mint `n_` plus 24 lowercase hexadecimal characters (96 random bits); readers also accept the legacy 12-character payload. Missing identity remains valid progressive enhancement. Identity lifecycle, lazy legacy convergence, and language-neutral vectors are defined in [`schema/root-identity.md`](schema/root-identity.md).
+A folder with neither entrypoint remains valid at the floor: bounded Content orientation with no
+agent terms. Exact `_agent/` is optional for base Content conformance; adding an entrypoint adds a
+selectable frame.
 
 **6. Underscore is the extension point.** Exact `_agent/` is core ambient agent context. Every other `_`-prefixed directory is a non-knowledge extension container, including case lookalikes; the first such directory owns its whole subtree, so descendants never regain a base role. The rule applies to directories, not files that happen to begin with `_`. **An agent quietly ignores any extension it does not understand.** This is the portability guarantee: a space can carry features a given agent has never heard of, and that agent still inhabits it correctly. The pure language-neutral classifier is defined in [`schema/repository-path.md`](schema/repository-path.md) and proved by [`conformance/extensions/manifest.json`](conformance/extensions/manifest.json).
 
@@ -123,11 +152,11 @@ language-neutral parse/build vectors are in
 
 ### Space identity
 
-A Space MAY declare one `root_node_id` in its root `_agent/foundation.md`. It names the Space across checkouts without exposing a private storage key, granting access, or assigning IDs to every Note. A nested foundation starts another Space and may carry that Space's own identity.
+A Space MAY declare one `root_node_id` in its selected root `_agent/foundation.md` or `_agent/agreement.md`. It names the Space across checkouts without exposing a private storage key, granting access, or assigning IDs to every Note. A nested Foundation starts another Space; an Agreement carrying identity does the same. If both entrypoints at one boundary declare identity, they MUST agree.
 
 One side mints per lifecycle. A local-first creator mints the current 96-bit form and a Keeper adopts it; a Keeper-first Space retains the Keeper's existing ID and may declare it locally later. Clone retains identity; fork remints. Missing identity remains valid indefinitely. Declaration drift never silently rebinds hosted authority.
 
-Legacy convergence is lazy and reviewable: trusted canonical-origin or local-registry evidence may identify an existing hosted Space, but a tool only proposes adding that exact ID to an existing foundation. It never creates an agent contract, writes, stages, commits, or rekeys merely because the field is absent. The complete grammar and evidence-state table are in [`schema/root-identity.md`](schema/root-identity.md).
+Legacy convergence is lazy and reviewable: trusted canonical-origin or local-registry evidence may identify an existing hosted Space, but a tool only proposes adding that exact ID to the existing selected root entrypoint. It never creates an agent contract, writes, stages, commits, or rekeys merely because the field is absent. The complete grammar and evidence-state table are in [`schema/root-identity.md`](schema/root-identity.md).
 
 ### Commit identity and provenance
 
@@ -187,14 +216,16 @@ The spec is the **base layer** — a fixed, readable shape an agent *perceives* 
 A tool or agent that claims to inhabit ideaspaces:
 
 **MUST**
-- Read `README.md` and `_agent/` files along the path before acting at a position.
-- Treat `_agent/foundation.md` as the space-root handshake.
+- Return bounded floor orientation when neither contract entrypoint resolves.
+- Select Foundation or Agreement explicitly when both resolve; never merge them.
+- Preserve Foundation composition while compatibility remains.
+- Load selected Agreements and declared direct sibling files according to [`schema/agent-contract.md`](schema/agent-contract.md).
 - Treat `.md` files outside extension containers as knowledge and exact `_agent/` as instruction.
 - Treat every other `_`-prefixed directory as an opaque extension owned by its first underscore-prefixed segment; do not promote descendants into positions, surfaces, Notes, search, summaries, or ambient context.
 - Quietly ignore any extension it does not understand (skip, never error or warn solely because its name is unknown).
 - Never add an untracked path matched by Git's effective ignore rules; continue to treat already-tracked paths as shared history.
 - Author `_agent/skills/` entry ids and frontmatter names in the portable Agent Skills form, with the two names identical.
-- Accept an absent `root_node_id`; when a root foundation declares one, accept only the current or legacy form defined by [`schema/root-identity.md`](schema/root-identity.md).
+- Accept an absent `root_node_id`; when either root entrypoint declares one, accept only the current or legacy form and reject conflict between the two.
 
 **SHOULD**
 - Surface a named-but-absent `_agent/` file as a drift signal rather than silently filling it.
@@ -204,6 +235,11 @@ A tool or agent that claims to inhabit ideaspaces:
 - Write per-agent records only under its own `_agent/<agent-id>/`.
 
 Every conformant repository reader MUST pass every required coverage vector in [`conformance/extensions/manifest.json`](conformance/extensions/manifest.json), including explicit target kind, exact core naming, first-owner precedence, reserved Git state, invalid portable input, and quiet opacity for unknown extensions.
+
+A tool claiming **Content-awareness conformance** additionally MUST pass every required coverage
+vector in [`conformance/awareness/manifest.json`](conformance/awareness/manifest.json), including
+single-source selection, explicit choice, floor orientation, declared full loading, unselected-source
+absence, exact revisions, and prompt placement.
 
 A tool that claims **local-effect conformance** additionally MUST pass every required coverage vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json), including per-path revision CAS, symlink refusal, semantic frontmatter preservation, exact commit membership, unselected-state preservation, explicit identity, and honest partial failure.
 

@@ -1,0 +1,104 @@
+{
+  "format": "ideaspaces-content-awareness/v1",
+  "required_coverage": [
+    "foundation_only",
+    "agreement_only",
+    "choice_required",
+    "explicit_foundation",
+    "explicit_agreement",
+    "source_unavailable",
+    "floor",
+    "declared_full",
+    "invalid_declared_full",
+    "unselected_absent",
+    "exact_revision",
+    "prompt_placement"
+  ],
+  "vectors": [
+    {
+      "id": "foundation-only",
+      "files": {
+        "_agent/foundation.md": "---\nsummary: Foundation summary.\n---\nFOUNDATION_BODY",
+        "_agent/now.md": "---\nsummary: Now summary.\n---\nCurrent work."
+      },
+      "covers": ["foundation_only", "exact_revision", "prompt_placement"],
+      "expected": { "status": "ok", "contract_source": "foundation" }
+    },
+    {
+      "id": "agreement-only-with-declared-full",
+      "files": {
+        "_agent/agreement.md": "---\nsummary: Agreement summary.\ncontext:\n  full:\n    - purpose.md\n---\nAGREEMENT_BODY",
+        "_agent/purpose.md": "---\nsummary: Purpose summary.\n---\nPURPOSE_BODY"
+      },
+      "covers": ["agreement_only", "declared_full", "exact_revision", "prompt_placement"],
+      "expected": {
+        "status": "ok",
+        "contract_source": "agreement",
+        "representations": ["full", "full"]
+      }
+    },
+    {
+      "id": "invalid-declared-full",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full:\n    - ../outside.md\n---\nAGREEMENT_BODY"
+      },
+      "covers": ["invalid_declared_full"],
+      "expected": { "status": "contract_invalid" }
+    },
+    {
+      "id": "both-require-choice",
+      "files": {
+        "_agent/foundation.md": "FOUNDATION_SENTINEL",
+        "_agent/agreement.md": "AGREEMENT_SENTINEL"
+      },
+      "covers": ["choice_required"],
+      "expected": { "status": "contract_choice_required" }
+    },
+    {
+      "id": "both-foundation-selected",
+      "contract_source": "foundation",
+      "files": {
+        "_agent/foundation.md": "FOUNDATION_SENTINEL",
+        "_agent/agreement.md": "AGREEMENT_SENTINEL"
+      },
+      "covers": ["explicit_foundation", "unselected_absent"],
+      "expected": {
+        "status": "ok",
+        "contract_source": "foundation",
+        "excluded": "AGREEMENT_SENTINEL"
+      }
+    },
+    {
+      "id": "both-agreement-selected",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/foundation.md": "FOUNDATION_SENTINEL",
+        "_agent/agreement.md": "AGREEMENT_SENTINEL"
+      },
+      "covers": ["explicit_agreement", "unselected_absent"],
+      "expected": {
+        "status": "ok",
+        "contract_source": "agreement",
+        "excluded": "FOUNDATION_SENTINEL"
+      }
+    },
+    {
+      "id": "explicit-source-unavailable",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/foundation.md": "# Foundation"
+      },
+      "covers": ["source_unavailable"],
+      "expected": { "status": "contract_source_unavailable" }
+    },
+    {
+      "id": "plain-folder-floor",
+      "files": {
+        "README.md": "---\nsummary: Plain folder.\n---\n# Plain"
+      },
+      "covers": ["floor"],
+      "expected": { "status": "ok", "contract_source": null }
+    }
+  ]
+}

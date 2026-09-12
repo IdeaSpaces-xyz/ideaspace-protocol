@@ -9,6 +9,23 @@ export {
   composeContractAlongPath,
   CONTRACT_FILES,
 } from "./space.js";
+export {
+  composeAgreementAlongPath,
+  CONTRACT_SOURCES,
+  PROMPT_PLACEMENTS,
+  CONTENT_REPRESENTATIONS,
+} from "./agreement.js";
+export type {
+  ContractSource,
+  PromptPlacement,
+  ContentRepresentation,
+  AgreementIssueCode,
+  AgreementIssue,
+  AgreementContextFile,
+  AgreementLevel,
+  ComposedAgreement,
+} from "./agreement.js";
+
 export type {
   SpaceRoot,
   SpaceContract,
@@ -44,6 +61,9 @@ export type {
   ContentAwarenessSkill,
   ContentAwarenessActivity,
   ContentAwarenessManifest,
+  ContentAwarenessDiagnosticStatus,
+  ContentAwarenessDiagnostic,
+  ContentAwarenessResult,
 } from "./awareness.js";
 
 // Base repository ownership — one pure lexical classifier shared by generic
@@ -201,8 +221,8 @@ export type {
   CanonicalRepoUrlParseResult,
 } from "./maps.js";
 
-// Portable Space root identity — optional foundation declaration, current and
-// legacy forms, deterministic 96-bit formatting, and pure lazy-alignment
+// Portable Space root identity — optional selected-entrypoint declaration,
+// current and legacy forms, deterministic 96-bit formatting, and pure lazy-alignment
 // evaluation over caller-supplied trusted evidence. No discovery or mutation.
 export {
   ROOT_NODE_ID_BYTES,

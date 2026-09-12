@@ -28,12 +28,10 @@ One rule about a directory. Anything not prefixed with an underscore is **conten
 ├─ findings.md
 │
 ├─ _agent/              how to work here
-│  ├─ foundation.md     what kind of place; one per space, at its root
-│  ├─ purpose.md        why it exists
-│  ├─ guide.md          how we work
-│  ├─ now.md            the current focus
-│  ├─ next.md           what's queued
-│  └─ skills/           procedures for here, loaded only when used
+│  ├─ agreement.md      standing meaning and terms; loaded in full
+│  ├─ purpose.md        summarized unless the Agreement declares it full
+│  ├─ foundation.md     selectable five-file compatibility frame
+│  └─ skills/           name + description until selected for use
 │
 └─ pricing/             a folder inside it
    ├─ model.md
@@ -41,11 +39,11 @@ One rule about a directory. Anything not prefixed with an underscore is **conten
       └─ guide.md       adds the rules for this folder
 ```
 
-`_agent/` can appear at any depth. A deeper one composes on the one above: general at the root, specific as you descend. That is why the same tools work everywhere; every folder has the same shape. A missing file is a signal, not an error. No `purpose.md` means nobody has written down why the place exists yet.
+`_agent/` can appear at any depth. Agreement mode loads each applicable `agreement.md` in full and every other direct Markdown file at summary unless `context.full` names it. Foundation remains an explicitly selectable compatibility frame with its existing five-file composition. If both entrypoints exist, the protocol requires a choice rather than merging them. With neither, the folder still orients at the bounded floor.
 
 ## What a conformant tool does
 
-1. **Arrive.** Read `_agent/` from the root down to where it stands, the tree, and what changed since last time. Summaries first; whole files on demand.
+1. **Arrive.** Select Foundation or Agreement, load the chosen frame from root to position, and read the bounded tree. Agreement loads in full; surrounding context starts at summary.
 2. **Work.** Read one document, one section at a time, following the guide and the skills that apply here.
 3. **Write back.** When understanding changes, write it down as Markdown, agreed with the person.
 4. **Commit.** Git records who changed what and when. The person is the author; an agent that helped is a co-author.
@@ -74,10 +72,14 @@ One function reads a folder and renders what an agent should see on arrival. The
 ```ts
 import { assembleContentAwareness, renderContentAwareness } from "@ideaspaces/protocol";
 
-const manifest = await assembleContentAwareness({ position: process.cwd() });
-if (!manifest) throw new Error("No ideaspace here");
+const result = await assembleContentAwareness({ position: process.cwd() });
+if (!result) throw new Error("Not a Content position");
+if (result.status === "contract_choice_required") {
+  // The protocol does not choose authority; your habitat must select a frame.
+  throw new Error("Select foundation or agreement");
+}
 
-const text = renderContentAwareness(manifest);
+const text = renderContentAwareness(result);
 ```
 
 The library also walks the full tree, reads one section of a document, classifies paths, resolves supporting files, evaluates a space's identity, and performs safe local writes through the explicit `local-effects` subpath with a git runner you supply. Each export is documented in [`src/`](src/) and proved by [`conformance/`](conformance/).
@@ -86,11 +88,11 @@ TypeScript is the reference implementation, not the requirement. Other languages
 
 ## Conformance
 
-A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in [`SPEC.md`](SPEC.md#conformance), passes the base vectors, and declares the spec version it targets. The optional layers, `_assets/`, identity, local writes, and the provisional `map` block, each have their own vectors, so a tool can conform to the base without any of them.
+A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in [`SPEC.md`](SPEC.md#conformance), passes the base vectors, and declares the spec version it targets. Content awareness, `_assets/`, identity, local writes, and the provisional `map` block each have their own vectors, so conformance claims stay explicit.
 
 ## Status
 
-**v0.13.5, provisional.** The base shape, Markdown beside `_agent/` composing at every depth, has held since v0.1.0. The optional layers still move. Pin a version.
+**v0.16.0, provisional.** Agreement is the candidate full-load frame while Foundation remains selectable compatibility. The optional layers still move. Pin a version.
 
 ## Develop
 

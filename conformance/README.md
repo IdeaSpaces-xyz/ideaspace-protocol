@@ -10,9 +10,11 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`root-identity/manifest.json`** — language-neutral vectors for optional Space identity: current and legacy reads, deterministic 96-bit generation, absent/local-only/legacy-unstamped/aligned states, and refusal to select an ID from drift, ambiguity, or malformed evidence.
 
+- **`awareness/manifest.json`** — language-neutral filesystem vectors for Foundation-only, Agreement-only, explicit selection, choice-required and unavailable results, floor orientation, declared full loading, unselected-entrypoint absence, exact revisions, and prompt placement.
+
 - **`maps/manifest.json`** — language-neutral parse/build vectors for the provisional `map` block: pinned repository positions and rootless external addresses, canonical HTTPS and loopback-development repo URLs, matching root identities, all five ceilings, observed name/summary distinct from curator annotations, retired-field refusal, unknown types/fields, and graceful invalid-block refusal. Parse-only readers parse both `parse` and `build` inputs; constructors additionally build the `build` inputs and parse valid output back equal. These are pure representation checks, not remote-availability or authorization tests.
 
-- **`reference-space/`** — a small, known-good conformant ideaspace: a root
+- **`reference-space/`** — a small, known-good Foundation ideaspace: a root
   `_agent/` five-file contract, a portable flat-form `_agent/skills/` entry,
   READMEs along a path, a Note with valid Layer-1+2 frontmatter, a recognized
   `_assets/` tree containing deliberately malformed Markdown payload, a `projects/`
@@ -25,24 +27,30 @@ Makes "conforms to the protocol" testable rather than aspirational.
   root). It checks a directory against [`../SPEC.md`](../SPEC.md)'s Conformance
   section and [`../schema/agent-contract.md`](../schema/agent-contract.md):
 
-  - **error** — no root `_agent/` (not a space at all).
   - **error** — an `_agent/skills/` entry id or frontmatter `name` is not a portable Agent Skills id, or the two do not match.
-  - **error** — malformed root foundation frontmatter or a declared `root_node_id` outside the current/legacy forms; missing identity remains valid.
+  - **error** — malformed root entrypoint frontmatter, unsafe `context.full`, conflicting Foundation/Agreement identities, or a declared `root_node_id` outside the current/legacy forms; missing identity remains valid.
   - **error** — knowledge `.md` frontmatter that is malformed or violates the
     [`../schema/frontmatter.schema.json`](../schema/frontmatter.schema.json) key
     constraints (`name`/`summary` strings, `tags` a string array, `attached_to` a
     single string matching the schema pattern). The schema is *read at runtime*,
     not bundled with a validator dependency.
-  - **warn** — drift signals: a missing `foundation.md` and named-but-absent
-    contract files (`guide.md`/`purpose.md`/`now.md`). Unknown underscore-prefixed
-    extensions are skipped quietly; their name alone is not drift. Drift never fails conformance.
+  - **warn** — Foundation-only drift signals for named-but-absent `guide.md`, `purpose.md`, and
+    `now.md`. Unknown underscore-prefixed extensions are skipped quietly; their name alone is not
+    drift. Absent entrypoints are valid floor state, not drift.
 
-  Validation stops at a descendant `_agent/foundation.md`: that boundary starts
-  another space, whose knowledge and skills are validated from its own root.
+  Validation stops at a descendant `_agent/foundation.md` or an Agreement carrying valid
+  `root_node_id`: that boundary starts another Space, whose knowledge and skills are validated from
+  its own root.
 
-  It dogfoods the library (`readContract`, `inspectFrontmatterSyntax`) and adds no
-  new runtime dependencies. Returns `{ ok, issues, notesChecked }`; `ok` is true
-  when there are no `error`-level issues.
+  It dogfoods the library (`readContract`, Agreement composition, and
+  `inspectFrontmatterSyntax`) and adds no new runtime dependencies. A plain Markdown folder is valid
+  at the floor; when `_agent/` exists, both offered entrypoints are validated without selecting
+  authority. Returns `{ ok, issues, notesChecked }`; `ok` is true when there are no `error`-level
+  issues.
+
+- **`reference-agreement/`** — a self-contained public Agreement fixture with identity, one declared
+  full sibling, and three portable skills. It proves that Agreement can re-root inside another Git
+  checkout without importing the containing repository's Foundation frame.
 
 ```ts
 import { validateSpace } from "@ideaspaces/protocol";
@@ -53,9 +61,10 @@ console.log(report.ok); // true
 
 The same kit doubles as the test that an implementation (the TS reference
 lib here, or another language/runtime) actually conforms. Base extension-boundary, assets,
-root-identity, and local-effect conformance are distinct claims: every repository reader executes the
-extension-boundary vectors without knowing named extension semantics; an assets implementation also
-executes the assets vectors; identity absence remains valid for an ordinary reader; an identity
-implementation executes the root-identity vectors; a provisional Map reader executes the Map vectors
-without adding a repository-validation gate; and an effect implementation executes every local-effect
+root-identity, Content-awareness, and local-effect conformance are distinct claims: every repository
+reader executes the extension-boundary vectors without knowing named extension semantics; an assets
+implementation also executes the assets vectors; identity absence remains valid for an ordinary
+reader; an identity implementation executes the root-identity vectors; an awareness implementation
+executes the selectable-frame vectors; a provisional Map reader executes the Map vectors without
+adding a repository-validation gate; and an effect implementation executes every local-effect
 manifest coverage tag.

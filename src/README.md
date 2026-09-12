@@ -9,8 +9,9 @@ Present:
 - `frontmatter.ts` — parse / compose / extract (Layer 1: `name`, `summary`, `attached_to`, `tags`)
 - `root-identity.ts` — optional Space root ID parsing, deterministic current-form generation, and pure lazy-alignment evaluation over caller-supplied evidence
 - `markdown-inspection.ts` — portable progressive-disclosure reads (`summary`, ATX `outline`, exact `section`) over a string or local file
-- `space.ts` — `_agent/` contract reader (`CONTRACT_FILES`, `findSpaceRoot`, `readContract`)
-- `awareness.ts` — structured Content awareness assembly/rendering (`assembleContentAwareness`, `renderContentAwareness`) plus the compatibility `assembleAwareness` block; `path-context.ts` — path walking
+- `space.ts` — frozen five-file Foundation reader and composition
+- `agreement.ts` — Agreement root composition, generic `_agent/*.md` loading, and safe `context.full` parsing
+- `awareness.ts` — selectable Foundation/Agreement/floor assembly, exact revisions, prompt placement, canonical rendering, and the compatibility `assembleAwareness` block; `path-context.ts` — path walking
 - `git.ts` — git state / recent activity, reporting of already-staged knowledge/context/extension paths, plus the injected, read-only `pathRevision` fact; `local-effects.ts` — pure request/result types, capability contracts, and preflight validators; `local-effects-runtime.ts` — the opt-in `@ideaspaces/protocol/local-effects` reference implementation for atomic Markdown writes and exact-path commits; `stale-docs.ts` — drift signals
 - `workspace.ts` — neutral root handles and immediate-child workspace repository reads
 - `skills.ts` + `skill-catalog.generated.ts` — the canonical skill catalog (generated from `../skills/` by `scripts/embed-skills.mjs`)
