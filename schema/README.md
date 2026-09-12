@@ -2,7 +2,7 @@
 
 The machine-readable, language-neutral contract — so non-TypeScript runtimes can conform without importing the reference library.
 
-Present (v0.16.0, provisional):
+Present (v0.17.0, provisional):
 
 - [`frontmatter.schema.json`](frontmatter.schema.json) — the Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (single, typed link; the `<type>:<id>` shape is protocol, the type namespace is platform-defined), `tags`. Nothing strictly required (absent = drift, not error); `additionalProperties` allowed (extensible).
 - [`agent-contract.md`](agent-contract.md) — selectable Foundation/Agreement frames, Agreement full-load declarations, floor orientation, root composition, prompt placement, skills, extensions, and conformance.
@@ -11,7 +11,7 @@ Present (v0.16.0, provisional):
 - [`assets.md`](assets.md) — exact `_assets/` supporting payload, ordinary relative resolution from the containing Markdown file, one pure lexical operation, and the no-search/no-fallback boundary.
 - [`root-identity.md`](root-identity.md) — optional `root_node_id` declaration in either root entrypoint, current and legacy forms, one-minter lifecycle, pure evidence states, and lazy convergence.
 - [`maps.md`](maps.md) — provisional opt-in `map` frontmatter: ordered repository positions and open addresses, canonical repo URLs, exact root pins, representation ceilings, bounded recursive walking, and safe degradation.
-- [`content-awareness.md`](content-awareness.md) — the portable read-only selectable-frame result, exact loaded representations/revisions, floor orientation, prompt placement, and canonical rendering.
+- [`content-awareness.md`](content-awareness.md) — portable read-only selectable-frame and reference-focus results, exact loaded representations/revisions, floor orientation, prompt placement, and canonical rendering.
 - [`markdown-inspection.md`](markdown-inspection.md) — portable progressive-disclosure reads for one Markdown document: summary, ATX outline, or an explicitly selected section.
 - [`local-effects.md`](local-effects.md) — the language-neutral `write_markdown`, `commit_paths`, and `path_revision` contract: per-path revision CAS, root/symlink/ignore safety, frontmatter preservation, exact commits, and typed partial failure.
 - [`workspace-handles.md`](workspace-handles.md) — neutral root summaries and immediate-child repository handles for local workspace awareness.

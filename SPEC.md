@@ -86,6 +86,16 @@ placement is not Map data and is named `placement`; legacy `level` already names
 composition position. Loaded agent-context entries carry source, representation, exact-byte
 revision, and placement.
 
+A **Content focus** is the bounded reference form of a later read. It resolves one target position
+under the same explicit Foundation/Agreement selection rules, but it MUST NOT accept, return, mutate,
+or extend the caller's composed contract stack. Its `contractRole` is always `reference`: target
+agent context is read, never composed as caller authority. It returns only the target position, a
+Content tree at depth one, the selected target agent context, and skills; every returned awareness
+item has `placement: history`. Agreement keeps its full entrypoint and declared representations;
+Foundation keeps its compatibility representations; floor remains valid. Activity, Git state, drift,
+and direction warnings do not enter a focus. A conforming renderer emits one deterministic focus
+block so a caller can retain its head once and append one reference block per explicit focus read.
+
 A folder with neither entrypoint remains valid at the floor: bounded Content orientation with no
 agent terms. Exact `_agent/` is optional for base Content conformance; adding an entrypoint adds a
 selectable frame.

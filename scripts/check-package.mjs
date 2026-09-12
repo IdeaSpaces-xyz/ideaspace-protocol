@@ -16,6 +16,7 @@ const expected = [
   "SPEC.md",
   "VERSION",
   "conformance/assets/manifest.json",
+  "conformance/awareness/focus-render.txt",
   "conformance/awareness/foundation-render.txt",
   "conformance/awareness/foundation-vector-render.txt",
   "conformance/awareness/manifest.json",
@@ -246,6 +247,7 @@ try {
     const awarenessSchema = require.resolve("@ideaspaces/protocol/schema/content-awareness");
     const required = [
       "assembleContentAwareness",
+      "assembleContentFocus",
       "composeAgreementAlongPath",
       "classifyRepositoryPath",
       "composeContractAlongPath",
@@ -260,6 +262,7 @@ try {
       "pathRevision",
       "rootNodeIdFromBytes",
       "renderContentAwareness",
+      "renderContentFocus",
       "renderPosition",
       "resolveAssetReference",
       "validateCommitPathsRequest",
@@ -298,7 +301,11 @@ try {
     if (rootIdentity?.format !== "ideaspaces-root-identity/v1" || !rootIdentity.required_coverage?.length) {
       throw new Error("Root-identity conformance manifest did not load");
     }
-    if (awareness?.format !== "ideaspaces-content-awareness/v1" || !awareness.required_coverage?.length) {
+    if (
+      awareness?.format !== "ideaspaces-content-awareness/v1" ||
+      !awareness.required_coverage?.length ||
+      !awareness.focus_required_coverage?.length
+    ) {
       throw new Error("Content-awareness conformance manifest did not load");
     }
     if (maps?.format !== "ideaspaces-maps/v2" || !maps.required_coverage?.length) {

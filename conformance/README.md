@@ -10,7 +10,7 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`root-identity/manifest.json`** — language-neutral vectors for optional Space identity: current and legacy reads, deterministic 96-bit generation, absent/local-only/legacy-unstamped/aligned states, and refusal to select an ID from drift, ambiguity, or malformed evidence.
 
-- **`awareness/manifest.json`** — language-neutral filesystem vectors for Foundation-only, Agreement-only, explicit selection, choice-required and unavailable results, floor orientation, declared full loading, unselected-entrypoint absence, exact revisions, and prompt placement.
+- **`awareness/manifest.json`** — language-neutral filesystem vectors for Foundation-only, Agreement-only, explicit selection, choice-required and unavailable results, floor orientation, declared full loading, unselected-entrypoint absence, exact revisions, prompt placement, and a deterministic depth-one focus whose target contract remains reference context.
 
 - **`maps/manifest.json`** — language-neutral parse/build vectors for the provisional `map` block: pinned repository positions and rootless external addresses, canonical HTTPS and loopback-development repo URLs, matching root identities, all five ceilings, observed name/summary distinct from curator annotations, retired-field refusal, unknown types/fields, and graceful invalid-block refusal. Parse-only readers parse both `parse` and `build` inputs; constructors additionally build the `build` inputs and parse valid output back equal. These are pure representation checks, not remote-availability or authorization tests.
 
@@ -65,6 +65,6 @@ root-identity, Content-awareness, and local-effect conformance are distinct clai
 reader executes the extension-boundary vectors without knowing named extension semantics; an assets
 implementation also executes the assets vectors; identity absence remains valid for an ordinary
 reader; an identity implementation executes the root-identity vectors; an awareness implementation
-executes the selectable-frame vectors; a provisional Map reader executes the Map vectors without
+executes both selectable-frame and reference-focus vectors; a provisional Map reader executes the Map vectors without
 adding a repository-validation gate; and an effect implementation executes every local-effect
 manifest coverage tag.

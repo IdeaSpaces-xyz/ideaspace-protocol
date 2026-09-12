@@ -105,6 +105,11 @@ records its source position, representation, placement, and a revision derived f
 read. Activity, Git state, and drift belong to the tail; active authority context belongs to the
 head; a later focus read belongs to history.
 
+A Content focus reads a target contract as reference without accepting or changing the caller's
+composed stack. Its contract role is always `reference`; it carries only the target position,
+depth-one Content tree, selected agent context, and skills, all at `placement: history`. Focus
+agreements are read, never composed as authority.
+
 ## Root identity
 
 Either root entrypoint MAY carry optional `root_node_id` frontmatter. Missing identity remains valid.

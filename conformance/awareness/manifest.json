@@ -26,6 +26,14 @@
     "exact_revision",
     "prompt_placement"
   ],
+  "focus_required_coverage": [
+    "focus_reference",
+    "focus_history",
+    "focus_depth_one",
+    "focus_agreement_full",
+    "focus_agent_summary",
+    "focus_deterministic"
+  ],
   "vectors": [
     {
       "id": "foundation-only",
@@ -201,6 +209,35 @@
       },
       "covers": ["floor"],
       "expected": { "status": "ok", "contract_source": null }
+    }
+  ],
+  "focus_vectors": [
+    {
+      "id": "agreement-reference-depth-one",
+      "files": {
+        "_agent/agreement.md": "AGREEMENT_BODY",
+        "_agent/purpose.md": "---\nsummary: Purpose summary.\n---\nPURPOSE_BODY",
+        "_agent/skills/inspect.md": "---\nname: inspect\ndescription: Read the target carefully.\n---\n# Inspect",
+        "docs/README.md": "---\nsummary: Focus docs.\n---\n# Docs",
+        "docs/deep/note.md": "# Deep",
+        "README.md": "---\nsummary: Focus root.\n---\n# Root"
+      },
+      "covers": [
+        "focus_reference",
+        "focus_history",
+        "focus_depth_one",
+        "focus_agreement_full",
+        "focus_agent_summary",
+        "focus_deterministic"
+      ],
+      "expected": {
+        "status": "ok",
+        "contract_source": "agreement",
+        "contract_role": "reference",
+        "representations": ["full", "summary"],
+        "excluded": "PURPOSE_BODY",
+        "render_fixture": "focus-render.txt"
+      }
     }
   ]
 }
