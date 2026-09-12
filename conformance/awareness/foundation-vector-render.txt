@@ -1,0 +1,11 @@
+Position:
+  cwd: .
+  space root: .
+  active _agent: .
+
+Now: Current work.
+
+Agent context:
+  foundation — Foundation summary.
+  purpose — Purpose summary.
+  now — Now summary.

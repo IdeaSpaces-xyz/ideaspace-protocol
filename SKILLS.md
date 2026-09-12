@@ -23,7 +23,7 @@ A skill matches an intent, and intents follow a per-session cycle:
 | Phase | What happens |
 |---|---|
 | **Arrive** | Detect the space, position, and git state. Automatic session-start behavior, not a skill the agent picks. |
-| **Orient** | Read the effective `foundation` / `guide` / `purpose` / `now` / `next` contract and position surfaces. |
+| **Orient** | Select one Foundation or Agreement frame, load its declared representations, and read the bounded position surface. |
 | **Inspect** | Explore the relevant knowledge, code, and state before acting. |
 | **Act** | Do the work: ordinary edits, research, code, or domain-specific procedures. |
 | **Capture** | Reach agreement on what changed in shared understanding, then write and commit it deliberately. |
@@ -49,7 +49,7 @@ The IdeaSpaces-specific skills cluster around the phases that touch shared under
 | Phase / role | Skill | Typical mechanism |
 |---|---|---|
 | Arrive | — | session-start awareness, git state, [`refs/ideaspaces/seen`](schema/surface-state.md) |
-| Orient | `is-orient` | composed `_agent/` contract, position surfaces, `is_status` when needed |
+| Orient | `is-orient` | selected `_agent/` frame, bounded position surface, `is_status` when needed |
 | Inspect | — | native read/search tools |
 | Act | — | native edit/write/shell tools and domain skills |
 | Capture | `is-capture` + `is-writing` | `is_write` for Notes or native edits for existing docs, then `is_commit` |

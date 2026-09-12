@@ -1,0 +1,22 @@
+Position:
+  repo: $ROOT
+  cwd: .
+  space root: .
+  active _agent: .
+
+Now: Ship structured awareness.
+
+Tree (2 files):
+  docs/ (1)
+  README.md
+
+Agent context:
+  foundation — Root agreement.
+  guide — Work together directly.
+  purpose — Keep shared understanding coherent.
+  now — Current delivery state.
+
+Operating skills:
+  review — Verify behavior before claiming done.
+
+Git: branch main

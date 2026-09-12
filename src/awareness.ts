@@ -1,13 +1,15 @@
+import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import type {
   ComposedContract,
   ContractFile,
   ContractLevel,
+  ComposedSpace,
   SpaceContract,
 } from "./space.js";
 import { composeContractAlongPath } from "./space.js";
-import { stripFrontmatter, extractDescription } from "./frontmatter.js";
+import { stripFrontmatter, extractDescription, parseFrontmatter } from "./frontmatter.js";
 import { summarizeMarkdown } from "./markdown-inspection.js";
 import { classifyRepositoryPath } from "./repository-path.js";
 import {
@@ -29,6 +31,15 @@ import {
 } from "./stale-docs.js";
 import { readSeenRef } from "./surface-state.js";
 import { DEFAULT_IGNORED_DIRECTORIES } from "./filesystem.js";
+import { parseRootNodeId } from "./root-identity.js";
+import {
+  composeAgreementAlongPath,
+  type AgreementIssue,
+  type ComposedAgreement,
+  type ContentRepresentation,
+  type ContractSource,
+  type PromptPlacement,
+} from "./agreement.js";
 
 export interface AssembleAwarenessOpts {
   /** Absolute path to the position whose tree and local skills are surfaced. */
@@ -61,6 +72,8 @@ export interface AssembleContentTreeOpts {
 export interface AssembleContentAwarenessOpts {
   /** Absolute or cwd-relative directory at which awareness is focused. */
   position: string;
+  /** Explicit authority frame. Required by the protocol when both entrypoints resolve. */
+  contractSource?: ContractSource;
   /**
    * Previous-session baseline. `undefined` reads `refs/ideaspaces/seen` when
    * inside git; `null` deliberately disables the activity section.
@@ -112,6 +125,7 @@ export interface RenderContentAwarenessOpts {
 }
 
 export interface ContentAwarenessPosition {
+  placement: PromptPlacement;
   /** Absolute focused directory. */
   path: string;
   /** Root against which the displayed cwd is relative. */
@@ -126,10 +140,14 @@ export interface ContentAwarenessNow {
   text: string;
   /** Absolute source file path. */
   source: string;
+  representation: "summary";
+  placement: PromptPlacement;
+  revision: string;
 }
 
 export interface ContentAwarenessTreeEntry {
   name: string;
+  placement: PromptPlacement;
   kind: "directory" | "markdown";
   /** Recursive markdown count for directories; absent for markdown files. */
   markdownFiles?: number;
@@ -147,6 +165,7 @@ export interface ContentAwarenessTreeEntry {
 }
 
 export interface ContentAwarenessTree {
+  placement: PromptPlacement;
   totalMarkdownFiles: number;
   entries: ContentAwarenessTreeEntry[];
   /** Top-level entries over the per-directory cap, when truncated. */
@@ -154,12 +173,19 @@ export interface ContentAwarenessTree {
 }
 
 export interface ContentAwarenessContractEntry {
-  name: ContractFile;
+  name: string;
   /** Absolute source file path. */
   path: string;
   /** Absolute `_agent/` parent position when composed along a fractal path. */
+  sourcePosition?: string;
+  /** @deprecated Composition-path alias retained for Foundation compatibility. */
   level?: string;
   summary: string | null;
+  representation: ContentRepresentation;
+  /** Exact file bytes when representation is full. */
+  content?: string;
+  revision: string;
+  placement: PromptPlacement;
 }
 
 export interface ContentAwarenessSkill {
@@ -171,10 +197,15 @@ export interface ContentAwarenessSkill {
    * along a fractal path. A deeper same-named skill shadows its ancestor's.
    */
   level?: string;
+  sourcePosition?: string;
   summary: string | null;
+  representation: "summary";
+  revision: string | null;
+  placement: PromptPlacement;
 }
 
 export interface ContentAwarenessActivity {
+  placement: "tail";
   totalChanges: number;
   changes: ChangedFile[];
   omittedChanges: number;
@@ -188,8 +219,11 @@ export interface ContentAwarenessActivity {
  * rendered sections are placed and own session state, mounts, and remote tiers.
  */
 export interface ContentAwarenessManifest {
+  status: "ok";
   kind: "content";
-  /** Space root selected by the nearest foundation boundary. */
+  /** Selected authority frame; null is floor orientation without agent terms. */
+  contractSource: ContractSource | null;
+  /** Space root selected by the active frame, or the orientation base at floor. */
   spaceRoot: string;
   position: ContentAwarenessPosition;
   now: ContentAwarenessNow | null;
@@ -197,10 +231,25 @@ export interface ContentAwarenessManifest {
   contract: ContentAwarenessContractEntry[];
   skills: ContentAwarenessSkill[];
   activity: ContentAwarenessActivity | null;
-  git: GitState | null;
-  staleDocs: DriftSignal[];
+  git: (GitState & { placement: "tail" }) | null;
+  staleDocs: Array<DriftSignal & { placement: "tail" }>;
   missingDirection: Array<"purpose" | "now">;
 }
+
+export type ContentAwarenessDiagnosticStatus =
+  | "contract_choice_required"
+  | "contract_source_unavailable"
+  | "contract_invalid";
+
+export interface ContentAwarenessDiagnostic {
+  status: ContentAwarenessDiagnosticStatus;
+  kind: "content";
+  availableSources: ContractSource[];
+  requestedSource?: ContractSource;
+  issues?: AgreementIssue[];
+}
+
+export type ContentAwarenessResult = ContentAwarenessManifest | ContentAwarenessDiagnostic;
 
 interface AwarenessSections {
   now: ContentAwarenessNow | null;
@@ -253,23 +302,20 @@ export async function assembleContentTree(
 }
 
 /**
- * Assemble the structured local Content awareness at one position.
+ * Assemble structured local Content awareness at one position.
  *
- * Returns `null` when no foundation-marked ideaspace resolves. All reads are
- * local filesystem/git reads; the function never mutates the space or contacts
- * a remote.
+ * Foundation and Agreement are selectable authority frames. The protocol never
+ * chooses between them: one available source selects automatically, while two
+ * without an explicit choice return `contract_choice_required`. Ordinary
+ * folders with neither source still orient at the bounded floor. `null` is
+ * reserved for paths that are not Content positions (`_agent/`, extensions,
+ * and reserved Git state).
  */
 export async function assembleContentAwareness(
   opts: AssembleContentAwarenessOpts,
-): Promise<ContentAwarenessManifest | null> {
+): Promise<ContentAwarenessResult | null> {
   const requestedPosition = resolve(opts.position);
-  // Git canonicalizes symlinked ancestors (macOS `/var` → `/private/var`) when
-  // reporting its toplevel. Canonicalize the focus too so the relative cwd
-  // cannot escape into a synthetic `../../…` path.
   const position = await fs.realpath(requestedPosition).catch(() => requestedPosition);
-  // Resolve the repository boundary before composing contracts. Starting both
-  // reads in parallel would let composition inspect `_agent/` payload inside an
-  // extension before the focus is rejected, violating extension opacity.
   const repoRoot = await resolveRepoRoot(position);
   if (repoRoot) {
     const repositoryPath = relative(repoRoot, position).split(sep).join("/");
@@ -277,19 +323,66 @@ export async function assembleContentAwareness(
       const classification = classifyRepositoryPath(repositoryPath, "directory");
       if (classification.status !== "ok" || classification.role !== "ordinary") return null;
     }
+  } else if (hasOpaqueFilesystemAncestor(position)) {
+    return null;
   }
 
-  const composed = await composeContractAlongPath(position);
-  if (!composed.spaceRoot) return null;
-  if (!repoRoot) {
-    const spacePath = relative(composed.spaceRoot, position).split(sep).join("/");
+  const [foundation, agreement] = await Promise.all([
+    composeContractAlongPath(position),
+    composeAgreementAlongPath(position, repoRoot),
+  ]);
+  const availableSources: ContractSource[] = [];
+  if (foundation.spaceRoot) availableSources.push("foundation");
+  if (agreement.agreements.length) availableSources.push("agreement");
+
+  let contractSource: ContractSource | null = opts.contractSource ?? null;
+  if (contractSource && !availableSources.includes(contractSource)) {
+    return {
+      status: "contract_source_unavailable",
+      kind: "content",
+      availableSources,
+      requestedSource: contractSource,
+    };
+  }
+  const identityConflict = contractIdentityConflict(foundation, agreement);
+  if (identityConflict) {
+    return {
+      status: "contract_invalid",
+      kind: "content",
+      availableSources,
+      ...(contractSource ? { requestedSource: contractSource } : {}),
+      issues: [identityConflict],
+    };
+  }
+  if (!contractSource && availableSources.length > 1) {
+    return { status: "contract_choice_required", kind: "content", availableSources };
+  }
+  contractSource ??= availableSources[0] ?? null;
+
+  if (contractSource === "agreement" && agreement.issues.length) {
+    return {
+      status: "contract_invalid",
+      kind: "content",
+      availableSources,
+      ...(opts.contractSource ? { requestedSource: opts.contractSource } : {}),
+      issues: agreement.issues,
+    };
+  }
+
+  const spaceRoot = contractSource === "foundation"
+    ? foundation.spaceRoot!
+    : contractSource === "agreement"
+      ? agreement.spaceRoot!
+      : repoRoot ?? position;
+  if (!repoRoot && contractSource) {
+    const spacePath = relative(spaceRoot, position).split(sep).join("/");
     if (spacePath) {
       const classification = classifyRepositoryPath(spacePath, "directory");
       if (classification.status !== "ok" || classification.role !== "ordinary") return null;
     }
   }
 
-  const base = repoRoot ?? composed.spaceRoot;
+  const base = repoRoot ?? spaceRoot;
   const lastShaPromise: Promise<string | undefined> =
     opts.lastSha === undefined
       ? repoRoot
@@ -297,37 +390,47 @@ export async function assembleContentAwareness(
         : Promise.resolve(undefined)
       : Promise.resolve(opts.lastSha ?? undefined);
 
-  const pathContextPromise = walkPathContext(base, position);
-  const gitPromise: Promise<GitState | null> = repoRoot
-    ? gitState(repoRoot)
+  const pathContextPromise = walkPathContext(base, position).then((context) =>
+    filterPathContextForSource(context, contractSource),
+  );
+  const gitPromise: Promise<(GitState & { placement: "tail" }) | null> = repoRoot
+    ? gitState(repoRoot).then((state) => ({ ...state, placement: "tail" }))
     : Promise.resolve(null);
-  const staleDocsPromise: Promise<DriftSignal[]> = repoRoot
-    ? collectDocDependencies(repoRoot, repoRoot).then((docs) =>
-        staleDocSignals(repoRoot, docs),
-      )
+  const staleDocsPromise: Promise<Array<DriftSignal & { placement: "tail" }>> = repoRoot
+    ? collectDocDependencies(repoRoot, repoRoot)
+        .then((docs) => staleDocSignals(repoRoot, docs))
+        .then((signals) => signals.map((signal) => ({ ...signal, placement: "tail" })))
     : Promise.resolve([]);
-  // Ambient awareness never requests the explicit full diagnostic walk.
-  const treeDepth = normalizeContentTreeDepth(opts.treeDepth) as number;
-  const treeMaxEntries = opts.treeMaxEntries ?? 50;
-  const sectionsPromise = lastShaPromise.then((lastSha) =>
-    readAwarenessSections({
+
+  const tree: BuildTreeOpts = {
+    depth: normalizeContentTreeDepth(opts.treeDepth) as number,
+    maxEntries: opts.treeMaxEntries ?? 50,
+    summaries: true,
+    summaryLength: opts.summaryExcerptLength ?? 200,
+    strict: false,
+  };
+  const sectionsPromise = lastShaPromise.then((lastSha) => {
+    const common = {
       root: position,
       activityRoot: base,
-      contract: composed.contract,
-      stack: composed.stack,
       lastSha,
       maxChanges: opts.maxChanges,
       nowExcerptLength: opts.nowExcerptLength,
       summaryExcerptLength: opts.summaryExcerptLength,
-      tree: {
-        depth: treeDepth,
-        maxEntries: treeMaxEntries,
-        summaries: true,
-        summaryLength: opts.summaryExcerptLength ?? 200,
-        strict: false,
-      },
-    }),
-  );
+      tree,
+    };
+    if (contractSource === "foundation") {
+      return readAwarenessSections({
+        ...common,
+        contract: foundation.contract,
+        stack: foundation.stack,
+      });
+    }
+    if (contractSource === "agreement") {
+      return readAgreementAwarenessSections({ ...common, agreement });
+    }
+    return readFloorAwarenessSections(common);
+  });
 
   const [context, git, staleDocs, sections] = await Promise.all([
     pathContextPromise,
@@ -337,13 +440,17 @@ export async function assembleContentAwareness(
   ]);
 
   const missingDirection: Array<"purpose" | "now"> = [];
-  if (!composed.contract.purpose) missingDirection.push("purpose");
-  if (!composed.contract.now) missingDirection.push("now");
+  if (contractSource === "foundation") {
+    if (!foundation.contract.purpose) missingDirection.push("purpose");
+    if (!foundation.contract.now) missingDirection.push("now");
+  }
 
   return {
+    status: "ok",
     kind: "content",
-    spaceRoot: composed.spaceRoot,
-    position: { path: position, base, repoRoot, context },
+    contractSource,
+    spaceRoot,
+    position: { placement: "head", path: position, base, repoRoot, context },
     ...sections,
     git,
     staleDocs,
@@ -351,17 +458,82 @@ export async function assembleContentAwareness(
   };
 }
 
-/**
- * Render a structured Content manifest in canonical section order.
- *
- * Callers may select sections for harness-specific placement; selection never
- * changes wording or order. An omitted/empty section renders nothing.
- */
+/** Render a successful manifest or one actionable selection diagnostic. */
 export function renderContentAwareness(
-  manifest: ContentAwarenessManifest,
+  result: ContentAwarenessResult,
   opts: RenderContentAwarenessOpts = {},
 ): string {
-  return renderAwarenessSections({ ...manifest, levelBase: manifest.spaceRoot }, opts);
+  if (result.status !== "ok") return renderContentAwarenessDiagnostic(result);
+  return renderAwarenessSections(
+    { ...result, levelBase: result.spaceRoot, spaceRoot: result.spaceRoot },
+    opts,
+  );
+}
+
+function renderContentAwarenessDiagnostic(result: ContentAwarenessDiagnostic): string {
+  if (result.status === "contract_choice_required") {
+    return "Contract choice required: select `foundation` or `agreement`.";
+  }
+  if (result.status === "contract_source_unavailable") {
+    return `Contract source unavailable: ${result.requestedSource}.`;
+  }
+  const lines = ["Agreement contract is invalid:"];
+  for (const issue of result.issues ?? []) {
+    lines.push(`  ${issue.code}: ${issue.path} — ${issue.detail}`);
+  }
+  return lines.join("\n");
+}
+
+function contractIdentityConflict(
+  foundation: ComposedSpace,
+  agreement: ComposedAgreement,
+): AgreementIssue | null {
+  if (
+    !foundation.spaceRoot ||
+    !agreement.spaceRoot ||
+    foundation.spaceRoot !== agreement.spaceRoot ||
+    !agreement.rootNodeId
+  ) {
+    return null;
+  }
+  const foundationContent = foundation.contract.foundation?.content;
+  if (!foundationContent) return null;
+  const value = parseFrontmatter(foundationContent)?.root_node_id;
+  const parsed = parseRootNodeId(value);
+  if (parsed.status !== "valid" || parsed.rootNodeId === agreement.rootNodeId) return null;
+  return {
+    path: join(foundation.spaceRoot, "_agent"),
+    code: "root_node_id_conflict",
+    detail: "foundation.md and agreement.md declare different root_node_id values",
+  };
+}
+
+function filterPathContextForSource(
+  context: PathContext,
+  source: ContractSource | null,
+): PathContext {
+  if (source === "foundation") return context;
+  return {
+    ...context,
+    levels: context.levels.map((level) => ({
+      ...level,
+      foundation: false,
+      agentFiles: [],
+      contractSummaries: {},
+      contract: null,
+    })),
+  };
+}
+
+function hasOpaqueFilesystemAncestor(path: string): boolean {
+  let current = resolve(path);
+  while (true) {
+    const name = basename(current);
+    if (name.startsWith("_")) return true;
+    const parent = dirname(current);
+    if (parent === current) return false;
+    current = parent;
+  }
 }
 
 /**
@@ -391,11 +563,19 @@ export async function assembleAwareness(
   );
 }
 
+interface ReadAwarenessCommonOpts {
+  root: string;
+  activityRoot: string;
+  lastSha?: string;
+  maxChanges?: number;
+  nowExcerptLength?: number;
+  summaryExcerptLength?: number;
+  tree?: BuildTreeOpts;
+}
+
 async function readAwarenessSections(
-  opts: AssembleAwarenessOpts & {
-    activityRoot: string;
+  opts: AssembleAwarenessOpts & ReadAwarenessCommonOpts & {
     stack?: ContractLevel[];
-    tree?: BuildTreeOpts;
   },
 ): Promise<AwarenessSections> {
   const {
@@ -437,6 +617,73 @@ async function readAwarenessSections(
   };
 }
 
+async function readAgreementAwarenessSections(
+  opts: ReadAwarenessCommonOpts & { agreement: ComposedAgreement },
+): Promise<AwarenessSections> {
+  const {
+    root,
+    activityRoot,
+    agreement,
+    lastSha,
+    maxChanges = 15,
+    summaryExcerptLength = 200,
+  } = opts;
+  const treeOpts = opts.tree ?? {
+    depth: 1,
+    maxEntries: 50,
+    summaries: true,
+    summaryLength: summaryExcerptLength,
+    strict: false,
+  };
+  const contract = agreement.stack.flatMap((level) =>
+    level.files.map((file): ContentAwarenessContractEntry => ({
+      name: file.name,
+      path: file.path,
+      sourcePosition: file.sourcePosition,
+      level: file.sourcePosition,
+      summary: describeFile(file.content, summaryExcerptLength),
+      representation: file.representation,
+      ...(file.representation === "full" ? { content: file.content } : {}),
+      revision: contentRevision(file.content),
+      placement: "head",
+    })),
+  );
+  const [tree, skills, activity] = await Promise.all([
+    buildTree(root, treeOpts),
+    readSkills(agreement.stack.map((level) => level.dir), summaryExcerptLength),
+    lastSha
+      ? readActivity(activityRoot, lastSha, maxChanges)
+      : Promise.resolve(null),
+  ]);
+  return { now: null, tree, contract, skills, activity };
+}
+
+async function readFloorAwarenessSections(
+  opts: ReadAwarenessCommonOpts,
+): Promise<AwarenessSections> {
+  const {
+    root,
+    activityRoot,
+    lastSha,
+    maxChanges = 15,
+    summaryExcerptLength = 200,
+  } = opts;
+  const treeOpts = opts.tree ?? {
+    depth: 1,
+    maxEntries: 50,
+    summaries: true,
+    summaryLength: summaryExcerptLength,
+    strict: false,
+  };
+  const [tree, activity] = await Promise.all([
+    buildTree(root, treeOpts),
+    lastSha
+      ? readActivity(activityRoot, lastSha, maxChanges)
+      : Promise.resolve(null),
+  ]);
+  return { now: null, tree, contract: [], skills: [], activity };
+}
+
 function renderAwarenessSections(
   data: AwarenessSections & {
     position?: ContentAwarenessPosition;
@@ -445,6 +692,8 @@ function renderAwarenessSections(
     missingDirection: Array<"purpose" | "now">;
     /** Base for rendering branch-level annotations; absent for the legacy single-level block. */
     levelBase?: string;
+    /** Selected space root; overrides foundation-derived position rendering. */
+    spaceRoot?: string;
   },
   opts: RenderContentAwarenessOpts,
 ): string {
@@ -462,6 +711,7 @@ function renderAwarenessSections(
               base: data.position.base,
               repoRoot: data.position.repoRoot,
               ctx: data.position.context,
+              spaceRoot: data.spaceRoot,
             })
           : null;
         break;
@@ -507,8 +757,11 @@ function buildContractEntries(
     entries.push({
       name,
       path: entry.path,
-      ...(hasLevel(entry) ? { level: entry.level } : {}),
+      ...(hasLevel(entry) ? { level: entry.level, sourcePosition: entry.level } : {}),
       summary: describeFile(entry.content, max),
+      representation: "summary",
+      revision: contentRevision(entry.content),
+      placement: "head",
     });
   }
   return entries;
@@ -538,7 +791,11 @@ function buildStackedContractEntries(
         name,
         path: entry.path,
         level: level.dir,
+        sourcePosition: level.dir,
         summary: describeFile(entry.content, max),
+        representation: "summary",
+        revision: contentRevision(entry.content),
+        placement: "head",
       });
     }
   }
@@ -614,9 +871,27 @@ async function readSkills(
     entries.map(async ({ name, path, level }) => {
       try {
         const content = await fs.readFile(path, "utf-8");
-        return { name, path, level, summary: describeSkill(content, max) };
+        return {
+          name,
+          path,
+          level,
+          sourcePosition: level,
+          summary: describeSkill(content, max),
+          representation: "summary" as const,
+          revision: contentRevision(content),
+          placement: "head" as const,
+        };
       } catch {
-        return { name, path, level, summary: null };
+        return {
+          name,
+          path,
+          level,
+          sourcePosition: level,
+          summary: null,
+          representation: "summary" as const,
+          revision: null,
+          placement: "head" as const,
+        };
       }
     }),
   );
@@ -631,6 +906,7 @@ async function readActivity(
   if (!changedFiles.length) return null;
   const changes = changedFiles.slice(0, maxChanges);
   return {
+    placement: "tail",
     totalChanges: changedFiles.length,
     changes,
     omittedChanges: changedFiles.length - changes.length,
@@ -665,10 +941,24 @@ function extractNow(
     if (!line || line.startsWith("#")) continue;
     if (line.startsWith(">")) {
       const stripped = line.replace(/^>+\s*/, "").trim();
-      if (stripped) return { text: truncate(stripped, max), source: entry.path };
+      if (stripped) {
+        return {
+          text: truncate(stripped, max),
+          source: entry.path,
+          representation: "summary",
+          placement: "head",
+          revision: contentRevision(entry.content),
+        };
+      }
       continue;
     }
-    return { text: truncate(line, max), source: entry.path };
+    return {
+      text: truncate(line, max),
+      source: entry.path,
+      representation: "summary",
+      placement: "head",
+      revision: contentRevision(entry.content),
+    };
   }
   return null;
 }
@@ -677,6 +967,10 @@ function truncate(value: string, max: number): string {
   return value.length <= max
     ? value
     : `${value.slice(0, max).trimEnd()}…`;
+}
+
+function contentRevision(content: string): string {
+  return `sha256:${createHash("sha256").update(content, "utf-8").digest("hex")}`;
 }
 
 interface BuildTreeOpts {
@@ -727,6 +1021,7 @@ async function buildTree(
   if (!listed) return null;
   const totalMarkdownFiles = await countMarkdown(root, opts.strict);
   return {
+    placement: "head",
     totalMarkdownFiles,
     entries: listed.entries,
     ...(listed.omitted ? { omittedEntries: listed.omitted } : {}),
@@ -785,8 +1080,8 @@ async function listTreeLevel(
     shown.map(async ({ name, isDir }): Promise<ContentAwarenessTreeEntry> => {
       const path = join(dir, name);
       const entry: ContentAwarenessTreeEntry = isDir
-        ? { name, kind: "directory", markdownFiles: await countMarkdown(path, opts.strict) }
-        : { name, kind: "markdown" };
+        ? { name, placement: "head", kind: "directory", markdownFiles: await countMarkdown(path, opts.strict) }
+        : { name, placement: "head", kind: "markdown" };
       if (withSummaries) {
         const summary = await childSummary(path, isDir, opts.summaryLength);
         if (summary) entry.summary = summary;
@@ -881,7 +1176,12 @@ function renderContract(
   const lines = ["Agent context:"];
   for (const entry of entries) {
     const name = `${entry.name}${levelAnnotation(entry.level, levelBase)}`;
-    lines.push(entry.summary ? `  ${name} — ${entry.summary}` : `  ${name}`);
+    if (entry.representation === "full" && entry.content !== undefined) {
+      lines.push(`  ${name} [full]:`);
+      for (const line of entry.content.trimEnd().split("\n")) lines.push(`    ${line}`);
+    } else {
+      lines.push(entry.summary ? `  ${name} — ${entry.summary}` : `  ${name}`);
+    }
   }
   return lines.join("\n");
 }

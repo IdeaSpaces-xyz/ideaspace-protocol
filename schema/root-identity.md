@@ -4,8 +4,8 @@
 
 ## Declaration
 
-A contract-bearing Space MAY declare `root_node_id` in the YAML frontmatter of its root
-`_agent/foundation.md`:
+A contract-bearing Space MAY declare `root_node_id` in the YAML frontmatter of its selected root
+entrypoint, `_agent/foundation.md` or `_agent/agreement.md`:
 
 ```yaml
 ---
@@ -15,12 +15,14 @@ root_node_id: n_0123456789abcdef01234567
 ---
 ```
 
-The field belongs only to the root foundation handshake. It is not knowledge-Note frontmatter, a
-per-Note identity, a storage primary key, or proof of access. A nested `foundation.md` starts another
-Space and therefore may declare that nested Space's own identity.
+The field belongs only to a root contract entrypoint. It is not knowledge-Note frontmatter, a
+per-Note identity, a storage primary key, or proof of access. A nested Foundation starts another
+Space. Under Agreement loading, the nearest Agreement carrying identity starts another Space while
+an Agreement without identity refines the current one. If both entrypoints at one boundary declare
+identity, they MUST agree.
 
 The field is optional. Its absence is valid for legacy repositories, imported plain Markdown, and
-contract-free folders. A reader MUST NOT fail conformance, create `_agent/foundation.md`, or require a
+contract-free folders. A reader MUST NOT fail conformance, create a contract entrypoint, or require a
 migration merely because identity is absent.
 
 ## Forms
@@ -53,12 +55,23 @@ a cryptographically secure random source.
 
 No lifecycle permits both sides to mint independently and then choose a winner.
 
+## Selectable-entrypoint conflict
+
+Foundation and Agreement are two candidate declarations for one Space identity, not two evidence
+sources for the pure evaluator below. Before evaluating trusted declaration/origin/registry evidence,
+a selectable awareness reader compares valid identities declared by both entrypoints at the same
+boundary. Different values return `contract_invalid` with runtime issue
+`root_node_id_conflict`; repository validation reports `root-node-id-conflict`. No frame choice may
+turn that conflict into a selected identity. The language-neutral case lives in
+[`../conformance/awareness/manifest.json`](../conformance/awareness/manifest.json); the pure evaluator
+continues to receive at most one already-selected `declaration`.
+
 ## Pure evidence evaluation
 
 The protocol does not discover remotes, contact a Keeper, read credentials, or decide which host is
 trusted. A caller MAY supply IDs it has already extracted from these sources:
 
-1. `declaration` — root foundation frontmatter;
+1. `declaration` — the selected root entrypoint frontmatter;
 2. `canonical_origin` — a canonical Keeper origin whose locator carries the root ID;
 3. `local_registry` — the caller's local binding for that checkout.
 
@@ -82,9 +95,9 @@ A valid legacy ID participates exactly like a current ID and retains its origina
 
 Missing identity does not interrupt ordinary reads or Git operations. When a legacy checkout has one
 trusted established ID and no declaration, a tool MAY report `legacy_unstamped` and propose adding
-that exact ID to an existing root foundation. The proposal is one reviewable file change. A tool MUST
-NOT silently write, stage, commit, create an agent contract solely for identity, mint a replacement,
-or request that Keeper rebind the hosted Space.
+that exact ID to the existing selected root entrypoint. The proposal is one reviewable file change.
+A tool MUST NOT silently write, stage, commit, create an agent contract solely for identity, mint a
+replacement, or request that Keeper rebind the hosted Space.
 
 The exact proposal surface is a harness decision. A status read may report the state but remains
 read-only. Absence remains supported until a person accepts and captures the declaration.

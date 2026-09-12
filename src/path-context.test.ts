@@ -141,6 +141,27 @@ describe("renderPosition", () => {
     expect(out.startsWith("Position:")).toBe(true);
   });
 
+  it("renders a selected Agreement root independently of Foundation markers", () => {
+    const c = ctx([level("", { foundation: true }), level("branch", { hasAgent: true })]);
+    expect(
+      renderPosition({
+        pos: "/repo/branch",
+        base: "/repo",
+        repoRoot: "/repo",
+        spaceRoot: "/repo/branch",
+        ctx: c,
+      }),
+    ).toBe(
+      [
+        "Position:",
+        "  repo: /repo",
+        "  cwd: branch",
+        "  space root: branch",
+        "  active _agent: branch",
+      ].join("\n"),
+    );
+  });
+
   it("omits space-root and branch lines when the path carries no _agent/", () => {
     const c = ctx([level(""), level("docs")]);
     expect(renderPosition({ pos: "/repo/docs", base: "/repo", repoRoot: "/repo", ctx: c })).toBe(

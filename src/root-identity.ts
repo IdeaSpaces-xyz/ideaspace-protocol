@@ -1,8 +1,8 @@
 /**
  * Portable root identity primitives.
  *
- * A Space may declare one optional `root_node_id` in its root
- * `_agent/foundation.md`. Current writers mint `n_` plus 24 lowercase
+ * A Space may declare one optional `root_node_id` in its selected root
+ * `_agent/foundation.md` or `_agent/agreement.md`. Current writers mint `n_` plus 24 lowercase
  * hexadecimal characters (96 random bits); readers also accept the legacy
  * 12-character payload. Missing identity is valid progressive enhancement.
  *

@@ -78,7 +78,9 @@ export interface RenderPositionOpts {
   base: string;
   /** The git repo root, or null in a non-git ideaspace (the repo line is then omitted). */
   repoRoot: string | null;
-  /** The walked context for the path — supplies the space-root and branch levels. */
+  /** Selected frame root; when absent, preserve foundation-derived compatibility behavior. */
+  spaceRoot?: string;
+  /** The walked context for the path — supplies branch levels and legacy root projection. */
   ctx: PathContext;
 }
 
@@ -94,13 +96,14 @@ export interface RenderPositionOpts {
  * Takes a named-field options object: `pos` and `base` are both paths and would
  * be easy to transpose positionally, so the fields carry the distinction.
  */
-export function renderPosition({ pos, base, repoRoot, ctx }: RenderPositionOpts): string {
-  const spaceRoot = spaceRootLevel(ctx);
+export function renderPosition({ pos, base, repoRoot, spaceRoot: selectedRoot, ctx }: RenderPositionOpts): string {
+  const legacyRoot = spaceRootLevel(ctx);
   const branch = currentBranchLevel(ctx);
   const lines = ["Position:"];
   if (repoRoot) lines.push(`  repo: ${repoRoot}`);
   lines.push(`  cwd: ${relative(base, pos) || "."}`);
-  if (spaceRoot) lines.push(`  space root: ${spaceRoot.path || "."}`);
+  if (selectedRoot) lines.push(`  space root: ${relative(base, selectedRoot) || "."}`);
+  else if (legacyRoot) lines.push(`  space root: ${legacyRoot.path || "."}`);
   if (branch) lines.push(`  active _agent: ${branch.path || "."}`);
   return lines.join("\n");
 }

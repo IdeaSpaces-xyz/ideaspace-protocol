@@ -57,12 +57,162 @@ function git(args: string[], env?: Record<string, string>): string {
 }
 
 describe("Content awareness manifest", () => {
-  it("returns null when no foundation-marked space resolves", async () => {
-    await writeAgent({ "now.md": "Working without a foundation." });
+  it("orients at the floor when neither contract entrypoint resolves", async () => {
+    await writeAgent({ "now.md": "Working without an entrypoint." });
+    await fs.writeFile(join(tmp, "README.md"), "---\nsummary: Floor content.\n---\n# Floor", "utf-8");
 
+    const result = await assembleContentAwareness({ position: tmp, lastSha: null });
+
+    expect(result).toMatchObject({
+      status: "ok",
+      contractSource: null,
+      contract: [],
+      skills: [],
+      missingDirection: [],
+      tree: { entries: [{ name: "README.md", summary: "Floor content." }] },
+    });
+  });
+
+  it("selects Agreement explicitly, loads it in full, and keeps Foundation outside context", async () => {
+    await writeAgent({
+      "foundation.md": "FOUNDATION BODY SENTINEL",
+      "agreement.md": [
+        "---",
+        "summary: Agreement summary sentinel.",
+        "context:",
+        "  full:",
+        "    - purpose.md",
+        "---",
+        "# Agreement",
+        "",
+        "AGREEMENT BODY SENTINEL",
+      ].join("\n"),
+      "purpose.md": "---\nsummary: Purpose summary.\n---\n\nPURPOSE BODY SENTINEL",
+      "now.md": "---\nsummary: Now summary.\n---\n\nNOW BODY SENTINEL",
+    });
+
+    const unresolved = await assembleContentAwareness({ position: tmp, lastSha: null });
+    expect(unresolved).toEqual({
+      status: "contract_choice_required",
+      kind: "content",
+      availableSources: ["foundation", "agreement"],
+    });
+
+    const agreement = await assembleContentAwareness({
+      position: tmp,
+      contractSource: "agreement",
+      lastSha: null,
+    });
+    expect(agreement).toMatchObject({
+      status: "ok",
+      contractSource: "agreement",
+      now: null,
+      contract: [
+        {
+          name: "agreement",
+          representation: "full",
+          content: expect.stringContaining("AGREEMENT BODY SENTINEL"),
+          placement: "head",
+        },
+        {
+          name: "now",
+          representation: "summary",
+          summary: "Now summary.",
+          placement: "head",
+        },
+        {
+          name: "purpose",
+          representation: "full",
+          content: expect.stringContaining("PURPOSE BODY SENTINEL"),
+          placement: "head",
+        },
+      ],
+    });
+    expect(JSON.stringify(agreement)).not.toContain("FOUNDATION BODY SENTINEL");
+    expect(renderContentAwareness(agreement!)).toContain("AGREEMENT BODY SENTINEL");
+    expect(renderContentAwareness(agreement!)).toContain("PURPOSE BODY SENTINEL");
+    expect(renderContentAwareness(agreement!)).not.toContain("NOW BODY SENTINEL");
+
+    const foundation = await assembleContentAwareness({
+      position: tmp,
+      contractSource: "foundation",
+      lastSha: null,
+    });
+    expect(JSON.stringify(foundation)).not.toContain("AGREEMENT BODY SENTINEL");
+    expect(JSON.stringify(foundation)).not.toContain("Agreement summary sentinel.");
+  });
+
+  it("rejects conflicting root identity through the awareness API", async () => {
+    await writeAgent({
+      "foundation.md": "---\nroot_node_id: n_111111111111111111111111\n---\nFOUNDATION",
+      "agreement.md": "---\nroot_node_id: n_222222222222222222222222\n---\nAGREEMENT",
+    });
+    const result = await assembleContentAwareness({
+      position: tmp,
+      lastSha: null,
+    });
+    expect(result).toMatchObject({
+      status: "contract_invalid",
+      issues: [{ code: "root_node_id_conflict" }],
+    });
+  });
+
+  it("revisions identify the exact Agreement bytes", async () => {
+    await writeAgent({ "agreement.md": "# Agreement\n\nFirst bytes." });
+    const first = await assembleContentAwareness({ position: tmp, lastSha: null });
+    expect(first?.status).toBe("ok");
+    if (!first || first.status !== "ok") return;
+    const revision = first.contract[0]?.revision;
+    expect(revision).toMatch(/^sha256:[0-9a-f]{64}$/);
+
+    await fs.writeFile(join(tmp, "_agent", "agreement.md"), "# Agreement\n\nSecond bytes.", "utf-8");
+    const second = await assembleContentAwareness({ position: tmp, lastSha: null });
+    expect(second?.status).toBe("ok");
+    if (!second || second.status !== "ok") return;
+    expect(second.contract[0]?.revision).not.toBe(revision);
+  });
+
+  it("returns typed unavailable and invalid Agreement diagnostics", async () => {
+    await writeAgent({ "foundation.md": "# Foundation" });
     await expect(
-      assembleContentAwareness({ position: tmp, lastSha: null }),
-    ).resolves.toBeNull();
+      assembleContentAwareness({
+        position: tmp,
+        contractSource: "agreement",
+        lastSha: null,
+      }),
+    ).resolves.toEqual({
+      status: "contract_source_unavailable",
+      kind: "content",
+      availableSources: ["foundation"],
+      requestedSource: "agreement",
+    });
+
+    await fs.writeFile(
+      join(tmp, "_agent", "agreement.md"),
+      "---\ncontext:\n  full:\n    - ../outside.md\n---\n# Agreement",
+      "utf-8",
+    );
+    const invalid = await assembleContentAwareness({
+      position: tmp,
+      contractSource: "agreement",
+      lastSha: null,
+    });
+    expect(invalid).toMatchObject({
+      status: "contract_invalid",
+      requestedSource: "agreement",
+      issues: [{ code: "invalid_full_load_path" }],
+    });
+
+    await fs.rm(join(tmp, "_agent", "foundation.md"));
+    const autoSelectedInvalid = await assembleContentAwareness({
+      position: tmp,
+      lastSha: null,
+    });
+    expect(autoSelectedInvalid).toMatchObject({
+      status: "contract_invalid",
+      issues: [{ code: "invalid_full_load_path" }],
+    });
+    expect(autoSelectedInvalid).not.toHaveProperty("requestedSource");
   });
 
   it("does not promote agent context or extension payload into Content positions", async () => {
@@ -136,32 +286,16 @@ describe("Content awareness manifest", () => {
       missingDirection: [],
     });
 
-    expect(renderContentAwareness(manifest!)).toBe(
-      [
-        "Position:",
-        `  repo: ${canonicalTmp}`,
-        "  cwd: .",
-        "  space root: .",
-        "  active _agent: .",
-        "",
-        "Now: Ship structured awareness.",
-        "",
-        "Tree (2 files):",
-        "  docs/ (1)",
-        "  README.md",
-        "",
-        "Agent context:",
-        "  foundation — Root agreement.",
-        "  guide — Work together directly.",
-        "  purpose — Keep shared understanding coherent.",
-        "  now — Current delivery state.",
-        "",
-        "Operating skills:",
-        "  review — Verify behavior before claiming done.",
-        "",
-        "Git: branch main",
-      ].join("\n"),
-    );
+    const frozenFoundation = (
+      await fs.readFile(
+        new URL("../conformance/awareness/foundation-render.txt", import.meta.url),
+        "utf-8",
+      )
+    ).trimEnd().replaceAll("$ROOT", canonicalTmp);
+    expect(renderContentAwareness(manifest!)).toBe(frozenFoundation);
+    const second = await assembleContentAwareness({ position: tmp, lastSha: null });
+    expect(second?.status).toBe("ok");
+    expect(renderContentAwareness(second!)).toBe(frozenFoundation);
   });
 
   it("renders selected sections in canonical order, not caller order", async () => {
