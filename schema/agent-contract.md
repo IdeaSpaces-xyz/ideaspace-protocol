@@ -158,9 +158,8 @@ A conformant reader or validator:
 5. refuses malformed or unsafe `context.full` declarations without partial loading;
 6. records exact source, representation, revision, and prompt placement;
 7. validates root identity from either entrypoint and reports conflicting declarations;
-8. keeps focus/reference Agreement outside operating authority;
-9. treats every other `_`-prefixed directory as opaque and unknown extensions quietly;
-10. never commits gitignored paths and treats `_agent/schema.md` as guidance, not write validation.
+8. treats every other `_`-prefixed directory as opaque and unknown extensions quietly;
+9. never commits gitignored paths and treats `_agent/schema.md` as guidance, not write validation.
 
 See [`../SPEC.md#conformance`](../SPEC.md#conformance) and the language-neutral awareness vectors in
 [`../conformance/awareness/manifest.json`](../conformance/awareness/manifest.json).

@@ -111,7 +111,8 @@ therefore has a distinct observable revision without pretending repository HEAD 
 These fields are not interchangeable. Prompt placement is not added to portable Map members. It is
 named `placement` because the compatibility field `level` already means filesystem composition
 position. This adapter emits active position context in the head and volatile Git/activity/drift in
-the tail. The later focus adapter emits reference context into history.
+the tail. `history` is reserved for an explicit reference/focus operation; this ambient operation
+does not emit it.
 
 ## Tree behavior
 

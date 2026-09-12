@@ -15,6 +15,7 @@ export type ContentRepresentation = (typeof CONTENT_REPRESENTATIONS)[number];
 export type AgreementIssueCode =
   | "agreement_frontmatter_malformed"
   | "invalid_root_node_id"
+  | "root_node_id_conflict"
   | "invalid_context"
   | "invalid_full_loads"
   | "invalid_full_load_path"

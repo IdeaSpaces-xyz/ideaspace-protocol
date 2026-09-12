@@ -10,6 +10,7 @@
     "floor",
     "declared_full",
     "invalid_declared_full",
+    "root_identity_conflict",
     "unselected_absent",
     "exact_revision",
     "prompt_placement"
@@ -44,6 +45,16 @@
         "_agent/agreement.md": "---\ncontext:\n  full:\n    - ../outside.md\n---\nAGREEMENT_BODY"
       },
       "covers": ["invalid_declared_full"],
+      "expected": { "status": "contract_invalid" }
+    },
+    {
+      "id": "conflicting-entrypoint-identities",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/foundation.md": "---\nroot_node_id: n_111111111111111111111111\n---\nFOUNDATION",
+        "_agent/agreement.md": "---\nroot_node_id: n_222222222222222222222222\n---\nAGREEMENT"
+      },
+      "covers": ["root_identity_conflict"],
       "expected": { "status": "contract_invalid" }
     },
     {

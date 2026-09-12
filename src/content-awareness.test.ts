@@ -142,6 +142,22 @@ describe("Content awareness manifest", () => {
     expect(JSON.stringify(foundation)).not.toContain("Agreement summary sentinel.");
   });
 
+  it("rejects conflicting root identity through the awareness API", async () => {
+    await writeAgent({
+      "foundation.md": "---\nroot_node_id: n_111111111111111111111111\n---\nFOUNDATION",
+      "agreement.md": "---\nroot_node_id: n_222222222222222222222222\n---\nAGREEMENT",
+    });
+    const result = await assembleContentAwareness({
+      position: tmp,
+      contractSource: "agreement",
+      lastSha: null,
+    });
+    expect(result).toMatchObject({
+      status: "contract_invalid",
+      issues: [{ code: "root_node_id_conflict" }],
+    });
+  });
+
   it("revisions identify the exact Agreement bytes", async () => {
     await writeAgent({ "agreement.md": "# Agreement\n\nFirst bytes." });
     const first = await assembleContentAwareness({ position: tmp, lastSha: null });

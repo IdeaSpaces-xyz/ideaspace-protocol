@@ -5,10 +5,11 @@ import type {
   ComposedContract,
   ContractFile,
   ContractLevel,
+  ComposedSpace,
   SpaceContract,
 } from "./space.js";
 import { composeContractAlongPath } from "./space.js";
-import { stripFrontmatter, extractDescription } from "./frontmatter.js";
+import { stripFrontmatter, extractDescription, parseFrontmatter } from "./frontmatter.js";
 import { summarizeMarkdown } from "./markdown-inspection.js";
 import { classifyRepositoryPath } from "./repository-path.js";
 import {
@@ -30,6 +31,7 @@ import {
 } from "./stale-docs.js";
 import { readSeenRef } from "./surface-state.js";
 import { DEFAULT_IGNORED_DIRECTORIES } from "./filesystem.js";
+import { parseRootNodeId } from "./root-identity.js";
 import {
   composeAgreementAlongPath,
   type AgreementIssue,
@@ -347,6 +349,16 @@ export async function assembleContentAwareness(
   }
   contractSource ??= availableSources[0] ?? null;
 
+  const identityConflict = contractIdentityConflict(foundation, agreement);
+  if (identityConflict) {
+    return {
+      status: "contract_invalid",
+      kind: "content",
+      availableSources,
+      ...(contractSource ? { requestedSource: contractSource } : {}),
+      issues: [identityConflict],
+    };
+  }
   if (contractSource === "agreement" && agreement.issues.length) {
     return {
       status: "contract_invalid",
@@ -472,6 +484,30 @@ function renderContentAwarenessDiagnostic(result: ContentAwarenessDiagnostic): s
   return lines.join("\n");
 }
 
+function contractIdentityConflict(
+  foundation: ComposedSpace,
+  agreement: ComposedAgreement,
+): AgreementIssue | null {
+  if (
+    !foundation.spaceRoot ||
+    !agreement.spaceRoot ||
+    foundation.spaceRoot !== agreement.spaceRoot ||
+    !agreement.rootNodeId
+  ) {
+    return null;
+  }
+  const foundationContent = foundation.contract.foundation?.content;
+  if (!foundationContent) return null;
+  const value = parseFrontmatter(foundationContent)?.root_node_id;
+  const parsed = parseRootNodeId(value);
+  if (parsed.status !== "valid" || parsed.rootNodeId === agreement.rootNodeId) return null;
+  return {
+    path: join(foundation.spaceRoot, "_agent"),
+    code: "root_node_id_conflict",
+    detail: "foundation.md and agreement.md declare different root_node_id values",
+  };
+}
+
 function filterPathContextForSource(
   context: PathContext,
   source: ContractSource | null,
@@ -489,12 +525,11 @@ function filterPathContextForSource(
           contract: null,
         };
       }
-      const { foundation: _foundation, ...summaries } = level.contractSummaries;
       return {
         ...level,
         foundation: false,
-        agentFiles: level.agentFiles.filter((name) => name !== "foundation"),
-        contractSummaries: summaries,
+        agentFiles: [],
+        contractSummaries: {},
         contract: null,
       };
     }),
