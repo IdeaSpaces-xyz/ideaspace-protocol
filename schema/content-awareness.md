@@ -74,8 +74,8 @@ context:
 ```
 
 Entries are unique direct Markdown basenames relative to the declaring `_agent/`. Paths may not be
-absolute, nested, traversing, globbed, remote, or entrypoints. Every target must exist as a regular
-file. Any violation returns `contract_invalid` with stable issue codes; no partial Agreement frame is
+absolute, nested, traversing, globbed, remote, entrypoints, directories, or symlinks. Every target
+must exist as a direct regular file checked without following symlinks. Any violation returns `contract_invalid` with stable issue codes; no partial Agreement frame is
 returned.
 
 ## Shape

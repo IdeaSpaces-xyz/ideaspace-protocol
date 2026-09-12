@@ -1,7 +1,9 @@
 {
   "format": "ideaspaces-content-awareness/v1",
+  "foundation_render_fixture": "foundation-vector-render.txt",
   "required_coverage": [
     "foundation_only",
+    "foundation_render",
     "agreement_only",
     "choice_required",
     "explicit_foundation",
@@ -10,6 +12,15 @@
     "floor",
     "declared_full",
     "invalid_declared_full",
+    "invalid_absolute",
+    "invalid_nested",
+    "invalid_traversal",
+    "invalid_glob",
+    "invalid_remote",
+    "invalid_entrypoint",
+    "invalid_directory",
+    "invalid_symlink",
+    "invalid_missing",
     "root_identity_conflict",
     "unselected_absent",
     "exact_revision",
@@ -20,10 +31,15 @@
       "id": "foundation-only",
       "files": {
         "_agent/foundation.md": "---\nsummary: Foundation summary.\n---\nFOUNDATION_BODY",
+        "_agent/purpose.md": "---\nsummary: Purpose summary.\n---\nPurpose body.",
         "_agent/now.md": "---\nsummary: Now summary.\n---\nCurrent work."
       },
-      "covers": ["foundation_only", "exact_revision", "prompt_placement"],
-      "expected": { "status": "ok", "contract_source": "foundation" }
+      "covers": ["foundation_only", "foundation_render", "exact_revision", "prompt_placement"],
+      "expected": {
+        "status": "ok",
+        "contract_source": "foundation",
+        "render_fixture": "foundation-vector-render.txt"
+      }
     },
     {
       "id": "agreement-only-with-declared-full",
@@ -39,13 +55,89 @@
       }
     },
     {
-      "id": "invalid-declared-full",
+      "id": "invalid-full-traversal",
       "contract_source": "agreement",
       "files": {
-        "_agent/agreement.md": "---\ncontext:\n  full:\n    - ../outside.md\n---\nAGREEMENT_BODY"
+        "_agent/agreement.md": "---\ncontext:\n  full: [../outside.md]\n---\nAGREEMENT_BODY"
       },
-      "covers": ["invalid_declared_full"],
-      "expected": { "status": "contract_invalid" }
+      "covers": ["invalid_declared_full", "invalid_traversal"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["invalid_full_load_path"] }
+    },
+    {
+      "id": "invalid-full-absolute",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: [/outside.md]\n---\nAGREEMENT_BODY"
+      },
+      "covers": ["invalid_absolute"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["invalid_full_load_path"] }
+    },
+    {
+      "id": "invalid-full-nested",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: [skills/review.md]\n---\nAGREEMENT_BODY"
+      },
+      "covers": ["invalid_nested"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["invalid_full_load_path"] }
+    },
+    {
+      "id": "invalid-full-glob",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: ['*.md']\n---\nAGREEMENT_BODY"
+      },
+      "covers": ["invalid_glob"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["invalid_full_load_path"] }
+    },
+    {
+      "id": "invalid-full-remote",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: ['mailto:x.md']\n---\nAGREEMENT_BODY"
+      },
+      "covers": ["invalid_remote"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["invalid_full_load_path"] }
+    },
+    {
+      "id": "invalid-full-entrypoint",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: [foundation.md]\n---\nAGREEMENT_BODY",
+        "_agent/foundation.md": "FOUNDATION_BODY"
+      },
+      "covers": ["invalid_entrypoint"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["invalid_full_load_path"] }
+    },
+    {
+      "id": "invalid-full-directory",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: [directory.md]\n---\nAGREEMENT_BODY"
+      },
+      "directories": ["_agent/directory.md"],
+      "covers": ["invalid_directory"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["missing_full_load"] }
+    },
+    {
+      "id": "invalid-full-symlink",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: [linked.md]\n---\nAGREEMENT_BODY",
+        "target.md": "TARGET_BODY"
+      },
+      "symlinks": { "_agent/linked.md": "../target.md" },
+      "covers": ["invalid_symlink"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["missing_full_load"] }
+    },
+    {
+      "id": "invalid-full-missing",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: [missing.md]\n---\nAGREEMENT_BODY"
+      },
+      "covers": ["invalid_missing"],
+      "expected": { "status": "contract_invalid", "issue_codes": ["missing_full_load"] }
     },
     {
       "id": "conflicting-entrypoint-identities",
@@ -54,7 +146,7 @@
         "_agent/agreement.md": "---\nroot_node_id: n_222222222222222222222222\n---\nAGREEMENT"
       },
       "covers": ["root_identity_conflict"],
-      "expected": { "status": "contract_invalid" }
+      "expected": { "status": "contract_invalid", "issue_codes": ["root_node_id_conflict"] }
     },
     {
       "id": "both-require-choice",

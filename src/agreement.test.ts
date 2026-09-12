@@ -108,6 +108,7 @@ describe("composeAgreementAlongPath", () => {
         "    - ../secret.md",
         "    - /absolute.md",
         "    - https://example.com/context.md",
+        "    - 'mailto:x.md'",
         "    - skills/review.md",
         "    - '*.md'",
         "    - agreement.md",
@@ -121,6 +122,7 @@ describe("composeAgreementAlongPath", () => {
 
     expect(composed.issues.map((issue) => issue.code)).toEqual([
       "duplicate_full_load",
+      "invalid_full_load_path",
       "invalid_full_load_path",
       "invalid_full_load_path",
       "invalid_full_load_path",

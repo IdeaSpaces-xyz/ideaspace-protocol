@@ -55,6 +55,17 @@ a cryptographically secure random source.
 
 No lifecycle permits both sides to mint independently and then choose a winner.
 
+## Selectable-entrypoint conflict
+
+Foundation and Agreement are two candidate declarations for one Space identity, not two evidence
+sources for the pure evaluator below. Before evaluating trusted declaration/origin/registry evidence,
+a selectable awareness reader compares valid identities declared by both entrypoints at the same
+boundary. Different values return `contract_invalid` with runtime issue
+`root_node_id_conflict`; repository validation reports `root-node-id-conflict`. No frame choice may
+turn that conflict into a selected identity. The language-neutral case lives in
+[`../conformance/awareness/manifest.json`](../conformance/awareness/manifest.json); the pure evaluator
+continues to receive at most one already-selected `declaration`.
+
 ## Pure evidence evaluation
 
 The protocol does not discover remotes, contact a Keeper, read credentials, or decide which host is

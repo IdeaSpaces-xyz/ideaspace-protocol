@@ -328,6 +328,7 @@ function isDirectMarkdownBasename(value: string): boolean {
     value === basename(value) &&
     !value.includes("/") &&
     !value.includes("\\") &&
+    !value.includes(":") &&
     !/[*!?\[\]{}]/.test(value) &&
     value !== ".md" &&
     value !== "..md"

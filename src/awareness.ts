@@ -364,7 +364,7 @@ export async function assembleContentAwareness(
       status: "contract_invalid",
       kind: "content",
       availableSources,
-      requestedSource: "agreement",
+      ...(opts.contractSource ? { requestedSource: opts.contractSource } : {}),
       issues: agreement.issues,
     };
   }

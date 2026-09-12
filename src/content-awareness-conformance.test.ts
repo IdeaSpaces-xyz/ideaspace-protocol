@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import {
   assembleContentAwareness,
+  renderContentAwareness,
   type AssembleContentAwarenessOpts,
   type ContentAwarenessManifest,
 } from "./awareness.js";
@@ -14,12 +15,16 @@ interface Vector {
   id: string;
   contract_source?: "foundation" | "agreement";
   files: Record<string, string>;
+  directories?: string[];
+  symlinks?: Record<string, string>;
   covers: string[];
   expected: {
     status: string;
     contract_source?: "foundation" | "agreement" | null;
     representations?: string[];
     excluded?: string;
+    issue_codes?: string[];
+    render_fixture?: string;
   };
 }
 
@@ -37,13 +42,21 @@ afterEach(async () => {
   await Promise.all(made.splice(0).map((path) => fs.rm(path, { recursive: true, force: true })));
 });
 
-async function materialize(files: Record<string, string>): Promise<string> {
+async function materialize(vector: Vector): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "awareness-vector-"));
   made.push(root);
-  for (const [path, content] of Object.entries(files)) {
+  for (const [path, content] of Object.entries(vector.files)) {
     const absolute = join(root, path);
     await fs.mkdir(join(absolute, ".."), { recursive: true });
     await fs.writeFile(absolute, content, "utf-8");
+  }
+  for (const path of vector.directories ?? []) {
+    await fs.mkdir(join(root, path), { recursive: true });
+  }
+  for (const [path, target] of Object.entries(vector.symlinks ?? {})) {
+    const absolute = join(root, path);
+    await fs.mkdir(join(absolute, ".."), { recursive: true });
+    await fs.symlink(target, absolute);
   }
   return fs.realpath(root);
 }
@@ -57,7 +70,7 @@ describe("Content awareness conformance manifest", () => {
 
   for (const vector of kit.vectors) {
     it(vector.id, async () => {
-      const root = await materialize(vector.files);
+      const root = await materialize(vector);
       const opts: AssembleContentAwarenessOpts = {
         position: root,
         lastSha: null,
@@ -65,7 +78,14 @@ describe("Content awareness conformance manifest", () => {
       };
       const result = await assembleContentAwareness(opts);
       expect(result?.status).toBe(vector.expected.status);
-      if (!result || result.status !== "ok") return;
+      if (!result || result.status !== "ok") {
+        if (result?.status === "contract_invalid" && vector.expected.issue_codes) {
+          expect(result.issues?.map((issue) => issue.code)).toEqual(
+            vector.expected.issue_codes,
+          );
+        }
+        return;
+      }
 
       expect(result.contractSource).toBe(vector.expected.contract_source);
       if (vector.expected.representations) {
@@ -75,6 +95,15 @@ describe("Content awareness conformance manifest", () => {
       }
       if (vector.expected.excluded) {
         expect(JSON.stringify(result)).not.toContain(vector.expected.excluded);
+      }
+      if (vector.expected.render_fixture) {
+        const expected = (
+          await fs.readFile(
+            join(manifestPath, "..", vector.expected.render_fixture),
+            "utf-8",
+          )
+        ).trimEnd();
+        expect(renderContentAwareness(result)).toBe(expected);
       }
       expectExactRevisionsAndPlacements(result);
     });

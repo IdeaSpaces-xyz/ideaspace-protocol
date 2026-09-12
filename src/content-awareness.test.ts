@@ -202,6 +202,17 @@ describe("Content awareness manifest", () => {
       requestedSource: "agreement",
       issues: [{ code: "invalid_full_load_path" }],
     });
+
+    await fs.rm(join(tmp, "_agent", "foundation.md"));
+    const autoSelectedInvalid = await assembleContentAwareness({
+      position: tmp,
+      lastSha: null,
+    });
+    expect(autoSelectedInvalid).toMatchObject({
+      status: "contract_invalid",
+      issues: [{ code: "invalid_full_load_path" }],
+    });
+    expect(autoSelectedInvalid).not.toHaveProperty("requestedSource");
   });
 
   it("does not promote agent context or extension payload into Content positions", async () => {

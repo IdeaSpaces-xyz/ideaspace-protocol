@@ -82,7 +82,8 @@ context:
 
 `context.full` MUST be an array of unique direct Markdown basenames relative to that Agreement's
 `_agent/`. Absolute paths, traversal, nested paths, directories, globs, URLs, `agreement.md`, and
-`foundation.md` are invalid. Every declared file MUST exist as a regular file. Invalid declarations
+`foundation.md`, directories, and symlinks are invalid. Every declared file MUST exist as a direct
+regular file checked without following symlinks. Invalid declarations
 fail Agreement assembly as `contract_invalid`; readers MUST NOT return a partial frame.
 
 The nearest Agreement carrying a valid `root_node_id` starts a Space. Otherwise the Git repository
@@ -108,8 +109,9 @@ head; a later focus read belongs to history.
 
 Either root entrypoint MAY carry optional `root_node_id` frontmatter. Missing identity remains valid.
 A declared value MUST use the current or legacy form in [`root-identity.md`](root-identity.md). If
-Foundation and Agreement at the same boundary declare different identities, validation returns
-`root-node-id-conflict`; frame selection never changes one repository's identity silently.
+Foundation and Agreement at the same boundary declare different identities, awareness returns
+`contract_invalid` with runtime issue `root_node_id_conflict`; `validateSpace` reports its separate
+`root-node-id-conflict` rule. Frame selection never changes one repository's identity silently.
 
 ## Skills and optional context
 

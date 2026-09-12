@@ -17,6 +17,7 @@ const expected = [
   "VERSION",
   "conformance/assets/manifest.json",
   "conformance/awareness/foundation-render.txt",
+  "conformance/awareness/foundation-vector-render.txt",
   "conformance/awareness/manifest.json",
   "conformance/extensions/manifest.json",
   "conformance/local-effects/manifest.json",
