@@ -32,7 +32,12 @@
     "focus_depth_one",
     "focus_agreement_full",
     "focus_agent_summary",
-    "focus_deterministic"
+    "focus_deterministic",
+    "focus_foundation",
+    "focus_floor",
+    "focus_choice_required",
+    "focus_source_unavailable",
+    "focus_contract_invalid"
   ],
   "vectors": [
     {
@@ -232,11 +237,78 @@
       ],
       "expected": {
         "status": "ok",
+        "kind": "content-focus",
         "contract_source": "agreement",
         "contract_role": "reference",
         "representations": ["full", "summary"],
         "excluded": "PURPOSE_BODY",
         "render_fixture": "focus-render.txt"
+      }
+    },
+    {
+      "id": "foundation-reference",
+      "files": {
+        "_agent/foundation.md": "FOUNDATION_BODY",
+        "_agent/purpose.md": "---\nsummary: Foundation purpose.\n---\nPURPOSE_BODY"
+      },
+      "covers": ["focus_foundation", "focus_reference", "focus_history"],
+      "expected": {
+        "status": "ok",
+        "kind": "content-focus",
+        "contract_source": "foundation",
+        "contract_role": "reference",
+        "representations": ["summary", "summary"]
+      }
+    },
+    {
+      "id": "floor-reference",
+      "files": {
+        "README.md": "---\nsummary: Floor target.\n---\n# Floor"
+      },
+      "covers": ["focus_floor", "focus_reference", "focus_history"],
+      "expected": {
+        "status": "ok",
+        "kind": "content-focus",
+        "contract_source": null,
+        "contract_role": "reference",
+        "contract_count": 0,
+        "skill_count": 0
+      }
+    },
+    {
+      "id": "focus-choice-required",
+      "files": {
+        "_agent/foundation.md": "FOUNDATION_BODY",
+        "_agent/agreement.md": "AGREEMENT_BODY"
+      },
+      "covers": ["focus_choice_required"],
+      "expected": {
+        "status": "contract_choice_required",
+        "kind": "content-focus"
+      }
+    },
+    {
+      "id": "focus-source-unavailable",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/foundation.md": "FOUNDATION_BODY"
+      },
+      "covers": ["focus_source_unavailable"],
+      "expected": {
+        "status": "contract_source_unavailable",
+        "kind": "content-focus"
+      }
+    },
+    {
+      "id": "focus-contract-invalid",
+      "files": {
+        "_agent/agreement.md": "---\ncontext:\n  full: [../outside.md]\n---\nAGREEMENT_BODY"
+      },
+      "covers": ["focus_contract_invalid"],
+      "expected": {
+        "status": "contract_invalid",
+        "kind": "content-focus",
+        "issue_codes": ["invalid_full_load_path"]
       }
     }
   ]

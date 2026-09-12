@@ -38,10 +38,14 @@ interface Vector extends VectorFiles {
 interface FocusVector extends VectorFiles {
   expected: {
     status: string;
+    kind?: "content-focus";
     contract_source?: "foundation" | "agreement" | null;
     contract_role?: "reference";
     representations?: string[];
     excluded?: string;
+    issue_codes?: string[];
+    contract_count?: number;
+    skill_count?: number;
     render_fixture?: string;
   };
 }
@@ -141,7 +145,15 @@ describe("Content awareness conformance manifest", () => {
         ...(vector.contract_source ? { contractSource: vector.contract_source } : {}),
       });
       expect(result?.status).toBe(vector.expected.status);
-      if (!result || result.status !== "ok") return;
+      expect(result?.kind).toBe(vector.expected.kind);
+      if (!result || result.status !== "ok") {
+        if (result?.status === "contract_invalid" && vector.expected.issue_codes) {
+          expect(result.issues?.map((issue) => issue.code)).toEqual(
+            vector.expected.issue_codes,
+          );
+        }
+        return;
+      }
 
       expect(result.contractSource).toBe(vector.expected.contract_source);
       expect(result.contractRole).toBe(vector.expected.contract_role);
@@ -152,6 +164,12 @@ describe("Content awareness conformance manifest", () => {
       }
       if (vector.expected.excluded) {
         expect(JSON.stringify(result)).not.toContain(vector.expected.excluded);
+      }
+      if (vector.expected.contract_count !== undefined) {
+        expect(result.contract).toHaveLength(vector.expected.contract_count);
+      }
+      if (vector.expected.skill_count !== undefined) {
+        expect(result.skills).toHaveLength(vector.expected.skill_count);
       }
       expectFocusPlacements(result);
       if (vector.expected.render_fixture) {

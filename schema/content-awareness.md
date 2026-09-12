@@ -56,6 +56,8 @@ The result contains only:
 
 | Field | Meaning |
 |---|---|
+| `kind` | Constant `content-focus`. |
+| `contractRole` | Constant `reference`; the target contract never joins caller authority. |
 | `contractSource` | The target's selected `foundation`, `agreement`, or floor source. It does not select caller authority. |
 | `spaceRoot` | The root resolved inside the target frame. |
 | `position` | The canonical target and its path context, at history placement. |

@@ -134,6 +134,41 @@ describe("Content focus", () => {
     expect(renderContentFocus(repeated!)).toBe(renderedFocus);
   });
 
+  it("keeps Foundation compatibility and supports a contract-free floor", async () => {
+    const foundation = join(tmp, "foundation");
+    const floor = join(tmp, "floor");
+    await writeAgent(foundation, {
+      "foundation.md": "FOUNDATION BODY",
+      "purpose.md": "---\nsummary: Foundation purpose.\n---\nPURPOSE BODY",
+    });
+    await fs.mkdir(floor, { recursive: true });
+    await fs.writeFile(join(floor, "README.md"), "# Floor", "utf-8");
+
+    const foundationFocus = await assembleContentFocus({ position: foundation });
+    expect(foundationFocus).toMatchObject({
+      status: "ok",
+      kind: "content-focus",
+      contractRole: "reference",
+      contractSource: "foundation",
+      contract: [
+        { name: "foundation", representation: "summary", placement: "history" },
+        { name: "purpose", representation: "summary", placement: "history" },
+      ],
+    });
+
+    const floorFocus = await assembleContentFocus({ position: floor });
+    expect(floorFocus).toMatchObject({
+      status: "ok",
+      kind: "content-focus",
+      contractRole: "reference",
+      contractSource: null,
+      contract: [],
+      skills: [],
+      position: { placement: "history" },
+      tree: { placement: "history" },
+    });
+  });
+
   it("preserves neutral frame selection and renders its diagnostics", async () => {
     await writeAgent(tmp, {
       "foundation.md": "FOUNDATION SENTINEL",
