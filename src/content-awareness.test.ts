@@ -149,7 +149,6 @@ describe("Content awareness manifest", () => {
     });
     const result = await assembleContentAwareness({
       position: tmp,
-      contractSource: "agreement",
       lastSha: null,
     });
     expect(result).toMatchObject({

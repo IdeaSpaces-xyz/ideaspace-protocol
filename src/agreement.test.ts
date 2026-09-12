@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { promises as fs } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { join } from "node:path";
@@ -8,6 +8,7 @@ import { composeAgreementAlongPath } from "./agreement.js";
 const made: string[] = [];
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await Promise.all(made.splice(0).map((path) => fs.rm(path, { recursive: true, force: true })));
 });
 
@@ -141,6 +142,54 @@ describe("composeAgreementAlongPath", () => {
     const composed = await composeAgreementAlongPath(root, root);
     expect(composed.issues.map((issue) => issue.code)).toContain(code);
   });
+
+  it("fails the frame if _agent disappears after Agreement bytes are read", async () => {
+    const root = await fixture({ "_agent/agreement.md": "# Agreement" });
+    const original = fs.readdir.bind(fs);
+    vi.spyOn(fs, "readdir").mockImplementation((async (...args: Parameters<typeof fs.readdir>) => {
+      if (String(args[0]) === join(root, "_agent")) {
+        throw new Error("simulated directory race");
+      }
+      return original(...args);
+    }) as typeof fs.readdir);
+
+    const composed = await composeAgreementAlongPath(root, root);
+    expect(composed.agreements).toHaveLength(1);
+    expect(composed.issues).toMatchObject([
+      { code: "agent_context_unreadable", detail: "simulated directory race" },
+    ]);
+  });
+
+  it("fails the frame if a declared full load disappears after listing", async () => {
+    const root = await fixture({
+      "_agent/agreement.md": "---\ncontext:\n  full:\n    - purpose.md\n---\n# Agreement",
+      "_agent/purpose.md": "# Purpose",
+    });
+    const original = fs.lstat.bind(fs);
+    vi.spyOn(fs, "lstat").mockImplementation((async (...args: Parameters<typeof fs.lstat>) => {
+      if (String(args[0]) === join(root, "_agent", "purpose.md")) {
+        throw new Error("simulated file race");
+      }
+      return original(...args);
+    }) as typeof fs.lstat);
+
+    const composed = await composeAgreementAlongPath(root, root);
+    expect(composed.issues).toMatchObject([
+      { code: "missing_full_load", detail: expect.stringContaining("became unavailable") },
+    ]);
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "does not follow an _agent directory symlink", async () => {
+      const root = await fixture({ "note.md": "# Note" });
+      const outside = await fixture({ "_agent/agreement.md": "# Outside Agreement" });
+      await fs.symlink(join(outside, "_agent"), join(root, "_agent"), "dir");
+
+      const composed = await composeAgreementAlongPath(root, root);
+      expect(composed.spaceRoot).toBeNull();
+      expect(composed.agreements).toEqual([]);
+    },
+  );
 
   it.skipIf(process.platform === "win32")(
     "refuses directory and symlink full-load targets as unavailable regular files",

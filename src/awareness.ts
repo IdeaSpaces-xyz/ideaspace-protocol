@@ -344,11 +344,6 @@ export async function assembleContentAwareness(
       requestedSource: contractSource,
     };
   }
-  if (!contractSource && availableSources.length > 1) {
-    return { status: "contract_choice_required", kind: "content", availableSources };
-  }
-  contractSource ??= availableSources[0] ?? null;
-
   const identityConflict = contractIdentityConflict(foundation, agreement);
   if (identityConflict) {
     return {
@@ -359,6 +354,11 @@ export async function assembleContentAwareness(
       issues: [identityConflict],
     };
   }
+  if (!contractSource && availableSources.length > 1) {
+    return { status: "contract_choice_required", kind: "content", availableSources };
+  }
+  contractSource ??= availableSources[0] ?? null;
+
   if (contractSource === "agreement" && agreement.issues.length) {
     return {
       status: "contract_invalid",
@@ -515,24 +515,13 @@ function filterPathContextForSource(
   if (source === "foundation") return context;
   return {
     ...context,
-    levels: context.levels.map((level) => {
-      if (source === null) {
-        return {
-          ...level,
-          foundation: false,
-          agentFiles: [],
-          contractSummaries: {},
-          contract: null,
-        };
-      }
-      return {
-        ...level,
-        foundation: false,
-        agentFiles: [],
-        contractSummaries: {},
-        contract: null,
-      };
-    }),
+    levels: context.levels.map((level) => ({
+      ...level,
+      foundation: false,
+      agentFiles: [],
+      contractSummaries: {},
+      contract: null,
+    })),
   };
 }
 

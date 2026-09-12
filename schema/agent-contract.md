@@ -161,5 +161,9 @@ A conformant reader or validator:
 8. treats every other `_`-prefixed directory as opaque and unknown extensions quietly;
 9. never commits gitignored paths and treats `_agent/schema.md` as guidance, not write validation.
 
+Runtime Agreement diagnostics use snake-case issue codes such as `root_node_id_conflict`. The
+repository validator exposes its existing hyphenated rule vocabulary, including
+`root-node-id-conflict`; these are separate result surfaces, not interchangeable identifiers.
+
 See [`../SPEC.md#conformance`](../SPEC.md#conformance) and the language-neutral awareness vectors in
 [`../conformance/awareness/manifest.json`](../conformance/awareness/manifest.json).

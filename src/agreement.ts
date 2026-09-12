@@ -16,6 +16,7 @@ export type AgreementIssueCode =
   | "agreement_frontmatter_malformed"
   | "invalid_root_node_id"
   | "root_node_id_conflict"
+  | "agent_context_unreadable"
   | "invalid_context"
   | "invalid_full_loads"
   | "invalid_full_load_path"
@@ -272,7 +273,12 @@ async function readLevelFiles(
   let entries: Array<{ name: string; isFile: () => boolean }>;
   try {
     entries = await fs.readdir(level.agentDir, { withFileTypes: true });
-  } catch {
+  } catch (error) {
+    issues.push({
+      path: level.agentDir,
+      code: "agent_context_unreadable",
+      detail: error instanceof Error ? error.message : String(error),
+    });
     return files;
   }
 
@@ -294,7 +300,16 @@ async function readLevelFiles(
   for (const name of regularMarkdown) {
     if (name === "agreement.md" || name === "foundation.md") continue;
     const content = await readRegularFile(join(level.agentDir, name));
-    if (content === null) continue;
+    if (content === null) {
+      if (level.fullLoads.includes(name)) {
+        issues.push({
+          path: join(level.agentDir, name),
+          code: "missing_full_load",
+          detail: `declared full load became unavailable while reading: ${name}`,
+        });
+      }
+      continue;
+    }
     files.push({
       name: basename(name, ".md"),
       path: join(level.agentDir, name),
@@ -330,7 +345,7 @@ function isWithin(root: string, path: string): boolean {
 
 async function isDirectory(path: string): Promise<boolean> {
   try {
-    return (await fs.stat(path)).isDirectory();
+    return (await fs.lstat(path)).isDirectory();
   } catch {
     return false;
   }
