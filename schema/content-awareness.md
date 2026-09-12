@@ -45,6 +45,32 @@ Assembly starts from a canonical directory position:
 All operations are local reads. Assembly does not update the seen ref, persist frame selection,
 mutate the working tree, or contact a remote.
 
+## Focus result
+
+`assembleContentFocus` reads another position without moving the caller or changing its authority
+frame. It uses the same entrypoint selection and diagnostics as ambient assembly. A successful result
+has `kind: content-focus` and fixed `contractRole: reference`: focus agreements are read, never
+composed.
+
+The result contains only:
+
+| Field | Meaning |
+|---|---|
+| `kind` | Constant `content-focus`. |
+| `contractRole` | Constant `reference`; the target contract never joins caller authority. |
+| `contractSource` | The target's selected `foundation`, `agreement`, or floor source. It does not select caller authority. |
+| `spaceRoot` | The root resolved inside the target frame. |
+| `position` | The canonical target and its path context, at history placement. |
+| `tree` | The target's Content handles at exactly depth one, at history placement. |
+| `contract` | Target agent context at its selected representations, all at history placement. |
+| `skills` | Target skill handles at summary representation and history placement. |
+
+Agreement targets preserve full Agreement loading and safe `context.full` declarations. Foundation
+targets preserve the frozen summary representation; floor targets carry no contract or skills. The
+focus result never includes activity, Git state, stale-document signals, direction warnings, or a
+caller contract stack. `renderContentFocus` emits the canonical block beginning with `Focus:` and the
+reference rule. Repeated reads of unchanged target bytes render identically.
+
 ## Foundation frame
 
 Foundation preserves the existing five-file stack and canonical rendering. `foundation.md` scopes;

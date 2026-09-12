@@ -102,6 +102,17 @@ export interface AssembleContentAwarenessOpts {
   treeMaxEntries?: number;
 }
 
+export interface AssembleContentFocusOpts {
+  /** Absolute or cwd-relative target directory to read as reference context. */
+  position: string;
+  /** Explicit target frame. Required when both entrypoints resolve. */
+  contractSource?: ContractSource;
+  /** Cap on per-summary length for target contract and skill entries. Default: 200 characters. */
+  summaryExcerptLength?: number;
+  /** Soft display cap for the target's depth-one Content tree. Default: 50. */
+  treeMaxEntries?: number;
+}
+
 export const CONTENT_AWARENESS_SECTIONS = [
   "position",
   "now",
@@ -251,12 +262,71 @@ export interface ContentAwarenessDiagnostic {
 
 export type ContentAwarenessResult = ContentAwarenessManifest | ContentAwarenessDiagnostic;
 
+export type ContentFocusPosition = Omit<ContentAwarenessPosition, "placement"> & {
+  placement: "history";
+};
+
+export interface ContentFocusTreeEntry
+  extends Omit<ContentAwarenessTreeEntry, "placement" | "children"> {
+  placement: "history";
+  children?: ContentFocusTreeEntry[];
+}
+
+export interface ContentFocusTree
+  extends Omit<ContentAwarenessTree, "placement" | "entries"> {
+  placement: "history";
+  entries: ContentFocusTreeEntry[];
+}
+
+export type ContentFocusContractEntry = Omit<ContentAwarenessContractEntry, "placement"> & {
+  placement: "history";
+};
+
+export type ContentFocusSkill = Omit<ContentAwarenessSkill, "placement"> & {
+  placement: "history";
+};
+
+/**
+ * One bounded read of another Content position.
+ *
+ * `contractRole` is fixed: target agent context is evidence about that target,
+ * never an addition to the caller's composed authority frame.
+ */
+export interface ContentFocusManifest {
+  status: "ok";
+  kind: "content-focus";
+  contractRole: "reference";
+  contractSource: ContractSource | null;
+  spaceRoot: string;
+  position: ContentFocusPosition;
+  tree: ContentFocusTree | null;
+  contract: ContentFocusContractEntry[];
+  skills: ContentFocusSkill[];
+}
+
+export interface ContentFocusDiagnostic
+  extends Omit<ContentAwarenessDiagnostic, "kind"> {
+  kind: "content-focus";
+}
+
+export type ContentFocusResult = ContentFocusManifest | ContentFocusDiagnostic;
+
 interface AwarenessSections {
   now: ContentAwarenessNow | null;
   tree: ContentAwarenessTree | null;
   contract: ContentAwarenessContractEntry[];
   skills: ContentAwarenessSkill[];
   activity: ContentAwarenessActivity | null;
+}
+
+interface SelectedContentFrame {
+  position: string;
+  repoRoot: string | null;
+  foundation: ComposedSpace;
+  agreement: ComposedAgreement;
+  contractSource: ContractSource | null;
+  spaceRoot: string;
+  base: string;
 }
 
 const SKIP_DIRS: ReadonlySet<string> = new Set(DEFAULT_IGNORED_DIRECTORIES);
@@ -314,75 +384,17 @@ export async function assembleContentTree(
 export async function assembleContentAwareness(
   opts: AssembleContentAwarenessOpts,
 ): Promise<ContentAwarenessResult | null> {
-  const requestedPosition = resolve(opts.position);
-  const position = await fs.realpath(requestedPosition).catch(() => requestedPosition);
-  const repoRoot = await resolveRepoRoot(position);
-  if (repoRoot) {
-    const repositoryPath = relative(repoRoot, position).split(sep).join("/");
-    if (repositoryPath) {
-      const classification = classifyRepositoryPath(repositoryPath, "directory");
-      if (classification.status !== "ok" || classification.role !== "ordinary") return null;
-    }
-  } else if (hasOpaqueFilesystemAncestor(position)) {
-    return null;
-  }
-
-  const [foundation, agreement] = await Promise.all([
-    composeContractAlongPath(position),
-    composeAgreementAlongPath(position, repoRoot),
-  ]);
-  const availableSources: ContractSource[] = [];
-  if (foundation.spaceRoot) availableSources.push("foundation");
-  if (agreement.agreements.length) availableSources.push("agreement");
-
-  let contractSource: ContractSource | null = opts.contractSource ?? null;
-  if (contractSource && !availableSources.includes(contractSource)) {
-    return {
-      status: "contract_source_unavailable",
-      kind: "content",
-      availableSources,
-      requestedSource: contractSource,
-    };
-  }
-  const identityConflict = contractIdentityConflict(foundation, agreement);
-  if (identityConflict) {
-    return {
-      status: "contract_invalid",
-      kind: "content",
-      availableSources,
-      ...(contractSource ? { requestedSource: contractSource } : {}),
-      issues: [identityConflict],
-    };
-  }
-  if (!contractSource && availableSources.length > 1) {
-    return { status: "contract_choice_required", kind: "content", availableSources };
-  }
-  contractSource ??= availableSources[0] ?? null;
-
-  if (contractSource === "agreement" && agreement.issues.length) {
-    return {
-      status: "contract_invalid",
-      kind: "content",
-      availableSources,
-      ...(opts.contractSource ? { requestedSource: opts.contractSource } : {}),
-      issues: agreement.issues,
-    };
-  }
-
-  const spaceRoot = contractSource === "foundation"
-    ? foundation.spaceRoot!
-    : contractSource === "agreement"
-      ? agreement.spaceRoot!
-      : repoRoot ?? position;
-  if (!repoRoot && contractSource) {
-    const spacePath = relative(spaceRoot, position).split(sep).join("/");
-    if (spacePath) {
-      const classification = classifyRepositoryPath(spacePath, "directory");
-      if (classification.status !== "ok" || classification.role !== "ordinary") return null;
-    }
-  }
-
-  const base = repoRoot ?? spaceRoot;
+  const selected = await selectContentFrame(opts.position, opts.contractSource);
+  if (!selected || "status" in selected) return selected;
+  const {
+    position,
+    repoRoot,
+    foundation,
+    agreement,
+    contractSource,
+    spaceRoot,
+    base,
+  } = selected;
   const lastShaPromise: Promise<string | undefined> =
     opts.lastSha === undefined
       ? repoRoot
@@ -458,6 +470,77 @@ export async function assembleContentAwareness(
   };
 }
 
+/**
+ * Read one target as bounded reference context without accepting, returning,
+ * or mutating a caller contract stack.
+ *
+ * Selection and validation match ambient Content awareness, but the result is
+ * deliberately smaller: target position, depth-one tree, agent context, and
+ * skills. Every returned awareness item belongs in prompt history. A selected
+ * Agreement still loads in full; it is read as reference, never composed.
+ */
+export async function assembleContentFocus(
+  opts: AssembleContentFocusOpts,
+): Promise<ContentFocusResult | null> {
+  const selected = await selectContentFrame(opts.position, opts.contractSource);
+  if (!selected) return null;
+  if ("status" in selected) return { ...selected, kind: "content-focus" };
+  const {
+    position,
+    repoRoot,
+    foundation,
+    agreement,
+    contractSource,
+    spaceRoot,
+    base,
+  } = selected;
+  const summaryExcerptLength = opts.summaryExcerptLength ?? 200;
+  const common: ReadAwarenessCommonOpts = {
+    root: position,
+    activityRoot: base,
+    summaryExcerptLength,
+    tree: {
+      depth: 1,
+      maxEntries: opts.treeMaxEntries ?? 50,
+      summaries: true,
+      summaryLength: summaryExcerptLength,
+      strict: false,
+    },
+  };
+  const [context, sections] = await Promise.all([
+    walkPathContext(base, position).then((value) =>
+      filterPathContextForSource(value, contractSource),
+    ),
+    contractSource === "foundation"
+      ? readAwarenessSections({
+          ...common,
+          contract: foundation.contract,
+          stack: foundation.stack,
+        })
+      : contractSource === "agreement"
+        ? readAgreementAwarenessSections({ ...common, agreement })
+        : readFloorAwarenessSections(common),
+  ]);
+
+  return {
+    status: "ok",
+    kind: "content-focus",
+    contractRole: "reference",
+    contractSource,
+    spaceRoot,
+    position: {
+      placement: "history",
+      path: position,
+      base,
+      repoRoot,
+      context,
+    },
+    tree: sections.tree ? toFocusTree(sections.tree) : null,
+    contract: sections.contract.map((entry) => ({ ...entry, placement: "history" })),
+    skills: sections.skills.map((skill) => ({ ...skill, placement: "history" })),
+  };
+}
+
 /** Render a successful manifest or one actionable selection diagnostic. */
 export function renderContentAwareness(
   result: ContentAwarenessResult,
@@ -470,7 +553,41 @@ export function renderContentAwareness(
   );
 }
 
-function renderContentAwarenessDiagnostic(result: ContentAwarenessDiagnostic): string {
+/** Render the canonical bounded reference block shared by focus consumers. */
+export function renderContentFocus(result: ContentFocusResult): string {
+  if (result.status !== "ok") return renderContentAwarenessDiagnostic(result);
+  const target = relative(result.position.base, result.position.path) || ".";
+  const spaceRoot = relative(result.position.base, result.spaceRoot) || ".";
+  const lines = ["Focus:"];
+  if (result.position.repoRoot) lines.push(`  repo: ${result.position.repoRoot}`);
+  lines.push(
+    `  target: ${target}`,
+    `  space root: ${spaceRoot}`,
+    `  contract source: ${result.contractSource ?? "floor"}`,
+    "  contract role: reference — read, never composed",
+  );
+  const body = renderAwarenessSections(
+    {
+      now: null,
+      tree: result.tree,
+      contract: result.contract,
+      skills: result.skills,
+      activity: null,
+      position: undefined,
+      git: null,
+      staleDocs: [],
+      missingDirection: [],
+      levelBase: result.spaceRoot,
+      spaceRoot: result.spaceRoot,
+    },
+    { sections: ["tree", "contract", "skills"] },
+  );
+  return body ? `${lines.join("\n")}\n\n${body}` : lines.join("\n");
+}
+
+function renderContentAwarenessDiagnostic(
+  result: ContentAwarenessDiagnostic | ContentFocusDiagnostic,
+): string {
   if (result.status === "contract_choice_required") {
     return "Contract choice required: select `foundation` or `agreement`.";
   }
@@ -482,6 +599,106 @@ function renderContentAwarenessDiagnostic(result: ContentAwarenessDiagnostic): s
     lines.push(`  ${issue.code}: ${issue.path} — ${issue.detail}`);
   }
   return lines.join("\n");
+}
+
+async function selectContentFrame(
+  requested: string,
+  requestedSource?: ContractSource,
+): Promise<SelectedContentFrame | ContentAwarenessDiagnostic | null> {
+  const requestedPosition = resolve(requested);
+  const position = await fs.realpath(requestedPosition).catch(() => requestedPosition);
+  const repoRoot = await resolveRepoRoot(position);
+  if (repoRoot) {
+    const repositoryPath = relative(repoRoot, position).split(sep).join("/");
+    if (repositoryPath) {
+      const classification = classifyRepositoryPath(repositoryPath, "directory");
+      if (classification.status !== "ok" || classification.role !== "ordinary") return null;
+    }
+  } else if (hasOpaqueFilesystemAncestor(position)) {
+    return null;
+  }
+
+  const [foundation, agreement] = await Promise.all([
+    composeContractAlongPath(position),
+    composeAgreementAlongPath(position, repoRoot),
+  ]);
+  const availableSources: ContractSource[] = [];
+  if (foundation.spaceRoot) availableSources.push("foundation");
+  if (agreement.agreements.length) availableSources.push("agreement");
+
+  let contractSource: ContractSource | null = requestedSource ?? null;
+  if (contractSource && !availableSources.includes(contractSource)) {
+    return {
+      status: "contract_source_unavailable",
+      kind: "content",
+      availableSources,
+      requestedSource: contractSource,
+    };
+  }
+  const identityConflict = contractIdentityConflict(foundation, agreement);
+  if (identityConflict) {
+    return {
+      status: "contract_invalid",
+      kind: "content",
+      availableSources,
+      ...(contractSource ? { requestedSource: contractSource } : {}),
+      issues: [identityConflict],
+    };
+  }
+  if (!contractSource && availableSources.length > 1) {
+    return { status: "contract_choice_required", kind: "content", availableSources };
+  }
+  contractSource ??= availableSources[0] ?? null;
+
+  if (contractSource === "agreement" && agreement.issues.length) {
+    return {
+      status: "contract_invalid",
+      kind: "content",
+      availableSources,
+      ...(requestedSource ? { requestedSource } : {}),
+      issues: agreement.issues,
+    };
+  }
+
+  const spaceRoot = contractSource === "foundation"
+    ? foundation.spaceRoot!
+    : contractSource === "agreement"
+      ? agreement.spaceRoot!
+      : repoRoot ?? position;
+  if (!repoRoot && contractSource) {
+    const spacePath = relative(spaceRoot, position).split(sep).join("/");
+    if (spacePath) {
+      const classification = classifyRepositoryPath(spacePath, "directory");
+      if (classification.status !== "ok" || classification.role !== "ordinary") return null;
+    }
+  }
+
+  return {
+    position,
+    repoRoot,
+    foundation,
+    agreement,
+    contractSource,
+    spaceRoot,
+    base: repoRoot ?? spaceRoot,
+  };
+}
+
+function toFocusTree(tree: ContentAwarenessTree): ContentFocusTree {
+  return {
+    ...tree,
+    placement: "history",
+    entries: tree.entries.map(toFocusTreeEntry),
+  };
+}
+
+function toFocusTreeEntry(entry: ContentAwarenessTreeEntry): ContentFocusTreeEntry {
+  const { children, ...rest } = entry;
+  return {
+    ...rest,
+    placement: "history",
+    ...(children ? { children: children.map(toFocusTreeEntry) } : {}),
+  };
 }
 
 function contractIdentityConflict(

@@ -1,0 +1,17 @@
+Focus:
+  target: .
+  space root: .
+  contract source: agreement
+  contract role: reference — read, never composed
+
+Tree (3 files):
+  docs/ (2) — Focus docs.
+  README.md — Focus root.
+
+Agent context:
+  agreement [full]:
+    AGREEMENT_BODY
+  purpose — Purpose summary.
+
+Operating skills:
+  inspect — Read the target carefully.

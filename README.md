@@ -82,6 +82,16 @@ if (result.status === "contract_choice_required") {
 const text = renderContentAwareness(result);
 ```
 
+A separate focus read lets a harness show another position without adopting its agent context:
+
+```ts
+import { assembleContentFocus, renderContentFocus } from "@ideaspaces/protocol";
+
+const focus = await assembleContentFocus({ position: "../another-space" });
+if (focus?.status === "ok") console.log(renderContentFocus(focus));
+// focus.contractRole === "reference" — read, never composed
+```
+
 The library also walks the full tree, reads one section of a document, classifies paths, resolves supporting files, evaluates a space's identity, and performs safe local writes through the explicit `local-effects` subpath with a git runner you supply. Each export is documented in [`src/`](src/) and proved by [`conformance/`](conformance/).
 
 TypeScript is the reference implementation, not the requirement. Other languages conform to [`SPEC.md`](SPEC.md), [`schema/`](schema/), and the vectors.
@@ -92,7 +102,7 @@ A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in 
 
 ## Status
 
-**v0.16.0, provisional.** Agreement is the candidate full-load frame while Foundation remains selectable compatibility. The optional layers still move. Pin a version.
+**v0.17.0, provisional.** Agreement is the candidate full-load frame while Foundation remains selectable compatibility; Content focus reads another frame as history reference without adopting it. The optional layers still move. Pin a version.
 
 ## Develop
 

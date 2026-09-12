@@ -40,8 +40,10 @@ export type {
 export {
   assembleAwareness,
   assembleContentAwareness,
+  assembleContentFocus,
   assembleContentTree,
   renderContentAwareness,
+  renderContentFocus,
   discoverSkillEntries,
   CONTENT_AWARENESS_SECTIONS,
 } from "./awareness.js";
@@ -49,6 +51,7 @@ export type {
   SkillEntry,
   AssembleAwarenessOpts,
   AssembleContentAwarenessOpts,
+  AssembleContentFocusOpts,
   AssembleContentTreeOpts,
   ContentTreeDepth,
   RenderContentAwarenessOpts,
@@ -64,6 +67,14 @@ export type {
   ContentAwarenessDiagnosticStatus,
   ContentAwarenessDiagnostic,
   ContentAwarenessResult,
+  ContentFocusPosition,
+  ContentFocusTreeEntry,
+  ContentFocusTree,
+  ContentFocusContractEntry,
+  ContentFocusSkill,
+  ContentFocusManifest,
+  ContentFocusDiagnostic,
+  ContentFocusResult,
 } from "./awareness.js";
 
 // Base repository ownership — one pure lexical classifier shared by generic
