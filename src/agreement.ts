@@ -257,11 +257,22 @@ async function readLevelFiles(
   level: ScannedLevel,
   issues: AgreementIssue[],
 ): Promise<AgreementContextFile[]> {
+  const files: AgreementContextFile[] = [];
+  if (level.agreementPath && level.agreementContent !== null) {
+    files.push({
+      name: "agreement",
+      path: level.agreementPath,
+      sourcePosition: level.dir,
+      content: level.agreementContent,
+      representation: "full",
+    });
+  }
+
   let entries: Array<{ name: string; isFile: () => boolean }>;
   try {
     entries = await fs.readdir(level.agentDir, { withFileTypes: true });
   } catch {
-    return [];
+    return files;
   }
 
   const regularMarkdown = entries
@@ -277,17 +288,6 @@ async function readLevelFiles(
         detail: `declared full load does not exist as a regular file: ${name}`,
       });
     }
-  }
-
-  const files: AgreementContextFile[] = [];
-  if (level.agreementPath && level.agreementContent !== null) {
-    files.push({
-      name: "agreement",
-      path: level.agreementPath,
-      sourcePosition: level.dir,
-      content: level.agreementContent,
-      representation: "full",
-    });
   }
 
   for (const name of regularMarkdown) {
