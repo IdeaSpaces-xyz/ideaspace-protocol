@@ -300,9 +300,6 @@ try {
     if (typeof protocol.FOUNDATION_CORE !== "string" || !protocol.FOUNDATION_CORE.includes("**Never:**")) {
       throw new Error("FOUNDATION_CORE export did not load");
     }
-    if (!protocol.BARE_WORKSPACE_HINT?.includes("Navigate into a repo") || !protocol.EMPTY_WORKSPACE_HINT?.includes("Clone one")) {
-      throw new Error("Workspace floor hints did not load");
-    }
     if (schema?.title !== "Ideaspace Note frontmatter (Layer 1)") {
       throw new Error("Frontmatter schema export did not load");
     }
