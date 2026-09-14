@@ -8,6 +8,12 @@ import type {
   MapPositionMember,
 } from "./maps.js";
 
+/** Canonical floor hints shared by local awareness harnesses. */
+export const BARE_WORKSPACE_HINT =
+  "You're at a workspace folder (no `_agent/` contract here). Navigate into a repo below (`ideaspaces navigate <repo>`), or pull one that's behind.";
+export const EMPTY_WORKSPACE_HINT =
+  "You're at a workspace folder with no repos yet. Clone one to get started (`ideaspaces clone`).";
+
 /** Presentation-only facts retained beside a projected tree member. */
 export interface ContentTreeMemberPresentation {
   kind: "directory" | "markdown";

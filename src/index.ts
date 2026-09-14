@@ -162,6 +162,8 @@ export type {
 } from "./workspace.js";
 
 export {
+  BARE_WORKSPACE_HINT,
+  EMPTY_WORKSPACE_HINT,
   projectContentTreeMembers,
   projectRootMapMembers,
   renderContentTreeProjection,
