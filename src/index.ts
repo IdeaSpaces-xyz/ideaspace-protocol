@@ -162,6 +162,22 @@ export type {
 } from "./workspace.js";
 
 export {
+  projectContentTreeMembers,
+  projectRootMapMembers,
+  renderContentTreeProjection,
+  renderRootMapMembers,
+} from "./map-projection.js";
+export type {
+  ContentTreeMemberPresentation,
+  ProjectedContentTreeMember,
+  ContentTreeMapProjection,
+  RootMapMemberPresentation,
+  RootMapMemberInput,
+  ProjectedRootMapMember,
+  RenderRootMapMembersOptions,
+} from "./map-projection.js";
+
+export {
   walkPathContext,
   spaceRootLevel,
   currentBranchLevel,

@@ -22,6 +22,7 @@ const expected = [
   "conformance/awareness/manifest.json",
   "conformance/extensions/manifest.json",
   "conformance/local-effects/manifest.json",
+  "conformance/map-projection/manifest.json",
   "conformance/maps/manifest.json",
   "conformance/root-identity/manifest.json",
   "conformance/reference-agreement/README.md",
@@ -82,6 +83,10 @@ const expected = [
   "dist/markdown-inspection.d.ts.map",
   "dist/markdown-inspection.js",
   "dist/markdown-inspection.js.map",
+  "dist/map-projection.d.ts",
+  "dist/map-projection.d.ts.map",
+  "dist/map-projection.js",
+  "dist/map-projection.js.map",
   "dist/maps.d.ts",
   "dist/maps.d.ts.map",
   "dist/maps.js",
@@ -134,6 +139,7 @@ const expected = [
   "schema/extensions.md",
   "schema/frontmatter.schema.json",
   "schema/local-effects.md",
+  "schema/map-projection.md",
   "schema/markdown-inspection.md",
   "schema/maps.md",
   "schema/repository-path.md",
@@ -179,6 +185,7 @@ try {
     "./schema/local-effects",
     "./schema/root-identity",
     "./schema/maps",
+    "./schema/map-projection",
     "./schema/content-awareness",
     "./conformance/extensions",
     "./conformance/assets",
@@ -186,6 +193,7 @@ try {
     "./conformance/root-identity",
     "./conformance/awareness",
     "./conformance/maps",
+    "./conformance/map-projection",
     "./SPEC.md",
     "./SKILLS.md",
     "./templates/foundation-core.md",
@@ -238,12 +246,14 @@ try {
     const rootIdentity = require("@ideaspaces/protocol/conformance/root-identity");
     const awareness = require("@ideaspaces/protocol/conformance/awareness");
     const maps = require("@ideaspaces/protocol/conformance/maps");
+    const mapProjection = require("@ideaspaces/protocol/conformance/map-projection");
     const repositoryPathSchema = require.resolve("@ideaspaces/protocol/schema/repository-path");
     const extensionsSchema = require.resolve("@ideaspaces/protocol/schema/extensions");
     const assetsSchema = require.resolve("@ideaspaces/protocol/schema/assets");
     const localEffectsSchema = require.resolve("@ideaspaces/protocol/schema/local-effects");
     const rootIdentitySchema = require.resolve("@ideaspaces/protocol/schema/root-identity");
     const mapsSchema = require.resolve("@ideaspaces/protocol/schema/maps");
+    const mapProjectionSchema = require.resolve("@ideaspaces/protocol/schema/map-projection");
     const awarenessSchema = require.resolve("@ideaspaces/protocol/schema/content-awareness");
     const required = [
       "assembleContentAwareness",
@@ -259,11 +269,15 @@ try {
       "mintRootNodeId",
       "parseMap",
       "parseRootNodeId",
+      "projectContentTreeMembers",
+      "projectRootMapMembers",
       "pathRevision",
       "rootNodeIdFromBytes",
       "renderContentAwareness",
       "renderContentFocus",
+      "renderContentTreeProjection",
       "renderPosition",
+      "renderRootMapMembers",
       "resolveAssetReference",
       "validateCommitPathsRequest",
       "validateSpace",
@@ -311,6 +325,9 @@ try {
     if (maps?.format !== "ideaspaces-maps/v2" || !maps.required_coverage?.length) {
       throw new Error("Map conformance manifest did not load");
     }
+    if (mapProjection?.format !== "ideaspaces-map-projection/v1" || !mapProjection.required_coverage?.length) {
+      throw new Error("Map-projection conformance manifest did not load");
+    }
     if (!repositoryPathSchema.endsWith("schema/repository-path.md")) {
       throw new Error("Repository-path schema export did not resolve");
     }
@@ -328,6 +345,9 @@ try {
     }
     if (!mapsSchema.endsWith("schema/maps.md")) {
       throw new Error("Map schema export did not resolve");
+    }
+    if (!mapProjectionSchema.endsWith("schema/map-projection.md")) {
+      throw new Error("Map-projection schema export did not resolve");
     }
     if (!awarenessSchema.endsWith("schema/content-awareness.md")) {
       throw new Error("Content-awareness schema export did not resolve");
@@ -363,6 +383,12 @@ try {
       deepStrictEqual(result, vector.expected, vector.id);
       if (result.status === "valid") deepStrictEqual(protocol.parseMap(result.map), result);
     }
+    const treeVector = mapProjection.vectors.find((v) => v.operation === "project_tree");
+    if (!treeVector) throw new Error("Map-projection tree vector is missing");
+    deepStrictEqual(
+      protocol.projectContentTreeMembers(treeVector.input.tree, treeVector.input.root),
+      treeVector.expected,
+    );
     const aligned = protocol.evaluateRootIdentity({
       declaration: "n_0123456789abcdef01234567",
       canonicalOrigin: "n_0123456789abcdef01234567",

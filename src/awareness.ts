@@ -33,6 +33,10 @@ import { readSeenRef } from "./surface-state.js";
 import { DEFAULT_IGNORED_DIRECTORIES } from "./filesystem.js";
 import { parseRootNodeId } from "./root-identity.js";
 import {
+  projectContentTreeMembers,
+  renderContentTreeProjection,
+} from "./map-projection.js";
+import {
   composeAgreementAlongPath,
   type AgreementIssue,
   type ComposedAgreement,
@@ -1349,33 +1353,7 @@ async function countMarkdown(dir: string, strict = false): Promise<number> {
 }
 
 function renderTree(tree: ContentAwarenessTree): string {
-  const lines = [`Tree (${tree.totalMarkdownFiles} files):`];
-  renderTreeEntries(tree.entries, 1, lines);
-  if (tree.omittedEntries) lines.push(`  … and ${tree.omittedEntries} more`);
-  return lines.join("\n");
-}
-
-function renderTreeEntries(
-  entries: ContentAwarenessTreeEntry[],
-  level: number,
-  lines: string[],
-): void {
-  const indent = "  ".repeat(level);
-  for (const entry of entries) {
-    const base =
-      entry.kind === "directory"
-        ? entry.markdownFiles
-          ? `${indent}${entry.name}/ (${entry.markdownFiles})`
-          : `${indent}${entry.name}/`
-        : `${indent}${entry.name}`;
-    lines.push(entry.summary ? `${base} — ${entry.summary}` : base);
-    if (entry.children) {
-      renderTreeEntries(entry.children, level + 1, lines);
-      if (entry.omittedChildren) {
-        lines.push(`${"  ".repeat(level + 1)}… and ${entry.omittedChildren} more`);
-      }
-    }
-  }
+  return renderContentTreeProjection(projectContentTreeMembers(tree));
 }
 
 /** `guide (branch/)` for entries below the space root; bare name at the root or without a base. */

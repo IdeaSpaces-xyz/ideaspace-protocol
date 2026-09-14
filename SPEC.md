@@ -147,14 +147,24 @@ a name-only ceiling forbids an observed summary. Preserving the view fixes suppl
 not live entity state. Query operations and requested detail stay outside the Map.
 
 The same stateless shape serves a projected view and a preserved selection. A pure builder validates
-and normalizes selected roots/members; it does not resolve them or sanitize unknown fields. Hosted
-versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer concerns.
-Import never fetches an unknown repository merely because a map-note names it. A repo URL is an
-address, never authority. Sharing checks actual payload disclosure and repository usability
-separately; machine-local bindings are not portable context.
-The full provisional shape, normalization, bounded recursion rule, safe degradation behavior, and
-language-neutral parse/build vectors are in
-[`schema/maps.md`](schema/maps.md) and [`conformance/maps/manifest.json`](conformance/maps/manifest.json).
+and normalizes selected roots/members; it does not resolve them or sanitize unknown fields. A local
+Content tree projects in producer order to repository-position members: observed names and summaries
+become member disclosure, while prompt placement, kind, counts, omissions, private checkout paths,
+sync state, and harness roles remain presentation data outside the Map. Thin working-set and catalog
+roots use position `.` when an exact root ordinal exists or an already-existing address when it does
+not. Missing identity, unborn HEAD, dirt, remote unavailability, or an unresolved handle MUST NOT
+cause identity minting, fetch, upload, publication, or repinning; the producer omits the portable
+`map` block and may retain a useful local rendering.
+
+Hosted versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer
+concerns. Import never fetches an unknown repository merely because a map-note names it. A repo URL
+is an address, never authority. Sharing checks actual payload disclosure and repository usability
+separately; machine-local bindings are not portable context. The full provisional shape,
+normalization, bounded recursion rule, local projection boundary, safe degradation behavior, and
+language-neutral vectors are in [`schema/maps.md`](schema/maps.md),
+[`schema/map-projection.md`](schema/map-projection.md),
+[`conformance/maps/manifest.json`](conformance/maps/manifest.json), and
+[`conformance/map-projection/manifest.json`](conformance/map-projection/manifest.json).
 
 ---
 

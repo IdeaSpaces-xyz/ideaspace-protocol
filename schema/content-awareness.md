@@ -146,8 +146,11 @@ Tree depth defaults to 1 and numeric probes clamp to 1..4. Level 1 carries summa
 lower bounded levels carry names only. Per-directory caps are honest through omitted counts. Core
 `_agent/`, extensions, reserved Git state, and build/local exclusions do not enter entries or counts.
 
-The standalone tree assembler requires no contract. `depth: full` is an explicit local diagnostic
-walk to leaves with summary handles, not ambient awareness and not Map member `depth: full`.
+The standalone tree assembler requires no contract. Its entries project through the shared
+[`projectContentTreeMembers`](map-projection.md) operation: observed names/summaries become Map
+member disclosure while placement, kind, counts, and omissions remain presentation facts. `depth:
+full` is an explicit local diagnostic walk to leaves with summary handles, not ambient awareness and
+not Map member `depth: full`.
 
 ## Canonical sections
 

@@ -7,9 +7,10 @@ focused ideaspace position; workspace handles describe roots that a harness may
 choose to place around that focus.
 
 The protocol does **not** assign harness roles such as home, mount, reference, or
-point of view. It does not render a working set or repository catalog, fetch a
-remote tier, prescribe clone language, or mutate lifecycle state. Those choices
-remain with the consuming harness.
+point of view, fetch a remote tier, prescribe clone language, or mutate lifecycle
+state. A separate pure [Map projection](map-projection.md) accepts caller-assigned
+presentation labels and renders working-set or repository-catalog rows without
+moving those labels or private state into portable Map members.
 
 ## Root handle
 

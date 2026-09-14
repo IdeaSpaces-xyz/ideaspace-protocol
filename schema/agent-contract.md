@@ -110,6 +110,11 @@ composed stack. Its contract role is always `reference`; it carries only the tar
 depth-one Content tree, selected agent context, and skills, all at `placement: history`. Focus
 agreements are read, never composed as authority.
 
+A Content tree projects to ordered repository-position Map members without carrying placement.
+Observed names and summaries become disclosure ceilings; local kind, counts, omissions, paths,
+roles, and state stay in the [Map projection](map-projection.md) presentation sidecar. Foundation,
+Agreement, and focus selection therefore share the same tree projection without changing authority.
+
 ## Root identity
 
 Either root entrypoint MAY carry optional `root_node_id` frontmatter. Missing identity remains valid.

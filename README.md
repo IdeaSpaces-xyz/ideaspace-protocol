@@ -92,17 +92,17 @@ if (focus?.status === "ok") console.log(renderContentFocus(focus));
 // focus.contractRole === "reference" — read, never composed
 ```
 
-The library also walks the full tree, reads one section of a document, classifies paths, resolves supporting files, evaluates a space's identity, and performs safe local writes through the explicit `local-effects` subpath with a git runner you supply. Each export is documented in [`src/`](src/) and proved by [`conformance/`](conformance/).
+The library also walks and projects the Content tree into Map members, renders thin working-set/catalog handles without exporting private state, reads one section of a document, classifies paths, resolves supporting files, evaluates a space's identity, and performs safe local writes through the explicit `local-effects` subpath with a git runner you supply. Each export is documented in [`src/`](src/) and proved by [`conformance/`](conformance/).
 
 TypeScript is the reference implementation, not the requirement. Other languages conform to [`SPEC.md`](SPEC.md), [`schema/`](schema/), and the vectors.
 
 ## Conformance
 
-A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in [`SPEC.md`](SPEC.md#conformance), passes the base vectors, and declares the spec version it targets. Content awareness, `_assets/`, identity, local writes, and the provisional `map` block each have their own vectors, so conformance claims stay explicit.
+A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in [`SPEC.md`](SPEC.md#conformance), passes the base vectors, and declares the spec version it targets. Content awareness, `_assets/`, identity, local writes, the provisional `map` block, and local Map projection each have their own vectors, so conformance claims stay explicit.
 
 ## Status
 
-**v0.17.0, provisional.** Agreement is the candidate full-load frame while Foundation remains selectable compatibility; Content focus reads another frame as history reference without adopting it. The optional layers still move. Pin a version.
+**v0.18.0 candidate, provisional.** Content trees and thin repository-root handles now project through the Map member language while private paths, state, roles, and prompt placement remain local presentation data. Agreement/Foundation selection and reference-only focus remain unchanged. The optional layers still move. Pin a version.
 
 ## Develop
 
