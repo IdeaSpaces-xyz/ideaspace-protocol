@@ -206,6 +206,20 @@ object id, or a configured origin. Missing repository content, dirty selected by
 pins must not cause silent upload, repinning, or publication. These are consumer checks; the
 protocol library does no filesystem or network I/O for Maps.
 
+## Projecting local handles
+
+A tree, working set, or repository catalog may use the same member language before it becomes a
+portable Map. The pure [Map projection](map-projection.md) operation converts already-read Content
+tree entries and root handles into ordered members with observed disclosure. Local presentation
+facts stay beside the member: prompt placement, file kind, counts, omitted entries, checkout path,
+sync state, and harness roles do not enter the Map.
+
+A local root ordinal may resolve through a private checkout binding. It is portable only when the
+producer supplies a stable root identity and exact pin and the complete block passes `buildMap`.
+Dirty, unborn, unidentified, unavailable, or unresolved handles may still render locally, but a
+producer MUST omit the portable `map` block rather than emit invalid roots or private paths. An
+online-only handle may use an existing address; projection never invents or fetches one.
+
 ## Bounded walking
 
 `depth` is representation, not recursion. Recursive walking follows a member that is itself a

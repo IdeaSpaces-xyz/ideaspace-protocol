@@ -1,0 +1,199 @@
+{
+  "format": "ideaspaces-map-projection/v1",
+  "required_coverage": [
+    "tree_producer_order",
+    "level_one_summary_ceiling",
+    "level_one_name_ceiling",
+    "deeper_name_ceiling",
+    "observed_disclosure",
+    "prompt_placement_absent",
+    "honest_omission_counts",
+    "strict_portable_map",
+    "root_position_members",
+    "existing_address_member",
+    "unresolved_root_fallback",
+    "private_presentation_isolation",
+    "root_renderer_order"
+  ],
+  "vectors": [
+    {
+      "id": "bounded-tree-to-members",
+      "operation": "project_tree",
+      "covers": [
+        "tree_producer_order",
+        "level_one_summary_ceiling",
+        "level_one_name_ceiling",
+        "deeper_name_ceiling",
+        "observed_disclosure",
+        "prompt_placement_absent",
+        "honest_omission_counts",
+        "strict_portable_map"
+      ],
+      "input": {
+        "root": 0,
+        "tree": {
+          "placement": "head",
+          "totalMarkdownFiles": 5,
+          "omittedEntries": 2,
+          "entries": [
+            {
+              "name": "branch",
+              "kind": "directory",
+              "placement": "head",
+              "markdownFiles": 4,
+              "summary": "Observed branch summary.",
+              "omittedChildren": 1,
+              "children": [
+                {
+                  "name": "deep",
+                  "kind": "directory",
+                  "placement": "head",
+                  "markdownFiles": 1
+                },
+                {
+                  "name": "note.md",
+                  "kind": "markdown",
+                  "placement": "head"
+                }
+              ]
+            },
+            {
+              "name": "plain.md",
+              "kind": "markdown",
+              "placement": "head"
+            }
+          ]
+        }
+      },
+      "portable_root": {
+        "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567",
+        "sha": "1111111111111111111111111111111111111111"
+      },
+      "expected": {
+        "totalMarkdownFiles": 5,
+        "omittedEntries": 2,
+        "members": [
+          {
+            "member": {
+              "root": 0,
+              "position": "branch",
+              "depth": "summary",
+              "disclosure": {
+                "name": "branch",
+                "summary": "Observed branch summary."
+              }
+            },
+            "presentation": {
+              "kind": "directory",
+              "level": 1,
+              "markdownFiles": 4,
+              "omittedChildren": 1
+            }
+          },
+          {
+            "member": {
+              "root": 0,
+              "position": "branch/deep",
+              "depth": "name",
+              "disclosure": { "name": "deep" }
+            },
+            "presentation": {
+              "kind": "directory",
+              "level": 2,
+              "markdownFiles": 1
+            }
+          },
+          {
+            "member": {
+              "root": 0,
+              "position": "branch/note.md",
+              "depth": "name",
+              "disclosure": { "name": "note.md" }
+            },
+            "presentation": {
+              "kind": "markdown",
+              "level": 2
+            }
+          },
+          {
+            "member": {
+              "root": 0,
+              "position": "plain.md",
+              "depth": "name",
+              "disclosure": { "name": "plain.md" }
+            },
+            "presentation": {
+              "kind": "markdown",
+              "level": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ordered-root-handles",
+      "operation": "project_roots",
+      "covers": [
+        "root_position_members",
+        "existing_address_member",
+        "unresolved_root_fallback",
+        "private_presentation_isolation",
+        "root_renderer_order"
+      ],
+      "input": [
+        {
+          "root": 0,
+          "name": "home",
+          "summary": "Home summary.",
+          "presentation": {
+            "label": "home",
+            "display": "/private/home",
+            "details": ["3 dirs"]
+          }
+        },
+        {
+          "root": 1,
+          "name": "mount",
+          "presentation": {
+            "label": "mount",
+            "display": "/private/mount"
+          }
+        },
+        {
+          "address": "https://ideaspaces.example/repos/n_aaaaaaaaaaaaaaaaaaaaaaaa",
+          "name": "online",
+          "presentation": { "details": ["alice"] }
+        },
+        {
+          "name": "legacy",
+          "presentation": { "details": ["legacy"] }
+        }
+      ],
+      "render": {
+        "heading": "Roots:",
+        "omittedMembers": 1
+      },
+      "expected_members": [
+        {
+          "root": 0,
+          "position": ".",
+          "depth": "summary",
+          "disclosure": { "name": "home", "summary": "Home summary." }
+        },
+        {
+          "root": 1,
+          "position": ".",
+          "depth": "name",
+          "disclosure": { "name": "mount" }
+        },
+        {
+          "address": "https://ideaspaces.example/repos/n_aaaaaaaaaaaaaaaaaaaaaaaa",
+          "depth": "name",
+          "disclosure": { "name": "online" }
+        },
+        null
+      ],
+      "expected_render": "Roots:\n  home: /private/home — Home summary. (3 dirs)\n  mount: /private/mount\n  online (alice)\n  legacy (legacy)\n  …and 1 more"
+    }
+  ]
+}

@@ -14,6 +14,8 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`maps/manifest.json`** — language-neutral parse/build vectors for the provisional `map` block: pinned repository positions and rootless external addresses, canonical HTTPS and loopback-development repo URLs, matching root identities, all five ceilings, observed name/summary distinct from curator annotations, retired-field refusal, unknown types/fields, and graceful invalid-block refusal. Parse-only readers parse both `parse` and `build` inputs; constructors additionally build the `build` inputs and parse valid output back equal. These are pure representation checks, not remote-availability or authorization tests.
 
+- **`map-projection/manifest.json`** — language-neutral vectors for projecting bounded Content trees and thin root handles into ordered Map members. They prove summary/name ceilings, observed disclosure, deterministic producer order, honest omissions, strict portable wrapping, existing-address and unresolved-root behavior, private-presentation isolation, and shared root rendering.
+
 - **`reference-space/`** — a small, known-good Foundation ideaspace: a root
   `_agent/` five-file contract, a portable flat-form `_agent/skills/` entry,
   READMEs along a path, a Note with valid Layer-1+2 frontmatter, a recognized
@@ -66,5 +68,5 @@ reader executes the extension-boundary vectors without knowing named extension s
 implementation also executes the assets vectors; identity absence remains valid for an ordinary
 reader; an identity implementation executes the root-identity vectors; an awareness implementation
 executes both selectable-frame and reference-focus vectors; a provisional Map reader executes the Map vectors without
-adding a repository-validation gate; and an effect implementation executes every local-effect
-manifest coverage tag.
+adding a repository-validation gate; a local Map projector additionally executes every map-projection
+coverage tag; and an effect implementation executes every local-effect manifest coverage tag.
