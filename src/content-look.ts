@@ -19,7 +19,6 @@ import {
   MAP_DEPTHS,
   type MapDepth,
   type MapDisclosure,
-  type MapPositionMember,
 } from "./maps.js";
 import { classifyRepositoryPath } from "./repository-path.js";
 import type { ContractSource } from "./agreement.js";
@@ -54,7 +53,11 @@ export interface ContentLookSectionChild extends MarkdownHeading {
 export type ContentLookChild = ContentLookDirectoryChild | ContentLookSectionChild;
 
 /** Rootless local projection. A consumer adds root ordinal 0 only after it has a safe pinned root. */
-export type ContentLookProjectedMember = Omit<MapPositionMember, "root">;
+export interface ContentLookProjectedMember extends Record<string, unknown> {
+  position: string;
+  depth: MapDepth;
+  disclosure?: MapDisclosure;
+}
 
 export interface ContentLookTarget {
   placement: "history";
