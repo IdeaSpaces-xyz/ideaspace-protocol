@@ -341,7 +341,10 @@ function isOrdinaryTarget(
 ): boolean {
   if (!hasRepoRoot || position === ".") return true;
   const classified = classifyRepositoryPath(position, kind === "directory" ? "directory" : "file");
-  return classified.status === "ok" && classified.role === "ordinary";
+  if (classified.status !== "ok") return false;
+  return kind === "directory"
+    ? classified.role === "ordinary"
+    : classified.role === "knowledge";
 }
 
 function joinPortable(parent: string, child: string): string {

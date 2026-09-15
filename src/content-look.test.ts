@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { promises as fs } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -163,6 +164,25 @@ describe("Content look", () => {
       },
     ]);
     expect(full.target.children?.some((child) => child.name === "README.md")).toBe(false);
+  });
+
+  it("recognizes ordinary Markdown knowledge inside a Git worktree", async () => {
+    const root = await agreementRoot();
+    const note = join(root, "notes", "git.md");
+    await write(note, "---\nsummary: Git-backed note.\n---\n# Git\n");
+    const initialized = spawnSync("git", ["init", "-q", "-b", "main"], {
+      cwd: root,
+      encoding: "utf-8",
+    });
+    expect(initialized.status, initialized.stderr).toBe(0);
+
+    const looked = ok(await assembleContentLook({ position: note, depth: "summary" }));
+    expect(looked.reference.position.repoRoot).toBe(await fs.realpath(root));
+    expect(looked.target).toMatchObject({
+      kind: "markdown",
+      position: "notes/git.md",
+      summary: "Git-backed note.",
+    });
   });
 
   it("keeps frame selection neutral and excludes the unselected entrypoint", async () => {
