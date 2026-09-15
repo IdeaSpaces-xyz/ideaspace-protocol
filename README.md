@@ -80,6 +80,8 @@ if (result.status === "contract_choice_required") {
 }
 
 const text = renderContentAwareness(result);
+const stableHead = renderContentAwareness(result, { placement: "head" });
+const volatileTail = renderContentAwareness(result, { placement: "tail" });
 ```
 
 A separate focus read lets a harness show another position without adopting its agent context:
@@ -102,7 +104,7 @@ A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in 
 
 ## Status
 
-**v0.18.0 candidate, provisional.** Content trees and thin repository-root handles now project through the Map member language while private paths, state, roles, and prompt placement remain local presentation data. Agreement/Foundation selection and reference-only focus remain unchanged. The optional layers still move. Pin a version.
+**v0.19.0 candidate, provisional.** Ambient awareness now renders a protocol-owned stable head and volatile tail directly from typed placement while preserving the canonical full render and fixed-history focus. Content trees and thin repository-root handles continue to project through the Map member language without exporting private paths, state, roles, or prompt placement. The optional layers still move. Pin a version.
 
 ## Develop
 

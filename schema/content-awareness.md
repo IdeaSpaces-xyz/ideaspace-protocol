@@ -140,6 +140,14 @@ position. This adapter emits active position context in the head and volatile Gi
 the tail. `history` is reserved for an explicit reference/focus operation; this ambient operation
 does not emit it.
 
+`renderContentAwareness` accepts optional `placement: head | tail`. The renderer derives membership
+from the manifest's typed placement rather than a caller-owned section list. Head and tail are
+disjoint, activity renders only in tail, and canonical section order is preserved within each side.
+With no placement or section filter, the compatibility full render is unchanged: non-empty head
+followed by non-empty tail with the canonical section break. If `placement` and `sections` are both
+supplied, the renderer applies their intersection. Selection changes only rendered output; it does
+not claim or change runtime residency.
+
 ## Tree behavior
 
 Tree depth defaults to 1 and numeric probes clamp to 1..4. Level 1 carries summary-rung handles;
@@ -166,9 +174,10 @@ Rendering keeps this fixed order:
 8. `stale-docs`
 9. `direction-drift`
 
-A caller may select a subset without reordering it. Empty sections disappear. Full contract entries
-render their complete bytes inside the contract section; Foundation summary rendering remains
-unchanged. Selection diagnostics render actionable text without rendering either candidate.
+A caller may select a subset without reordering it, select ambient `head | tail` placement, or apply
+both filters as an intersection. Empty sections disappear. Full contract entries render their
+complete bytes inside the contract section; Foundation summary rendering remains unchanged.
+Selection diagnostics render actionable text without rendering either candidate.
 
 ## Compatibility and conformance
 
@@ -178,4 +187,5 @@ unchanged. Selection diagnostics render actionable text without rendering either
 Implementations claiming Content-awareness conformance execute every required coverage tag in
 [`../conformance/awareness/manifest.json`](../conformance/awareness/manifest.json). The vectors cover
 both single-source arms, explicit selection, choice and unavailable diagnostics, floor orientation,
-declared full loading, unselected-source absence, exact revisions, and prompt placement.
+declared full loading, unselected-source absence, exact revisions, prompt placement, deterministic
+head/tail rendering, disjoint membership, and activity confined to tail.

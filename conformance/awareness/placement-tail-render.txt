@@ -1,0 +1,5 @@
+Since last session (2 changes):
+  M	README.md
+  A	changed.md
+
+Git: branch main

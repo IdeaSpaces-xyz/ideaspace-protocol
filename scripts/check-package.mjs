@@ -20,6 +20,8 @@ const expected = [
   "conformance/awareness/foundation-render.txt",
   "conformance/awareness/foundation-vector-render.txt",
   "conformance/awareness/manifest.json",
+  "conformance/awareness/placement-head-render.txt",
+  "conformance/awareness/placement-tail-render.txt",
   "conformance/extensions/manifest.json",
   "conformance/local-effects/manifest.json",
   "conformance/map-projection/manifest.json",
@@ -286,6 +288,7 @@ try {
     for (const name of required) {
       if (typeof protocol[name] !== "function") throw new Error(\`Missing runtime export: \${name}\`);
     }
+    deepStrictEqual(protocol.CONTENT_AWARENESS_PLACEMENTS, ["head", "tail"]);
     for (const name of ["writeMarkdown", "commitPaths"]) {
       if (name in protocol) throw new Error(\`Mutation leaked through package root: \${name}\`);
       if (typeof localEffects[name] !== "function") throw new Error(\`Missing local-effect export: \${name}\`);

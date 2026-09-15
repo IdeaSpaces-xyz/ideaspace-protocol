@@ -11,7 +11,7 @@ Present:
 - `markdown-inspection.ts` — portable progressive-disclosure reads (`summary`, ATX `outline`, exact `section`) over a string or local file
 - `space.ts` — frozen five-file Foundation reader and composition
 - `agreement.ts` — Agreement root composition, generic `_agent/*.md` loading, and safe `context.full` parsing
-- `awareness.ts` — selectable Foundation/Agreement/floor assembly, bounded reference focus reads, exact revisions, prompt placement, canonical rendering, and the compatibility `assembleAwareness` block; `path-context.ts` — path walking
+- `awareness.ts` — selectable Foundation/Agreement/floor assembly, bounded reference focus reads, exact revisions, placement-selective head/tail rendering, canonical full rendering, and the compatibility `assembleAwareness` block; `path-context.ts` — path walking
 - `git.ts` — git state / recent activity, reporting of already-staged knowledge/context/extension paths, plus the injected, read-only `pathRevision` fact; `local-effects.ts` — pure request/result types, capability contracts, and preflight validators; `local-effects-runtime.ts` — the opt-in `@ideaspaces/protocol/local-effects` reference implementation for atomic Markdown writes and exact-path commits; `stale-docs.ts` — drift signals
 - `workspace.ts` — neutral root handles and immediate-child workspace repository reads
 - `maps.ts` — pure provisional Map parsing/building; `map-projection.ts` — ordered Content-tree and root-handle member projection with private presentation sidecars and canonical local rendering
