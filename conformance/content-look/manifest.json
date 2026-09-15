@@ -10,6 +10,7 @@
     "readme_not_child",
     "honest_omissions",
     "rootless_member",
+    "git_backed_target",
     "exact_revision",
     "choice_required",
     "unselected_absent",
@@ -37,6 +38,22 @@
       "depth": "summary",
       "contract_source": "agreement",
       "covers": ["five_depths"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/decision.md",
+        "name": "Decision",
+        "summary": "Why the selected frame stays reference-only.",
+        "absent": ["surface", "children"]
+      }
+    },
+    {
+      "id": "git-backed-note-summary",
+      "target": "notes/decision.md",
+      "depth": "summary",
+      "contract_source": "agreement",
+      "git": true,
+      "covers": ["git_backed_target"],
       "expected": {
         "status": "ok",
         "kind": "markdown",

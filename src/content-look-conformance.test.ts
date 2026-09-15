@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { promises as fs } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +19,7 @@ interface LookVector {
   depth: MapDepth;
   contract_source?: ContractSource;
   max_children?: number;
+  git?: boolean;
   covers: string[];
   expected: {
     status: "ok" | "absent" | "contract_choice_required";
@@ -70,8 +72,14 @@ describe("Content look conformance vectors", () => {
 
   for (const vector of manifest.vectors) {
     it(vector.id, async () => {
+      let vectorRoot = fixtureRoot;
+      if (vector.git) {
+        vectorRoot = join(tmp, vector.id);
+        await fs.cp(fixtureRoot, vectorRoot, { recursive: true });
+        execFileSync("git", ["init", "-q", "-b", "main"], { cwd: vectorRoot });
+      }
       const result = await assembleContentLook({
-        position: join(fixtureRoot, vector.target),
+        position: join(vectorRoot, vector.target),
         depth: vector.depth,
         ...(vector.contract_source ? { contractSource: vector.contract_source } : {}),
         ...(vector.max_children !== undefined ? { maxChildren: vector.max_children } : {}),

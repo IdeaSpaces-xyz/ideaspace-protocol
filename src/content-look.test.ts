@@ -147,6 +147,10 @@ describe("Content look", () => {
     });
     expect(children.target).not.toHaveProperty("surface");
 
+    const allChildren = ok(await assembleContentLook({ position: docs, depth: "children" }));
+    expect(allChildren.target.children).toHaveLength(2);
+    expect(allChildren.target.revision).not.toBe(children.target.revision);
+
     const full = ok(await assembleContentLook({ position: docs, depth: "full" }));
     expect(full.target.surface).toBe("# Documents\n\nStart here.");
     expect(full.target.children).toEqual([

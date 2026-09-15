@@ -38,7 +38,7 @@ A successful result has `kind: content-look`, fixed `contractRole: reference`, a
 
 `target.member` is the rootless local projection `{ position, depth, disclosure }`. It uses Map member vocabulary but does not fabricate root ordinal `0`. A consumer may wrap it as a portable Map member only after independently proving a clean, pinned, identified root. Invalid, dirty, unborn, ignored, or local-only roots remain useful local projections and MUST NOT emit malformed portable Maps.
 
-The target revision is SHA-256 over exactly the semantic target representation returned at that rung, excluding machine-local path, prompt placement, and requested-depth metadata. Therefore a Note's equivalent `surface` and `full` reads have the same revision.
+The target revision is SHA-256 over exactly the semantic target representation returned at that rung, excluding machine-local path, prompt placement, and the requested depth field. A child cap changes the returned child list and `omittedChildren`, so it deliberately changes the representation revision. A Note's equivalent `surface` and `full` reads have the same revision.
 
 ## Selection and failures
 

@@ -119,7 +119,9 @@ A Content-look result carries a rootless projected member with portable position
 and observed disclosure. A consumer adds a Map root ordinal only after independently establishing a
 clean, pinned, identified root; local-only, dirty, unborn, ignored, or invalid targets remain useful
 projections and MUST NOT masquerade as portable Maps. The representation revision hashes exactly the
-semantic target representation returned, excluding private path, placement, and request metadata.
+semantic target representation returned, excluding private path, placement, and the requested depth
+field. A child cap changes the returned child list and omission count, so it deliberately changes the
+representation revision.
 The operation performs no network access, fetch, identity minting, write, Git mutation, or caller
 position change. The language-neutral contract is [`schema/content-look.md`](schema/content-look.md).
 
