@@ -1003,6 +1003,8 @@ function awarenessSectionPlacement(
       return data.now?.placement === "head" ? "head" : null;
     case "tree":
       return data.tree?.placement === "head" ? "head" : null;
+    // Ambient contract and skill arrays are homogeneous at head by
+    // construction. Focus remaps them to history and uses its own renderer.
     case "contract":
       return data.contract.some((entry) => entry.placement === "head") ? "head" : null;
     case "skills":

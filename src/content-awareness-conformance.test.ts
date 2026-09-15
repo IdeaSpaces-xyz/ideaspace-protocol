@@ -87,6 +87,10 @@ async function writeVectorFiles(
   }
 }
 
+function hasGit(): boolean {
+  return spawnSync("git", ["--version"], { encoding: "utf-8" }).status === 0;
+}
+
 function git(root: string, args: string[]): string {
   const result = spawnSync("git", ["-C", root, ...args], { encoding: "utf-8" });
   if (result.status !== 0) {
@@ -150,6 +154,7 @@ describe("Content awareness conformance manifest", () => {
 
   for (const vector of kit.vectors) {
     it(vector.id, async () => {
+      if (vector.git_commits?.length && !hasGit()) return;
       const { root, lastSha } = await materialize(vector);
       const opts: AssembleContentAwarenessOpts = {
         position: root,
