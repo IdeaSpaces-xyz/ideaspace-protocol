@@ -10,7 +10,7 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`root-identity/manifest.json`** — language-neutral vectors for optional Space identity: current and legacy reads, deterministic 96-bit generation, absent/local-only/legacy-unstamped/aligned states, and refusal to select an ID from drift, ambiguity, or malformed evidence.
 
-- **`awareness/manifest.json`** — language-neutral filesystem/Git vectors for Foundation-only, Agreement-only, explicit selection, choice-required and unavailable results, floor orientation, declared full loading, unselected-entrypoint absence, exact revisions, deterministic disjoint head/tail rendering with activity only in tail, and a depth-one focus whose target contract remains reference context.
+- **`awareness/manifest.json`** — language-neutral filesystem/Git vectors for Foundation-only, Agreement-only, explicit selection, choice-required and unavailable results, floor orientation, declared full loading, unselected-entrypoint absence, exact revisions, deterministic disjoint head/tail rendering with activity only in tail, Content-tail composition (State first and superseding the compact Git line, handles in producer order, Change line last), and a depth-one focus whose target contract remains reference context.
 
 - **`content-look/manifest.json`** — language-neutral vectors for reading exactly one local Note or Content directory at each canonical Map rung beneath a reference-only frame. They prove Note/directory semantics, history placement, rootless projection, README/children separation, honest omissions, neutral frame selection, deterministic rendering, and non-Content refusal against `reference-look/`.
 

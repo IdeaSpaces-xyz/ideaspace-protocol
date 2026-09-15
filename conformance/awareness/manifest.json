@@ -27,7 +27,10 @@
     "prompt_placement",
     "placement_selective_render",
     "placement_disjoint",
-    "activity_tail_only"
+    "activity_tail_only",
+    "tail_composition",
+    "state_supersedes_git",
+    "change_line_last"
   ],
   "focus_required_coverage": [
     "focus_reference",
@@ -90,6 +93,50 @@
         "placement_render_fixtures": {
           "head": "placement-head-render.txt",
           "tail": "placement-tail-render.txt"
+        }
+      }
+    },
+    {
+      "id": "tail-composition",
+      "files": {
+        "_agent/foundation.md": "---\nsummary: Foundation summary.\n---\nFOUNDATION_BODY",
+        "_agent/purpose.md": "---\nsummary: Purpose summary.\n---\nPurpose body.",
+        "_agent/now.md": "---\nsummary: Now summary.\n---\nCurrent work."
+      },
+      "git_commits": [
+        {
+          "message": "seed",
+          "files": { "README.md": "v1" }
+        },
+        {
+          "message": "change",
+          "files": {
+            "README.md": "v2",
+            "changed.md": "new"
+          }
+        }
+      ],
+      "git_staged": {
+        "notes/pending.md": "staged knowledge",
+        "build.log": "staged noise"
+      },
+      "last_sha_commit": 0,
+      "covers": [
+        "tail_composition",
+        "state_supersedes_git",
+        "change_line_last"
+      ],
+      "expected": {
+        "status": "ok",
+        "contract_source": "foundation",
+        "tail_composition": {
+          "handles": [
+            "Repos in scope (local):\n  home  (POV)",
+            "You're at a workspace folder."
+          ],
+          "change": "Change open: chg_example (this session)",
+          "state_render_fixture": "tail-composition-state.txt",
+          "render_fixture": "tail-composition-render.txt"
         }
       }
     },

@@ -1,0 +1,5 @@
+State:
+  branch: main
+  remote: no upstream
+  working tree: dirty
+  captures awaiting commit: 1

@@ -22,6 +22,8 @@ const expected = [
   "conformance/awareness/manifest.json",
   "conformance/awareness/placement-head-render.txt",
   "conformance/awareness/placement-tail-render.txt",
+  "conformance/awareness/tail-composition-render.txt",
+  "conformance/awareness/tail-composition-state.txt",
   "conformance/content-look/manifest.json",
   "conformance/content-look/note-full-render.txt",
   "conformance/extensions/manifest.json",
@@ -58,6 +60,10 @@ const expected = [
   "dist/content-look.d.ts.map",
   "dist/content-look.js",
   "dist/content-look.js.map",
+  "dist/content-state.d.ts",
+  "dist/content-state.d.ts.map",
+  "dist/content-state.js",
+  "dist/content-state.js.map",
   "dist/conformance.d.ts",
   "dist/conformance.d.ts.map",
   "dist/conformance.js",
@@ -280,6 +286,7 @@ try {
       "assembleContentAwareness",
       "assembleContentFocus",
       "assembleContentLook",
+      "assembleContentState",
       "composeAgreementAlongPath",
       "classifyRepositoryPath",
       "composeContractAlongPath",
@@ -298,6 +305,8 @@ try {
       "renderContentAwareness",
       "renderContentFocus",
       "renderContentLook",
+      "renderContentState",
+      "renderContentTail",
       "renderContentTreeProjection",
       "renderPosition",
       "renderRootMapMembers",
@@ -363,6 +372,18 @@ try {
       !protocol.renderContentLook(looked).includes("placement: history")
     ) {
       throw new Error("Installed Content-look reader did not execute the conformance fixture");
+    }
+    if (!awareness.required_coverage.includes("tail_composition")) {
+      throw new Error("Content-awareness manifest does not require tail composition");
+    }
+    const tailState = {
+      placement: "tail",
+      git: { repoRoot: "/r", headSha: null, branch: "main", ahead: null, behind: null, dirty: false, untrackedInTrackedDirs: [] },
+      captures: ["notes/a.md"],
+    };
+    const composedTail = protocol.renderContentTail(null, { state: tailState, handles: ["h"], change: "c" });
+    if (composedTail !== [protocol.renderContentState(tailState), "h", "c"].join("\\n\\n")) {
+      throw new Error("Installed tail composer did not order State, handles, and Change");
     }
     if (maps?.format !== "ideaspaces-maps/v2" || !maps.required_coverage?.length) {
       throw new Error("Map conformance manifest did not load");
