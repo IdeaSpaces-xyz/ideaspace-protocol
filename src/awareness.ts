@@ -132,9 +132,19 @@ export const CONTENT_AWARENESS_SECTIONS = [
 export type ContentAwarenessSection =
   (typeof CONTENT_AWARENESS_SECTIONS)[number];
 
+export const CONTENT_AWARENESS_PLACEMENTS = ["head", "tail"] as const;
+
+export type ContentAwarenessPlacement =
+  (typeof CONTENT_AWARENESS_PLACEMENTS)[number];
+
 export interface RenderContentAwarenessOpts {
   /** Canonical sections to include. Output order is fixed regardless of input order. */
   sections?: readonly ContentAwarenessSection[];
+  /**
+   * Render only ambient items assigned to this prompt placement. When combined
+   * with `sections`, both filters apply. Omit for the canonical full render.
+   */
+  placement?: ContentAwarenessPlacement;
   /** Cap on stale-doc signals rendered before truncation. Default: 10. */
   maxDrift?: number;
 }
@@ -923,6 +933,12 @@ function renderAwarenessSections(
 
   for (const section of CONTENT_AWARENESS_SECTIONS) {
     if (!included.has(section)) continue;
+    if (
+      opts.placement &&
+      awarenessSectionPlacement(data, section) !== opts.placement
+    ) {
+      continue;
+    }
     let rendered: string | null = null;
     switch (section) {
       case "position":
@@ -965,6 +981,47 @@ function renderAwarenessSections(
   }
 
   return sections.join("\n\n");
+}
+
+/**
+ * Resolve section membership from the manifest's typed item placement. The
+ * direction warning is a derived drift item and therefore belongs to tail.
+ */
+function awarenessSectionPlacement(
+  data: AwarenessSections & {
+    position?: ContentAwarenessPosition;
+    git: GitState | null;
+    staleDocs: DriftSignal[];
+    missingDirection: Array<"purpose" | "now">;
+  },
+  section: ContentAwarenessSection,
+): ContentAwarenessPlacement | null {
+  switch (section) {
+    case "position":
+      return data.position?.placement === "head" ? "head" : null;
+    case "now":
+      return data.now?.placement === "head" ? "head" : null;
+    case "tree":
+      return data.tree?.placement === "head" ? "head" : null;
+    case "contract":
+      return data.contract.some((entry) => entry.placement === "head") ? "head" : null;
+    case "skills":
+      return data.skills.some((skill) => skill.placement === "head") ? "head" : null;
+    case "activity":
+      return data.activity?.placement === "tail" ? "tail" : null;
+    case "git":
+      return data.git && "placement" in data.git && data.git.placement === "tail"
+        ? "tail"
+        : null;
+    case "stale-docs":
+      return data.staleDocs.some(
+        (signal) => "placement" in signal && signal.placement === "tail",
+      )
+        ? "tail"
+        : null;
+    case "direction-drift":
+      return data.missingDirection.length ? "tail" : null;
+  }
 }
 
 function buildContractEntries(

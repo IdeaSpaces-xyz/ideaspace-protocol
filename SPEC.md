@@ -86,6 +86,15 @@ placement is not Map data and is named `placement`; legacy `level` already names
 composition position. Loaded agent-context entries carry source, representation, exact-byte
 revision, and placement.
 
+A successful ambient Content-awareness manifest MAY render in full, by explicit canonical section,
+or by `head | tail` placement. Placement selection MUST derive section membership from the
+manifest's typed item placement, preserve canonical order within each result, and apply as an
+intersection when an explicit section filter is also present. Head and tail are disjoint; activity
+MUST appear only in tail. The canonical full render is the head render followed by the tail render,
+omitting an empty side and separating non-empty sides by the normal section break. This selection
+does not change manifest data, Map members, or private runtime residency. `history` remains exclusive
+to the separate focus renderer.
+
 A **Content focus** is the bounded reference form of a later read. It resolves one target position
 under the same explicit Foundation/Agreement selection rules, but it MUST NOT accept, return, mutate,
 or extend the caller's composed contract stack. Its `contractRole` is always `reference`: target

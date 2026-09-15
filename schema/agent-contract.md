@@ -103,7 +103,9 @@ Prompt placement belongs to awareness, not portable Map members. It is named `pl
 legacy field `level` already means filesystem composition position. Every loaded agent-context entry
 records its source position, representation, placement, and a revision derived from the exact bytes
 read. Activity, Git state, and drift belong to the tail; active authority context belongs to the
-head; a later focus read belongs to history.
+head; a later focus read belongs to history. Ambient rendering may select `head | tail` directly
+from those typed placements; head and tail are disjoint, preserve canonical order, and do not alter
+private runtime residency. `history` remains a separate focus render.
 
 A Content focus reads a target contract as reference without accepting or changing the caller's
 composed stack. Its contract role is always `reference`; it carries only the target position,

@@ -321,6 +321,42 @@ describe("Content awareness manifest", () => {
     expect(rendered).not.toContain("Agent context:");
   });
 
+  it("renders head and tail from manifest placement without changing the full render", async () => {
+    await writeAgent({
+      "foundation.md": "---\nsummary: Foundation summary.\n---\nFoundation",
+      "purpose.md": "---\nsummary: Purpose summary.\n---\nPurpose",
+      "now.md": "Current focus.",
+    });
+    await fs.writeFile(join(tmp, "README.md"), "v1", "utf-8");
+    initGit();
+    const first = commit("first");
+    await fs.writeFile(join(tmp, "README.md"), "v2", "utf-8");
+    await fs.writeFile(join(tmp, "new.md"), "new", "utf-8");
+    commit("second");
+
+    const manifest = await assembleContentAwareness({ position: tmp, lastSha: first });
+    const full = renderContentAwareness(manifest!);
+    const head = renderContentAwareness(manifest!, { placement: "head" });
+    const tail = renderContentAwareness(manifest!, { placement: "tail" });
+
+    expect(full).toBe(`${head}\n\n${tail}`);
+    expect(head).toContain("Position:");
+    expect(head).toContain("Now: Current focus.");
+    expect(head).toContain("Agent context:");
+    expect(head).not.toContain("Since last session");
+    expect(head).not.toContain("Git:");
+    expect(tail).toContain("Since last session (2 changes):");
+    expect(tail).toContain("Git: branch main");
+    expect(tail).not.toContain("Position:");
+    expect(tail).not.toContain("Agent context:");
+    expect(
+      renderContentAwareness(manifest!, {
+        placement: "head",
+        sections: ["git", "now"],
+      }),
+    ).toBe("Now: Current focus.");
+  });
+
   it("keeps missing direction as structured drift and renders it selectively", async () => {
     await writeAgent({ "foundation.md": "Foundation" });
     const manifest = await assembleContentAwareness({
@@ -347,13 +383,18 @@ describe("Content awareness manifest", () => {
         "  space root: .\n" +
         "  active _agent: .",
     );
+    const directionDrift = [
+      "⚠ `_agent/purpose.md` not yet captured. The contract names it; suggest capturing at a natural moment.",
+      "⚠ `_agent/now.md` not yet captured. Suggest capturing what's currently active.",
+    ].join("\n");
     expect(
       renderContentAwareness(manifest!, { sections: ["direction-drift"] }),
-    ).toBe(
-      [
-        "⚠ `_agent/purpose.md` not yet captured. The contract names it; suggest capturing at a natural moment.",
-        "⚠ `_agent/now.md` not yet captured. Suggest capturing what's currently active.",
-      ].join("\n"),
+    ).toBe(directionDrift);
+    expect(renderContentAwareness(manifest!, { placement: "tail" })).toBe(
+      directionDrift,
+    );
+    expect(renderContentAwareness(manifest!, { placement: "head" })).not.toContain(
+      "not yet captured",
     );
   });
 

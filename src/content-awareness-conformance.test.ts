@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { promises as fs } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -21,6 +22,11 @@ interface VectorFiles {
   files: Record<string, string>;
   directories?: string[];
   symlinks?: Record<string, string>;
+  git_commits?: Array<{
+    message: string;
+    files: Record<string, string>;
+  }>;
+  last_sha_commit?: number;
   covers: string[];
 }
 
@@ -32,6 +38,10 @@ interface Vector extends VectorFiles {
     excluded?: string;
     issue_codes?: string[];
     render_fixture?: string;
+    placement_render_fixtures?: {
+      head: string;
+      tail: string;
+    };
   };
 }
 
@@ -66,23 +76,65 @@ afterEach(async () => {
   await Promise.all(made.splice(0).map((path) => fs.rm(path, { recursive: true, force: true })));
 });
 
-async function materialize(vector: VectorFiles): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "awareness-vector-"));
-  made.push(root);
-  for (const [path, content] of Object.entries(vector.files)) {
+async function writeVectorFiles(
+  root: string,
+  files: Record<string, string>,
+): Promise<void> {
+  for (const [path, content] of Object.entries(files)) {
     const absolute = join(root, path);
     await fs.mkdir(join(absolute, ".."), { recursive: true });
     await fs.writeFile(absolute, content, "utf-8");
   }
+}
+
+function git(root: string, args: string[]): string {
+  const result = spawnSync("git", ["-C", root, ...args], { encoding: "utf-8" });
+  if (result.status !== 0) {
+    throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
+  }
+  return result.stdout.trim();
+}
+
+async function materialize(
+  vector: VectorFiles,
+): Promise<{ root: string; lastSha?: string }> {
+  const created = await mkdtemp(join(tmpdir(), "awareness-vector-"));
+  made.push(created);
+  await writeVectorFiles(created, vector.files);
   for (const path of vector.directories ?? []) {
-    await fs.mkdir(join(root, path), { recursive: true });
+    await fs.mkdir(join(created, path), { recursive: true });
   }
   for (const [path, target] of Object.entries(vector.symlinks ?? {})) {
-    const absolute = join(root, path);
+    const absolute = join(created, path);
     await fs.mkdir(join(absolute, ".."), { recursive: true });
     await fs.symlink(target, absolute);
   }
-  return fs.realpath(root);
+
+  const revisions: string[] = [];
+  if (vector.git_commits?.length) {
+    git(created, ["init", "-q", "-b", "main"]);
+    git(created, ["config", "user.email", "conformance@example.com"]);
+    git(created, ["config", "user.name", "Conformance"]);
+    for (const commit of vector.git_commits) {
+      await writeVectorFiles(created, commit.files);
+      git(created, ["add", "."]);
+      git(created, ["commit", "-q", "-m", commit.message]);
+      revisions.push(git(created, ["rev-parse", "HEAD"]));
+    }
+  }
+
+  const root = await fs.realpath(created);
+  const baseline = vector.last_sha_commit;
+  return {
+    root,
+    ...(baseline === undefined ? {} : { lastSha: revisions[baseline] }),
+  };
+}
+
+async function readRenderFixture(name: string, root: string): Promise<string> {
+  return (
+    await fs.readFile(join(manifestPath, "..", name), "utf-8")
+  ).trimEnd().replaceAll("$ROOT", root);
 }
 
 describe("Content awareness conformance manifest", () => {
@@ -98,10 +150,10 @@ describe("Content awareness conformance manifest", () => {
 
   for (const vector of kit.vectors) {
     it(vector.id, async () => {
-      const root = await materialize(vector);
+      const { root, lastSha } = await materialize(vector);
       const opts: AssembleContentAwarenessOpts = {
         position: root,
-        lastSha: null,
+        lastSha: lastSha ?? null,
         ...(vector.contract_source ? { contractSource: vector.contract_source } : {}),
       };
       const result = await assembleContentAwareness(opts);
@@ -125,13 +177,20 @@ describe("Content awareness conformance manifest", () => {
         expect(JSON.stringify(result)).not.toContain(vector.expected.excluded);
       }
       if (vector.expected.render_fixture) {
-        const expected = (
-          await fs.readFile(
-            join(manifestPath, "..", vector.expected.render_fixture),
-            "utf-8",
-          )
-        ).trimEnd();
-        expect(renderContentAwareness(result)).toBe(expected);
+        expect(renderContentAwareness(result)).toBe(
+          await readRenderFixture(vector.expected.render_fixture, root),
+        );
+      }
+      if (vector.expected.placement_render_fixtures) {
+        const head = renderContentAwareness(result, { placement: "head" });
+        const tail = renderContentAwareness(result, { placement: "tail" });
+        expect(head).toBe(
+          await readRenderFixture(vector.expected.placement_render_fixtures.head, root),
+        );
+        expect(tail).toBe(
+          await readRenderFixture(vector.expected.placement_render_fixtures.tail, root),
+        );
+        expect(renderContentAwareness(result)).toBe(`${head}\n\n${tail}`);
       }
       expectExactRevisionsAndPlacements(result);
     });
@@ -139,7 +198,7 @@ describe("Content awareness conformance manifest", () => {
 
   for (const vector of kit.focus_vectors) {
     it(`focus: ${vector.id}`, async () => {
-      const root = await materialize(vector);
+      const { root } = await materialize(vector);
       const result = await assembleContentFocus({
         position: root,
         ...(vector.contract_source ? { contractSource: vector.contract_source } : {}),
@@ -173,12 +232,10 @@ describe("Content awareness conformance manifest", () => {
       }
       expectFocusPlacements(result);
       if (vector.expected.render_fixture) {
-        const expected = (
-          await fs.readFile(
-            join(manifestPath, "..", vector.expected.render_fixture),
-            "utf-8",
-          )
-        ).trimEnd();
+        const expected = await readRenderFixture(
+          vector.expected.render_fixture,
+          root,
+        );
         expect(renderContentFocus(result)).toBe(expected);
         const repeated = await assembleContentFocus({ position: root });
         expect(repeated?.status).toBe("ok");

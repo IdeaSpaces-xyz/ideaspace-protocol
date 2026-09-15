@@ -1,0 +1,16 @@
+Position:
+  repo: $ROOT
+  cwd: .
+  space root: .
+  active _agent: .
+
+Now: Current work.
+
+Tree (2 files):
+  README.md — v2
+  changed.md — new
+
+Agent context:
+  foundation — Foundation summary.
+  purpose — Purpose summary.
+  now — Now summary.

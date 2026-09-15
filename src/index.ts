@@ -46,6 +46,7 @@ export {
   renderContentFocus,
   discoverSkillEntries,
   CONTENT_AWARENESS_SECTIONS,
+  CONTENT_AWARENESS_PLACEMENTS,
 } from "./awareness.js";
 export type {
   SkillEntry,
@@ -56,6 +57,7 @@ export type {
   ContentTreeDepth,
   RenderContentAwarenessOpts,
   ContentAwarenessSection,
+  ContentAwarenessPlacement,
   ContentAwarenessPosition,
   ContentAwarenessNow,
   ContentAwarenessTreeEntry,

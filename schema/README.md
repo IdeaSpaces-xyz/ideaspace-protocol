@@ -12,7 +12,7 @@ Present (v0.18.0, provisional):
 - [`root-identity.md`](root-identity.md) — optional `root_node_id` declaration in either root entrypoint, current and legacy forms, one-minter lifecycle, pure evidence states, and lazy convergence.
 - [`maps.md`](maps.md) — provisional opt-in `map` frontmatter: ordered repository positions and open addresses, canonical repo URLs, exact root pins, representation ceilings, bounded recursive walking, and safe degradation.
 - [`map-projection.md`](map-projection.md) — pure tree/root-handle projection into Map members with observed disclosure, private presentation sidecars, deterministic rendering, and an explicit portability gate.
-- [`content-awareness.md`](content-awareness.md) — portable read-only selectable-frame and reference-focus results, exact loaded representations/revisions, floor orientation, prompt placement, and canonical rendering.
+- [`content-awareness.md`](content-awareness.md) — portable read-only selectable-frame and reference-focus results, exact loaded representations/revisions, floor orientation, prompt placement, and canonical full or placement-selective rendering.
 - [`markdown-inspection.md`](markdown-inspection.md) — portable progressive-disclosure reads for one Markdown document: summary, ATX outline, or an explicitly selected section.
 - [`local-effects.md`](local-effects.md) — the language-neutral `write_markdown`, `commit_paths`, and `path_revision` contract: per-path revision CAS, root/symlink/ignore safety, frontmatter preservation, exact commits, and typed partial failure.
 - [`workspace-handles.md`](workspace-handles.md) — neutral root summaries and immediate-child repository handles for local workspace awareness.
