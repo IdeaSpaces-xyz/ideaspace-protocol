@@ -2,7 +2,7 @@
 
 The machine-readable, language-neutral contract — so non-TypeScript runtimes can conform without importing the reference library.
 
-Present (v0.18.0, provisional):
+Present (v0.19.0, provisional):
 
 - [`frontmatter.schema.json`](frontmatter.schema.json) — the Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (single, typed link; the `<type>:<id>` shape is protocol, the type namespace is platform-defined), `tags`. Nothing strictly required (absent = drift, not error); `additionalProperties` allowed (extensible).
 - [`agent-contract.md`](agent-contract.md) — selectable Foundation/Agreement frames, Agreement full-load declarations, floor orientation, root composition, prompt placement, skills, extensions, and conformance.
