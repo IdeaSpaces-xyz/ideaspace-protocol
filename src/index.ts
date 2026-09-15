@@ -48,6 +48,22 @@ export {
   CONTENT_AWARENESS_SECTIONS,
   CONTENT_AWARENESS_PLACEMENTS,
 } from "./awareness.js";
+export {
+  assembleContentLook,
+  renderContentLook,
+} from "./content-look.js";
+export type {
+  AssembleContentLookOpts,
+  ContentLookDirectoryChild,
+  ContentLookSectionChild,
+  ContentLookChild,
+  ContentLookProjectedMember,
+  ContentLookTarget,
+  ContentLookManifest,
+  ContentLookDiagnostic,
+  ContentLookResult,
+} from "./content-look.js";
+
 export type {
   SkillEntry,
   AssembleAwarenessOpts,

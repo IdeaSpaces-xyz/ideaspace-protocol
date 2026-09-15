@@ -105,6 +105,24 @@ Foundation keeps its compatibility representations; floor remains valid. Activit
 and direction warnings do not enter a focus. A conforming renderer emits one deterministic focus
 block so a caller can retain its head once and append one reference block per explicit focus read.
 
+A **Content look** deepens exactly one local Markdown Note or Content directory under that
+reference-only frame. Its requested depth uses the five Map rungs: `name` returns the Layer-1 or
+filename label; `summary` returns Layer 1 or the first meaningful body line; `surface` returns the
+Note or README body; `children` returns Note ATX headings or direct Content child handles; and `full`
+is equivalent to surface for a Note or returns surface plus direct children for a directory. Surface
+and children are sibling facets: requesting children does not load the body. `README.md` is a
+directory's surface, not one of its children. Every target fact has `placement: history`; the
+applicable Agreement/Foundation frame remains `contractRole: reference` and contributes no ambient
+tree or caller authority.
+
+A Content-look result carries a rootless projected member with portable position, requested depth,
+and observed disclosure. A consumer adds a Map root ordinal only after independently establishing a
+clean, pinned, identified root; local-only, dirty, unborn, ignored, or invalid targets remain useful
+projections and MUST NOT masquerade as portable Maps. The representation revision hashes exactly the
+semantic target representation returned, excluding private path, placement, and request metadata.
+The operation performs no network access, fetch, identity minting, write, Git mutation, or caller
+position change. The language-neutral contract is [`schema/content-look.md`](schema/content-look.md).
+
 A folder with neither entrypoint remains valid at the floor: bounded Content orientation with no
 agent terms. Exact `_agent/` is optional for base Content conformance; adding an entrypoint adds a
 selectable frame.

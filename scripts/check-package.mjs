@@ -22,6 +22,8 @@ const expected = [
   "conformance/awareness/manifest.json",
   "conformance/awareness/placement-head-render.txt",
   "conformance/awareness/placement-tail-render.txt",
+  "conformance/content-look/manifest.json",
+  "conformance/content-look/note-full-render.txt",
   "conformance/extensions/manifest.json",
   "conformance/local-effects/manifest.json",
   "conformance/map-projection/manifest.json",
@@ -33,6 +35,13 @@ const expected = [
   "conformance/reference-agreement/_agent/skills/ask.md",
   "conformance/reference-agreement/_agent/skills/close-context.md",
   "conformance/reference-agreement/_agent/skills/reach-agreement.md",
+  "conformance/reference-look/_agent/agreement.md",
+  "conformance/reference-look/_agent/foundation.md",
+  "conformance/reference-look/data.txt",
+  "conformance/reference-look/docs/README.md",
+  "conformance/reference-look/docs/alpha.md",
+  "conformance/reference-look/docs/sub/beta.md",
+  "conformance/reference-look/notes/decision.md",
   "dist/agreement.d.ts",
   "dist/agreement.d.ts.map",
   "dist/agreement.js",
@@ -45,6 +54,10 @@ const expected = [
   "dist/awareness.d.ts.map",
   "dist/awareness.js",
   "dist/awareness.js.map",
+  "dist/content-look.d.ts",
+  "dist/content-look.d.ts.map",
+  "dist/content-look.js",
+  "dist/content-look.js.map",
   "dist/conformance.d.ts",
   "dist/conformance.d.ts.map",
   "dist/conformance.js",
@@ -138,6 +151,7 @@ const expected = [
   "schema/agent-contract.md",
   "schema/assets.md",
   "schema/content-awareness.md",
+  "schema/content-look.md",
   "schema/extensions.md",
   "schema/frontmatter.schema.json",
   "schema/local-effects.md",
@@ -189,11 +203,13 @@ try {
     "./schema/maps",
     "./schema/map-projection",
     "./schema/content-awareness",
+    "./schema/content-look",
     "./conformance/extensions",
     "./conformance/assets",
     "./conformance/local-effects",
     "./conformance/root-identity",
     "./conformance/awareness",
+    "./conformance/content-look",
     "./conformance/maps",
     "./conformance/map-projection",
     "./SPEC.md",
@@ -237,6 +253,7 @@ try {
   const probe = `
     import { createRequire } from "node:module";
     import { deepStrictEqual } from "node:assert";
+    import { dirname, resolve } from "node:path";
     import * as protocol from "@ideaspaces/protocol";
     import * as assetsRuntime from "@ideaspaces/protocol/assets";
     import * as localEffects from "@ideaspaces/protocol/local-effects";
@@ -247,6 +264,7 @@ try {
     const effects = require("@ideaspaces/protocol/conformance/local-effects");
     const rootIdentity = require("@ideaspaces/protocol/conformance/root-identity");
     const awareness = require("@ideaspaces/protocol/conformance/awareness");
+    const contentLook = require("@ideaspaces/protocol/conformance/content-look");
     const maps = require("@ideaspaces/protocol/conformance/maps");
     const mapProjection = require("@ideaspaces/protocol/conformance/map-projection");
     const repositoryPathSchema = require.resolve("@ideaspaces/protocol/schema/repository-path");
@@ -257,9 +275,11 @@ try {
     const mapsSchema = require.resolve("@ideaspaces/protocol/schema/maps");
     const mapProjectionSchema = require.resolve("@ideaspaces/protocol/schema/map-projection");
     const awarenessSchema = require.resolve("@ideaspaces/protocol/schema/content-awareness");
+    const contentLookSchema = require.resolve("@ideaspaces/protocol/schema/content-look");
     const required = [
       "assembleContentAwareness",
       "assembleContentFocus",
+      "assembleContentLook",
       "composeAgreementAlongPath",
       "classifyRepositoryPath",
       "composeContractAlongPath",
@@ -277,6 +297,7 @@ try {
       "rootNodeIdFromBytes",
       "renderContentAwareness",
       "renderContentFocus",
+      "renderContentLook",
       "renderContentTreeProjection",
       "renderPosition",
       "renderRootMapMembers",
@@ -325,6 +346,24 @@ try {
     ) {
       throw new Error("Content-awareness conformance manifest did not load");
     }
+    if (contentLook?.format !== "ideaspaces-content-look/v1" || !contentLook.required_coverage?.length) {
+      throw new Error("Content-look conformance manifest did not load");
+    }
+    const contentLookManifestPath = require.resolve("@ideaspaces/protocol/conformance/content-look");
+    const contentLookFixture = resolve(dirname(contentLookManifestPath), contentLook.fixture);
+    const looked = await protocol.assembleContentLook({
+      position: resolve(contentLookFixture, "notes/decision.md"),
+      depth: "children",
+      contractSource: "agreement",
+    });
+    if (
+      looked?.status !== "ok" ||
+      looked.contractRole !== "reference" ||
+      looked.target.children?.[1]?.name !== "Evidence" ||
+      !protocol.renderContentLook(looked).includes("placement: history")
+    ) {
+      throw new Error("Installed Content-look reader did not execute the conformance fixture");
+    }
     if (maps?.format !== "ideaspaces-maps/v2" || !maps.required_coverage?.length) {
       throw new Error("Map conformance manifest did not load");
     }
@@ -354,6 +393,9 @@ try {
     }
     if (!awarenessSchema.endsWith("schema/content-awareness.md")) {
       throw new Error("Content-awareness schema export did not resolve");
+    }
+    if (!contentLookSchema.endsWith("schema/content-look.md")) {
+      throw new Error("Content-look schema export did not resolve");
     }
     const extension = protocol.classifyRepositoryPath("_example/payload.md", "file");
     if (extension.status !== "ok" || extension.role !== "extension" || extension.extension !== "_example") {

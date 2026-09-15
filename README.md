@@ -94,6 +94,21 @@ if (focus?.status === "ok") console.log(renderContentFocus(focus));
 // focus.contractRole === "reference" — read, never composed
 ```
 
+Content look deepens one local Note or directory at the canonical Map rung while retaining that
+reference-only boundary:
+
+```ts
+import { assembleContentLook, renderContentLook } from "@ideaspaces/protocol";
+
+const looked = await assembleContentLook({
+  position: "../another-space/decisions/choice.md",
+  depth: "children",
+  contractSource: "agreement",
+});
+if (looked?.status === "ok") console.log(renderContentLook(looked));
+// looked.target.member has no root ordinal until a consumer proves a safe pinned root
+```
+
 The library also walks and projects the Content tree into Map members, renders thin working-set/catalog handles without exporting private state, reads one section of a document, classifies paths, resolves supporting files, evaluates a space's identity, and performs safe local writes through the explicit `local-effects` subpath with a git runner you supply. Each export is documented in [`src/`](src/) and proved by [`conformance/`](conformance/).
 
 TypeScript is the reference implementation, not the requirement. Other languages conform to [`SPEC.md`](SPEC.md), [`schema/`](schema/), and the vectors.
@@ -104,7 +119,7 @@ A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in 
 
 ## Status
 
-**v0.19.0 candidate, provisional.** Ambient awareness now renders a protocol-owned stable head and volatile tail directly from typed placement while preserving the canonical full render and fixed-history focus. Content trees and thin repository-root handles continue to project through the Map member language without exporting private paths, state, roles, or prompt placement. The optional layers still move. Pin a version.
+**v0.20.0 candidate, provisional.** A Content look now reads one local Note or directory at any canonical Map rung beneath a reference-only frame, with deterministic rendering and a rootless member that cannot masquerade as a portable Map. Ambient awareness retains protocol-owned head/tail rendering, canonical full output, and fixed-history focus. The optional layers still move. Pin a version.
 
 ## Develop
 
