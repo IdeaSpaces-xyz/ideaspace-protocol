@@ -156,7 +156,7 @@ one deterministic block:
 
 ```
 State:
-  branch: main
+  branch: main                     # or: (detached)
   remote: ahead 1, behind 0        # or: no upstream
   working tree: dirty
   captures awaiting commit: 2
