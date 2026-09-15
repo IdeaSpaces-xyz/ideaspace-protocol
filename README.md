@@ -84,6 +84,17 @@ const stableHead = renderContentAwareness(result, { placement: "head" });
 const volatileTail = renderContentAwareness(result, { placement: "tail" });
 ```
 
+The volatile register a harness keeps closest to action has one composition — local State, the
+harness's own handles, the manifest tail, then the open Change line — so a CLI `status` and an agent
+runtime render the same bytes for the same inputs:
+
+```ts
+import { assembleContentState, renderContentTail } from "@ideaspaces/protocol";
+
+const state = await assembleContentState(repoRoot);
+const tail = renderContentTail(result, { state, handles: [catalog], change: openChangeLine });
+```
+
 A separate focus read lets a harness show another position without adopting its agent context:
 
 ```ts
@@ -119,7 +130,7 @@ A tool that claims to work in ideaspaces follows the **MUST** and **SHOULD** in 
 
 ## Status
 
-**v0.20.0 candidate, provisional.** A Content look now reads one local Note or directory at any canonical Map rung beneath a reference-only frame, with deterministic rendering and a rootless member that cannot masquerade as a portable Map. Ambient awareness retains protocol-owned head/tail rendering, canonical full output, and fixed-history focus. The optional layers still move. Pin a version.
+**v0.21.0 candidate, provisional.** The volatile Content tail now has one composition — local State, harness handles, manifest tail, open Change line — so every local harness renders the same bytes for the same inputs. A Content look reads one local Note or directory at any canonical Map rung beneath a reference-only frame. Ambient awareness retains protocol-owned head/tail rendering, canonical full output, and fixed-history focus. The optional layers still move. Pin a version.
 
 ## Develop
 

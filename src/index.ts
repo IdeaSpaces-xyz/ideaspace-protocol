@@ -52,6 +52,12 @@ export {
   assembleContentLook,
   renderContentLook,
 } from "./content-look.js";
+export {
+  assembleContentState,
+  renderContentState,
+  renderContentTail,
+} from "./content-state.js";
+export type { ContentState, RenderContentTailOpts } from "./content-state.js";
 export type {
   AssembleContentLookOpts,
   ContentLookDirectoryChild,

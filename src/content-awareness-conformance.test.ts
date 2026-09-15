@@ -15,6 +15,11 @@ import {
   type ContentFocusManifest,
   type ContentFocusTreeEntry,
 } from "./awareness.js";
+import {
+  assembleContentState,
+  renderContentState,
+  renderContentTail,
+} from "./content-state.js";
 
 interface VectorFiles {
   id: string;
@@ -26,6 +31,8 @@ interface VectorFiles {
     message: string;
     files: Record<string, string>;
   }>;
+  /** Files written and staged after the last commit, left uncommitted. */
+  git_staged?: Record<string, string>;
   last_sha_commit?: number;
   covers: string[];
 }
@@ -41,6 +48,12 @@ interface Vector extends VectorFiles {
     placement_render_fixtures?: {
       head: string;
       tail: string;
+    };
+    tail_composition?: {
+      handles: string[];
+      change: string;
+      state_render_fixture: string;
+      render_fixture: string;
     };
   };
 }
@@ -125,6 +138,10 @@ async function materialize(
       git(created, ["commit", "-q", "-m", commit.message]);
       revisions.push(git(created, ["rev-parse", "HEAD"]));
     }
+    if (vector.git_staged) {
+      await writeVectorFiles(created, vector.git_staged);
+      git(created, ["add", "--", ...Object.keys(vector.git_staged)]);
+    }
   }
 
   const root = await fs.realpath(created);
@@ -196,6 +213,29 @@ describe("Content awareness conformance manifest", () => {
           await readRenderFixture(vector.expected.placement_render_fixtures.tail, root),
         );
         expect(renderContentAwareness(result)).toBe(`${head}\n\n${tail}`);
+      }
+      if (vector.expected.tail_composition) {
+        const spec = vector.expected.tail_composition;
+        const state = await assembleContentState(root);
+        expect(state.placement).toBe("tail");
+        expect(renderContentState(state)).toBe(
+          await readRenderFixture(spec.state_render_fixture, root),
+        );
+        const composed = renderContentTail(result, {
+          state,
+          handles: spec.handles,
+          change: spec.change,
+        });
+        expect(composed).toBe(await readRenderFixture(spec.render_fixture, root));
+        // Deterministic, State supersedes the compact Git line, Change is last.
+        expect(
+          renderContentTail(result, { state, handles: spec.handles, change: spec.change }),
+        ).toBe(composed);
+        expect(composed).not.toContain("Git: branch");
+        expect(composed.endsWith(spec.change)).toBe(true);
+        expect(renderContentTail(result)).toBe(
+          renderContentAwareness(result, { placement: "tail" }),
+        );
       }
       expectExactRevisionsAndPlacements(result);
     });

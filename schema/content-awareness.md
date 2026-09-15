@@ -148,6 +148,30 @@ followed by non-empty tail with the canonical section break. If `placement` and 
 supplied, the renderer applies their intersection. Selection changes only rendered output; it does
 not claim or change runtime residency.
 
+## Content tail
+
+`assembleContentState(repoRoot)` reads local **State** at tail placement: the repository's Git facts
+plus the staged Content and `_agent/` paths awaiting an explicit commit. `renderContentState` renders
+one deterministic block:
+
+```
+State:
+  branch: main
+  remote: ahead 1, behind 0        # or: no upstream
+  working tree: dirty
+  captures awaiting commit: 2
+  untracked knowledge files: 1     # only when present
+```
+
+`renderContentTail(manifest, { state, handles, change, sections, maxDrift })` composes the volatile
+register every local harness renders after the head, in fixed order: State, caller-owned handles in
+producer order (a repository catalog, a floor hint), the manifest's tail sections, then the open
+Change line. State supersedes the compact `git` section, so the same facts never render twice; without
+State the compact line stays. Empty handles disappear; `manifest` may be `null` when no Content
+position resolves. Handles and the Change line are harness-owned text the protocol orders but does not
+define, and nothing here enters Map data or claims runtime residency. A CLI status command and an
+agent runtime's post-breakpoint block render byte-identical tails for equal inputs.
+
 ## Tree behavior
 
 Tree depth defaults to 1 and numeric probes clamp to 1..4. Level 1 carries summary-rung handles;
@@ -188,4 +212,5 @@ Implementations claiming Content-awareness conformance execute every required co
 [`../conformance/awareness/manifest.json`](../conformance/awareness/manifest.json). The vectors cover
 both single-source arms, explicit selection, choice and unavailable diagnostics, floor orientation,
 declared full loading, unselected-source absence, exact revisions, prompt placement, deterministic
-head/tail rendering, disjoint membership, and activity confined to tail.
+head/tail rendering, disjoint membership, activity confined to tail, and Content-tail composition with
+State superseding the compact Git line and the Change line last.

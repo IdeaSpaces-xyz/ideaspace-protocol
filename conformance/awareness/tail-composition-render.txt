@@ -1,0 +1,16 @@
+State:
+  branch: main
+  remote: no upstream
+  working tree: dirty
+  captures awaiting commit: 1
+
+Repos in scope (local):
+  home  (POV)
+
+You're at a workspace folder.
+
+Since last session (2 changes):
+  M	README.md
+  A	changed.md
+
+Change open: chg_example (this session)

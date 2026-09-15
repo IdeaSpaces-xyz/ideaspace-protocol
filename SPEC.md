@@ -95,6 +95,15 @@ omitting an empty side and separating non-empty sides by the normal section brea
 does not change manifest data, Map members, or private runtime residency. `history` remains exclusive
 to the separate focus renderer.
 
+A **Content tail** is the one composition of the volatile register a local harness renders after the
+head, closest to action. Its order is fixed: local **State** (branch, upstream, working tree, captures
+awaiting commit, untracked knowledge files; `placement: tail`), then caller-owned handles in producer
+order, then the manifest's tail sections, then the open Change line last. When State is present it
+supersedes the manifest's compact Git line, so the same facts never render twice. The manifest may be
+absent; the tail then carries only local inputs. Handles and the Change line are harness state the
+protocol orders but does not define. Two conforming harnesses MUST render byte-identical tails for
+equal manifest, State, handle, and Change inputs.
+
 A **Content focus** is the bounded reference form of a later read. It resolves one target position
 under the same explicit Foundation/Agreement selection rules, but it MUST NOT accept, return, mutate,
 or extend the caller's composed contract stack. Its `contractRole` is always `reference`: target
@@ -288,7 +297,7 @@ Every conformant repository reader MUST pass every required coverage vector in [
 A tool claiming **Content-awareness conformance** additionally MUST pass every required coverage
 vector in [`conformance/awareness/manifest.json`](conformance/awareness/manifest.json), including
 single-source selection, explicit choice, floor orientation, declared full loading, unselected-source
-absence, exact revisions, and prompt placement.
+absence, exact revisions, prompt placement, and Content-tail composition.
 
 A tool that claims **local-effect conformance** additionally MUST pass every required coverage vector in [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json), including per-path revision CAS, symlink refusal, semantic frontmatter preservation, exact commit membership, unselected-state preservation, explicit identity, and honest partial failure.
 
