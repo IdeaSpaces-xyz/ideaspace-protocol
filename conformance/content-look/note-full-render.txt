@@ -1,0 +1,33 @@
+Focus:
+  target: notes
+  space root: .
+  contract source: agreement
+  contract role: reference — read, never composed
+
+Agent context:
+  agreement [full]:
+    ---
+    name: Look agreement
+    summary: Reference terms for the Content look fixture.
+    ---
+    # Look agreement
+    
+    LOOK_AGREEMENT_SENTINEL
+
+Look:
+  position: notes/decision.md
+  kind: markdown
+  depth: full
+  revision: sha256:e3745d5fa8cfe4844adf90b4b9854037f57b18af03a7a61e8807394e6c7fdef7
+  placement: history
+  name: Decision
+  summary: Why the selected frame stays reference-only.
+
+Surface:
+  # Decision
+  
+  The target deepens without changing caller authority.
+  
+  ## Evidence
+  
+  One exact fixture.

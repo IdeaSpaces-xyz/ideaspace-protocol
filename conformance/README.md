@@ -12,6 +12,8 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`awareness/manifest.json`** — language-neutral filesystem/Git vectors for Foundation-only, Agreement-only, explicit selection, choice-required and unavailable results, floor orientation, declared full loading, unselected-entrypoint absence, exact revisions, deterministic disjoint head/tail rendering with activity only in tail, and a depth-one focus whose target contract remains reference context.
 
+- **`content-look/manifest.json`** — language-neutral vectors for reading exactly one local Note or Content directory at each canonical Map rung beneath a reference-only frame. They prove Note/directory semantics, history placement, rootless projection, README/children separation, honest omissions, neutral frame selection, deterministic rendering, and non-Content refusal against `reference-look/`.
+
 - **`maps/manifest.json`** — language-neutral parse/build vectors for the provisional `map` block: pinned repository positions and rootless external addresses, canonical HTTPS and loopback-development repo URLs, matching root identities, all five ceilings, observed name/summary distinct from curator annotations, retired-field refusal, unknown types/fields, and graceful invalid-block refusal. Parse-only readers parse both `parse` and `build` inputs; constructors additionally build the `build` inputs and parse valid output back equal. These are pure representation checks, not remote-availability or authorization tests.
 
 - **`map-projection/manifest.json`** — language-neutral vectors for projecting bounded Content trees and thin root handles into ordered Map members. They prove summary/name ceilings, observed disclosure, deterministic producer order, honest omissions, strict portable wrapping, existing-address and unresolved-root behavior, private-presentation isolation, and shared root rendering.
@@ -53,6 +55,9 @@ Makes "conforms to the protocol" testable rather than aspirational.
 - **`reference-agreement/`** — a self-contained public Agreement fixture with identity, one declared
   full sibling, and three portable skills. It proves that Agreement can re-root inside another Git
   checkout without importing the containing repository's Foundation frame.
+
+- **`reference-look/`** — a dual-entrypoint fixture with one Note and one directory surface. Content
+  look vectors select Agreement explicitly and prove that Foundation never contaminates the result.
 
 ```ts
 import { validateSpace } from "@ideaspaces/protocol";

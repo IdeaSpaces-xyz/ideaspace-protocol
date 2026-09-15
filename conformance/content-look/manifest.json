@@ -1,0 +1,171 @@
+{
+  "format": "ideaspaces-content-look/v1",
+  "fixture": "../reference-look",
+  "required_coverage": [
+    "reference_only",
+    "history_placement",
+    "five_depths",
+    "note_full_equals_surface",
+    "directory_full",
+    "readme_not_child",
+    "honest_omissions",
+    "rootless_member",
+    "git_backed_target",
+    "exact_revision",
+    "choice_required",
+    "unselected_absent",
+    "deterministic_render",
+    "non_content_absent"
+  ],
+  "vectors": [
+    {
+      "id": "note-name",
+      "target": "notes/decision.md",
+      "depth": "name",
+      "contract_source": "agreement",
+      "covers": ["reference_only", "history_placement", "five_depths", "rootless_member"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/decision.md",
+        "name": "Decision",
+        "absent": ["summary", "surface", "children"]
+      }
+    },
+    {
+      "id": "note-summary",
+      "target": "notes/decision.md",
+      "depth": "summary",
+      "contract_source": "agreement",
+      "covers": ["five_depths"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/decision.md",
+        "name": "Decision",
+        "summary": "Why the selected frame stays reference-only.",
+        "absent": ["surface", "children"]
+      }
+    },
+    {
+      "id": "git-backed-note-summary",
+      "target": "notes/decision.md",
+      "depth": "summary",
+      "contract_source": "agreement",
+      "git": true,
+      "covers": ["git_backed_target"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/decision.md",
+        "name": "Decision",
+        "summary": "Why the selected frame stays reference-only.",
+        "absent": ["surface", "children"]
+      }
+    },
+    {
+      "id": "note-surface",
+      "target": "notes/decision.md",
+      "depth": "surface",
+      "contract_source": "agreement",
+      "covers": ["five_depths", "note_full_equals_surface", "exact_revision"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/decision.md",
+        "name": "Decision",
+        "summary": "Why the selected frame stays reference-only.",
+        "surface": "# Decision\n\nThe target deepens without changing caller authority.\n\n## Evidence\n\nOne exact fixture.\n",
+        "revision": "sha256:e3745d5fa8cfe4844adf90b4b9854037f57b18af03a7a61e8807394e6c7fdef7",
+        "absent": ["children"]
+      }
+    },
+    {
+      "id": "note-children",
+      "target": "notes/decision.md",
+      "depth": "children",
+      "contract_source": "agreement",
+      "covers": ["five_depths"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/decision.md",
+        "name": "Decision",
+        "summary": "Why the selected frame stays reference-only.",
+        "child_names": ["Decision", "Evidence"],
+        "absent": ["surface"]
+      }
+    },
+    {
+      "id": "note-full",
+      "target": "notes/decision.md",
+      "depth": "full",
+      "contract_source": "agreement",
+      "covers": ["five_depths", "note_full_equals_surface", "unselected_absent", "deterministic_render", "exact_revision"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/decision.md",
+        "name": "Decision",
+        "summary": "Why the selected frame stays reference-only.",
+        "surface": "# Decision\n\nThe target deepens without changing caller authority.\n\n## Evidence\n\nOne exact fixture.\n",
+        "revision": "sha256:e3745d5fa8cfe4844adf90b4b9854037f57b18af03a7a61e8807394e6c7fdef7",
+        "absent": ["children"],
+        "render_fixture": "note-full-render.txt"
+      }
+    },
+    {
+      "id": "directory-full",
+      "target": "docs",
+      "depth": "full",
+      "contract_source": "agreement",
+      "covers": ["directory_full", "readme_not_child"],
+      "expected": {
+        "status": "ok",
+        "kind": "directory",
+        "position": "docs",
+        "name": "Documents",
+        "summary": "The fixture's working documents.",
+        "surface": "# Documents\n\nStart with the selected decision.\n",
+        "child_names": ["sub", "alpha.md"]
+      }
+    },
+    {
+      "id": "directory-children-capped",
+      "target": "docs",
+      "depth": "children",
+      "contract_source": "agreement",
+      "max_children": 1,
+      "covers": ["honest_omissions"],
+      "expected": {
+        "status": "ok",
+        "kind": "directory",
+        "position": "docs",
+        "name": "Documents",
+        "summary": "The fixture's working documents.",
+        "child_names": ["sub"],
+        "omitted_children": 1,
+        "absent": ["surface"]
+      }
+    },
+    {
+      "id": "choice-required",
+      "target": "notes/decision.md",
+      "depth": "summary",
+      "covers": ["choice_required"],
+      "expected": {
+        "status": "contract_choice_required"
+      }
+    },
+    {
+      "id": "non-content-absent",
+      "target": "data.txt",
+      "depth": "summary",
+      "contract_source": "agreement",
+      "covers": ["non_content_absent"],
+      "expected": {
+        "status": "absent"
+      }
+    }
+  ]
+}
