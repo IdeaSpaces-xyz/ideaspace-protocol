@@ -23,8 +23,8 @@ side-by-side before retiring the old one.
 Read what is currently in the source repository:
 - `_agent/foundation.md` — what this place is, character, boundaries.
 - `_agent/guide.md` — how work goes here, vocabulary, rules.
-- `_agent/purpose.md` and `_agent/now.md` — direction and active focus.
-- `_agent/skills/` and `_agent/memory/` (if present).
+- `_agent/purpose.md`, `_agent/now.md`, and `_agent/next.md` — direction, active focus, and queued work.
+- `_agent/skills/`, `_agent/perspectives/`, or other custom agent context (if present).
 - Existing knowledge notes and content directories.
 
 Determine the **kind**:
@@ -40,7 +40,7 @@ Synthesize `foundation.md` and `guide.md` into `_agent/agreement.md`:
 ---
 name: Agreement — <Name>
 summary: <Dense two-line summary of what this place is or who this agent is>
-agreement: <kind>:repo:<root_node_id>
+agreement: <kind>:repo:<kind_repo_id>
 context:
   full:
     - purpose.md    # if purpose.md has standing purpose to load in full
@@ -74,8 +74,8 @@ context:
 Propose creating the new copy (defaulting to `<name>2` or `<name>-agreement` as a sibling directory).
 Show the drafted `_agent/agreement.md` and the list of files to copy:
 - `_agent/agreement.md` (new unified contract)
-- `_agent/purpose.md` (if used in `context.full`), `_agent/now.md`
-- `_agent/skills/` and `_agent/memory/`
+- `_agent/purpose.md` (if used in `context.full`), `_agent/now.md`, and `_agent/next.md`
+- `_agent/skills/`, `_agent/perspectives/`, or other custom directories
 - All knowledge folders and notes (excluding legacy `foundation.md` and `guide.md`)
 - Root `README.md`, `.gitignore`, `.gitattributes`
 
@@ -86,7 +86,7 @@ Show the drafted `_agent/agreement.md` and the list of files to copy:
 On confirmation:
 1. Initialize the target directory (`git init -b main`).
 2. Write the new `_agent/agreement.md`.
-3. Copy over `_agent/now.md`, `_agent/purpose.md` (if needed), `_agent/skills/`, and `_agent/memory/`.
+3. Copy over `_agent/now.md`, `_agent/next.md`, `_agent/purpose.md` (if needed), `_agent/skills/`, and any custom directories.
 4. Copy over knowledge directories and notes.
 5. Leave `root_node_id` unstamped initially so local testing does not conflict with any existing remote.
 6. Commit the initial clean state:
@@ -104,6 +104,6 @@ Guide the user to test the new space:
 
 ## Refuse to proceed when
 
-- The source space already has `_agent/agreement.md` (use `revisit-the-agreement` instead).
+- The source space already has `_agent/agreement.md` (use its `When to revisit` section or revisit procedure instead).
 - The destination folder already exists and is non-empty.
 - The user has not reviewed and confirmed the draft and destination.
