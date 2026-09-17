@@ -73,6 +73,26 @@ Skills load as name plus description; the set composes along the path and a deep
 shadows its ancestor. A skill id is 1–64 lowercase ASCII letters, digits, or single hyphens, with no
 leading, trailing, or consecutive hyphen. Its frontmatter `name` MUST equal that id.
 
+A root entrypoint (`_agent/agreement.md`) MAY reference the Agreement repository describing the
+convention it adopts via the optional `agreement` frontmatter field, using the
+`<kind>:repo:<root_node_id>` coordinate grammar (or bare `repo:<root_node_id>`):
+
+```yaml
+---
+name: Agreement — Integrator
+summary: TypeScript engineer for the developer-facing stack...
+root_node_id: n_9ffe8bb354f1b10b6fbb059e
+agreement: agent:repo:n_0935a5df1f883eeb60bcdfbb
+---
+```
+
+The reference is a declaration of what convention or kind of place it is, not consent, access,
+authority, or a network fetch. Readers surface the reference on the awareness manifest, and
+listeners choose which conventions they recognize and how to project them. Standard public reference
+examples include the Agreement convention itself (`convention:repo:n_3226f849f85239cb3b996ae0`,
+self-referencing), the Agent kind (`agent:repo:n_0935a5df1f883eeb60bcdfbb`), and the Knowledge kind
+(`knowledge:repo:n_f1511280efecd7fcff155152`).
+
 **4. Fractal.** `_agent/` may appear at any position. In Agreement mode, every Agreement within the
 selected ceiling refines the active frame and loads in full. The nearest Agreement carrying
 `root_node_id` starts another Space; without identity it refines the current one. Without an identity
@@ -174,8 +194,8 @@ base repository-conformance failure.
 Repository-position members use a root index, canonical repository-relative position, and one depth
 name: `name`, `summary`, `surface`, `children`, or `full`. Roots are pinned once by a full commit
 object id and addressed by an absolute canonical `/repos/{root_node_id}` web URL, portable
-`root_node_id`, or both. Production URLs use HTTPS; loopback development URLs may use HTTP. Open
-external members reuse the `<type>:<id>` address grammar and carry at most name/summary
+`root_node_id`, or both. Production URLs use HTTPS; loopback development URLs may use HTTP. Open external members reuse the `<type>:<id>` address grammar (such as `repo:<root_node_id>`,
+`person:<id>`, `agent:<id>`, `hostname:<host>`, or `https://...`) and carry at most name/summary
 representation; they introduce no member taxonomy or provider registry. Declared depth is a
 disclosure ceiling, never access.
 

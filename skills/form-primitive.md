@@ -105,16 +105,15 @@ Primitives go in `_agent/` at the level where they apply. Everything in `_agent/
 
 ## Creating Agents
 
-A full agent definition is not a special file — it is a **space that is the agent's point of view**: an ideaspace whose five-file `_agent/` contract *is* the character. When the user wants a specialized agent (not just an instruction), create a dedicated space (its own folder or repo) and write its contract:
+A full agent definition is not a special file — it is a **space that is the agent's point of view**: an ideaspace whose `_agent/agreement.md` contract *is* the character. When the user wants a specialized agent (not just an instruction), create a dedicated space (its own folder or repo) adopting the agent kind (`agreement: agent:repo:n_0935a5df1f883eeb60bcdfbb`) and write its Agreement:
 
-- `_agent/foundation.md` — what this agent is, its character, its boundaries. State plainly that the space is the agent's point of view, not a subject to study: an agent launched here inhabits it.
-- `_agent/guide.md` — how work goes when inhabiting it.
+- `_agent/agreement.md` — what this agent is, its character, its boundaries, and how work goes when inhabiting it. State plainly that the space is the agent's point of view, not a subject to study: an agent launched here inhabits it.
 - `_agent/skills/` — the procedures this agent can repeat.
-- `_agent/purpose.md` and `_agent/now.md` — the agent's own direction, as they emerge.
+- `_agent/purpose.md` and `_agent/now.md` — the agent's direction and active focus, declared or loaded as needed.
 
-The same loader that reads any space reads this one; no new file type, no separate agent format. Identity — a name others can select, address, and grant access to — is a platform concern layered on top of the shape, not a file in it.
+The same loader that reads any space reads this one; no new file type, no separate agent format. Identity (`root_node_id`) is a platform concern declared in root frontmatter, not a separate agent file.
 
-Do **not** create `soul.md` or `agent.md` — nothing loads them; character belongs in the contract files above. (`_agent/<agent-id>/` folders are per-agent working records inside a shared space, not agent definitions.)
+Do **not** create `soul.md` or `agent.md` — nothing loads them; character belongs in the Agreement files above. (`_agent/<agent-id>/` folders are per-agent working records inside a shared space, not agent definitions.)
 
 ## What It Is NOT
 

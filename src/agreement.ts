@@ -59,6 +59,8 @@ export interface ComposedAgreement {
   agreements: AgreementContextFile[];
   /** Root identity declared by the Agreement that established the ceiling. */
   rootNodeId?: string;
+  /** Agreement reference declared by the Agreement that established the ceiling. */
+  agreementReference?: string;
   issues: AgreementIssue[];
 }
 
@@ -68,6 +70,7 @@ interface ScannedLevel {
   agreementPath: string | null;
   agreementContent: string | null;
   rootNodeId?: string;
+  agreementReference?: string;
   fullLoads: string[];
   issues: AgreementIssue[];
 }
@@ -132,6 +135,9 @@ export async function composeAgreementAlongPath(
     stack.push({ dir: level.dir, agreementPath: level.agreementPath, files });
   }
 
+  const ceilingLevel = selected[0];
+  const agreementReference = ceilingLevel?.agreementReference;
+
   return {
     position: start,
     spaceRoot,
@@ -140,6 +146,7 @@ export async function composeAgreementAlongPath(
       level.files.filter((file) => file.name === "agreement"),
     ),
     ...(rootNodeId ? { rootNodeId } : {}),
+    ...(agreementReference ? { agreementReference } : {}),
     issues,
   };
 }
@@ -193,6 +200,13 @@ async function scanLevel(dir: string): Promise<ScannedLevel | null> {
     }
   }
 
+  let agreementReference: string | undefined;
+  if (frontmatter && "agreement" in frontmatter) {
+    if (typeof frontmatter.agreement === "string" && frontmatter.agreement.trim()) {
+      agreementReference = frontmatter.agreement.trim();
+    }
+  }
+
   const fullLoads = parseFullLoads(frontmatter, agreementPath, issues);
   return {
     dir,
@@ -200,6 +214,7 @@ async function scanLevel(dir: string): Promise<ScannedLevel | null> {
     agreementPath,
     agreementContent,
     ...(rootNodeId ? { rootNodeId } : {}),
+    ...(agreementReference ? { agreementReference } : {}),
     fullLoads,
     issues,
   };

@@ -248,6 +248,8 @@ export interface ContentAwarenessManifest {
   kind: "content";
   /** Selected authority frame; null is floor orientation without agent terms. */
   contractSource: ContractSource | null;
+  /** Agreement reference declared by the Agreement ceiling; omitted in Foundation or absent. */
+  agreementReference?: string;
   /** Space root selected by the active frame, or the orientation base at floor. */
   spaceRoot: string;
   position: ContentAwarenessPosition;
@@ -311,6 +313,8 @@ export interface ContentFocusManifest {
   kind: "content-focus";
   contractRole: "reference";
   contractSource: ContractSource | null;
+  /** Agreement reference declared by the Agreement ceiling; omitted in Foundation or absent. */
+  agreementReference?: string;
   spaceRoot: string;
   position: ContentFocusPosition;
   tree: ContentFocusTree | null;
@@ -475,6 +479,9 @@ export async function assembleContentAwareness(
     status: "ok",
     kind: "content",
     contractSource,
+    ...(contractSource === "agreement" && agreement.agreementReference
+      ? { agreementReference: agreement.agreementReference }
+      : {}),
     spaceRoot,
     position: { placement: "head", path: position, base, repoRoot, context },
     ...sections,
@@ -541,6 +548,9 @@ export async function assembleContentFocus(
     kind: "content-focus",
     contractRole: "reference",
     contractSource,
+    ...(contractSource === "agreement" && agreement.agreementReference
+      ? { agreementReference: agreement.agreementReference }
+      : {}),
     spaceRoot,
     position: {
       placement: "history",

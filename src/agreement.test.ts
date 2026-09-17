@@ -218,4 +218,27 @@ describe("composeAgreementAlongPath", () => {
       ]);
     },
   );
+
+  it("lifts agreement reference from the ceiling Agreement", async () => {
+    const root = await fixture({
+      "_agent/agreement.md": [
+        "---",
+        "root_node_id: n_0123456789abcdef01234567",
+        "agreement: agent:repo:n_0935a5df1f883eeb60bcdfbb",
+        "---",
+        "# Root Agreement",
+      ].join("\n"),
+      "sub/_agent/agreement.md": [
+        "---",
+        "agreement: knowledge:repo:n_f1511280efecd7fcff155152",
+        "---",
+        "# Nested Agreement",
+      ].join("\n"),
+    });
+
+    const composed = await composeAgreementAlongPath(join(root, "sub"), root);
+    expect(composed.spaceRoot).toBe(root);
+    expect(composed.rootNodeId).toBe("n_0123456789abcdef01234567");
+    expect(composed.agreementReference).toBe("agent:repo:n_0935a5df1f883eeb60bcdfbb");
+  });
 });
