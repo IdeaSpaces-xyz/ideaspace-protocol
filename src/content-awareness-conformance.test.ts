@@ -41,6 +41,7 @@ interface Vector extends VectorFiles {
   expected: {
     status: string;
     contract_source?: "foundation" | "agreement" | null;
+    agreement_reference?: string;
     representations?: string[];
     excluded?: string;
     issue_codes?: string[];
@@ -190,6 +191,9 @@ describe("Content awareness conformance manifest", () => {
       }
 
       expect(result.contractSource).toBe(vector.expected.contract_source);
+      if (vector.expected.agreement_reference !== undefined) {
+        expect(result.agreementReference).toBe(vector.expected.agreement_reference);
+      }
       if (vector.expected.representations) {
         expect(result.contract.map((entry) => entry.representation)).toEqual(
           vector.expected.representations,
@@ -307,6 +311,7 @@ describe("Content awareness conformance manifest", () => {
     ]);
     expect(result.contract[0]?.content).toContain("AGREEMENT_FULL_SENTINEL");
     expect(result.contract[1]?.content).toContain("DECLARED_FULL_SENTINEL");
+    expect(result.agreementReference).toBe("convention:repo:n_3226f849f85239cb3b996ae0");
     expect(result.skills.map((skill) => skill.name)).toEqual([
       "ask",
       "close-context",

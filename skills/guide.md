@@ -21,10 +21,11 @@ Every position has dimensions that shape how we work here:
 | Dimension | File | The question |
 |---|---|---|
 | What is this place | README.md | Does the contract match what's actually here? |
+| Standing terms & character | `_agent/agreement.md` | Clear shared understanding, or still emerging? |
 | Why does it exist | `_agent/purpose.md` | Clear direction, or still emerging? |
 | What's active | `_agent/now.md` | Concrete and current, or stale? |
 | What's queued | `_agent/next.md` | Identified, even if vague? |
-| How we work here | `_agent/guide.md` | Scope-specific, beyond foundation? |
+| How we work here | `_agent/guide.md` | Scope-specific guidance? |
 
 Not every position needs all of them. A deep branch might only need
 a README. Root usually carries more. Each dimension can be empty,

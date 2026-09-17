@@ -34,4 +34,4 @@ If the user hasn't written repo context yet:
 
 Concise. A few paragraphs. Written for the agent — surfaces load the `_agent/` contract by position, so this orients every conversation held here. Focus on what would change the agent's behavior: vocabulary, assumptions, conventions.
 
-Persist into the contract: what this place is and who works here is the `_agent/foundation.md` handshake's job; conventions and vocabulary the agent should follow belong in `_agent/guide.md`. (Some platforms additionally read `_agent/repo-context.md`; the contract is the portable home.)
+Persist into the contract: what this place is and how we work here is `_agent/agreement.md`'s job (or the legacy `foundation.md` + `guide.md` pair). Conventions and vocabulary the agent should follow belong in the Agreement. (Some platforms additionally read `_agent/repo-context.md`; the contract is the portable home.)

@@ -195,6 +195,21 @@ describe("validateSpace — root identity", () => {
       "agreement-invalid-full-load-path",
     );
   });
+
+  it("accepts valid agreement reference in Agreement frontmatter", async () => {
+    await makeAgent(tmp, {
+      "agreement.md": [
+        "---",
+        "name: Integrator",
+        "summary: Developer engineer",
+        "agreement: agent:repo:n_0935a5df1f883eeb60bcdfbb",
+        "---",
+        "# Agreement",
+      ].join("\n"),
+    });
+    const report = await validateSpace(tmp);
+    expect(report.ok).toBe(true);
+  });
 });
 
 describe("validateSpace — skill identities", () => {

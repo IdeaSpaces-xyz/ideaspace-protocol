@@ -25,6 +25,27 @@ The field is optional. Its absence is valid for legacy repositories, imported pl
 contract-free folders. A reader MUST NOT fail conformance, create a contract entrypoint, or require a
 migration merely because identity is absent.
 
+## Agreement reference declaration
+
+Beside `root_node_id`, a root `_agent/agreement.md` entrypoint MAY declare an `agreement` reference
+stating the convention or kind of Space it adopts:
+
+```yaml
+---
+name: Example Agent
+summary: Example agent point of view.
+root_node_id: n_0123456789abcdef01234567
+agreement: agent:repo:n_0935a5df1f883eeb60bcdfbb
+---
+```
+
+Like `root_node_id`, `agreement` belongs only to a root contract entrypoint, never to knowledge-Note
+frontmatter. It is an open reference (`<kind>:repo:<root_node_id>` or `repo:<root_node_id>`), not
+access, authority, or a network fetch. Readers surface the reference verbatim on awareness
+manifests, and listeners choose which conventions to recognize. Standard examples include
+`convention:repo:n_3226f849f85239cb3b996ae0` (convention), `agent:repo:n_0935a5df1f883eeb60bcdfbb`
+(agent kind), and `knowledge:repo:n_f1511280efecd7fcff155152` (knowledge kind).
+
 ## Forms
 
 Readers accept exactly:

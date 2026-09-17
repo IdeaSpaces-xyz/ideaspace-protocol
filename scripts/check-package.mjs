@@ -380,6 +380,21 @@ try {
     if (!awareness.required_coverage.includes("tail_composition")) {
       throw new Error("Content-awareness manifest does not require tail composition");
     }
+    if (!awareness.required_coverage.includes("agreement_reference")) {
+      throw new Error("Content-awareness manifest does not require agreement reference coverage");
+    }
+    const referenceAgreementRoot = resolve(dirname(contentLookManifestPath), "../reference-agreement");
+    const refAwareness = await protocol.assembleContentAwareness({
+      position: referenceAgreementRoot,
+      contractSource: "agreement",
+      lastSha: null,
+    });
+    if (
+      refAwareness?.status !== "ok" ||
+      refAwareness.agreementReference !== "convention:repo:n_3226f849f85239cb3b996ae0"
+    ) {
+      throw new Error("Installed awareness reader did not lift agreement reference from fixture");
+    }
     const tailState = {
       placement: "tail",
       git: { repoRoot: "/r", headSha: null, branch: "main", ahead: null, behind: null, dirty: false, untrackedInTrackedDirs: [] },

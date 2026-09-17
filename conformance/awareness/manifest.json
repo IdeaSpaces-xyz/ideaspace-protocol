@@ -28,6 +28,7 @@
     "placement_selective_render",
     "placement_disjoint",
     "activity_tail_only",
+    "agreement_reference",
     "tail_composition",
     "state_supersedes_git",
     "change_line_last"
@@ -151,6 +152,19 @@
         "status": "ok",
         "contract_source": "agreement",
         "representations": ["full", "full"]
+      }
+    },
+    {
+      "id": "agreement-with-reference",
+      "contract_source": "agreement",
+      "files": {
+        "_agent/agreement.md": "---\nsummary: Agreement summary.\nagreement: agent:repo:n_0935a5df1f883eeb60bcdfbb\n---\nAGREEMENT_BODY"
+      },
+      "covers": ["agreement_reference"],
+      "expected": {
+        "status": "ok",
+        "contract_source": "agreement",
+        "agreement_reference": "agent:repo:n_0935a5df1f883eeb60bcdfbb"
       }
     },
     {

@@ -142,6 +142,27 @@ describe("Content awareness manifest", () => {
     expect(JSON.stringify(foundation)).not.toContain("Agreement summary sentinel.");
   });
 
+  it("surfaces agreementReference on manifest when declared on Agreement root", async () => {
+    await writeAgent({
+      "agreement.md": [
+        "---",
+        "summary: Agent agreement.",
+        "agreement: agent:repo:n_0935a5df1f883eeb60bcdfbb",
+        "---",
+        "# Agreement",
+      ].join("\n"),
+    });
+
+    const manifest = await assembleContentAwareness({
+      position: tmp,
+      contractSource: "agreement",
+      lastSha: null,
+    });
+    expect(manifest?.status).toBe("ok");
+    if (manifest?.status !== "ok") return;
+    expect(manifest.agreementReference).toBe("agent:repo:n_0935a5df1f883eeb60bcdfbb");
+  });
+
   it("rejects conflicting root identity through the awareness API", async () => {
     await writeAgent({
       "foundation.md": "---\nroot_node_id: n_111111111111111111111111\n---\nFOUNDATION",

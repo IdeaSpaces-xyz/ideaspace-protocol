@@ -28,6 +28,11 @@
       "items": { "type": "string" },
       "description": "Flat classifiers within the directory model."
     },
+    "agreement": {
+      "type": "string",
+      "description": "The Agreement reference this root entrypoint adopts, written `<kind>:repo:<root_node_id>` (e.g. `agent:repo:n_0935a5df1f883eeb60bcdfbb`) or `repo:<root_node_id>`. Declared on root `_agent/agreement.md` entrypoints only.",
+      "pattern": "^[a-z][a-z0-9_:-]*:.+$"
+    },
     "map": {
       "$ref": "#/$defs/map",
       "description": "Optional provisional Map projection. Invalid Map guidance does not make the surrounding Note unreadable or add a base repository-conformance failure."

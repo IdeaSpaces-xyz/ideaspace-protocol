@@ -90,6 +90,10 @@ The nearest Agreement carrying a valid `root_node_id` starts a Space. Otherwise 
 root is the ceiling. Outside Git, the outermost Agreement on the ancestor path is the ceiling. An
 Agreement without identity refines the current Space; one with identity re-roots it.
 
+A root `agreement.md` entrypoint MAY declare `agreement: <kind>:repo:<root_node_id>` (or bare
+`repo:<root_node_id>`) to state the Agreement convention it adopts. Readers surface the reference
+on awareness manifests, and listeners choose how to project it.
+
 ## Representation, placement, and revision
 
 These dimensions are distinct:
