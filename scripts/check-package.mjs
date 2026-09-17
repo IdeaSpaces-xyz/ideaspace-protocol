@@ -178,6 +178,7 @@ const expected = [
   "skills/guide-story.md",
   "skills/guide-working.md",
   "skills/guide.md",
+  "skills/migrate-to-agreement.md",
   "skills/purpose-elicitation.md",
   "skills/repo-context.md",
   "skills/writing.md",
