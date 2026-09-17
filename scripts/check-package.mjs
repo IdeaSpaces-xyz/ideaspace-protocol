@@ -504,14 +504,24 @@ try {
   );
 
   const { build: viteBuild } = await import("vite");
+  const warnings = [];
   await viteBuild({
     root: installRoot,
     build: {
       lib: { entry: browserEntry, formats: ["es"] },
       write: false,
+      rollupOptions: {
+        onwarn(warning, defaultHandler) {
+          warnings.push(warning.message || String(warning));
+          defaultHandler(warning);
+        },
+      },
     },
-    logLevel: "warn",
+    logLevel: "silent",
   });
+  if (warnings.length > 0) {
+    throw new Error(`Browser build of subpaths emitted warnings:\n${warnings.join("\n")}`);
+  }
 
   console.log(
     `Verified ${pkg.name}@${pkg.version}: ${paths.length} files, ` +
