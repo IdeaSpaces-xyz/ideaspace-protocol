@@ -11,13 +11,14 @@ const EXPECTED = [
   "guide-jobs",
   "guide-story",
   "guide-working",
+  "migrate-to-agreement",
   "purpose-elicitation",
   "repo-context",
   "writing",
 ].sort();
 
 describe("listSkills", () => {
-  it("returns the 12 catalog entries, each with a description", async () => {
+  it("returns the 13 catalog entries, each with a description", async () => {
     const skills = await listSkills();
     expect(skills.map((s) => s.name)).toEqual(EXPECTED);
     for (const s of skills) {
