@@ -199,7 +199,9 @@ try {
   const expectedExports = [
     ".",
     "./assets",
+    "./frontmatter",
     "./local-effects",
+    "./maps",
     "./schema/frontmatter",
     "./schema/repository-path",
     "./schema/extensions",
@@ -262,7 +264,9 @@ try {
     import { dirname, resolve } from "node:path";
     import * as protocol from "@ideaspaces/protocol";
     import * as assetsRuntime from "@ideaspaces/protocol/assets";
+    import * as frontmatterRuntime from "@ideaspaces/protocol/frontmatter";
     import * as localEffects from "@ideaspaces/protocol/local-effects";
+    import * as mapsRuntime from "@ideaspaces/protocol/maps";
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
     const extensions = require("@ideaspaces/protocol/conformance/extensions");
@@ -430,6 +434,27 @@ try {
     if (narrowAsset.status !== "asset" || narrowAsset.path !== "guides/_assets/x.png") {
       throw new Error("Narrow assets package boundary did not execute");
     }
+    const parsedFromSubpath = mapsRuntime.parseMap({
+      roots: [{
+        repo: "https://ideaspaces.example/repos/n_0123456789abcdef01234567",
+        sha: "1111111111111111111111111111111111111111",
+      }],
+      members: [{ root: 0, position: "note.md", depth: "full" }],
+    });
+    if (
+      parsedFromSubpath.status !== "valid" ||
+      parsedFromSubpath.map.roots[0].root_node_id !== "n_0123456789abcdef01234567"
+    ) {
+      throw new Error("Maps subpath export did not parse map correctly");
+    }
+    const fm = frontmatterRuntime.parseFrontmatter("---\\nname: Test\\nsummary: Summary\\n---\\nBody");
+    if (
+      fm?.name !== "Test" ||
+      fm?.summary !== "Summary" ||
+      frontmatterRuntime.stripFrontmatter("---\\nname: Test\\n---\\nBody").trim() !== "Body"
+    ) {
+      throw new Error("Frontmatter subpath export did not parse frontmatter correctly");
+    }
     const map = protocol.parseMap({
       roots: [{
         repo: "https://ideaspaces.example/repos/n_0123456789abcdef01234567",
@@ -466,6 +491,26 @@ try {
   execFileSync(process.execPath, ["--input-type=module", "--eval", probe], {
     cwd: installRoot,
     stdio: "inherit",
+  });
+
+  const browserEntry = join(installRoot, "browser-entry.js");
+  writeFileSync(
+    browserEntry,
+    `
+      import { parseMap, buildMap } from "@ideaspaces/protocol/maps";
+      import { parseFrontmatter, stripFrontmatter, composeFrontmatter } from "@ideaspaces/protocol/frontmatter";
+      export { parseMap, buildMap, parseFrontmatter, stripFrontmatter, composeFrontmatter };
+    `,
+  );
+
+  const { build: viteBuild } = await import("vite");
+  await viteBuild({
+    root: installRoot,
+    build: {
+      lib: { entry: browserEntry, formats: ["es"] },
+      write: false,
+    },
+    logLevel: "warn",
   });
 
   console.log(
