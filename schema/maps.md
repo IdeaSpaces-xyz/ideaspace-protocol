@@ -148,8 +148,8 @@ The `revision` field is strictly an **opaque equality revision**, never a Git co
 - **Equality only:** A reader can compare `stored_revision !== live_revision` to answer *"Has this changed?"* without downloading transcripts or making unauthenticated requests.
 - **No cryptographic proof:** The revision proves only that a post event was recorded under that identifier (derived from actor identity and send nonce, not markdown content bytes); it provides no Merkle proof or hash over message body bytes.
 - **No inherent ordering:** Revision identifiers cannot be sorted locally to determine precedence or turn order. Sequence and causality remain dependent on host event timestamps or ordinals.
-- **No implied authority:** Exposing or observing a `revision` at a `discover` ceiling signals activity without granting access to read thread transcripts or attachments.
-- **Discover ceiling disclosure:** When a member is discoverable but unreadable, exposing its `name`, `summary`, and `revision` lets consumers check in on activity without leaking private message bodies, author identity, or reply counts.
+- **No implied authority:** Exposing or observing a `revision` signals activity without granting access to read thread transcripts or attachments. Access is evaluated independently.
+- **Activity without transcript leakage:** When a reader lacks access to open or read the underlying thread content, observing its `name`, `summary`, and `revision` at the summary depth ceiling lets consumers check in on activity without leaking private message bodies, author identity, or reply counts.
 
 #### Consumer rungs
 

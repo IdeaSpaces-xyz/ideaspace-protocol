@@ -195,7 +195,7 @@ Repository-position members use a root index, canonical repository-relative posi
 name: `name`, `summary`, `surface`, `children`, or `full`. Roots are pinned once by a full commit
 object id and addressed by an absolute canonical `/repos/{root_node_id}` web URL, portable
 `root_node_id`, or both. Production URLs use HTTPS; loopback development URLs may use HTTP. Open external members reuse the `<type>:<id>` address grammar (such as `repo:<root_node_id>`,
-`person:<id>`, `agent:<id>`, `thread:<exchange_id>`, `hostname:<host>`, or `https://...`) and carry at most name/summary
+`person:<id>`, `agent:<id>`, `thread:x_<24hex>`, `hostname:<host>`, or `https://...`) and carry at most name/summary
 representation; they introduce no member taxonomy or provider registry. Declared depth is a
 disclosure ceiling, never access. An address member MAY carry an optional opaque `revision` string
 (such as `n_<24hex>` matching the latest posted Note) for equality-only change check-in; it carries

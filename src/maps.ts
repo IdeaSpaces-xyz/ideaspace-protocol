@@ -289,7 +289,10 @@ function parseMembers(
       if ("depth" in input && input.depth !== "name" && input.depth !== "summary") {
         issues.push({ path: `${base}.depth`, code: "invalid_depth" });
       }
-      if ("revision" in input && (typeof input.revision !== "string" || !REVISION_PATTERN.test(input.revision))) {
+      if (
+        "revision" in input &&
+        (typeof input.revision !== "string" || !REVISION_PATTERN.test(input.revision))
+      ) {
         issues.push({ path: `${base}.revision`, code: "invalid_revision" });
       }
       members.push(input as MapAddressMember);
