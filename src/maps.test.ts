@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   MAP_DEPTHS,
+  REVISION_PATTERN,
   buildMap,
   parseCanonicalRepoUrl,
   type MapBuildInput,
@@ -137,6 +138,73 @@ describe("Map construction and disclosure", () => {
       { address: "custom:other", disclosure: { summary: "Observed summary" } },
     ] };
     expect(buildMap(input)).toEqual({ status: "valid", map: { ...input, roots: [] } });
+  });
+
+  it("supports thread address with opaque latest-post revision", () => {
+    const input = {
+      members: [
+        {
+          address: "thread:x_0123456789abcdef01234567",
+          depth: "summary" as const,
+          name: "Thread title",
+          revision: "n_0123456789abcdef01234567",
+          disclosure: { name: "Observed thread", summary: "Latest activity" },
+        },
+      ],
+    };
+    const result = buildMap(input);
+    expect(result).toEqual({
+      status: "valid",
+      map: {
+        roots: [],
+        members: [
+          {
+            address: "thread:x_0123456789abcdef01234567",
+            depth: "summary",
+            name: "Thread title",
+            revision: "n_0123456789abcdef01234567",
+            disclosure: { name: "Observed thread", summary: "Latest activity" },
+          },
+        ],
+      },
+    });
+    if (result.status === "valid") {
+      expect(parseMap(result.map)).toEqual(result);
+    }
+  });
+
+  it.each([
+    "invalid_hash",
+    "x_0123456789abcdef01234567",
+    "n_xyz",
+    12345,
+    null,
+    {},
+  ])("rejects invalid revision %j", (revision) => {
+    const result = parseMap({
+      members: [
+        {
+          address: "thread:x_0123456789abcdef01234567",
+          revision,
+        },
+      ],
+    });
+    expect(result).toEqual({
+      status: "invalid",
+      issues: [
+        {
+          path: "map.members[0].revision",
+          code: "invalid_revision",
+        },
+      ],
+    });
+  });
+
+  it("matches valid revision patterns with REVISION_PATTERN", () => {
+    expect(REVISION_PATTERN.test("n_0123456789abcdef01234567")).toBe(true);
+    expect(REVISION_PATTERN.test("n_0123456789ab")).toBe(true);
+    expect(REVISION_PATTERN.test("n_0123456789abcdef012345678")).toBe(false);
+    expect(REVISION_PATTERN.test("x_0123456789abcdef01234567")).toBe(false);
   });
 
   it("does not pretend parse/build acceptance removes private runtime fields", () => {

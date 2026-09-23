@@ -128,9 +128,37 @@ A member outside a known repository carries `address` using the same open `<type
 membership declares what a curator included. URLs naturally use their scheme (`https:...`) and need
 no provider registry or member type.
 
+Standard open address types include:
+- `thread:x_<24hex>`: A collaboration Thread or exchange container (e.g. `thread:x_0123456789abcdef01234567`).
+- `hostname:<domain>`: An organization or network domain (e.g. `hostname:example.org`).
+- `repo:n_<24hex>`: A repository reference outside the Map's pinned `roots`.
+- `https://...`: An external web resource.
+
 An address member may carry `name`, `summary`, and `depth`. Its depth, when present, is only `name` or
-`summary`; an external address has no portable pin and promises no deeper representation. Resolution,
-fetching, rendering, and provider behavior belong to the harness.
+`summary`; an external address has no portable Git pin and promises no deeper representation in the Map.
+Resolution, fetching, rendering, and provider behavior belong to the harness.
+
+An address member MAY carry an optional opaque `revision` string (e.g. `n_<24hex>` matching the latest
+posted Note in a Thread).
+
+#### Revision semantics
+
+The `revision` field is strictly an **opaque equality revision**, never a Git commit pin or SHA:
+
+- **Equality only:** A reader can compare `stored_revision !== live_revision` to answer *"Has this changed?"* without downloading transcripts or making unauthenticated requests.
+- **No cryptographic proof:** The revision proves only that a post event was recorded under that identifier (derived from actor identity and send nonce, not markdown content bytes); it provides no Merkle proof or hash over message body bytes.
+- **No inherent ordering:** Revision identifiers cannot be sorted locally to determine precedence or turn order. Sequence and causality remain dependent on host event timestamps or ordinals.
+- **No implied authority:** Exposing or observing a `revision` signals activity without granting access to read thread transcripts or attachments. Access is evaluated independently.
+- **Activity without transcript leakage:** When a reader lacks access to open or read the underlying thread content, observing its `name`, `summary`, and `revision` at the summary depth ceiling lets consumers check in on activity without leaking private message bodies, author identity, or reply counts.
+
+#### Consumer rungs
+
+Consumers navigate address members across four progressive rungs without requiring a full MapVersion per reply:
+
+1. **Has it changed?** Compare the opaque `revision` against a previously observed revision.
+2. **Summary:** Read curator `name` / `summary` or observed `disclosure` at the summary ceiling.
+3. **Open:** Retrieve full transcript, posts, or external state out-of-band using separate, independent authorization.
+4. **Expand a member:** Follow nested Map coordinates or member references when supplied.
 
 The portable round trip is exact over repository positions. External addresses are preserved in a
 map-note, but a hosted store that cannot ingest them MUST either preserve them as address-only or

@@ -113,6 +113,11 @@
         "name": { "type": "string" },
         "summary": { "type": "string" },
         "depth": { "enum": ["name", "summary"] },
+        "revision": {
+          "type": "string",
+          "pattern": "^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$",
+          "description": "Optional opaque latest-post equality revision (e.g. n_<24hex>). Supports equality check only; no Git commit proof or local ordering."
+        },
         "disclosure": { "$ref": "#/$defs/mapDisclosure" }
       },
       "allOf": [{ "$ref": "#/$defs/mapDisclosureCeiling" }],

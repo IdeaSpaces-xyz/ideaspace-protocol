@@ -45,6 +45,11 @@ export interface MapAddressMember extends Record<string, unknown> {
   summary?: string;
   /** External addresses can promise no representation beyond summary. */
   depth?: "name" | "summary";
+  /**
+   * Optional opaque latest-post equality revision (e.g. `n_<24hex>`).
+   * Supports equality comparison only; proves no content bytes or ordering.
+   */
+  revision?: string;
   disclosure?: MapDisclosure;
 }
 
@@ -80,6 +85,7 @@ export type MapParseIssueCode =
   | "invalid_address"
   | "invalid_name"
   | "invalid_summary"
+  | "invalid_revision"
   | "invalid_disclosure"
   | "disclosure_exceeds_depth";
 
@@ -99,6 +105,7 @@ export type CanonicalRepoUrlParseResult =
   | { status: "invalid"; code: "invalid_repo" };
 
 const DEPTHS = new Set<string>(MAP_DEPTHS);
+export const REVISION_PATTERN = /^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$/;
 const ADDRESS_PATTERN = /^[a-z][a-z0-9_]*:.+$/;
 const PIN_PATTERN = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 const REPO_PATH_PATTERN = /^\/repos\/(n_(?:[0-9a-f]{12}|[0-9a-f]{24}))$/;
@@ -281,6 +288,12 @@ function parseMembers(
       }
       if ("depth" in input && input.depth !== "name" && input.depth !== "summary") {
         issues.push({ path: `${base}.depth`, code: "invalid_depth" });
+      }
+      if (
+        "revision" in input &&
+        (typeof input.revision !== "string" || !REVISION_PATTERN.test(input.revision))
+      ) {
+        issues.push({ path: `${base}.revision`, code: "invalid_revision" });
       }
       members.push(input as MapAddressMember);
       continue;
