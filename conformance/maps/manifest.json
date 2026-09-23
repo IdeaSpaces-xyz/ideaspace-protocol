@@ -15,6 +15,9 @@
     "all_depths",
     "open_external_address",
     "external_depth_ceiling",
+    "thread_address",
+    "opaque_revision",
+    "invalid_revision",
     "invalid_root_identity",
     "invalid_pin",
     "invalid_root_index",
@@ -263,6 +266,87 @@
       "covers": ["external_depth_ceiling", "graceful_invalid_block"],
       "input": { "members": [{ "address": "https://example.com/reference", "depth": "surface" }] },
       "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].depth", "code": "invalid_depth" }] }
+    },
+    {
+      "id": "build-thread-address-with-revision",
+      "operation": "build",
+      "covers": ["emit", "open_external_address", "thread_address", "opaque_revision"],
+      "input": {
+        "members": [
+          {
+            "address": "thread:x_0123456789abcdef01234567",
+            "depth": "summary",
+            "name": "Design discussions",
+            "revision": "n_0123456789abcdef01234567",
+            "disclosure": {
+              "name": "A thread has no Space to belong to",
+              "summary": "Exploring Space-bound thread coordination"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [],
+          "members": [
+            {
+              "address": "thread:x_0123456789abcdef01234567",
+              "depth": "summary",
+              "name": "Design discussions",
+              "revision": "n_0123456789abcdef01234567",
+              "disclosure": {
+                "name": "A thread has no Space to belong to",
+                "summary": "Exploring Space-bound thread coordination"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "reject-invalid-revision",
+      "operation": "parse",
+      "covers": ["invalid_revision", "graceful_invalid_block"],
+      "input": {
+        "members": [
+          {
+            "address": "thread:x_0123456789abcdef01234567",
+            "revision": "invalid_revision_hash"
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          {
+            "path": "map.members[0].revision",
+            "code": "invalid_revision"
+          }
+        ]
+      }
+    },
+    {
+      "id": "reject-non-string-revision",
+      "operation": "parse",
+      "covers": ["invalid_revision"],
+      "input": {
+        "members": [
+          {
+            "address": "thread:x_0123456789abcdef01234567",
+            "revision": 12345
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          {
+            "path": "map.members[0].revision",
+            "code": "invalid_revision"
+          }
+        ]
+      }
     }
   ]
 }

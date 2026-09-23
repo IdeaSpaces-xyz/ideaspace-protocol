@@ -252,6 +252,7 @@ export type { AssetReferenceResolution } from "./assets.js";
 // exact Git pins, and representation ceilings. No fetch, access, or hosted lifecycle.
 export {
   MAP_DEPTHS,
+  REVISION_PATTERN,
   parseCanonicalRepoUrl,
   parseMap,
   buildMap,
