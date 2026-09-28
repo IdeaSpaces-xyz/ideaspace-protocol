@@ -12,6 +12,46 @@ import { parseRootNodeId } from "./root-identity.js";
 export const MAP_DEPTHS = ["name", "summary", "surface", "children", "full"] as const;
 export type MapDepth = (typeof MAP_DEPTHS)[number];
 
+/**
+ * Standard subject kinds recognized in the access vocabulary.
+ */
+export const SUBJECT_KINDS = [
+  "person",
+  "team",
+  "organisation",
+  "agent",
+  "public",
+] as const;
+export type SubjectKind = (typeof SUBJECT_KINDS)[number];
+
+/**
+ * The capability ladder, ordered from lowest privilege / disclosure to highest.
+ *
+ *   view     — observe Map members at declared disclosure ceilings (name, summary, surface, children, full)
+ *   read     — open and read full Note/document content bodies
+ *   history  — inspect commit graphs, timelines, and post transcripts
+ *   copy     — fork spaces or clone repositories
+ *   write    — create and update content
+ *   push     — transport commits to a repository remote
+ *   manage   — administer access grants and participants
+ */
+export const CAPABILITY_LADDER = [
+  "view",
+  "read",
+  "history",
+  "copy",
+  "write",
+  "push",
+  "manage",
+] as const;
+export type Capability = (typeof CAPABILITY_LADDER)[number];
+
+/**
+ * The capability rung required for Map disclosure.
+ * A Map's disclosure ceiling is the view rung.
+ */
+export const MAP_DISCLOSURE_CAPABILITY: Capability = "view";
+
 export interface MapRoot extends Record<string, unknown> {
   /** Canonical absolute repository URL: `<web-origin>/repos/{root_node_id}`. */
   repo?: string;
@@ -105,11 +145,42 @@ export type CanonicalRepoUrlParseResult =
   | { status: "invalid"; code: "invalid_repo" };
 
 const DEPTHS = new Set<string>(MAP_DEPTHS);
+const SUBJECT_KIND_SET = new Set<string>(SUBJECT_KINDS);
+const CAPABILITY_SET = new Set<string>(CAPABILITY_LADDER);
 export const REVISION_PATTERN = /^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$/;
 const ADDRESS_PATTERN = /^[a-z][a-z0-9_]*:.+$/;
 const PIN_PATTERN = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 const REPO_PATH_PATTERN = /^\/repos\/(n_(?:[0-9a-f]{12}|[0-9a-f]{24}))$/;
 const HTTP_LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * Normalize and validate a subject kind.
+ * Accepts "organization" as an alias for "organisation".
+ * Returns canonical SubjectKind or null if invalid.
+ */
+export function normalizeSubjectKind(input: string): SubjectKind | null {
+  const trimmed = input.trim().toLowerCase();
+  if (trimmed === "organization") return "organisation";
+  return SUBJECT_KIND_SET.has(trimmed) ? (trimmed as SubjectKind) : null;
+}
+
+/** Check whether a value is a valid canonical SubjectKind. */
+export function isValidSubjectKind(input: unknown): input is SubjectKind {
+  return typeof input === "string" && SUBJECT_KIND_SET.has(input);
+}
+
+/** Check whether a value is a valid Capability on the ladder. */
+export function isValidCapability(input: unknown): input is Capability {
+  return typeof input === "string" && CAPABILITY_SET.has(input);
+}
+
+/**
+ * Return the rank of a capability on the ladder (0 for "view" up to 6 for "manage").
+ * Returns -1 for unrecognized capabilities.
+ */
+export function capabilityRank(capability: string): number {
+  return CAPABILITY_LADDER.indexOf(capability as Capability);
+}
 
 /**
  * Validate and preserve a canonical absolute repository URL.
