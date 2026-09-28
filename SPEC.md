@@ -160,7 +160,7 @@ selectable frame.
 
 **6. Underscore is the extension point.** Exact `_agent/` is core ambient agent context. Every other `_`-prefixed directory is a non-knowledge extension container, including case lookalikes; the first such directory owns its whole subtree, so descendants never regain a base role. The rule applies to directories, not files that happen to begin with `_`. **An agent quietly ignores any extension it does not understand.** This is the portability guarantee: a space can carry features a given agent has never heard of, and that agent still inhabits it correctly. The pure language-neutral classifier is defined in [`schema/repository-path.md`](schema/repository-path.md) and proved by [`conformance/extensions/manifest.json`](conformance/extensions/manifest.json).
 
-Exact `_assets/` is the first standard extension: referenced supporting payload that travels with knowledge but is never loaded ambiently or searched. Its optional aware-reader contract is separate from the base boundary; other extensions (`_access/`, `_conversations/`, …) may define different semantics. A named extension publishes its exact name and placement, payload, authored references, unaware behavior, portable operations and vectors, and any internal format evolution as a separate readable contract; this documentation boundary creates no registry, manifest, package, or loader. The language-neutral authoring guidance and `_assets` example are in [`schema/extensions.md`](schema/extensions.md).
+Exact `_assets/` is the first standard extension: referenced supporting payload that travels with knowledge but is never loaded ambiently or searched. Exact `_threads/` is the second standard extension: collaboration threads with immutable dated posts, thread Agreement, curated README lens, and root-relative Map pointers. Its optional aware-reader contract is separate from the base boundary; other extensions (`_access/`, `_conversations/`, …) may define different semantics. A named extension publishes its exact name and placement, payload, authored references, unaware behavior, portable operations and vectors, and any internal format evolution as a separate readable contract; this documentation boundary creates no registry, manifest, package, or loader. The language-neutral authoring guidance and standard examples (`_assets`, `_threads`) are in [`schema/extensions.md`](schema/extensions.md), [`schema/assets.md`](schema/assets.md), and [`schema/threads.md`](schema/threads.md).
 
 **7. Awareness ⊋ content.** The working tree can hold more than the space commits — other repos (code), drafts, scratch. `.gitignore` is the allowlist that splits them:
 
@@ -191,7 +191,7 @@ block adds a navigation layer without changing the repository model. A reader th
 understand Maps ignores the block and reads the Note; an invalid block is projection drift, not a
 base repository-conformance failure.
 
-Repository-position members use a root index, canonical repository-relative position, and one depth
+Repository-position members use a root index, canonical repository-relative position (including the standard `_threads/` extension), and one depth
 name: `name`, `summary`, `surface`, `children`, or `full`. Roots are pinned once by a full commit
 object id and addressed by an absolute canonical `/repos/{root_node_id}` web URL, portable
 `root_node_id`, or both. Production URLs use HTTPS; loopback development URLs may use HTTP. Open external members reuse the `<type>:<id>` address grammar (such as `repo:<root_node_id>`,

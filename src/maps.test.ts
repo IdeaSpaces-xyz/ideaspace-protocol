@@ -124,6 +124,35 @@ describe("Map construction and disclosure", () => {
     });
   });
 
+  it("accepts _threads extension positions while refusing _agent, _assets, and unknown extensions", () => {
+    const validThreads = buildMap({
+      roots: [root],
+      members: [
+        { root: 0, position: "_threads/2026-09-26-authorization/README.md", depth: "summary" },
+        { root: 0, position: "_threads/2026-09-26-authorization/2026-09-26-01.md", depth: "full" },
+      ],
+    });
+    expect(validThreads.status).toBe("valid");
+
+    for (const invalidPos of [
+      "_agent/agreement.md",
+      "_assets/diagram.png",
+      "_scratch/draft.md",
+      "notes/_agent/guide.md",
+      "notes/_assets/img.png",
+      "_threads/_agent/agreement.md",
+    ]) {
+      const rejected = parseMap({
+        roots: [root],
+        members: [{ root: 0, position: invalidPos, depth: "summary" }],
+      });
+      expect(rejected.status).toBe("invalid");
+      if (rejected.status === "invalid") {
+        expect(rejected.issues[0]?.code).toBe("invalid_position");
+      }
+    }
+  });
+
   it("enforces a position's name ceiling, not just an external address ceiling", () => {
     expect(parseMap({ roots: [root], members: [
       { root: 0, position: "note.md", depth: "name", disclosure: { summary: "" } },

@@ -37,10 +37,15 @@
       "types": "./dist/maps.d.ts",
       "import": "./dist/maps.js"
     },
+    "./threads": {
+      "types": "./dist/threads.d.ts",
+      "import": "./dist/threads.js"
+    },
     "./schema/frontmatter": "./schema/frontmatter.schema.json",
     "./schema/repository-path": "./schema/repository-path.md",
     "./schema/extensions": "./schema/extensions.md",
     "./schema/assets": "./schema/assets.md",
+    "./schema/threads": "./schema/threads.md",
     "./schema/local-effects": "./schema/local-effects.md",
     "./schema/root-identity": "./schema/root-identity.md",
     "./schema/maps": "./schema/maps.md",
@@ -49,6 +54,7 @@
     "./schema/content-look": "./schema/content-look.md",
     "./conformance/extensions": "./conformance/extensions/manifest.json",
     "./conformance/assets": "./conformance/assets/manifest.json",
+    "./conformance/threads": "./conformance/threads/manifest.json",
     "./conformance/local-effects": "./conformance/local-effects/manifest.json",
     "./conformance/root-identity": "./conformance/root-identity/manifest.json",
     "./conformance/awareness": "./conformance/awareness/manifest.json",
@@ -63,6 +69,7 @@
     "dist",
     "conformance/extensions",
     "conformance/assets",
+    "conformance/threads",
     "conformance/local-effects",
     "conformance/root-identity",
     "conformance/awareness",

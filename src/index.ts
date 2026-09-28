@@ -248,6 +248,26 @@ export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
 export { ASSET_DIRECTORY, resolveAssetReference } from "./assets.js";
 export type { AssetReferenceResolution } from "./assets.js";
 
+// Portable collaboration threads — standard named extension `_threads/`:
+// immutable dated posts, DAG timeline reconstruction, curated README lens,
+// and worktree path resolution.
+export {
+  THREADS_DIRECTORY,
+  THREAD_KINDS,
+  parseThreadPost,
+  reconstructThreadTimeline,
+  isThreadPosition,
+  resolveThreadGitPath,
+} from "./threads.js";
+export type {
+  ThreadKind,
+  ThreadPostFrontmatter,
+  ThreadPost,
+  ThreadPostParseResult,
+  ThreadNode,
+  ThreadTimeline,
+} from "./threads.js";
+
 // Portable Map frontmatter — ordered addresses, canonical repository URLs,
 // exact Git pins, and representation ceilings. No fetch, access, or hosted lifecycle.
 export {

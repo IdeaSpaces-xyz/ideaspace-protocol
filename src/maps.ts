@@ -349,7 +349,11 @@ function isMapPosition(value: unknown): value is string {
   }
   const segments = value.split("/");
   return !segments.some(
-    (segment) => segment === "." || segment === ".." || segment.startsWith("_") || segment.toLowerCase() === ".git",
+    (segment) =>
+      segment === "." ||
+      segment === ".." ||
+      segment.toLowerCase() === ".git" ||
+      (segment.startsWith("_") && segment !== "_threads"),
   );
 }
 
