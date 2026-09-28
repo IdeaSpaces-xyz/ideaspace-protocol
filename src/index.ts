@@ -269,16 +269,25 @@ export type {
 } from "./threads.js";
 
 // Portable Map frontmatter — ordered addresses, canonical repository URLs,
-// exact Git pins, and representation ceilings. No fetch, access, or hosted lifecycle.
+// exact Git pins, representation ceilings, and access vocabulary. No fetch, access, or hosted lifecycle.
 export {
   MAP_DEPTHS,
+  SUBJECT_KINDS,
+  CAPABILITY_LADDER,
+  MAP_DISCLOSURE_CAPABILITY,
   REVISION_PATTERN,
+  normalizeSubjectKind,
+  isValidSubjectKind,
+  isValidCapability,
+  capabilityRank,
   parseCanonicalRepoUrl,
   parseMap,
   buildMap,
 } from "./maps.js";
 export type {
   MapDepth,
+  SubjectKind,
+  Capability,
   MapDisclosure,
   MapBuildInput,
   MapBuildResult,

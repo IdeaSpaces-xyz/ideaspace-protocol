@@ -218,6 +218,48 @@ not freeze live entities. A later authorized read can return a new observation w
 the preserved view. Git-backed observations that claim an exact pin must describe that pin, not
 uncommitted working-tree content; verifying this is the producing harness's responsibility.
 
+## Access vocabulary and capability ladder
+
+The protocol defines the shared, platform-neutral vocabulary of subject kinds and capability relations
+used when expressing, projecting, and discussing access across Maps, repositories, and coordinated Spaces.
+
+### Subject kinds
+
+Subjects participating in access relations are classified into five standard kinds:
+
+- `person`: An individual human user.
+- `team`: A group of persons associated under a shared organization or team domain.
+- `organisation` (US spelling `organization` accepted as an alias): An organization or account domain entity.
+- `agent`: An autonomous or assisted AI agent actor.
+- `public`: Unauthenticated, anonymous public access.
+
+### Capability ladder
+
+The capability ladder defines the canonical ordered relations from lowest privilege to highest:
+
+1. **`view`**: Observe Map members and progressive disclosure at declared depth ceilings (`name`, `summary`, `surface`, `children`, `full`).
+2. **`read`**: Retrieve and read complete Note and document content bodies.
+3. **`history`**: Inspect Git commit graphs, version logs, timelines, and post transcripts.
+4. **`copy`**: Clone repositories and take independent forks of spaces.
+5. **`write`**: Create, edit, and stage content and metadata.
+6. **`push`**: Transport and push commits to remote repositories.
+7. **`manage`**: Grant, revoke, and administer access relationships and participants.
+
+### Map disclosure and the view rung
+
+**A Map's disclosure ceiling is the view rung.**
+
+Observing, sharing, or navigating a Map and its members at any depth ceiling (`name`, `summary`, `surface`,
+`children`, `full`) operates at the `view` capability rung. Disclosing a member's observed name, summary,
+outline, or surface representation requires only `view` standing on that member coordinate; it does not
+grant or imply `read` (opening the underlying Note body directly), `history` (reading past commits or full
+Thread histories), `copy` (cloning the repo or taking a portable fork), `write` (mutating content), `push`
+(pushing commits), or `manage` (administering access).
+
+The protocol defines these shared words and their semantic mapping to Map representation rungs without
+prescribing server-side ReBAC enforcement rules, tuple storage models, or evaluation algorithms.
+Enforcement remains the host environment's concern.
+
 ## Building a view
 
 `buildMap(input)` is the reference constructor over already-selected roots and members. Its input

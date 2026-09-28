@@ -2,7 +2,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   MAP_DEPTHS,
+  SUBJECT_KINDS,
+  CAPABILITY_LADDER,
+  MAP_DISCLOSURE_CAPABILITY,
   REVISION_PATTERN,
+  normalizeSubjectKind,
+  isValidSubjectKind,
+  isValidCapability,
+  capabilityRank,
   buildMap,
   parseCanonicalRepoUrl,
   type MapBuildInput,
@@ -250,6 +257,9 @@ describe("Map conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-maps/v2");
     expect(manifest.depths).toEqual(MAP_DEPTHS);
+    expect((manifest as any).subject_kinds).toEqual(SUBJECT_KINDS);
+    expect((manifest as any).capability_ladder).toEqual(CAPABILITY_LADDER);
+    expect((manifest as any).map_disclosure_capability).toBe(MAP_DISCLOSURE_CAPABILITY);
     const covered = new Set(manifest.vectors.flatMap((vector) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
@@ -275,5 +285,58 @@ describe("Map conformance manifest", () => {
         }
         break;
     }
+  });
+});
+
+describe("Access vocabulary and capability ladder", () => {
+  it("defines canonical subject kinds", () => {
+    expect(SUBJECT_KINDS).toEqual(["person", "team", "organisation", "agent", "public"]);
+  });
+
+  it("defines the capability ladder in privilege order", () => {
+    expect(CAPABILITY_LADDER).toEqual([
+      "view",
+      "read",
+      "history",
+      "copy",
+      "write",
+      "push",
+      "manage",
+    ]);
+  });
+
+  it("anchors Map disclosure to the view capability rung", () => {
+    expect(MAP_DISCLOSURE_CAPABILITY).toBe("view");
+    expect(capabilityRank(MAP_DISCLOSURE_CAPABILITY)).toBe(0);
+  });
+
+  it("normalizes subject kinds including organization alias", () => {
+    expect(normalizeSubjectKind("person")).toBe("person");
+    expect(normalizeSubjectKind("TEAM")).toBe("team");
+    expect(normalizeSubjectKind("organisation")).toBe("organisation");
+    expect(normalizeSubjectKind("organization")).toBe("organisation");
+    expect(normalizeSubjectKind("  agent  ")).toBe("agent");
+    expect(normalizeSubjectKind("public")).toBe("public");
+    expect(normalizeSubjectKind("unknown")).toBeNull();
+    expect(normalizeSubjectKind("")).toBeNull();
+  });
+
+  it("validates subject kinds and capabilities with type guards", () => {
+    expect(isValidSubjectKind("person")).toBe(true);
+    expect(isValidSubjectKind("team")).toBe(true);
+    expect(isValidSubjectKind("organisation")).toBe(true);
+    expect(isValidSubjectKind("agent")).toBe(true);
+    expect(isValidSubjectKind("public")).toBe(true);
+    expect(isValidSubjectKind("organization")).toBe(false); // alias normalized, not direct canonical
+    expect(isValidSubjectKind("unknown")).toBe(false);
+    expect(isValidSubjectKind(42)).toBe(false);
+
+    for (const cap of CAPABILITY_LADDER) {
+      expect(isValidCapability(cap)).toBe(true);
+      expect(capabilityRank(cap)).toBeGreaterThanOrEqual(0);
+    }
+    expect(isValidCapability("admin")).toBe(false);
+    expect(isValidCapability("delete")).toBe(false);
+    expect(capabilityRank("unknown")).toBe(-1);
   });
 });

@@ -1,6 +1,9 @@
 {
   "format": "ideaspaces-maps/v2",
   "depths": ["name", "summary", "surface", "children", "full"],
+  "subject_kinds": ["person", "team", "organisation", "agent", "public"],
+  "capability_ladder": ["view", "read", "history", "copy", "write", "push", "manage"],
+  "map_disclosure_capability": "view",
   "required_coverage": [
     "missing_allowed",
     "empty_progressive",
@@ -30,7 +33,8 @@
     "unknown_type",
     "unknown_fields",
     "invalid_disclosure",
-    "disclosure_ceiling"
+    "disclosure_ceiling",
+    "access_vocabulary"
   ],
   "vectors": [
     {
@@ -399,6 +403,34 @@
         "members": [{ "root": 0, "position": "_scratch/draft.md", "depth": "summary" }]
       },
       "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].position", "code": "invalid_position" }] }
+    },
+    {
+      "id": "access-vocabulary-manifest",
+      "operation": "build",
+      "covers": ["access_vocabulary"],
+      "input": {
+        "roots": [],
+        "members": [
+          { "address": "person:alice", "depth": "name", "disclosure": { "name": "Alice" } },
+          { "address": "team:core", "depth": "summary", "disclosure": { "name": "Core Team", "summary": "Protocol maintainers" } },
+          { "address": "organisation:ideaspaces", "depth": "name", "disclosure": { "name": "IdeaSpaces" } },
+          { "address": "agent:keeper", "depth": "summary", "disclosure": { "name": "Keeper", "summary": "Durable repo host" } },
+          { "address": "public:*", "depth": "name" }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [],
+          "members": [
+            { "address": "person:alice", "depth": "name", "disclosure": { "name": "Alice" } },
+            { "address": "team:core", "depth": "summary", "disclosure": { "name": "Core Team", "summary": "Protocol maintainers" } },
+            { "address": "organisation:ideaspaces", "depth": "name", "disclosure": { "name": "IdeaSpaces" } },
+            { "address": "agent:keeper", "depth": "summary", "disclosure": { "name": "Keeper", "summary": "Durable repo host" } },
+            { "address": "public:*", "depth": "name" }
+          ]
+        }
+      }
     }
   ]
 }

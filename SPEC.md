@@ -216,6 +216,14 @@ not. Missing identity, unborn HEAD, dirt, remote unavailability, or an unresolve
 cause identity minting, fetch, upload, publication, or repinning; the producer omits the portable
 `map` block and may retain a useful local rendering.
 
+The shared access vocabulary defines standard subject kinds (`person`, `team`, `organisation`, `agent`,
+`public`) and the ordered capability ladder (`view`, `read`, `history`, `copy`, `write`, `push`, `manage`).
+**A Map's disclosure ceiling is the view rung.** Observing or sharing Map members at progressive depth
+ceilings operates within the `view` capability without implying `read` (full note content retrieval),
+`history` (commit history or post transcripts), `copy` (space fork or repo clone), `write` (content edits),
+`push` (git push transport), or `manage` (access management). The protocol defines the words and relation
+names; access evaluation and enforcement remain host concerns.
+
 Hosted versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer
 concerns. Import never fetches an unknown repository merely because a map-note names it. A repo URL
 is an address, never authority. Sharing checks actual payload disclosure and repository usability
