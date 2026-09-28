@@ -347,6 +347,58 @@
           }
         ]
       }
+    },
+    {
+      "id": "build-threads-position-member",
+      "operation": "build",
+      "covers": ["emit", "ordered_positions"],
+      "input": {
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
+        "members": [
+          { "root": 0, "position": "_threads/2026-09-26-authorization/README.md", "depth": "summary" },
+          { "root": 0, "position": "_threads/2026-09-26-authorization/2026-09-26-01.md", "depth": "full" }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
+          "members": [
+            { "root": 0, "position": "_threads/2026-09-26-authorization/README.md", "depth": "summary" },
+            { "root": 0, "position": "_threads/2026-09-26-authorization/2026-09-26-01.md", "depth": "full" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "reject-agent-position",
+      "operation": "parse",
+      "covers": ["invalid_position", "graceful_invalid_block"],
+      "input": {
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
+        "members": [{ "root": 0, "position": "_agent/agreement.md", "depth": "summary" }]
+      },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].position", "code": "invalid_position" }] }
+    },
+    {
+      "id": "reject-assets-position",
+      "operation": "parse",
+      "covers": ["invalid_position", "graceful_invalid_block"],
+      "input": {
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
+        "members": [{ "root": 0, "position": "_assets/diagram.png", "depth": "summary" }]
+      },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].position", "code": "invalid_position" }] }
+    },
+    {
+      "id": "reject-unknown-underscore-position",
+      "operation": "parse",
+      "covers": ["invalid_position", "graceful_invalid_block"],
+      "input": {
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
+        "members": [{ "root": 0, "position": "_scratch/draft.md", "depth": "summary" }]
+      },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].position", "code": "invalid_position" }] }
     }
   ]
 }

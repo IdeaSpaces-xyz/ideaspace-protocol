@@ -16,6 +16,7 @@ const expected = [
   "SPEC.md",
   "VERSION",
   "conformance/assets/manifest.json",
+  "conformance/threads/manifest.json",
   "conformance/awareness/focus-render.txt",
   "conformance/awareness/foundation-render.txt",
   "conformance/awareness/foundation-vector-render.txt",
@@ -144,6 +145,10 @@ const expected = [
   "dist/surface-state.d.ts.map",
   "dist/surface-state.js",
   "dist/surface-state.js.map",
+  "dist/threads.d.ts",
+  "dist/threads.d.ts.map",
+  "dist/threads.js",
+  "dist/threads.js.map",
   "dist/trailers.d.ts",
   "dist/trailers.d.ts.map",
   "dist/trailers.js",
@@ -156,6 +161,7 @@ const expected = [
   "schema/README.md",
   "schema/agent-contract.md",
   "schema/assets.md",
+  "schema/threads.md",
   "schema/content-awareness.md",
   "schema/content-look.md",
   "schema/extensions.md",
@@ -203,10 +209,12 @@ try {
     "./frontmatter",
     "./local-effects",
     "./maps",
+    "./threads",
     "./schema/frontmatter",
     "./schema/repository-path",
     "./schema/extensions",
     "./schema/assets",
+    "./schema/threads",
     "./schema/local-effects",
     "./schema/root-identity",
     "./schema/maps",
@@ -215,6 +223,7 @@ try {
     "./schema/content-look",
     "./conformance/extensions",
     "./conformance/assets",
+    "./conformance/threads",
     "./conformance/local-effects",
     "./conformance/root-identity",
     "./conformance/awareness",
@@ -268,10 +277,12 @@ try {
     import * as frontmatterRuntime from "@ideaspaces/protocol/frontmatter";
     import * as localEffects from "@ideaspaces/protocol/local-effects";
     import * as mapsRuntime from "@ideaspaces/protocol/maps";
+    import * as threadsRuntime from "@ideaspaces/protocol/threads";
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
     const extensions = require("@ideaspaces/protocol/conformance/extensions");
     const assets = require("@ideaspaces/protocol/conformance/assets");
+    const threads = require("@ideaspaces/protocol/conformance/threads");
     const effects = require("@ideaspaces/protocol/conformance/local-effects");
     const rootIdentity = require("@ideaspaces/protocol/conformance/root-identity");
     const awareness = require("@ideaspaces/protocol/conformance/awareness");
@@ -281,6 +292,7 @@ try {
     const repositoryPathSchema = require.resolve("@ideaspaces/protocol/schema/repository-path");
     const extensionsSchema = require.resolve("@ideaspaces/protocol/schema/extensions");
     const assetsSchema = require.resolve("@ideaspaces/protocol/schema/assets");
+    const threadsSchema = require.resolve("@ideaspaces/protocol/schema/threads");
     const localEffectsSchema = require.resolve("@ideaspaces/protocol/schema/local-effects");
     const rootIdentitySchema = require.resolve("@ideaspaces/protocol/schema/root-identity");
     const mapsSchema = require.resolve("@ideaspaces/protocol/schema/maps");
@@ -316,6 +328,10 @@ try {
       "renderPosition",
       "renderRootMapMembers",
       "resolveAssetReference",
+      "parseThreadPost",
+      "reconstructThreadTimeline",
+      "resolveThreadGitPath",
+      "isThreadPosition",
       "validateCommitPathsRequest",
       "validateSpace",
       "validateWriteMarkdownRequest",
@@ -346,6 +362,9 @@ try {
     }
     if (assets?.format !== "ideaspaces-assets/v1" || !assets.required_coverage?.length) {
       throw new Error("Assets conformance manifest did not load");
+    }
+    if (threads?.format !== "ideaspaces-threads/v1" || !threads.required_coverage?.length) {
+      throw new Error("Threads conformance manifest did not load");
     }
     if (effects?.format !== "ideaspaces-local-effects/v1" || !effects.required_coverage?.length) {
       throw new Error("Local-effect conformance manifest did not load");
@@ -419,6 +438,9 @@ try {
     }
     if (!assetsSchema.endsWith("schema/assets.md")) {
       throw new Error("Assets schema export did not resolve");
+    }
+    if (!threadsSchema.endsWith("schema/threads.md")) {
+      throw new Error("Threads schema export did not resolve");
     }
     if (!localEffectsSchema.endsWith("schema/local-effects.md")) {
       throw new Error("Local-effect schema export did not resolve");
@@ -515,7 +537,8 @@ try {
     `
       import { parseMap, buildMap } from "@ideaspaces/protocol/maps";
       import { parseFrontmatter, stripFrontmatter, composeFrontmatter } from "@ideaspaces/protocol/frontmatter";
-      export { parseMap, buildMap, parseFrontmatter, stripFrontmatter, composeFrontmatter };
+      import { parseThreadPost, reconstructThreadTimeline, resolveThreadGitPath, isThreadPosition } from "@ideaspaces/protocol/threads";
+      export { parseMap, buildMap, parseFrontmatter, stripFrontmatter, composeFrontmatter, parseThreadPost, reconstructThreadTimeline, resolveThreadGitPath, isThreadPosition };
     `,
   );
 

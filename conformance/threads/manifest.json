@@ -1,0 +1,315 @@
+{
+  "format": "ideaspaces-threads/v1",
+  "thread_directory": "_threads",
+  "required_coverage": [
+    "post_frontmatter",
+    "post_with_map",
+    "quoted_colon_frontmatter",
+    "out_of_order_timeline",
+    "two_parent_join",
+    "correction_supersedes",
+    "closure_post",
+    "home_map_member",
+    "code_repo_separate_worktree_pin",
+    "refuse_agent_and_assets_positions",
+    "unaware_extension_skip"
+  ],
+  "vectors": [
+    {
+      "id": "parse-basic-post",
+      "operation": "parse_post",
+      "covers": ["post_frontmatter"],
+      "input": {
+        "content": "---\nid: 2026-09-26T10:00:00Z-init\nkind: post\nname: Initial inquiry\nsummary: First post in the thread establishing requirements.\ntags:\n  - auth\n  - coordination\nactor_ref: person:user_34\nauthor: Alice\n---\n\nLet's agree on the authorization flow for local threads.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "post": {
+          "id": "2026-09-26T10:00:00Z-init",
+          "kind": "post",
+          "inReplyTo": [],
+          "references": [],
+          "body": "\nLet's agree on the authorization flow for local threads.\n"
+        }
+      }
+    },
+    {
+      "id": "parse-quoted-colon-frontmatter",
+      "operation": "parse_post",
+      "covers": ["quoted_colon_frontmatter"],
+      "input": {
+        "content": "---\nid: 2026-09-26T10:30:00Z-colon\nin_reply_to: 2026-09-26T10:00:00Z-init\nreferences:\n  - 2026-09-26T10:00:00Z-init\nname: \"Decision: Authorization scope settled\"\nsummary: \"Key finding: root-relative positions work across boundaries\"\n---\n\nHere is the decision text.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "post": {
+          "id": "2026-09-26T10:30:00Z-colon",
+          "kind": "post",
+          "inReplyTo": ["2026-09-26T10:00:00Z-init"],
+          "references": ["2026-09-26T10:00:00Z-init"],
+          "body": "\nHere is the decision text.\n"
+        }
+      }
+    },
+    {
+      "id": "parse-post-with-map",
+      "operation": "parse_post",
+      "covers": ["post_with_map"],
+      "input": {
+        "content": "---\nid: 2026-09-26T11:00:00Z-snapshot\nin_reply_to: 2026-09-26T10:30:00Z-colon\nreferences:\n  - 2026-09-26T10:00:00Z-init\n  - 2026-09-26T10:30:00Z-colon\nkind: snapshot\nname: State snapshot\nsummary: Snapshot carrying a Map selection\nmap:\n  roots:\n    - repo: https://ideaspaces.example/repos/n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: docs/auth.md\n      depth: surface\n---\n\nSnapshot of active authorization coordinates.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "post": {
+          "id": "2026-09-26T11:00:00Z-snapshot",
+          "kind": "snapshot",
+          "inReplyTo": ["2026-09-26T10:30:00Z-colon"],
+          "references": ["2026-09-26T10:00:00Z-init", "2026-09-26T10:30:00Z-colon"],
+          "body": "\nSnapshot of active authorization coordinates.\n"
+        }
+      }
+    },
+    {
+      "id": "timeline-out-of-order-reconstruction",
+      "operation": "reconstruct_timeline",
+      "covers": ["out_of_order_timeline"],
+      "input": {
+        "posts": [
+          {
+            "id": "p3",
+            "path": "_threads/auth/2026-09-26-03.md",
+            "in_reply_to": "p2",
+            "references": ["p1", "p2"],
+            "kind": "post",
+            "content": "---\nid: p3\nin_reply_to: p2\nreferences:\n  - p1\n  - p2\n---\nThird post\n"
+          },
+          {
+            "id": "p1",
+            "path": "_threads/auth/2026-09-26-01.md",
+            "kind": "post",
+            "content": "---\nid: p1\n---\nFirst post\n"
+          },
+          {
+            "id": "p2",
+            "path": "_threads/auth/2026-09-26-02.md",
+            "in_reply_to": "p1",
+            "references": ["p1"],
+            "kind": "post",
+            "content": "---\nid: p2\nin_reply_to: p1\nreferences:\n  - p1\n---\nSecond post\n"
+          }
+        ]
+      },
+      "expected": {
+        "linearized_ids": ["p1", "p2", "p3"]
+      }
+    },
+    {
+      "id": "timeline-two-parent-join",
+      "operation": "reconstruct_timeline",
+      "covers": ["two_parent_join"],
+      "input": {
+        "posts": [
+          {
+            "id": "p_join",
+            "path": "_threads/auth/2026-09-26-04-join.md",
+            "in_reply_to": ["p_branch_a", "p_branch_b"],
+            "references": ["p_init", "p_branch_a", "p_branch_b"],
+            "kind": "post",
+            "content": "---\nid: p_join\nin_reply_to:\n  - p_branch_a\n  - p_branch_b\nreferences:\n  - p_init\n  - p_branch_a\n  - p_branch_b\n---\nJoined decision\n"
+          },
+          {
+            "id": "p_branch_b",
+            "path": "_threads/auth/2026-09-26-03-branch-b.md",
+            "in_reply_to": "p_init",
+            "references": ["p_init"],
+            "kind": "post",
+            "content": "---\nid: p_branch_b\nin_reply_to: p_init\nreferences:\n  - p_init\n---\nBranch B proposal\n"
+          },
+          {
+            "id": "p_branch_a",
+            "path": "_threads/auth/2026-09-26-02-branch-a.md",
+            "in_reply_to": "p_init",
+            "references": ["p_init"],
+            "kind": "post",
+            "content": "---\nid: p_branch_a\nin_reply_to: p_init\nreferences:\n  - p_init\n---\nBranch A proposal\n"
+          },
+          {
+            "id": "p_init",
+            "path": "_threads/auth/2026-09-26-01-init.md",
+            "kind": "post",
+            "content": "---\nid: p_init\n---\nRoot topic\n"
+          }
+        ]
+      },
+      "expected": {
+        "linearized_ids": ["p_init", "p_branch_a", "p_branch_b", "p_join"]
+      }
+    },
+    {
+      "id": "timeline-correction-and-closure",
+      "operation": "reconstruct_timeline",
+      "covers": ["correction_supersedes", "closure_post"],
+      "input": {
+        "posts": [
+          {
+            "id": "p_init",
+            "path": "_threads/auth/01-init.md",
+            "kind": "post",
+            "content": "---\nid: p_init\n---\nInitial\n"
+          },
+          {
+            "id": "p_flawed",
+            "path": "_threads/auth/02-flawed.md",
+            "in_reply_to": "p_init",
+            "kind": "post",
+            "content": "---\nid: p_flawed\nin_reply_to: p_init\n---\nFlawed assumption\n"
+          },
+          {
+            "id": "p_corrected",
+            "path": "_threads/auth/03-correction.md",
+            "in_reply_to": "p_flawed",
+            "kind": "correction",
+            "supersedes": "p_flawed",
+            "content": "---\nid: p_corrected\nin_reply_to: p_flawed\nkind: correction\nsupersedes: p_flawed\n---\nCorrected assumption\n"
+          },
+          {
+            "id": "p_close",
+            "path": "_threads/auth/04-close.md",
+            "in_reply_to": "p_corrected",
+            "kind": "closure",
+            "content": "---\nid: p_close\nin_reply_to: p_corrected\nkind: closure\n---\nClosure\n"
+          }
+        ]
+      },
+      "expected": {
+        "linearized_ids": ["p_init", "p_flawed", "p_corrected", "p_close"]
+      }
+    },
+    {
+      "id": "home-map-member-resolution",
+      "operation": "map_member_resolution",
+      "covers": ["home_map_member"],
+      "input": {
+        "map": {
+          "roots": [
+            {
+              "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567",
+              "sha": "1111111111111111111111111111111111111111"
+            }
+          ],
+          "members": [
+            {
+              "root": 0,
+              "position": "_threads/2026-09-26-authorization/README.md",
+              "depth": "summary"
+            },
+            {
+              "root": 0,
+              "position": "_threads/2026-09-26-authorization/2026-09-26-01.md",
+              "depth": "full"
+            }
+          ]
+        },
+        "trees": {
+          "0": [
+            "home.map.md",
+            "_threads/2026-09-26-authorization/README.md",
+            "_threads/2026-09-26-authorization/2026-09-26-01.md"
+          ]
+        }
+      },
+      "expected": {
+        "valid_map": true,
+        "resolved_positions": [
+          { "member_index": 0, "root": 0, "resolved_tree_path": "_threads/2026-09-26-authorization/README.md" },
+          { "member_index": 1, "root": 0, "resolved_tree_path": "_threads/2026-09-26-authorization/2026-09-26-01.md" }
+        ]
+      }
+    },
+    {
+      "id": "code-repo-separate-worktree-resolution",
+      "operation": "map_member_resolution",
+      "covers": ["code_repo_separate_worktree_pin"],
+      "input": {
+        "map": {
+          "roots": [
+            {
+              "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567",
+              "sha": "1111111111111111111111111111111111111111"
+            },
+            {
+              "repo": "https://ideaspaces.example/repos/n_9999999999abcdef99999999",
+              "sha": "2222222222222222222222222222222222222222"
+            }
+          ],
+          "members": [
+            {
+              "root": 0,
+              "position": "src/index.ts",
+              "depth": "surface"
+            },
+            {
+              "root": 1,
+              "position": "_threads/2026-09-26-authorization/README.md",
+              "depth": "summary"
+            },
+            {
+              "root": 1,
+              "position": "_threads/2026-09-26-authorization/2026-09-26-01.md",
+              "depth": "full"
+            }
+          ]
+        },
+        "trees": {
+          "0": [
+            "src/index.ts",
+            "package.json"
+          ],
+          "1": [
+            "2026-09-26-authorization/README.md",
+            "2026-09-26-authorization/2026-09-26-01.md"
+          ]
+        }
+      },
+      "expected": {
+        "valid_map": true,
+        "resolved_positions": [
+          { "member_index": 0, "root": 0, "resolved_tree_path": "src/index.ts" },
+          { "member_index": 1, "root": 1, "resolved_tree_path": "2026-09-26-authorization/README.md" },
+          { "member_index": 2, "root": 1, "resolved_tree_path": "2026-09-26-authorization/2026-09-26-01.md" }
+        ]
+      }
+    },
+    {
+      "id": "refuse-agent-assets-and-unknown-positions",
+      "operation": "map_member_refusals",
+      "covers": ["refuse_agent_and_assets_positions"],
+      "cases": [
+        { "position": "_agent/agreement.md", "expected_code": "invalid_position" },
+        { "position": "_assets/photo.png", "expected_code": "invalid_position" },
+        { "position": "_custom/note.md", "expected_code": "invalid_position" },
+        { "position": "notes/_agent/guide.md", "expected_code": "invalid_position" },
+        { "position": "notes/_assets/img.png", "expected_code": "invalid_position" },
+        { "position": "_threads/_agent/agreement.md", "expected_code": "invalid_position" }
+      ]
+    },
+    {
+      "id": "unaware-space-validation-skips-threads",
+      "operation": "validate_space",
+      "covers": ["unaware_extension_skip"],
+      "tree": {
+        "_agent/agreement.md": "---\nname: Test Space\nsummary: Space summary\n---\n# Agreement\n",
+        "README.md": "# Test Space\n",
+        "notes/idea.md": "---\nname: Idea\nsummary: An idea\n---\n# Idea\n",
+        "_threads/auth/_agent/agreement.md": "---\nname: Thread Agreement\nsummary: Terms for auth thread\n---\n# Agreement\n",
+        "_threads/auth/README.md": "# Curated Lens\n",
+        "_threads/auth/2026-09-26-01.md": "---\nid: p1\nkind: post\n---\nPost content\n"
+      },
+      "expected": {
+        "ok": true,
+        "notes_checked": 1,
+        "unknown_infrastructure_warnings": []
+      }
+    }
+  ]
+}

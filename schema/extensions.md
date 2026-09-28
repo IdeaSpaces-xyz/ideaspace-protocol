@@ -52,7 +52,7 @@ Neither maturity level makes the extension core.
 Omit an authored-reference or versioning section when the extension has no such semantics. Do not
 replace a missing semantic with registry, package, discovery, or adapter machinery.
 
-## Worked example: `_assets/`
+## Standard extensions: `_assets/` and `_threads/`
 
 [`assets.md`](assets.md) is the first standard extension contract:
 
@@ -69,6 +69,20 @@ replace a missing semantic with registry, package, discovery, or adapter machine
 - **Format evolution:** none is currently needed; payload files remain ordinary opaque bytes. A
   future structured asset file would own its format version inside the `_assets` contract rather
   than adding base-protocol negotiation.
+
+[`threads.md`](threads.md) is the second standard extension contract:
+
+- **Name and placement:** exact `_threads/`, beneath any directory carrying an Agreement.
+- **Payload:** collaboration threads with thread `_agent/agreement.md`, immutable dated posts (`id`,
+  `in_reply_to`, `references`, `kind`, `map`), and curated `README.md` lens.
+- **Authored references:** root-relative Map member positions (`_threads/<thread>/README.md`,
+  `_threads/<thread>/<post>.md`), resolving across unified checkouts and separate worktree branches.
+- **Unaware behavior:** the generic extension boundary skips the subtree quietly; Map readers
+  preserve the pointer without descending.
+- **Portable operations:** `parse_thread_post` (`parseThreadPost`), `reconstruct_thread_timeline`
+  (`reconstructThreadTimeline`), and `resolve_thread_git_path` (`resolveThreadGitPath`).
+- **Vectors:** [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json).
+- **Format evolution:** additive only; search active for thread-aware readers.
 
 Rendering, MIME and size limits, storage, serving, access, upload, and filesystem capabilities remain
 consumer policy, not extension semantics.

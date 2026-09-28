@@ -118,8 +118,14 @@ not authority: access is evaluated independently, members may dangle, and a read
 than both access and the declared depth permit.
 
 A Note, folder, and repository use the same form. A map-of-maps needs no special case because a
-map-note is itself a position. Protocol positions do not enter `_agent/`, extension payload, or
-reserved `.git` state.
+map-note is itself a position. Protocol positions do not enter `_agent/`, `_assets/`, or arbitrary
+extension payload, with the standard exception of `_threads/` (`_threads/<thread>/README.md` or
+`_threads/<thread>/<post>.md`) per [`threads.md`](threads.md).
+
+When a Map points to a `_threads/` folder that lives on an independent `threads` worktree branch in a
+code repository, the Map carries a second pinned root entry for that branch's commit SHA. A conformant
+resolver resolves the root-relative position against that commit tree by checking the path as authored
+first, and then stripping the leading `_threads/` segment if the branch tree was rooted at `_threads/`.
 
 ### Open addresses
 
