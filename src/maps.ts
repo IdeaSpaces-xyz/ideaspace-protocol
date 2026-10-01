@@ -505,7 +505,8 @@ function parseRoots(value: unknown, issues: MapParseIssue[]): MapRoot[] {
       issues.push({ path: `${base}.sha`, code: "invalid_pin" });
     }
 
-    if ("name" in input) {
+    // An optional name set to undefined is absent, as a builder with an optional field produces.
+    if (input.name !== undefined) {
       if (!isMapRootName(input.name)) {
         issues.push({ path: `${base}.name`, code: "invalid_root_name" });
       } else if (names.has(input.name)) {

@@ -368,6 +368,12 @@ describe("Map position addresses", () => {
     });
   });
 
+  it("treats a root name set to undefined as absent", () => {
+    const root = { root_node_id: "n_0123456789abcdef01234567", sha: "1".repeat(40), name: undefined };
+    const built = buildMap({ roots: [root] });
+    expect(built.status).toBe("valid");
+  });
+
   it("accepts an already-parsed address", () => {
     const map = { roots: [{ root_node_id: "n_0123456789abcdef01234567", sha: "1".repeat(40) }] };
     const parsed = parseMapPositionAddress("@n_0123456789abcdef01234567//a/b.md");
