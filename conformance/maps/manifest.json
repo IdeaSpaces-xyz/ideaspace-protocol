@@ -1,5 +1,5 @@
 {
-  "format": "ideaspaces-maps/v2",
+  "format": "ideaspaces-maps/v3",
   "depths": ["name", "summary", "surface", "children", "full"],
   "subject_kinds": ["person", "team", "organisation", "agent", "public"],
   "capability_ladder": ["view", "read", "history", "copy", "write", "push", "manage"],
@@ -34,7 +34,24 @@
     "unknown_fields",
     "invalid_disclosure",
     "disclosure_ceiling",
-    "access_vocabulary"
+    "access_vocabulary",
+    "root_name",
+    "invalid_root_name",
+    "duplicate_root_name",
+    "address_identity",
+    "address_name",
+    "address_self",
+    "address_root_position",
+    "address_round_trip",
+    "address_extension_position",
+    "address_invalid",
+    "resolve_identity",
+    "resolve_name",
+    "resolve_default_name",
+    "resolve_declared_name_wins",
+    "resolve_self",
+    "resolve_absent_root",
+    "resolve_ambiguous"
   ],
   "vectors": [
     {
@@ -430,6 +447,781 @@
             { "address": "public:*", "depth": "name" }
           ]
         }
+      }
+    },
+    {
+      "id": "build-named-roots",
+      "operation": "build",
+      "covers": [
+        "root_name",
+        "emit"
+      ],
+      "input": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          }
+        ],
+        "members": [
+          {
+            "root": 0,
+            "position": "findings",
+            "depth": "summary"
+          },
+          {
+            "root": 1,
+            "position": ".",
+            "depth": "name"
+          }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [
+            {
+              "root_node_id": "n_0123456789abcdef01234567",
+              "sha": "1111111111111111111111111111111111111111",
+              "name": "research"
+            },
+            {
+              "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+              "root_node_id": "n_89abcdef0123456789abcdef",
+              "sha": "2222222222222222222222222222222222222222"
+            }
+          ],
+          "members": [
+            {
+              "root": 0,
+              "position": "findings",
+              "depth": "summary"
+            },
+            {
+              "root": 1,
+              "position": ".",
+              "depth": "name"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "parse-invalid-root-names",
+      "operation": "parse",
+      "covers": [
+        "invalid_root_name",
+        "graceful_invalid_block"
+      ],
+      "input": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "has space"
+          },
+          {
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222",
+            "name": "n_0123456789ab"
+          },
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "2222222222222222222222222222222222222222",
+            "name": 7
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          {
+            "path": "map.roots[0].name",
+            "code": "invalid_root_name"
+          },
+          {
+            "path": "map.roots[1].name",
+            "code": "invalid_root_name"
+          },
+          {
+            "path": "map.roots[2].name",
+            "code": "invalid_root_name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "parse-duplicate-root-name",
+      "operation": "parse",
+      "covers": [
+        "duplicate_root_name",
+        "graceful_invalid_block"
+      ],
+      "input": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "notes"
+          },
+          {
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222",
+            "name": "notes"
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "issues": [
+          {
+            "path": "map.roots[1].name",
+            "code": "duplicate_root_name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "address-by-identity",
+      "operation": "parse_address",
+      "covers": [
+        "address_identity",
+        "address_round_trip"
+      ],
+      "input": "@n_0123456789abcdef01234567//findings/x.md",
+      "expected": {
+        "status": "valid",
+        "address": {
+          "root": {
+            "kind": "identity",
+            "rootNodeId": "n_0123456789abcdef01234567"
+          },
+          "position": "findings/x.md"
+        }
+      }
+    },
+    {
+      "id": "address-by-legacy-identity",
+      "operation": "parse_address",
+      "covers": [
+        "address_identity",
+        "address_round_trip"
+      ],
+      "input": "@n_0123456789ab//notes",
+      "expected": {
+        "status": "valid",
+        "address": {
+          "root": {
+            "kind": "identity",
+            "rootNodeId": "n_0123456789ab"
+          },
+          "position": "notes"
+        }
+      }
+    },
+    {
+      "id": "address-by-name",
+      "operation": "parse_address",
+      "covers": [
+        "address_name",
+        "address_round_trip"
+      ],
+      "input": "@research//findings/x.md",
+      "expected": {
+        "status": "valid",
+        "address": {
+          "root": {
+            "kind": "name",
+            "name": "research"
+          },
+          "position": "findings/x.md"
+        }
+      }
+    },
+    {
+      "id": "address-self",
+      "operation": "parse_address",
+      "covers": [
+        "address_self",
+        "address_round_trip"
+      ],
+      "input": "//_threads/decision/README.md",
+      "expected": {
+        "status": "valid",
+        "address": {
+          "root": {
+            "kind": "self"
+          },
+          "position": "_threads/decision/README.md"
+        }
+      }
+    },
+    {
+      "id": "address-root-itself",
+      "operation": "parse_address",
+      "covers": [
+        "address_root_position",
+        "address_round_trip"
+      ],
+      "input": "@n_0123456789abcdef01234567//",
+      "expected": {
+        "status": "valid",
+        "address": {
+          "root": {
+            "kind": "identity",
+            "rootNodeId": "n_0123456789abcdef01234567"
+          },
+          "position": "."
+        }
+      }
+    },
+    {
+      "id": "address-self-root",
+      "operation": "parse_address",
+      "covers": [
+        "address_self",
+        "address_root_position",
+        "address_round_trip"
+      ],
+      "input": "//",
+      "expected": {
+        "status": "valid",
+        "address": {
+          "root": {
+            "kind": "self"
+          },
+          "position": "."
+        }
+      }
+    },
+    {
+      "id": "address-agent-context",
+      "operation": "parse_address",
+      "covers": [
+        "address_extension_position",
+        "address_round_trip"
+      ],
+      "input": "@ops//_agent/agreement.md",
+      "expected": {
+        "status": "valid",
+        "address": {
+          "root": {
+            "kind": "name",
+            "name": "ops"
+          },
+          "position": "_agent/agreement.md"
+        }
+      }
+    },
+    {
+      "id": "address-invalid-forms",
+      "operation": "parse_address_cases",
+      "covers": [
+        "address_invalid"
+      ],
+      "cases": [
+        "findings/x.md",
+        "/findings/x.md",
+        "n_0123456789abcdef01234567//x.md",
+        "@n_0123456789abcdef01234567/x.md",
+        "@research",
+        null,
+        7
+      ],
+      "expected": {
+        "status": "invalid",
+        "code": "invalid_address_form"
+      }
+    },
+    {
+      "id": "address-invalid-roots",
+      "operation": "parse_address_cases",
+      "covers": [
+        "address_invalid"
+      ],
+      "cases": [
+        "@//x.md",
+        "@has space//x.md",
+        "@a/b//x.md",
+        "@-lead//x.md",
+        "@.hidden//x.md"
+      ],
+      "expected": {
+        "status": "invalid",
+        "code": "invalid_root_reference"
+      }
+    },
+    {
+      "id": "address-invalid-positions",
+      "operation": "parse_address_cases",
+      "covers": [
+        "address_invalid"
+      ],
+      "cases": [
+        "//.",
+        "//x/",
+        "//./x",
+        "//a/../b",
+        "//a\\b",
+        "//.git/config",
+        "//a/.GIT/x",
+        "@n_0123456789abcdef01234567///abs"
+      ],
+      "expected": {
+        "status": "invalid",
+        "code": "invalid_position"
+      }
+    },
+    {
+      "id": "resolve-by-identity",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_identity"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "@n_89abcdef0123456789abcdef//gaps",
+      "expected": {
+        "status": "resolved",
+        "rootIndex": 1,
+        "root": {
+          "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+          "root_node_id": "n_89abcdef0123456789abcdef",
+          "sha": "2222222222222222222222222222222222222222"
+        },
+        "position": "gaps"
+      }
+    },
+    {
+      "id": "resolve-by-declared-name",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_name"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "@research//findings/x.md",
+      "expected": {
+        "status": "resolved",
+        "rootIndex": 0,
+        "root": {
+          "root_node_id": "n_0123456789abcdef01234567",
+          "sha": "1111111111111111111111111111111111111111",
+          "name": "research"
+        },
+        "position": "findings/x.md"
+      }
+    },
+    {
+      "id": "resolve-by-default-name",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_default_name"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "@notes//",
+      "expected": {
+        "status": "resolved",
+        "rootIndex": 2,
+        "root": {
+          "root_node_id": "n_0123456789ab",
+          "sha": "1111111111111111111111111111111111111111"
+        },
+        "position": "."
+      },
+      "context": {
+        "defaultNames": [
+          null,
+          "docs",
+          "notes"
+        ]
+      }
+    },
+    {
+      "id": "resolve-declared-name-wins",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_declared_name_wins"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "@research//x.md",
+      "expected": {
+        "status": "resolved",
+        "rootIndex": 0,
+        "root": {
+          "root_node_id": "n_0123456789abcdef01234567",
+          "sha": "1111111111111111111111111111111111111111",
+          "name": "research"
+        },
+        "position": "x.md"
+      },
+      "context": {
+        "defaultNames": [
+          null,
+          "research",
+          "notes"
+        ]
+      }
+    },
+    {
+      "id": "resolve-declared-root-ignores-default",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_declared_name_wins"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "@knowledge//x.md",
+      "expected": {
+        "status": "unresolved",
+        "code": "unknown_name"
+      },
+      "context": {
+        "defaultNames": [
+          "knowledge",
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "id": "resolve-self",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_self"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "//_agent/agreement.md",
+      "expected": {
+        "status": "resolved",
+        "rootIndex": 1,
+        "root": {
+          "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+          "root_node_id": "n_89abcdef0123456789abcdef",
+          "sha": "2222222222222222222222222222222222222222"
+        },
+        "position": "_agent/agreement.md"
+      },
+      "context": {
+        "self": "n_89abcdef0123456789abcdef"
+      }
+    },
+    {
+      "id": "resolve-self-unknown",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_self"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "//x.md",
+      "expected": {
+        "status": "unresolved",
+        "code": "self_unknown"
+      }
+    },
+    {
+      "id": "resolve-absent-root",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_absent_root"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "@n_ffffffffffffffffffffffff//x.md",
+      "expected": {
+        "status": "unresolved",
+        "code": "root_not_in_map"
+      }
+    },
+    {
+      "id": "resolve-unknown-name",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_absent_root"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "@archive//gaps",
+      "expected": {
+        "status": "unresolved",
+        "code": "unknown_name"
+      }
+    },
+    {
+      "id": "resolve-ambiguous-default-name",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_ambiguous"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "@twin//x.md",
+      "expected": {
+        "status": "unresolved",
+        "code": "ambiguous_name"
+      },
+      "context": {
+        "defaultNames": [
+          null,
+          "twin",
+          "twin"
+        ]
+      }
+    },
+    {
+      "id": "resolve-ambiguous-identity",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_ambiguous"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111"
+          },
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "2222222222222222222222222222222222222222",
+            "name": "threads"
+          }
+        ]
+      },
+      "address": "@n_0123456789abcdef01234567//x.md",
+      "expected": {
+        "status": "unresolved",
+        "code": "ambiguous_root"
+      }
+    },
+    {
+      "id": "resolve-ambiguous-identity-by-name",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_ambiguous",
+        "resolve_name"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111"
+          },
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "2222222222222222222222222222222222222222",
+            "name": "threads"
+          }
+        ]
+      },
+      "address": "@threads//decision/README.md",
+      "expected": {
+        "status": "resolved",
+        "rootIndex": 1,
+        "root": {
+          "root_node_id": "n_0123456789abcdef01234567",
+          "sha": "2222222222222222222222222222222222222222",
+          "name": "threads"
+        },
+        "position": "decision/README.md"
+      }
+    },
+    {
+      "id": "resolve-invalid-address",
+      "operation": "resolve_address",
+      "covers": [
+        "address_invalid"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          },
+          {
+            "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef",
+            "root_node_id": "n_89abcdef0123456789abcdef",
+            "sha": "2222222222222222222222222222222222222222"
+          },
+          {
+            "root_node_id": "n_0123456789ab",
+            "sha": "1111111111111111111111111111111111111111"
+          }
+        ]
+      },
+      "address": "findings/x.md",
+      "expected": {
+        "status": "invalid",
+        "code": "invalid_address_form"
       }
     }
   ]

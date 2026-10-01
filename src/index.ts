@@ -283,6 +283,11 @@ export {
   parseCanonicalRepoUrl,
   parseMap,
   buildMap,
+  MAP_ROOT_NAME_PATTERN,
+  isMapRootName,
+  parseMapPositionAddress,
+  formatMapPositionAddress,
+  resolveMapPositionAddress,
 } from "./maps.js";
 export type {
   MapDepth,
@@ -300,6 +305,12 @@ export type {
   MapParseIssue,
   MapParseResult,
   CanonicalRepoUrlParseResult,
+  MapPositionAddress,
+  MapPositionAddressRoot,
+  MapPositionAddressParseResult,
+  MapPositionAddressUnresolvedCode,
+  MapPositionAddressResolution,
+  MapPositionAddressContext,
 } from "./maps.js";
 
 // Portable Space root identity — optional selected-entrypoint declaration,

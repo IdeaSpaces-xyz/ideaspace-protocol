@@ -88,6 +88,11 @@ A repo URL is an address, never authority or a fetch instruction. Import is reso
 A reader resolves only roots already trusted in its local checkout or registry. A map-note alone never
 authorizes cloning, fetching, contacting, or trusting an unknown origin.
 
+A root MAY carry `name`: a short token (`[A-Za-z0-9][A-Za-z0-9._-]{0,63}`) that is not itself a
+root identity form, unique among the Map's roots. It is what the root answers to in this Map's
+[position addresses](#position-addresses). A name means something only alongside the Map that
+declares it; there is no global name for a repository.
+
 Pins make one coherent moment per root. A member never carries its own SHA. Readers preserve the
 full object id and do not operate the checkout to match it. Bare Git is sufficient to inspect a
 position when the pinned object exists locally:
@@ -169,6 +174,42 @@ Consumers navigate address members across four progressive rungs without requiri
 The portable round trip is exact over repository positions. External addresses are preserved in a
 map-note, but a hosted store that cannot ingest them MUST either preserve them as address-only or
 explicitly decline the import; it MUST NOT silently drop them.
+
+## Position addresses
+
+A position address names one root and one position in it as a single string. It is how a reader
+holding a Map points at a member without a filesystem path:
+
+| Form | Names the root by | Valid |
+|---|---|---|
+| `@n_0123456789abcdef01234567//findings/x.md` | identity (`root_node_id`) | anywhere — the canonical form |
+| `@research//findings/x.md` | its name in one Map | only alongside that Map |
+| `//_agent/agreement.md` | the reader's own root | only where the reader knows its identity |
+
+Everything after `//` is a canonical repository-relative path, validated like
+[`repository-path.md`](repository-path.md): no leading or trailing slash, no `.` or `..` segment, no
+backslash or NUL, nothing inside `.git`. An empty position is the root itself, so `@research//`
+addresses position `.`. Unlike a position member, an address may point inside `_agent/` or an
+extension: it names bytes, and whether the reader may disclose them is decided separately. A
+reference that parses as a root identity is always an identity, which is why a name may never take
+that form.
+
+Resolution against a Map is pure and reads nothing:
+
+- An identity matches the root whose `root_node_id` (or `repo` identity) equals it.
+- A name matches the root that declares it. A root that declares no `name` answers to a default the
+  reader supplies — its hosted slug or its Agreement's name, as the reader knows them — and a
+  declared name wins over a default one.
+- `//` matches the root carrying the reader's own identity.
+
+A root absent from the Map, an unknown name, a reference matching more than one root (the same
+identity pinned twice, or two roots answering to one default name), and `//` without a known reader
+identity are typed results, never a path guess. Anything stored for later carries the identity
+form or the Map it was read with.
+
+`parseMapPositionAddress`, `formatMapPositionAddress`, and `resolveMapPositionAddress` are the
+reference functions; valid addresses round-trip through parse and format. Reading the bytes — at the
+pin or at a checkout's HEAD, locally or remotely — is the harness's.
 
 ## Observed disclosure and curator annotations
 
@@ -319,8 +360,8 @@ claiming provisional Map parsing compatibility executes every required coverage 
 through its constructor and parses successful output back equal. Those vectors cover optional
 absence, canonical HTTPS and loopback-development repo URLs, matching root identities, exact pins,
 ordered positions and external addresses, the five ceilings, observed disclosure versus annotations,
-unknown types/fields, retired `space`-field refusal, and
-graceful invalid-block handling. They validate representation, not live availability or permission.
+unknown types/fields, retired `space`-field refusal, root names, position-address parsing,
+round-trip, and resolution, and graceful invalid-block handling. They validate representation, not live availability or permission.
 
 Breaking changes remain allowed before 1.0. This page graduates toward normative only after two
 independent harnesses converge and the round trip passes: hosted Map export → map-note → independent

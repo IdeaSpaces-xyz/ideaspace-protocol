@@ -12,7 +12,14 @@ import {
   capabilityRank,
   buildMap,
   parseCanonicalRepoUrl,
+  parseMapPositionAddress,
+  formatMapPositionAddress,
+  resolveMapPositionAddress,
+  type MapBlock,
   type MapBuildInput,
+  type MapPositionAddressContext,
+  type MapPositionAddressParseResult,
+  type MapPositionAddressResolution,
   parseMap,
   type MapParseResult,
   type CanonicalRepoUrlParseResult,
@@ -34,7 +41,38 @@ interface ParseRepoUrlCasesVector {
   expected: CanonicalRepoUrlParseResult;
 }
 
-type MapVector = ParseVector | ParseRepoUrlCasesVector;
+interface ParseAddressVector {
+  id: string;
+  operation: "parse_address";
+  covers: string[];
+  input: string;
+  expected: MapPositionAddressParseResult;
+}
+
+interface ParseAddressCasesVector {
+  id: string;
+  operation: "parse_address_cases";
+  covers: string[];
+  cases: unknown[];
+  expected: MapPositionAddressParseResult;
+}
+
+interface ResolveAddressVector {
+  id: string;
+  operation: "resolve_address";
+  covers: string[];
+  map: MapBlock;
+  address: string;
+  context?: { self?: string; defaultNames?: (string | null)[] };
+  expected: MapPositionAddressResolution;
+}
+
+type MapVector =
+  | ParseVector
+  | ParseRepoUrlCasesVector
+  | ParseAddressVector
+  | ParseAddressCasesVector
+  | ResolveAddressVector;
 
 const manifest = JSON.parse(
   readFileSync(new URL("../conformance/maps/manifest.json", import.meta.url), "utf-8"),
@@ -255,7 +293,7 @@ describe("Map construction and disclosure", () => {
 
 describe("Map conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
-    expect(manifest.format).toBe("ideaspaces-maps/v2");
+    expect(manifest.format).toBe("ideaspaces-maps/v3");
     expect(manifest.depths).toEqual(MAP_DEPTHS);
     expect((manifest as any).subject_kinds).toEqual(SUBJECT_KINDS);
     expect((manifest as any).capability_ladder).toEqual(CAPABILITY_LADDER);
@@ -284,7 +322,57 @@ describe("Map conformance manifest", () => {
           expect(parseCanonicalRepoUrl(input), String(input)).toEqual(vector.expected);
         }
         break;
+      case "parse_address": {
+        const result = parseMapPositionAddress(vector.input);
+        expect(result).toEqual(vector.expected);
+        // Every valid address round-trips through format.
+        if (result.status === "valid") expect(formatMapPositionAddress(result.address)).toBe(vector.input);
+        break;
+      }
+      case "parse_address_cases":
+        for (const input of vector.cases) {
+          expect(parseMapPositionAddress(input), String(input)).toEqual(vector.expected);
+        }
+        break;
+      case "resolve_address": {
+        // JSON has no undefined; a null default name is a root the reader knows no name for.
+        const context: MapPositionAddressContext = {
+          ...(vector.context?.self === undefined ? {} : { self: vector.context.self }),
+          ...(vector.context?.defaultNames === undefined
+            ? {}
+            : { defaultNames: vector.context.defaultNames.map((name) => name ?? undefined) }),
+        };
+        expect(resolveMapPositionAddress(vector.map, vector.address, context)).toEqual(vector.expected);
+        break;
+      }
     }
+  });
+});
+
+describe("Map position addresses", () => {
+  it("refuses to format what it would not parse", () => {
+    expect(() => formatMapPositionAddress({ root: { kind: "name", name: "n_0123456789ab" }, position: "." })).toThrow(TypeError);
+    expect(() => formatMapPositionAddress({ root: { kind: "identity", rootNodeId: "research" }, position: "." })).toThrow(TypeError);
+    expect(() => formatMapPositionAddress({ root: { kind: "self" }, position: "../x" })).toThrow(TypeError);
+  });
+
+  it("resolves a name only against the Map it is read with", () => {
+    const root = { root_node_id: "n_0123456789abcdef01234567", sha: "1".repeat(40) };
+    const named = buildMap({ roots: [{ ...root, name: "research" }] });
+    const unnamed = buildMap({ roots: [root] });
+    if (named.status !== "valid" || unnamed.status !== "valid") throw new Error("fixture");
+    expect(resolveMapPositionAddress(named.map, "@research//x.md").status).toBe("resolved");
+    expect(resolveMapPositionAddress(unnamed.map, "@research//x.md")).toEqual({
+      status: "unresolved",
+      code: "unknown_name",
+    });
+  });
+
+  it("accepts an already-parsed address", () => {
+    const map = { roots: [{ root_node_id: "n_0123456789abcdef01234567", sha: "1".repeat(40) }] };
+    const parsed = parseMapPositionAddress("@n_0123456789abcdef01234567//a/b.md");
+    if (parsed.status !== "valid") throw new Error("fixture");
+    expect(resolveMapPositionAddress(map, parsed.address)).toMatchObject({ status: "resolved", rootIndex: 0, position: "a/b.md" });
   });
 });
 
