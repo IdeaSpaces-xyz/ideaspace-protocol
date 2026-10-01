@@ -85,7 +85,7 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
           "not": { "pattern": "^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$" },
-          "description": "Optional name this root answers to in this Map's position addresses (`@name//position`). Local to the Map and unique within it; never a root identity form."
+          "description": "Optional name this root answers to in this Map's position addresses (`@name//position`). Local to the Map, compared exactly, and unique within it (enforced by parsers, not expressible here); never a root identity form."
         }
       },
       "required": ["sha"],

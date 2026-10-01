@@ -89,7 +89,9 @@ A reader resolves only roots already trusted in its local checkout or registry. 
 authorizes cloning, fetching, contacting, or trusting an unknown origin.
 
 A root MAY carry `name`: a short token (`[A-Za-z0-9][A-Za-z0-9._-]{0,63}`) that is not itself a
-root identity form, unique among the Map's roots. It is what the root answers to in this Map's
+root identity form, unique among the Map's roots. Names compare exactly: `Research` and `research`
+are different names. Uniqueness is enforced by the parser (`duplicate_root_name`) and the vectors;
+JSON Schema cannot express it. It is what the root answers to in this Map's
 [position addresses](#position-addresses). A name means something only alongside the Map that
 declares it; there is no global name for a repository.
 
@@ -207,6 +209,7 @@ identity pinned twice, or two roots answering to one default name), and `//` wit
 identity are typed results, never a path guess. Anything stored for later carries the identity
 form or the Map it was read with.
 
+In a resolution vector's `context.defaultNames`, `null` marks a root the reader knows no name for.
 `parseMapPositionAddress`, `formatMapPositionAddress`, and `resolveMapPositionAddress` are the
 reference functions; valid addresses round-trip through parse and format. Reading the bytes — at the
 pin or at a checkout's HEAD, locally or remotely — is the harness's.
@@ -360,8 +363,10 @@ claiming provisional Map parsing compatibility executes every required coverage 
 through its constructor and parses successful output back equal. Those vectors cover optional
 absence, canonical HTTPS and loopback-development repo URLs, matching root identities, exact pins,
 ordered positions and external addresses, the five ceilings, observed disclosure versus annotations,
-unknown types/fields, retired `space`-field refusal, root names, position-address parsing,
-round-trip, and resolution, and graceful invalid-block handling. They validate representation, not live availability or permission.
+unknown types/fields, retired `space`-field refusal, and graceful invalid-block handling. Since
+`ideaspaces-maps/v3` they also cover root names and position addresses: parsing, the parse/format
+round-trip, and resolution against a Map. They validate representation, not live availability or
+permission.
 
 Breaking changes remain allowed before 1.0. This page graduates toward normative only after two
 independent harnesses converge and the round trip passes: hosted Map export → map-note → independent

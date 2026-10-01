@@ -517,8 +517,14 @@ try {
       deepStrictEqual(result, vector.expected, vector.id);
       if (result.status === "valid") deepStrictEqual(protocol.formatMapPositionAddress(result.address), vector.input);
     }
-    for (const vector of maps.vectors.filter((v) => v.operation === "resolve_address" && !v.context)) {
-      deepStrictEqual(protocol.resolveMapPositionAddress(vector.map, vector.address), vector.expected, vector.id);
+    for (const vector of maps.vectors.filter((v) => v.operation === "resolve_address")) {
+      const context = {
+        ...(vector.context?.self === undefined ? {} : { self: vector.context.self }),
+        ...(vector.context?.defaultNames === undefined
+          ? {}
+          : { defaultNames: vector.context.defaultNames.map((name) => name ?? undefined) }),
+      };
+      deepStrictEqual(protocol.resolveMapPositionAddress(vector.map, vector.address, context), vector.expected, vector.id);
     }
     const treeVector = mapProjection.vectors.find((v) => v.operation === "project_tree");
     if (!treeVector) throw new Error("Map-projection tree vector is missing");

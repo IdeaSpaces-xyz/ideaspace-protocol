@@ -1223,6 +1223,27 @@
         "status": "invalid",
         "code": "invalid_address_form"
       }
+    },
+    {
+      "id": "resolve-name-is-case-sensitive",
+      "operation": "resolve_address",
+      "covers": [
+        "resolve_name"
+      ],
+      "map": {
+        "roots": [
+          {
+            "root_node_id": "n_0123456789abcdef01234567",
+            "sha": "1111111111111111111111111111111111111111",
+            "name": "research"
+          }
+        ]
+      },
+      "address": "@Research//x.md",
+      "expected": {
+        "status": "unresolved",
+        "code": "unknown_name"
+      }
     }
   ]
 }

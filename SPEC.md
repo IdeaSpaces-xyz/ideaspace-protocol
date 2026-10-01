@@ -203,7 +203,7 @@ no Git Merkle proof, local ordering, or implied read authorization.
 
 A root MAY carry a `name`, local to its Map. A position address names one root and one position as
 a string: `@<root_node_id>//<position>` is canonical and valid anywhere, `@<name>//<position>` is
-valid only alongside the Map that names the root (a root without `name` answers to a reader-known
+valid only alongside the Map that names the root (names compare exactly; a root without `name` answers to a reader-known
 default such as its hosted slug or Agreement name), and `//<position>` names the reader's own root.
 Resolving an address against a Map is pure; a root absent from the Map, an unknown or ambiguous
 reference is a typed result, never a path.
