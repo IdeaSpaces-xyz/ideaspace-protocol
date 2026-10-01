@@ -424,7 +424,7 @@ try {
     if (composedTail !== [protocol.renderContentState(tailState), "h", "c"].join("\\n\\n")) {
       throw new Error("Installed tail composer did not order State, handles, and Change");
     }
-    if (maps?.format !== "ideaspaces-maps/v2" || !maps.required_coverage?.length) {
+    if (maps?.format !== "ideaspaces-maps/v3" || !maps.required_coverage?.length) {
       throw new Error("Map conformance manifest did not load");
     }
     if (mapProjection?.format !== "ideaspaces-map-projection/v1" || !mapProjection.required_coverage?.length) {
@@ -511,6 +511,23 @@ try {
       const result = protocol.buildMap(vector.input);
       deepStrictEqual(result, vector.expected, vector.id);
       if (result.status === "valid") deepStrictEqual(protocol.parseMap(result.map), result);
+    }
+    for (const vector of maps.vectors.filter((v) => v.operation === "parse_address")) {
+      const result = protocol.parseMapPositionAddress(vector.input);
+      deepStrictEqual(result, vector.expected, vector.id);
+      if (result.status === "valid") deepStrictEqual(protocol.formatMapPositionAddress(result.address), vector.input);
+    }
+    for (const vector of maps.vectors.filter((v) => v.operation === "parse_address_cases")) {
+      for (const input of vector.cases) deepStrictEqual(protocol.parseMapPositionAddress(input), vector.expected, vector.id);
+    }
+    for (const vector of maps.vectors.filter((v) => v.operation === "resolve_address")) {
+      const context = {
+        ...(vector.context?.self === undefined ? {} : { self: vector.context.self }),
+        ...(vector.context?.defaultNames === undefined
+          ? {}
+          : { defaultNames: vector.context.defaultNames.map((name) => name ?? undefined) }),
+      };
+      deepStrictEqual(protocol.resolveMapPositionAddress(vector.map, vector.address, context), vector.expected, vector.id);
     }
     const treeVector = mapProjection.vectors.find((v) => v.operation === "project_tree");
     if (!treeVector) throw new Error("Map-projection tree vector is missing");

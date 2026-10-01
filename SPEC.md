@@ -201,6 +201,14 @@ disclosure ceiling, never access. An address member MAY carry an optional opaque
 (such as `n_<24hex>` matching the latest posted Note) for equality-only change check-in; it carries
 no Git Merkle proof, local ordering, or implied read authorization.
 
+A root MAY carry a `name`, local to its Map. A position address names one root and one position as
+a string: `@<root_node_id>//<position>` is canonical and valid anywhere; `@<name>//<position>` is
+valid only alongside the Map that names the root; `//<position>` names the reader's own root. A name is
+1–64 characters of `A–Z a–z 0–9 . _ -`, starting with a letter or digit, never in root identity form,
+and unique in its Map. Names compare exactly, and a root without `name` answers to a reader-known default such as its hosted slug
+or Agreement name. Resolving an address against a Map is pure; a root absent from the Map, or an
+unknown or ambiguous reference, is a typed result, never a path.
+
 Either member form MAY carry observed `disclosure.name` and `disclosure.summary`, distinct from
 curator-authored top-level labels. Declared depth remains a ceiling, not requested or observed detail;
 a name-only ceiling forbids an observed summary. Preserving the view fixes supplied disclosure,
@@ -333,7 +341,7 @@ A tool that claims **local-effect conformance** additionally MUST pass every req
 
 A tool that claims **root-identity conformance** additionally MUST pass every required coverage vector in [`conformance/root-identity/manifest.json`](conformance/root-identity/manifest.json), including optional absence, current and legacy forms, 96-bit minting, lazy legacy alignment, drift, ambiguity, and malformed evidence.
 
-A tool that claims provisional **Map parsing compatibility** additionally MUST pass every required coverage vector in [`conformance/maps/manifest.json`](conformance/maps/manifest.json), including optional absence, canonical HTTPS and loopback-development repo URLs, matching root identities, exact pins, ordered members, the five depth names, open external addresses, thread addresses with optional opaque revisions, observed disclosure versus annotations, root-index safety, retired `space`-field refusal, and graceful invalid-block handling. Parse-only readers parse the input of build vectors; construction implementations also build them and parse successful output back equal. This adds no base repository-conformance requirement.
+A tool that claims provisional **Map parsing compatibility** additionally MUST pass every required coverage vector in [`conformance/maps/manifest.json`](conformance/maps/manifest.json), including optional absence, canonical HTTPS and loopback-development repo URLs, matching root identities, exact pins, ordered members, the five depth names, open external addresses, thread addresses with optional opaque revisions, observed disclosure versus annotations, root names and position addresses, root-index safety, retired `space`-field refusal, and graceful invalid-block handling. Parse-only readers parse the input of build vectors; construction implementations also build them and parse successful output back equal. This adds no base repository-conformance requirement.
 
 A tool that claims **assets conformance** additionally MUST pass every required coverage vector in [`conformance/assets/manifest.json`](conformance/assets/manifest.json), including exact recognition, relative resolution from the containing Markdown file, explicit authored selection when root and nested folders coexist, root escape, and repository-validator skipping. The pure language-neutral operation and its boundary are normative in [`schema/assets.md`](schema/assets.md).
 
