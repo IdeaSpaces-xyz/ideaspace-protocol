@@ -283,7 +283,6 @@ export {
   parseCanonicalRepoUrl,
   parseMap,
   buildMap,
-  MAP_ROOT_NAME_PATTERN,
   isMapRootName,
   parseMapPositionAddress,
   formatMapPositionAddress,

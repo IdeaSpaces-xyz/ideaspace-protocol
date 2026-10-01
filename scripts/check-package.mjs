@@ -517,6 +517,9 @@ try {
       deepStrictEqual(result, vector.expected, vector.id);
       if (result.status === "valid") deepStrictEqual(protocol.formatMapPositionAddress(result.address), vector.input);
     }
+    for (const vector of maps.vectors.filter((v) => v.operation === "parse_address_cases")) {
+      for (const input of vector.cases) deepStrictEqual(protocol.parseMapPositionAddress(input), vector.expected, vector.id);
+    }
     for (const vector of maps.vectors.filter((v) => v.operation === "resolve_address")) {
       const context = {
         ...(vector.context?.self === undefined ? {} : { self: vector.context.self }),

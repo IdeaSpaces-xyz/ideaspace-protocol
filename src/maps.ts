@@ -243,7 +243,7 @@ export function buildMap(input: MapBuildInput): MapBuildResult {
 }
 
 /** A name a root answers to inside one Map. Never a root identity form. */
-export const MAP_ROOT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+const MAP_ROOT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
 /** Whether a value is a valid Map root name: a short token that cannot be read as an identity. */
 export function isMapRootName(value: unknown): value is string {
