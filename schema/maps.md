@@ -198,7 +198,8 @@ that form.
 
 Resolution against a Map is pure and reads nothing:
 
-- An identity matches the root whose `root_node_id` (or `repo` identity) equals it.
+- An identity matches the root whose `root_node_id` (or `repo` identity) equals it exactly. A legacy
+  12-hex identity and a current 24-hex one are different identities, as everywhere else.
 - A name matches the root that declares it. A root that declares no `name` answers to a default the
   reader supplies — its hosted slug or its Agreement's name, as the reader knows them — and a
   declared name wins over a default one.
@@ -209,7 +210,12 @@ identity pinned twice, or two roots answering to one default name), and `//` wit
 identity are typed results, never a path guess. Anything stored for later carries the identity
 form or the Map it was read with.
 
-In a resolution vector's `context.defaultNames`, `null` marks a root the reader knows no name for.
+The unresolved codes are `root_not_in_map`, `unknown_name`, `ambiguous_root`, `ambiguous_name`, and
+`self_unknown`; invalid addresses are `invalid_address_form`, `invalid_root_reference`, and
+`invalid_position`. Operation results in the vectors use camelCase fields (`rootNodeId`,
+`rootIndex`), as the existing repo-URL and root-identity results do; stored Map data keeps its
+snake_case fields (`root_node_id`). In a resolution vector's `context.defaultNames`, `null` marks a
+root the reader knows no name for.
 `parseMapPositionAddress`, `formatMapPositionAddress`, and `resolveMapPositionAddress` are the
 reference functions; valid addresses round-trip through parse and format. Reading the bytes — at the
 pin or at a checkout's HEAD, locally or remotely — is the harness's.

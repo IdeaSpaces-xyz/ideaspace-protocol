@@ -389,6 +389,8 @@ export function resolveMapPositionAddress(
     const declared = indicesWhere(roots, (root) => root.name === name);
     if (declared.length === 1) return resolved(declared[0]);
     if (declared.length > 1) return { status: "unresolved", code: "ambiguous_name" };
+    // A root whose declared name is invalid (only reachable when the Map skipped parsing) is
+    // treated as undeclared and answers to its default.
     const defaults = indicesWhere(
       roots,
       (root, index) => !isMapRootName(root.name) && context.defaultNames?.[index] === name,
