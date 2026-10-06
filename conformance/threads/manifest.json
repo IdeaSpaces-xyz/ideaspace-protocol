@@ -50,7 +50,7 @@
       "operation": "parse_post",
       "covers": ["post_date_invalid"],
       "input": { "path": "2026-02-28T09-10-17Z-post.md", "content": "---\nid: msg_bad\ndate: 2026-02-30T09:10:17Z\n---\nInvalid calendar day.\n" },
-      "expected": { "status": "invalid", "issues": ["invalid_date"] }
+      "expected": { "status": "valid", "post": { "id": "msg_bad", "date": null, "dateWarning": "invalid_date", "kind": "post", "inReplyTo": [], "references": [] } }
     },
     {
       "id": "parse-day-only-legacy-date",
@@ -65,6 +65,48 @@
       "covers": ["post_date_filename_fallback"],
       "input": { "path": "old-post.md", "content": "---\nid: msg_no_stamp\n---\nOld post.\n" },
       "expected": { "status": "valid", "post": { "id": "msg_no_stamp", "date": null, "kind": "post", "inReplyTo": [], "references": [] } }
+    },
+    {
+      "id": "parse-authored-day-only",
+      "operation": "parse_post",
+      "covers": ["post_date_day_only"],
+      "input": { "path": "2026-09-30T0719-readable.md", "content": "---\nid: msg_authored_day\ndate: 2026-09-30\n---\nOld Home post.\n" },
+      "expected": { "status": "valid", "post": { "id": "msg_authored_day", "date": "2026-09-30", "fileDate": "2026-09-30T07:19:00.000Z", "kind": "post", "inReplyTo": [], "references": [] } }
+    },
+    {
+      "id": "parse-authored-offset-normalized",
+      "operation": "parse_post",
+      "covers": ["post_date_authored"],
+      "input": { "path": "2026-10-06T09-10-17Z-post.md", "content": "---\nid: msg_offset\ndate: \"2026-10-06T12:10:17+03:00\"\n---\nOffset instant.\n" },
+      "expected": { "status": "valid", "post": { "id": "msg_offset", "date": "2026-10-06T09:10:17.000Z", "kind": "post", "inReplyTo": [], "references": [] } }
+    },
+    {
+      "id": "parse-yaml-coerced-timestamp",
+      "operation": "parse_post",
+      "covers": ["post_date_authored"],
+      "input": { "path": "2026-10-06T09-12-17Z-post.md", "content": "---\nid: msg_yaml_timestamp\ndate: !!timestamp 2026-10-06T09:12:17Z\n---\nCoerced timestamp.\n" },
+      "expected": { "status": "valid", "post": { "id": "msg_yaml_timestamp", "date": "2026-10-06T09:12:17.000Z", "kind": "post", "inReplyTo": [], "references": [] } }
+    },
+    {
+      "id": "parse-malformed-nonstring-date",
+      "operation": "parse_post",
+      "covers": ["post_date_invalid"],
+      "input": { "path": "2026-10-06T09-10-17Z-post.md", "content": "---\nid: msg_null\ndate: null\n---\nMalformed date.\n" },
+      "expected": { "status": "valid", "post": { "id": "msg_null", "date": null, "dateWarning": "invalid_date", "kind": "post", "inReplyTo": [], "references": [] } }
+    },
+    {
+      "id": "parse-no-millisecond-filename",
+      "operation": "parse_post",
+      "covers": ["post_date_filename_fallback"],
+      "input": { "path": "2026-10-06T09-10-17Z-post.md", "content": "---\nid: msg_no_ms\n---\nLegacy date.\n" },
+      "expected": { "status": "valid", "post": { "id": "msg_no_ms", "date": "2026-10-06T09:10:17.000Z", "kind": "post", "inReplyTo": [], "references": [] } }
+    },
+    {
+      "id": "parse-invalid-filename-stamp",
+      "operation": "parse_post",
+      "covers": ["post_date_filename_fallback"],
+      "input": { "path": "2026-13-45T09-10-17Z-post.md", "content": "---\nid: msg_invalid_filename\n---\nLegacy date.\n" },
+      "expected": { "status": "valid", "post": { "id": "msg_invalid_filename", "date": null, "kind": "post", "inReplyTo": [], "references": [] } }
     },
     {
       "id": "parse-basic-post",

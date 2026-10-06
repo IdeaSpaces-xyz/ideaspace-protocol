@@ -55,7 +55,7 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | Field | Shape | Meaning |
 |---|---|---|
 | `id` | Non-empty string | Globally unique post identifier minted by the writer (e.g. `msg_...` or timestamp-prefixed id). |
-| `date` | Calendar-valid ISO 8601 instant string: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or `YYYY-MM-DDTHH:mm:ss[.sss]±HH:mm` (fraction 1–3 digits) | Optional for old posts; every new writer MUST record the instant used in its file-name stamp. Readers prefer the authored string unchanged (including offsets) and fall back to a UTC-normalized filename stamp if absent. A day-only legacy filename resolves to midnight UTC; a filename without a valid stamp supplies no date. Invalid authored values yield `invalid_date`, never filename fallback. |
+| `date` | Calendar-valid ISO instant: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or `YYYY-MM-DDTHH:mm:ss[.sss]±HH:mm` (fraction 1–3 digits); legacy `YYYY-MM-DD` | Optional for old posts; every new writer MUST record the instant used in its file-name stamp. Readers prefer the authored date: an instant normalizes to UTC `Z`, a date-only value stays a day with no instant. Treat a YAML-coerced timestamp as that same ISO instant; implementations MUST read the scalar without rejecting the post due to YAML timestamp typing. With no field, a valid filename stamp supplies UTC instant (a day-only legacy filename supplies midnight UTC); an unstamped name supplies no time. Malformed authored date yields a diagnostic `invalid_date`, never invalidates the post and never falls back silently. |
 | `in_reply_to` | String or string array | Optional parent post id(s). Absent for the initial thread post; a string for a single parent reply; an array of 2+ ids for a multi-parent join (merge). |
 | `references` | Array of strings | Optional ancestor chain of post ids, ordered from oldest ancestor to immediate parent. |
 | `kind` | Enum string | Role of the post: `post` (default), `snapshot`, `reframe`, `correction`, or `closure`. |
@@ -141,8 +141,8 @@ Independent implementations share three portable operations:
 
 1. **`parse_thread_post` (`parseThreadPost`)**:
    - Extracts frontmatter and body.
-   - Validates required `id`, optional ISO `date` (invalid values report `invalid_date`), `kind` (`post`, `snapshot`, `reframe`, `correction`, `closure`),
-     `in_reply_to`, `references`, and `supersedes`; projects `date` from an old post's filename when absent.
+   - Validates required `id`, `kind` (`post`, `snapshot`, `reframe`, `correction`, `closure`),
+     `in_reply_to`, `references`, and `supersedes`; reads date without rejecting the post, exposing `dateWarning: invalid_date` for malformed values, and projects `date` from an old post's filename when absent.
    - Parses embedded `map` when present.
 
 2. **`reconstruct_thread_timeline` (`reconstructThreadTimeline`)**:

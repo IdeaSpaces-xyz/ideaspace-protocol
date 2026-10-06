@@ -124,6 +124,8 @@ describe("threads conformance manifest", () => {
           expect(result.post.inReplyTo).toEqual(vector.expected.post.inReplyTo);
           expect(result.post.references).toEqual(vector.expected.post.references);
           if ("date" in vector.expected.post) expect(result.post.date ?? null).toBe(vector.expected.post.date);
+          if ("fileDate" in vector.expected.post) expect(result.post.fileDate ?? null).toBe(vector.expected.post.fileDate);
+          if ("dateWarning" in vector.expected.post) expect(result.post.dateWarning ?? null).toBe(vector.expected.post.dateWarning);
           if (vector.expected.post.body) {
             expect(result.post.body).toBe(vector.expected.post.body);
           }
