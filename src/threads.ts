@@ -93,9 +93,14 @@ export function parseThreadPost(
   const issues: string[] = [];
   let date: string | undefined;
   if ("date" in fm) {
-    if (typeof fm.date !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(fm.date) ||
-        !Number.isFinite(Date.parse(fm.date))) issues.push("invalid_date");
-    else date = fm.date;
+    const authored = fm.date;
+    const day = typeof authored === "string" ? authored.slice(0, 10) : "";
+    const calendarValid = /^\d{4}-\d{2}-\d{2}$/.test(day) &&
+      !Number.isNaN(Date.parse(`${day}T00:00:00.000Z`)) &&
+      new Date(`${day}T00:00:00.000Z`).toISOString().slice(0, 10) === day;
+    if (typeof authored !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(authored) ||
+        !calendarValid || !Number.isFinite(Date.parse(authored))) issues.push("invalid_date");
+    else date = authored;
   } else {
     // Legacy posts locate their time only in the file name. An ordinal-day
     // filename supplies its date at midnight; an unrecognised name invents none.

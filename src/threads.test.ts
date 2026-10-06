@@ -123,12 +123,14 @@ describe("threads conformance manifest", () => {
           expect(result.post.kind).toBe(vector.expected.post.kind);
           expect(result.post.inReplyTo).toEqual(vector.expected.post.inReplyTo);
           expect(result.post.references).toEqual(vector.expected.post.references);
-          if (vector.expected.post.date) expect(result.post.date).toBe(vector.expected.post.date);
+          if ("date" in vector.expected.post) expect(result.post.date ?? null).toBe(vector.expected.post.date);
           if (vector.expected.post.body) {
             expect(result.post.body).toBe(vector.expected.post.body);
           }
           // parseFrontmatter must accept the raw content without returning null
           expect(parseFrontmatter(vector.input.content)).not.toBeNull();
+        } else if (vector.expected.issues) {
+          expect(result.issues).toEqual(vector.expected.issues);
         }
         break;
       }

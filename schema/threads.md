@@ -55,7 +55,7 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | Field | Shape | Meaning |
 |---|---|---|
 | `id` | Non-empty string | Globally unique post identifier minted by the writer (e.g. `msg_...` or timestamp-prefixed id). |
-| `date` | ISO 8601 instant string with timezone | Optional for old posts; every new writer records the instant used in its file-name stamp. Readers prefer this field and fall back to the filename stamp if absent. A day-only legacy filename resolves to midnight UTC; a filename without a valid stamp supplies no date. |
+| `date` | Calendar-valid ISO 8601 instant string: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or `YYYY-MM-DDTHH:mm:ss[.sss]±HH:mm` (fraction 1–3 digits) | Optional for old posts; every new writer MUST record the instant used in its file-name stamp. Readers prefer the authored string unchanged (including offsets) and fall back to a UTC-normalized filename stamp if absent. A day-only legacy filename resolves to midnight UTC; a filename without a valid stamp supplies no date. Invalid authored values yield `invalid_date`, never filename fallback. |
 | `in_reply_to` | String or string array | Optional parent post id(s). Absent for the initial thread post; a string for a single parent reply; an array of 2+ ids for a multi-parent join (merge). |
 | `references` | Array of strings | Optional ancestor chain of post ids, ordered from oldest ancestor to immediate parent. |
 | `kind` | Enum string | Role of the post: `post` (default), `snapshot`, `reframe`, `correction`, or `closure`. |
@@ -141,7 +141,7 @@ Independent implementations share three portable operations:
 
 1. **`parse_thread_post` (`parseThreadPost`)**:
    - Extracts frontmatter and body.
-   - Validates required `id`, optional ISO `date`, `kind` (`post`, `snapshot`, `reframe`, `correction`, `closure`),
+   - Validates required `id`, optional ISO `date` (invalid values report `invalid_date`), `kind` (`post`, `snapshot`, `reframe`, `correction`, `closure`),
      `in_reply_to`, `references`, and `supersedes`; projects `date` from an old post's filename when absent.
    - Parses embedded `map` when present.
 
