@@ -55,7 +55,7 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | Field | Shape | Meaning |
 |---|---|---|
 | `id` | Non-empty string | Globally unique post identifier minted by the writer (e.g. `msg_...` or timestamp-prefixed id). |
-| `date` | Calendar-valid ISO instant: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or `YYYY-MM-DDTHH:mm:ss[.sss]±HH:mm` (fraction 1–3 digits); legacy `YYYY-MM-DD` | Optional for old posts; every new writer MUST record the instant used in its file-name stamp. Readers prefer the authored date: an instant normalizes to UTC `Z`, a date-only value stays a day with no instant. Treat a YAML-coerced timestamp as that same ISO instant; implementations MUST read the scalar without rejecting the post due to YAML timestamp typing. With no field, a valid filename stamp supplies UTC instant (a day-only legacy filename supplies midnight UTC); an unstamped name supplies no time. Malformed authored date yields a diagnostic `invalid_date`, never invalidates the post and never falls back silently. |
+| `date` | Calendar-valid ISO instant: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or `YYYY-MM-DDTHH:mm:ss[.sss]±HH:mm` (fraction 1–3 digits); legacy `YYYY-MM-DD` | Optional for old posts; new writers record the instant used in the filename stamp. Readers prefer the authored date: an instant normalizes to UTC `Z`, a date-only value stays a day with no instant. Treat a YAML-coerced timestamp as that same ISO instant; implementations read the scalar without rejecting the post due to YAML timestamp typing. With no field, a valid filename stamp supplies UTC instant; an unstamped name supplies no time. Malformed authored date yields diagnostic `dateWarning: invalid_date`, never invalidates the post and never falls back silently. |
 | `in_reply_to` | String or string array | Optional parent post id(s). Absent for the initial thread post; a string for a single parent reply; an array of 2+ ids for a multi-parent join (merge). |
 | `references` | Array of strings | Optional ancestor chain of post ids, ordered from oldest ancestor to immediate parent. |
 | `kind` | Enum string | Role of the post: `post` (default), `snapshot`, `reframe`, `correction`, or `closure`. |
@@ -66,7 +66,7 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | `tags` | Array of strings | Optional retrieval tags. |
 | `actor_ref` / `author` | String | Optional author identity or human-readable author attribution. |
 
-The Markdown body follows the frontmatter and contains the message text.
+The Markdown body follows the frontmatter and contains the message text. The reader also exposes optional derived `fileDate`: the valid filename instant independent of the authored `date`. It recognizes `YYYY-MM-DDTHH-mm-ss[-SSS]Z-…`, minute-precision `YYYY-MM-DDTHHmm-…`, and day-only `YYYY-MM-DD-…` (or a `.md` terminator for timestamp forms); invalid calendar/time stamps supply no `fileDate`. Date-only authored `date` is displayed as a day; consumers order it by `fileDate` when present, otherwise by that day. Other valid authored instants normalize to UTC before time comparison. This is a consumer ordering rule, not a change to the timeline DAG's topological order.
 
 ### The curated lens (`README.md`)
 
@@ -141,7 +141,7 @@ Independent implementations share three portable operations:
 
 1. **`parse_thread_post` (`parseThreadPost`)**:
    - Extracts frontmatter and body.
-   - Validates required `id`, `kind` (`post`, `snapshot`, `reframe`, `correction`, `closure`),
+   - Validates required `id`, optional `kind` (`post`, `snapshot`, `reframe`, `correction`, `closure`),
      `in_reply_to`, `references`, and `supersedes`; reads date without rejecting the post, exposing `dateWarning: invalid_date` for malformed values, and projects `date` from an old post's filename when absent.
    - Parses embedded `map` when present.
 
