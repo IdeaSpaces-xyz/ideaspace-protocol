@@ -3,6 +3,8 @@
   "thread_directory": "_threads",
   "required_coverage": [
     "post_frontmatter",
+    "post_date_authored",
+    "post_date_filename_fallback",
     "post_with_map",
     "quoted_colon_frontmatter",
     "out_of_order_timeline",
@@ -15,6 +17,32 @@
     "unaware_extension_skip"
   ],
   "vectors": [
+    {
+      "id": "parse-authored-date-preferred",
+      "operation": "parse_post",
+      "covers": ["post_date_authored"],
+      "input": {
+        "path": "2026-10-06T09-10-17-516Z-post.md",
+        "content": "---\nid: msg_authored\ndate: 2026-10-06T09:12:17.516Z\n---\nAuthored time wins.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "post": { "id": "msg_authored", "date": "2026-10-06T09:12:17.516Z", "kind": "post", "inReplyTo": [], "references": [] }
+      }
+    },
+    {
+      "id": "parse-legacy-filename-date",
+      "operation": "parse_post",
+      "covers": ["post_date_filename_fallback"],
+      "input": {
+        "path": "2026-10-06T09-10-17-516Z-post.md",
+        "content": "---\nid: msg_legacy\n---\nLegacy time from name.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "post": { "id": "msg_legacy", "date": "2026-10-06T09:10:17.516Z", "kind": "post", "inReplyTo": [], "references": [] }
+      }
+    },
     {
       "id": "parse-basic-post",
       "operation": "parse_post",

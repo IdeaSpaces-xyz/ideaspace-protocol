@@ -31,6 +31,8 @@ const KIND_SET = new Set<string>(THREAD_KINDS);
 export interface ThreadPostFrontmatter {
   /** Globally unique identifier minted by the writer. */
   id: string;
+  /** Authored ISO 8601 instant; optional for posts predating this field. */
+  date?: string;
   /** Parent post id(s). Single string or array of strings. */
   in_reply_to?: string | string[];
   /** Ancestor chain of post ids, oldest first. */
@@ -58,6 +60,8 @@ export interface ThreadPostFrontmatter {
 export interface ThreadPost {
   id: string;
   path: string;
+  /** Authored date if present, else a valid file-name stamp when available. */
+  date?: string;
   frontmatter: ThreadPostFrontmatter;
   body: string;
   inReplyTo: string[];
@@ -87,6 +91,22 @@ export function parseThreadPost(
   }
 
   const issues: string[] = [];
+  let date: string | undefined;
+  if ("date" in fm) {
+    if (typeof fm.date !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(fm.date) ||
+        !Number.isFinite(Date.parse(fm.date))) issues.push("invalid_date");
+    else date = fm.date;
+  } else {
+    // Legacy posts locate their time only in the file name. An ordinal-day
+    // filename supplies its date at midnight; an unrecognised name invents none.
+    const file = path.split(/[\\/]/).at(-1) ?? "";
+    const stamp = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})(?:-(\d{3}))?Z(?:-|\.md$)/.exec(file);
+    const day = /^(\d{4}-\d{2}-\d{2})-/.exec(file);
+    const candidate = stamp
+      ? `${stamp[1]}T${stamp[2]}:${stamp[3]}:${stamp[4]}.${stamp[5] ?? "000"}Z`
+      : day ? `${day[1]}T00:00:00.000Z` : undefined;
+    if (candidate && !Number.isNaN(Date.parse(candidate)) && new Date(candidate).toISOString() === candidate) date = candidate;
+  }
 
   if (typeof fm.id !== "string" || fm.id.trim().length === 0) {
     issues.push("invalid_id");
@@ -164,6 +184,7 @@ export function parseThreadPost(
   const post: ThreadPost = {
     id: fm.id as string,
     path,
+    ...(date ? { date } : {}),
     frontmatter: fm as unknown as ThreadPostFrontmatter,
     body,
     inReplyTo,

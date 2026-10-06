@@ -116,13 +116,14 @@ describe("threads conformance manifest", () => {
   it.each(manifest.vectors)("executes $id", async (vector) => {
     switch (vector.operation) {
       case "parse_post": {
-        const result = parseThreadPost(vector.input.content);
+        const result = parseThreadPost(vector.input.content, vector.input.path);
         expect(result.status).toBe(vector.expected.status);
         if (result.status === "valid") {
           expect(result.post.id).toBe(vector.expected.post.id);
           expect(result.post.kind).toBe(vector.expected.post.kind);
           expect(result.post.inReplyTo).toEqual(vector.expected.post.inReplyTo);
           expect(result.post.references).toEqual(vector.expected.post.references);
+          if (vector.expected.post.date) expect(result.post.date).toBe(vector.expected.post.date);
           if (vector.expected.post.body) {
             expect(result.post.body).toBe(vector.expected.post.body);
           }
