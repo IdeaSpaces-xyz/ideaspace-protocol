@@ -116,18 +116,23 @@ describe("threads conformance manifest", () => {
   it.each(manifest.vectors)("executes $id", async (vector) => {
     switch (vector.operation) {
       case "parse_post": {
-        const result = parseThreadPost(vector.input.content);
+        const result = parseThreadPost(vector.input.content, vector.input.path);
         expect(result.status).toBe(vector.expected.status);
         if (result.status === "valid") {
           expect(result.post.id).toBe(vector.expected.post.id);
           expect(result.post.kind).toBe(vector.expected.post.kind);
           expect(result.post.inReplyTo).toEqual(vector.expected.post.inReplyTo);
           expect(result.post.references).toEqual(vector.expected.post.references);
+          if ("date" in vector.expected.post) expect(result.post.date ?? null).toBe(vector.expected.post.date);
+          if ("fileDate" in vector.expected.post) expect(result.post.fileDate ?? null).toBe(vector.expected.post.fileDate);
+          if ("dateWarning" in vector.expected.post) expect(result.post.dateWarning ?? null).toBe(vector.expected.post.dateWarning);
           if (vector.expected.post.body) {
             expect(result.post.body).toBe(vector.expected.post.body);
           }
           // parseFrontmatter must accept the raw content without returning null
           expect(parseFrontmatter(vector.input.content)).not.toBeNull();
+        } else if (vector.expected.issues) {
+          expect(result.issues).toEqual(vector.expected.issues);
         }
         break;
       }

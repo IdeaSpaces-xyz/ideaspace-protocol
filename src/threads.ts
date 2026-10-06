@@ -31,6 +31,8 @@ const KIND_SET = new Set<string>(THREAD_KINDS);
 export interface ThreadPostFrontmatter {
   /** Globally unique identifier minted by the writer. */
   id: string;
+  /** Authored ISO instant or legacy calendar day; optional for older posts. */
+  date?: string;
   /** Parent post id(s). Single string or array of strings. */
   in_reply_to?: string | string[];
   /** Ancestor chain of post ids, oldest first. */
@@ -58,6 +60,12 @@ export interface ThreadPostFrontmatter {
 export interface ThreadPost {
   id: string;
   path: string;
+  /** Display date: authored ISO instant or calendar day, else filename fallback. */
+  date?: string;
+  /** Filename-derived instant or day for ordering; not an authored date. */
+  fileDate?: string;
+  /** Invalid authored date is diagnostic, never a reason to reject the post. */
+  dateWarning?: "invalid_date";
   frontmatter: ThreadPostFrontmatter;
   body: string;
   inReplyTo: string[];
@@ -70,6 +78,34 @@ export interface ThreadPost {
 export type ThreadPostParseResult =
   | { status: "valid"; post: ThreadPost }
   | { status: "invalid"; issues: string[] };
+
+function validDay(day: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
+  const value = `${day}T00:00:00.000Z`;
+  return !Number.isNaN(Date.parse(value)) && new Date(value).toISOString() === value;
+}
+
+function authoredPostDate(value: unknown): string | undefined {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? undefined : value.toISOString();
+  if (typeof value !== "string") return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return validDay(value) ? value : undefined;
+  if (!/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?(?:Z|[+-](?:0\d|1[0-4]):[0-5]\d)$/.test(value) ||
+      !validDay(value.slice(0, 10)) || Number.isNaN(Date.parse(value))) return undefined;
+  // Compare instants by parsed time, never by a lexicographic mix of Z and offsets.
+  return new Date(value).toISOString();
+}
+
+function dateFromFileName(path: string): string | undefined {
+  const file = path.split(/[\\/]/).at(-1) ?? "";
+  const stamp = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})(?:-(\d{3}))?Z(?:-|\.md$)/.exec(file);
+  const minute = /^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(?:-|\.md$)/.exec(file);
+  const day = /^(\d{4}-\d{2}-\d{2})-/.exec(file);
+  const candidate = stamp ? `${stamp[1]}T${stamp[2]}:${stamp[3]}:${stamp[4]}.${stamp[5] ?? "000"}Z`
+    : minute ? `${minute[1]}T${minute[2]}:${minute[3]}:00.000Z` : undefined;
+  if (!candidate) return day && validDay(day[1]) ? day[1] : undefined;
+  if (!validDay(candidate.slice(0, 10)) || Number.isNaN(Date.parse(candidate))) return undefined;
+  return new Date(candidate).toISOString() === candidate ? candidate : undefined;
+}
 
 /**
  * Parse and validate one markdown thread post.
@@ -87,6 +123,11 @@ export function parseThreadPost(
   }
 
   const issues: string[] = [];
+  const fileDate = dateFromFileName(path);
+  const authored = "date" in fm ? authoredPostDate(fm.date) : undefined;
+  const dateWarning = "date" in fm && !authored ? "invalid_date" as const : undefined;
+  // A malformed authored date never falls back silently and never invalidates the post.
+  const date = dateWarning ? undefined : authored ?? fileDate;
 
   if (typeof fm.id !== "string" || fm.id.trim().length === 0) {
     issues.push("invalid_id");
@@ -164,6 +205,9 @@ export function parseThreadPost(
   const post: ThreadPost = {
     id: fm.id as string,
     path,
+    ...(date ? { date } : {}),
+    ...(fileDate ? { fileDate } : {}),
+    ...(dateWarning ? { dateWarning } : {}),
     frontmatter: fm as unknown as ThreadPostFrontmatter,
     body,
     inReplyTo,
