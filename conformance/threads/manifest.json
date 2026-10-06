@@ -57,7 +57,7 @@
       "operation": "parse_post",
       "covers": ["post_date_day_only"],
       "input": { "path": "2026-09-26-01-decision.md", "content": "---\nid: msg_day\n---\nOld post.\n" },
-      "expected": { "status": "valid", "post": { "id": "msg_day", "date": "2026-09-26T00:00:00.000Z", "kind": "post", "inReplyTo": [], "references": [] } }
+      "expected": { "status": "valid", "post": { "id": "msg_day", "date": "2026-09-26", "fileDate": "2026-09-26", "kind": "post", "inReplyTo": [], "references": [] } }
     },
     {
       "id": "parse-unstamped-legacy-post",

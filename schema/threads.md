@@ -66,7 +66,7 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | `tags` | Array of strings | Optional retrieval tags. |
 | `actor_ref` / `author` | String | Optional author identity or human-readable author attribution. |
 
-The Markdown body follows the frontmatter and contains the message text. The reader also exposes optional derived `fileDate`: the valid filename instant independent of the authored `date`. It recognizes `YYYY-MM-DDTHH-mm-ss[-SSS]Z-…`, minute-precision `YYYY-MM-DDTHHmm-…`, and day-only `YYYY-MM-DD-…` (or a `.md` terminator for timestamp forms); invalid calendar/time stamps supply no `fileDate`. Date-only authored `date` is displayed as a day; consumers order it by `fileDate` when present, otherwise by that day. Other valid authored instants normalize to UTC before time comparison. This is a consumer ordering rule, not a change to the timeline DAG's topological order.
+The Markdown body follows the frontmatter and contains the message text. The reader also exposes optional derived `fileDate`: the valid filename instant **or day**, independent of the authored `date`. It recognizes `YYYY-MM-DDTHH-mm-ss[-SSS]Z-…`, minute-precision `YYYY-MM-DDTHHmm-…`, and day-only `YYYY-MM-DD-…` (or a `.md` terminator for timestamp forms); invalid calendar/time stamps supply no `fileDate`. An authored or filename-only day displays as `YYYY-MM-DD`, never as an invented midnight instant. Consumers order date-only authored `date` by `fileDate` when present, otherwise by that day; other valid authored instants normalize to UTC before time comparison. This is a consumer ordering rule, not a change to the timeline DAG's topological order.
 
 ### The curated lens (`README.md`)
 

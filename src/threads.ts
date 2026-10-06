@@ -62,7 +62,7 @@ export interface ThreadPost {
   path: string;
   /** Display date: authored ISO instant or calendar day, else filename fallback. */
   date?: string;
-  /** Filename instant for ordering date-only posts; not an authored date. */
+  /** Filename-derived instant or day for ordering; not an authored date. */
   fileDate?: string;
   /** Invalid authored date is diagnostic, never a reason to reject the post. */
   dateWarning?: "invalid_date";
@@ -101,9 +101,9 @@ function dateFromFileName(path: string): string | undefined {
   const minute = /^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(?:-|\.md$)/.exec(file);
   const day = /^(\d{4}-\d{2}-\d{2})-/.exec(file);
   const candidate = stamp ? `${stamp[1]}T${stamp[2]}:${stamp[3]}:${stamp[4]}.${stamp[5] ?? "000"}Z`
-    : minute ? `${minute[1]}T${minute[2]}:${minute[3]}:00.000Z`
-      : day ? `${day[1]}T00:00:00.000Z` : undefined;
-  if (!candidate || !validDay(candidate.slice(0, 10)) || Number.isNaN(Date.parse(candidate))) return undefined;
+    : minute ? `${minute[1]}T${minute[2]}:${minute[3]}:00.000Z` : undefined;
+  if (!candidate) return day && validDay(day[1]) ? day[1] : undefined;
+  if (!validDay(candidate.slice(0, 10)) || Number.isNaN(Date.parse(candidate))) return undefined;
   return new Date(candidate).toISOString() === candidate ? candidate : undefined;
 }
 
