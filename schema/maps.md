@@ -58,12 +58,12 @@ unreadable. Unknown fields are preserved and ignored by readers that do not unde
 `roots` and `members` are ordered arrays. Either may be absent and is then empty. Member order is
 curated meaning and MUST be preserved.
 
-## Roots and pins
+## Roots and optional pins
 
 Each root carries:
 
 - `repo` and `root_node_id`, each optional but at least one present;
-- `sha`, a full resolved commit object id, never a ref, branch, or tag.
+- optional `sha`, when present a full resolved commit object id, never a ref, branch, or tag.
 
 `repo` is the ordinary absolute URL for the repository:
 
@@ -95,7 +95,7 @@ JSON Schema cannot express it. It is what the root answers to in this Map's
 [position addresses](#position-addresses). A name means something only alongside the Map that
 declares it; there is no global name for a repository.
 
-Pins make one coherent moment per root. A member never carries its own SHA. Readers preserve the
+A shallow Space Map MAY omit pins and member depths: an unpinned root is a pointer to its latest committed HEAD, with the requested reading depth selected progressively by the reader. A mixed Map (pinned and unpinned roots) remains a live Space Map rather than a pinned moment. Thread-post and conversation consumers attaching a Map as an authored moment MUST require every root to have a pin and every position member to have a depth. This requirement is contextual: generic Map parsing accepts both, while the attaching consumer refuses an unpinned moment. Pins make one coherent moment per root when present. A member never carries its own SHA. Readers preserve the
 full object id and do not operate the checkout to match it. Bare Git is sufficient to inspect a
 position when the pinned object exists locally:
 
@@ -117,12 +117,12 @@ A position member carries:
 
 - `root`: zero-based index into `roots`;
 - `position`: canonical repository-relative path, or `.` for the root;
-- `depth`: one of `name`, `summary`, `surface`, `children`, `full`.
+- optional `depth`: when present one of `name`, `summary`, `surface`, `children`, `full`.
 
 The depth vocabulary maps 1:1 to the stored `representation` names used by a hosted register and to
 the progressive-disclosure ladder in [`content-awareness.md`](content-awareness.md). It is a ceiling,
 not authority: access is evaluated independently, members may dangle, and a reader discloses no more
-than both access and the declared depth permit.
+than both access and the declared depth permit. Without a declared depth, the reader chooses a rung independently; absence is not a `full` ceiling encoded by the Map.
 
 A Note, folder, and repository use the same form. A map-of-maps needs no special case because a
 map-note is itself a position. Protocol positions do not enter `_agent/`, `_assets/`, or arbitrary
