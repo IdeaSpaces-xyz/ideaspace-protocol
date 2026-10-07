@@ -283,6 +283,7 @@ export {
   parseCanonicalRepoUrl,
   parseMap,
   buildMap,
+  isPinnedMomentMap,
   isMapRootName,
   parseMapPositionAddress,
   formatMapPositionAddress,

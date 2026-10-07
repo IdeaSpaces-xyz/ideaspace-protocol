@@ -58,8 +58,8 @@ export interface MapRoot extends Record<string, unknown> {
   repo?: string;
   /** Portable repository-root identity; current and legacy reader forms are accepted. */
   root_node_id?: string;
-  /** Full resolved Git commit object id. */
-  sha: string;
+  /** Optional full commit pin. Space roots without one resolve at HEAD. */
+  sha?: string;
   /**
    * Optional name this root answers to in this Map's position addresses.
    * Local to the Map: it identifies nothing without the Map that declares it.
@@ -78,8 +78,8 @@ export interface MapPositionMember extends Record<string, unknown> {
   root: number;
   /** Portable repository-relative protocol position, or `.` for the root. */
   position: string;
-  /** Maximum representation a reader may disclose. */
-  depth: MapDepth;
+  /** Optional ceiling. Without one, progressive disclosure is the reader's choice. */
+  depth?: MapDepth;
   /** Observed name/summary; top-level name/summary remain curator-authored annotations. */
   disclosure?: MapDisclosure;
 }
@@ -240,6 +240,16 @@ export function parseMap(value: unknown): MapParseResult {
  */
 export function buildMap(input: MapBuildInput): MapBuildResult {
   return parseMapBlock(input);
+}
+
+/** A moment Map is a valid Map whose roots all have pins and whose position
+ * members all declare ceilings. Generic Space Maps may mix these freely. */
+export function isPinnedMomentMap(input: unknown): boolean {
+  const parsed = parseMap(input);
+  if (parsed.status !== "valid") return false;
+  return parsed.map.roots.every((root) => typeof root.sha === "string" && PIN_PATTERN.test(root.sha)) &&
+    parsed.map.members.every((member) => !("position" in member) ||
+      (typeof member.depth === "string" && DEPTHS.has(member.depth)));
 }
 
 /** A name a root answers to inside one Map. Never a root identity form. */
@@ -501,7 +511,7 @@ function parseRoots(value: unknown, issues: MapParseIssue[]): MapRoot[] {
     ) {
       issues.push({ path: base, code: "root_identity_mismatch" });
     }
-    if (typeof input.sha !== "string" || !PIN_PATTERN.test(input.sha)) {
+    if (input.sha !== undefined && (typeof input.sha !== "string" || !PIN_PATTERN.test(input.sha))) {
       issues.push({ path: `${base}.sha`, code: "invalid_pin" });
     }
 
@@ -521,7 +531,7 @@ function parseRoots(value: unknown, issues: MapParseIssue[]): MapRoot[] {
       ...input,
       ...(repo === undefined ? {} : { repo }),
       ...(rootNodeId === undefined ? {} : { root_node_id: rootNodeId }),
-      sha: typeof input.sha === "string" ? input.sha : "",
+      ...(typeof input.sha === "string" ? { sha: input.sha } : {}),
     });
   }
   return roots;
@@ -590,7 +600,7 @@ function parseMembers(
     if (!isMapPosition(input.position)) {
       issues.push({ path: `${base}.position`, code: "invalid_position" });
     }
-    if (typeof input.depth !== "string" || !DEPTHS.has(input.depth)) {
+    if (input.depth !== undefined && (typeof input.depth !== "string" || !DEPTHS.has(input.depth))) {
       issues.push({ path: `${base}.depth`, code: "invalid_depth" });
     }
     members.push(input as MapPositionMember);

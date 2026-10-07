@@ -79,7 +79,7 @@
         "sha": {
           "type": "string",
           "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$",
-          "description": "Full resolved Git commit object id, never a ref."
+          "description": "Optional full resolved Git commit object id, never a ref. Absent on a live Space Map root."
         },
         "name": {
           "type": "string",
@@ -88,7 +88,6 @@
           "description": "Optional name this root answers to in this Map's position addresses (`@name//position`). Local to the Map, compared exactly, and unique within it (enforced by parsers, not expressible here); never a root identity form."
         }
       },
-      "required": ["sha"],
       "anyOf": [
         { "required": ["repo"] },
         { "required": ["root_node_id"] }
@@ -105,7 +104,7 @@
         "disclosure": { "$ref": "#/$defs/mapDisclosure" }
       },
       "allOf": [{ "$ref": "#/$defs/mapDisclosureCeiling" }],
-      "required": ["root", "position", "depth"],
+      "required": ["root", "position"],
       "not": { "required": ["address"] },
       "additionalProperties": true
     },
