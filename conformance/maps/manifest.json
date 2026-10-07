@@ -61,8 +61,8 @@
       "id": "space-map-unpinned-root-and-shallow-member",
       "operation": "build",
       "covers": ["space_unpinned"],
-      "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }], "members": [{ "root": 0, "position": "README.md" }] },
-      "expected": { "status": "valid", "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }], "members": [{ "root": 0, "position": "README.md" }] } }
+      "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }], "members": [{ "root": 0, "position": "README.md", "disclosure": { "name": "Home", "summary": "First level" } }] },
+      "expected": { "status": "valid", "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }], "members": [{ "root": 0, "position": "README.md", "disclosure": { "name": "Home", "summary": "First level" } }] } }
     },
     {
       "id": "moment-map-stays-pinned-and-bounded",
@@ -77,6 +77,20 @@
       "covers": ["mixed_roots"],
       "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }, { "root_node_id": "n_111111111111111111111111", "sha": "2222222222222222222222222222222222222222" }], "members": [{ "root": 0, "position": "." }, { "root": 1, "position": "docs/decision.md", "depth": "surface" }] },
       "expected": { "status": "valid", "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }, { "root_node_id": "n_111111111111111111111111", "sha": "2222222222222222222222222222222222222222" }], "members": [{ "root": 0, "position": "." }, { "root": 1, "position": "docs/decision.md", "depth": "surface" }] } }
+    },
+    {
+      "id": "reject-present-empty-pin",
+      "operation": "parse",
+      "covers": ["invalid_pin"],
+      "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "sha": "" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.roots[0].sha", "code": "invalid_pin" }] }
+    },
+    {
+      "id": "reject-present-invalid-depth",
+      "operation": "parse",
+      "covers": ["invalid_depth"],
+      "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }], "members": [{ "root": 0, "position": ".", "depth": "bogus" }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].depth", "code": "invalid_depth" }] }
     },
     {
       "id": "build-mixed-note-and-entity",
