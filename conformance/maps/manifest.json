@@ -93,6 +93,20 @@
       "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].depth", "code": "invalid_depth" }] }
     },
     {
+      "id": "reject-present-null-pin",
+      "operation": "parse",
+      "covers": ["invalid_pin"],
+      "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "sha": null }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.roots[0].sha", "code": "invalid_pin" }] }
+    },
+    {
+      "id": "reject-present-null-depth",
+      "operation": "parse",
+      "covers": ["invalid_depth"],
+      "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }], "members": [{ "root": 0, "position": ".", "depth": null }] },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].depth", "code": "invalid_depth" }] }
+    },
+    {
       "id": "build-mixed-note-and-entity",
       "operation": "build",
       "covers": ["emit", "observed_disclosure", "curator_separation", "canonical_repo_url"],

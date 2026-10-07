@@ -42,8 +42,8 @@ caller may supply one of three reference states:
 
 Name and optional summary are observed disclosure. A root ordinal may resolve
 through a private ordinal-to-checkout binding for local rendering. It becomes a
-portable position only when a consumer encloses it in a valid Map with the
-corresponding exact pinned root. An online-only handle without an exact position
+portable position when a consumer encloses it in a valid Map with a stable root
+identity. A moment Map additionally pins that root; a live Space Map may omit it. An online-only handle without an exact position
 may use an existing address; the projector never invents one.
 
 Harness labels, private display paths, directory counts, sync state, mount or
@@ -57,10 +57,12 @@ assign those labels or facts; callers do.
 A projection is not itself a portable Map and makes no export claim. To expose a
 `map` block, a producer must:
 
-1. supply roots with stable identity and exact commit pins;
+1. supply roots with stable identity; pin them when representing an authored moment,
+   but allow omission for a live Space Map;
 2. pass the projected members and roots through strict `buildMap`/`parseMap`;
-3. verify that selected observations describe that pin rather than dirty or
-   local-only bytes; and
+3. for a pinned moment, verify selected observations describe the exact pin rather
+   than dirty or local-only bytes; for an unpinned Space pointer, do not claim
+   historical observation or a reproducible snapshot; and
 4. remove presentation sidecars and all private bindings.
 
 Missing identity, unborn HEAD, dirt, unavailable remotes, invalid positions, or
