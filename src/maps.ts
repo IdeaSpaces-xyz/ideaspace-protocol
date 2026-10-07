@@ -248,7 +248,7 @@ export function isPinnedMomentMap(input: unknown): boolean {
   const parsed = parseMap(input);
   if (parsed.status !== "valid") return false;
   return parsed.map.roots.every((root) => typeof root.sha === "string" && PIN_PATTERN.test(root.sha)) &&
-    parsed.map.members.every((member) => !('position' in member) ||
+    parsed.map.members.every((member) => !("position" in member) ||
       (typeof member.depth === "string" && DEPTHS.has(member.depth)));
 }
 
