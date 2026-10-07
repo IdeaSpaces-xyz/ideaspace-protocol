@@ -21,6 +21,7 @@ import {
   type MapPositionAddressParseResult,
   type MapPositionAddressResolution,
   parseMap,
+  isPinnedMomentMap,
   type MapParseResult,
   type CanonicalRepoUrlParseResult,
 } from "./maps.js";
@@ -67,7 +68,15 @@ interface ResolveAddressVector {
   expected: MapPositionAddressResolution;
 }
 
+interface MomentVector {
+  id: string;
+  operation: "moment";
+  covers: string[];
+  cases: { map: MapBlock; pinned: boolean }[];
+}
+
 type MapVector =
+  | MomentVector
   | ParseVector
   | ParseRepoUrlCasesVector
   | ParseAddressVector
@@ -317,6 +326,9 @@ describe("Map conformance manifest", () => {
         if (result.status === "valid") expect(parseMap(result.map)).toEqual(result);
         break;
       }
+      case "moment":
+        for (const candidate of vector.cases) expect(isPinnedMomentMap(candidate.map)).toBe(candidate.pinned);
+        break;
       case "parse_repo_url_cases":
         for (const input of vector.cases) {
           expect(parseCanonicalRepoUrl(input), String(input)).toEqual(vector.expected);

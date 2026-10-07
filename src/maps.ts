@@ -242,6 +242,16 @@ export function buildMap(input: MapBuildInput): MapBuildResult {
   return parseMapBlock(input);
 }
 
+/** A moment Map is a valid Map whose roots all have pins and whose position
+ * members all declare ceilings. Generic Space Maps may mix these freely. */
+export function isPinnedMomentMap(input: unknown): boolean {
+  const parsed = parseMap(input);
+  if (parsed.status !== "valid") return false;
+  return parsed.map.roots.every((root) => typeof root.sha === "string" && PIN_PATTERN.test(root.sha)) &&
+    parsed.map.members.every((member) => !('position' in member) ||
+      (typeof member.depth === "string" && DEPTHS.has(member.depth)));
+}
+
 /** A name a root answers to inside one Map. Never a root identity form. */
 const MAP_ROOT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 

@@ -67,7 +67,7 @@
     {
       "id": "moment-map-stays-pinned-and-bounded",
       "operation": "build",
-      "covers": ["moment_pinned"],
+      "covers": ["exact_pin"],
       "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }], "members": [{ "root": 0, "position": "README.md", "depth": "summary" }] },
       "expected": { "status": "valid", "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }], "members": [{ "root": 0, "position": "README.md", "depth": "summary" }] } }
     },
@@ -77,6 +77,17 @@
       "covers": ["mixed_roots"],
       "input": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }, { "root_node_id": "n_111111111111111111111111", "sha": "2222222222222222222222222222222222222222" }], "members": [{ "root": 0, "position": "." }, { "root": 1, "position": "docs/decision.md", "depth": "surface" }] },
       "expected": { "status": "valid", "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }, { "root_node_id": "n_111111111111111111111111", "sha": "2222222222222222222222222222222222222222" }], "members": [{ "root": 0, "position": "." }, { "root": 1, "position": "docs/decision.md", "depth": "surface" }] } }
+    },
+    {
+      "id": "moment-requires-all-pins-and-position-depths",
+      "operation": "moment",
+      "covers": ["moment_pinned"],
+      "cases": [
+        { "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }], "members": [{ "root": 0, "position": ".", "depth": "summary" }] }, "pinned": true },
+        { "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }], "members": [{ "root": 0, "position": ".", "depth": "summary" }] }, "pinned": false },
+        { "map": { "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }], "members": [{ "root": 0, "position": "." }] }, "pinned": false },
+        { "map": { "roots": [], "members": [{ "address": "https://example.org" }] }, "pinned": true }
+      ]
     },
     {
       "id": "reject-present-empty-pin",
