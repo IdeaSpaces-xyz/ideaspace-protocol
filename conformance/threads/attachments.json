@@ -10,11 +10,11 @@
     { "id": "readme-not-post", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/parent/README.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
     { "id": "traversal-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/../parent/post.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
     { "id": "wrong-agreement-position", "agreementPath": "_threads/child/not-agreement.md", "agreement": "---\nattached_to: msg_parent\n---\n", "expected": { "status": "invalid", "issue": "invalid_context" } }
-
   ],
   "vectors": [
     {
       "id": "path-parent-and-reverse-child",
+      "covers": ["attachment_path_parent"],
       "agreementPath": "_threads/child/_agent/agreement.md",
       "agreement": "---\nname: Child\nattached_to: _threads/parent/first.md\n---\n",
       "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/first.md", "id": "msg_first" }] }],
@@ -23,6 +23,7 @@
     },
     {
       "id": "id-parent-same-reverse-child",
+      "covers": ["attachment_id_parent"],
       "agreementPath": "_threads/child/_agent/agreement.md",
       "agreement": "---\nname: Child\nattached_to: msg_first\n---\n",
       "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/first.md", "id": "msg_first" }] }],
@@ -31,6 +32,7 @@
     },
     {
       "id": "missing-id-unresolved",
+      "covers": ["attachment_missing_id"],
       "agreementPath": "_threads/child/_agent/agreement.md",
       "agreement": "---\nattached_to: msg_missing\n---\n",
       "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/latest.md", "id": "msg_latest" }] }],
@@ -39,6 +41,7 @@
     },
     {
       "id": "copied-id-ambiguous",
+      "covers": ["attachment_duplicate_id"],
       "agreementPath": "_threads/child/_agent/agreement.md",
       "agreement": "---\nattached_to: msg_copied\n---\n",
       "roots": [
@@ -49,6 +52,7 @@
     },
     {
       "id": "authored-pin-absent-no-head-fallback",
+      "covers": ["attachment_missing_pin"],
       "agreementPath": "_threads/child/_agent/agreement.md",
       "agreement": "---\nattached_to: msg_old\n---\n",
       "authoredPin": "aaa",
@@ -57,6 +61,7 @@
     },
     {
       "id": "note-subject-not-thread-parent",
+      "covers": ["attachment_note_subject"],
       "agreementPath": "notes/subject.md",
       "agreement": "---\nname: Subject\nattached_to: node:thing\n---\n",
       "roots": [],

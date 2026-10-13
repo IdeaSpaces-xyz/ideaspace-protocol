@@ -17,7 +17,13 @@
     "home_map_member",
     "code_repo_separate_worktree_pin",
     "refuse_agent_and_assets_positions",
-    "unaware_extension_skip"
+    "unaware_extension_skip",
+    "attachment_path_parent",
+    "attachment_id_parent",
+    "attachment_missing_id",
+    "attachment_duplicate_id",
+    "attachment_missing_pin",
+    "attachment_note_subject"
   ],
   "vectors": [
     {

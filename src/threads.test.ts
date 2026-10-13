@@ -43,6 +43,8 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
+    const covered = new Set([...manifest.vectors, ...attachments.vectors].flatMap((vector: any) => vector.covers));
+    for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
   it.each(attachments.negative_cases)("rejects $id", (vector: any) => {
@@ -80,7 +82,11 @@ describe("portable Thread attachments", () => {
         for (const child of children) {
           expect(resolveThreadParent(child.attachment, vector.roots, vector.authoredPin).status).not.toBe("resolved");
         }
-        expect(vector.expected.children).toEqual([]);
+        const candidate = vector.roots[0]?.posts[0];
+        if (candidate) {
+          expect(childThreadsOfPost({ root: vector.roots[0].root, pin: vector.roots[0].pin, ...candidate }, children, vector.roots))
+            .toEqual(vector.expected.children);
+        }
       }
     }
   });
