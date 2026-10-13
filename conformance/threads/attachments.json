@@ -1,6 +1,6 @@
 {
   "format": "ideaspaces-thread-attachments/v1",
-  "description": "Six language-neutral Thread parent attachment cases. Roots are explicit authorized snapshots, not live HEAD. Paths are repository-root-relative.",
+  "description": "Six parent-resolution vectors and supplementary parser refusals. For each vector, parse the Agreement and compare status/issue; when valid, compare attachment kind and resolution status/parent. For resolved results compare childThreadsOfPost to expected children; for unresolved results assert no parent and no reverse child link. A note-subject case also asserts that ordinary Note parsing preserves expected.subject. Roots are explicit authorized snapshots, never live HEAD. Paths are repository-root-relative.",
   "negative_cases": [
     { "id": "absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nname: Child\n---\n", "expected": { "status": "absent" } },
     { "id": "invalid-frontmatter", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "not YAML", "expected": { "status": "invalid", "issue": "invalid_frontmatter" } },
@@ -8,7 +8,9 @@
     { "id": "note-style-not-thread-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: node:thing\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
     { "id": "empty-id-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: msg_\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
     { "id": "readme-not-post", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/parent/README.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
-    { "id": "traversal-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/../parent/post.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } }
+    { "id": "traversal-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/../parent/post.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "wrong-agreement-position", "agreementPath": "_threads/child/not-agreement.md", "agreement": "---\nattached_to: msg_parent\n---\n", "expected": { "status": "invalid", "issue": "invalid_context" } }
+
   ],
   "vectors": [
     {

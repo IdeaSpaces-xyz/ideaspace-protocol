@@ -103,7 +103,7 @@ export function parseThreadAgreementAttachment(
   content: string,
   agreementPath: string,
 ): ThreadAttachmentParseResult {
-  if (!/^_threads\/[^/]+\/_agent\/agreement\.md$/.test(agreementPath)) {
+  if (!/^_threads\/[^/.][^/]*\/_agent\/agreement\.md$/.test(agreementPath)) {
     return { status: "invalid", issue: "invalid_context" };
   }
   const frontmatter = parseFrontmatter(content);
