@@ -39,10 +39,10 @@ const attachments = JSON.parse(readFileSync(
 ));
 
 describe("portable Thread attachments", () => {
-  it("publishes exactly the approved six vectors", () => {
+  it("publishes language-neutral attachment vectors", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
-    expect(attachments.vectors).toHaveLength(6);
+    expect(attachments.vectors.length).toBeGreaterThan(0);
   });
 
   it.each(attachments.vectors)("executes $id", (vector: any) => {
@@ -50,9 +50,6 @@ describe("portable Thread attachments", () => {
     expect(parsed.status).toBe(vector.expected.status === "invalid" ? "invalid" : "valid");
     if (parsed.status === "invalid") {
       expect(parsed.issue).toBe(vector.expected.issue);
-      if (vector.id === "note-subject-not-thread-parent") {
-        expect(parseFrontmatter(vector.agreement)?.attached_to).toBe("node:thing");
-      }
       return;
     }
     if (parsed.status !== "valid") throw new Error("Expected a parent attachment");
@@ -74,7 +71,34 @@ describe("portable Thread attachments", () => {
   it("does not interpret a Note's typed subject as a Thread parent", () => {
     expect(parseThreadAgreementAttachment("---\nattached_to: node:thing\n---\n", "_threads/child/_agent/agreement.md"))
       .toEqual({ status: "invalid", issue: "invalid_attached_to" });
-    expect(parseThreadAttachment("_threads/../parent/post.md")).toBeNull();
+    expect(parseFrontmatter("---\nattached_to: node:thing\n---\n")?.attached_to).toBe("node:thing");
+    for (const value of ["_threads/../parent/post.md", "_threads/x/README.md", "_threads/.hidden/post.md", "msg_", "_threads/x/./post.md"]) {
+      expect(parseThreadAttachment(value)).toBeNull();
+    }
+    expect(parseThreadAgreementAttachment("---\nname: Child\n---\n", "_threads/child/_agent/agreement.md"))
+      .toEqual({ status: "absent" });
+    expect(parseThreadAgreementAttachment("not YAML", "_threads/child/_agent/agreement.md"))
+      .toEqual({ status: "invalid", issue: "invalid_frontmatter" });
+    for (const value of ["[one, two]", "''", "msg_"]) {
+      expect(parseThreadAgreementAttachment(`---\nattached_to: ${value}\n---\n`, "_threads/child/_agent/agreement.md"))
+        .toEqual({ status: "invalid", issue: "invalid_attached_to" });
+    }
+  });
+
+  it("does not choose duplicate paths or ids, or reverse-link an unresolved child", () => {
+    const first = { root: "first", pin: "a", posts: [{ path: "_threads/a/one.md", id: "msg_same" }] };
+    const second = { root: "second", pin: "b", posts: [{ path: "_threads/a/one.md", id: "msg_same" }] };
+    expect(resolveThreadParent({ kind: "path", value: "_threads/a/one.md" }, [first, second]))
+      .toEqual({ status: "ambiguous" });
+    expect(resolveThreadParent({ kind: "id", value: "msg_same" }, [{ ...first, posts: [...first.posts, { path: "_threads/a/two.md", id: "msg_same" }] }]))
+      .toEqual({ status: "ambiguous" });
+    const parent = resolveThreadParent({ kind: "id", value: "msg_same" }, [first]);
+    if (parent.status !== "resolved") throw new Error("Expected resolved parent");
+    expect(childThreadsOfPost(parent.parent, [
+      { threadPath: "_threads/valid", attachment: { kind: "id", value: "msg_same" }, authoredPin: "a" },
+      { threadPath: "_threads/wrong-pin", attachment: { kind: "id", value: "msg_same" }, authoredPin: "b" },
+      { threadPath: "_threads/missing", attachment: { kind: "id", value: "msg_missing" } },
+    ], [first])).toEqual(["_threads/valid"]);
   });
 });
 

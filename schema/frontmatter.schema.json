@@ -19,7 +19,7 @@
     },
     "attached_to": {
       "type": "string",
-      "description": "A SINGLE typed link to the entity this Note is about (subject, not provenance), written `<type>:<id>`. One value by design — the inverse fan-in (a thing having many Notes) is the platform's job, not the file's. The type namespace is PLATFORM-DEFINED and open, like the underscore extension point: the protocol fixes only the `<type>:<id>` shape; a platform declares which types it resolves.",
+      "description": "For ordinary knowledge Notes, a SINGLE typed link to the entity this Note is about (subject, not provenance), written `<type>:<id>`. One value by design; the type namespace is PLATFORM-DEFINED and open. This Note schema does not validate Thread Agreements: their attached_to names a parent post by path or msg_ id under schema/threads.md, not a Note subject.",
       "pattern": "^[a-z][a-z0-9_]*:.+$",
       "x-platform-type-examples": ["person", "agent", "web_page", "hostname", "node"]
     },
