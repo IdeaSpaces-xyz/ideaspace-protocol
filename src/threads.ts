@@ -142,7 +142,7 @@ export function resolveThreadParent(
   for (const root of roots) {
     if (authoredPin !== undefined && root.pin !== authoredPin) continue;
     for (const post of root.posts) {
-      if (!parseThreadAttachment(post.path) || parseThreadAttachment(post.path)?.kind !== "path") continue;
+      if (parseThreadAttachment(post.path)?.kind !== "path") continue;
       if (attachment.kind === "id" ? post.id === attachment.value : post.path === attachment.value) {
         matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
       }

@@ -50,6 +50,9 @@ describe("portable Thread attachments", () => {
     expect(parsed.status).toBe(vector.expected.status === "invalid" ? "invalid" : "valid");
     if (parsed.status === "invalid") {
       expect(parsed.issue).toBe(vector.expected.issue);
+      if (vector.id === "note-subject-not-thread-parent") {
+        expect(parseFrontmatter(vector.agreement)?.attached_to).toBe("node:thing");
+      }
       return;
     }
     if (parsed.status !== "valid") throw new Error("Expected a parent attachment");
