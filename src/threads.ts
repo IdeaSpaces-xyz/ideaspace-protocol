@@ -79,6 +79,92 @@ export type ThreadPostParseResult =
   | { status: "valid"; post: ThreadPost }
   | { status: "invalid"; issues: string[] };
 
+/** A child Thread's parent link, authored on its Agreement, not a Note subject binding. */
+export type ThreadAttachment =
+  | { kind: "path"; value: string }
+  | { kind: "id"; value: string };
+
+export type ThreadAttachmentParseResult =
+  | { status: "valid"; attachment: ThreadAttachment }
+  | { status: "absent" }
+  | { status: "invalid"; issue: "invalid_context" | "invalid_frontmatter" | "invalid_attached_to" };
+
+/** Only canonical root-relative local post paths or opaque msg_ ids name a parent. */
+export function parseThreadAttachment(value: unknown): ThreadAttachment | null {
+  if (typeof value !== "string") return null;
+  if (/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value)) return { kind: "id", value };
+  if (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(value) &&
+      !value.split("/").some((part) => part === "." || part === "..") &&
+      !value.endsWith("/README.md")) return { kind: "path", value };
+  return null;
+}
+
+/** Read the relation only from a Thread Agreement; ordinary Notes keep subject semantics. */
+export function parseThreadAgreementAttachment(
+  content: string,
+  agreementPath: string,
+): ThreadAttachmentParseResult {
+  if (!/(?:^|\/)_threads\/[^/]+\/_agent\/agreement\.md$/.test(agreementPath)) {
+    return { status: "invalid", issue: "invalid_context" };
+  }
+  const frontmatter = parseFrontmatter(content);
+  if (!frontmatter) return { status: "invalid", issue: "invalid_frontmatter" };
+  if (!("attached_to" in frontmatter)) return { status: "absent" };
+  const attachment = parseThreadAttachment(frontmatter.attached_to);
+  return attachment ? { status: "valid", attachment } : { status: "invalid", issue: "invalid_attached_to" };
+}
+
+/** Caller-supplied, authorized root snapshot. The protocol never fetches or selects HEAD. */
+export interface ThreadAttachmentRoot {
+  root: string;
+  pin: string;
+  posts: { path: string; id: string }[];
+}
+
+export interface ResolvedThreadParent {
+  root: string;
+  pin: string;
+  path: string;
+  id: string;
+}
+
+export type ThreadParentResolution =
+  | { status: "resolved"; parent: ResolvedThreadParent }
+  | { status: "unresolved" | "ambiguous" };
+
+/** Resolve against only supplied root snapshots; an authored pin is never replaced by HEAD. */
+export function resolveThreadParent(
+  attachment: ThreadAttachment,
+  roots: ThreadAttachmentRoot[],
+  authoredPin?: string,
+): ThreadParentResolution {
+  const matches: ResolvedThreadParent[] = [];
+  for (const root of roots) {
+    if (authoredPin !== undefined && root.pin !== authoredPin) continue;
+    for (const post of root.posts) {
+      if (!parseThreadAttachment(post.path) || parseThreadAttachment(post.path)?.kind !== "path") continue;
+      if (attachment.kind === "id" ? post.id === attachment.value : post.path === attachment.value) {
+        matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
+      }
+    }
+  }
+  return matches.length === 1 ? { status: "resolved", parent: matches[0] }
+    : { status: matches.length ? "ambiguous" : "unresolved" };
+}
+
+/** Reverse lookup uses the same resolver, so path and id yield the same child link. */
+export function childThreadsOfPost(
+  parent: ResolvedThreadParent,
+  children: { threadPath: string; attachment: ThreadAttachment; authoredPin?: string }[],
+  roots: ThreadAttachmentRoot[],
+): string[] {
+  return children.filter((child) => {
+    const result = resolveThreadParent(child.attachment, roots, child.authoredPin);
+    return result.status === "resolved" && result.parent.root === parent.root &&
+      result.parent.pin === parent.pin && result.parent.path === parent.path && result.parent.id === parent.id;
+  }).map((child) => child.threadPath);
+}
+
 function validDay(day: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
   const value = `${day}T00:00:00.000Z`;

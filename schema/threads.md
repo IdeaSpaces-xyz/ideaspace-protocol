@@ -41,9 +41,15 @@ host filesystem does not normalize `_Threads/` into the convention. `_Threads/`,
 
 Each thread folder (e.g. `_threads/<thread>/`) contains:
 
-1. `_agent/agreement.md` — standing terms and entry schema for the thread.
+1. `_agent/agreement.md` — standing terms and entry schema for the thread; optionally attaches this Thread to a parent post.
 2. **Posts** — dated Markdown files (e.g. `2026-09-26-01-decision.md` or `2026-09-26T12-00-00Z.md`).
 3. `README.md` — the curated lens for the thread.
+
+### Parent attachment on a Thread Agreement
+
+A child Thread's `_agent/agreement.md` MAY declare one `attached_to` string naming a parent **post**, either a canonical repository-root-relative `_threads/<thread>/<post>.md` path or an opaque `msg_…` post id. The path form remains valid; an id is not a filename or a link to the newest post. This relation belongs to the child Thread and is distinct from an ordinary Note's `attached_to: <type>:<id>` subject binding. An absent field means no declared parent; a malformed field is invalid, not a fallback to the newest post.
+
+A reader resolves the authored value using **only** root snapshots explicitly supplied or authorized by its caller. A path matches that exact canonical post position within a supplied root; an id matches the post's authored `id` within those roots. A unique match reports both the original authored value and the parent root, pin, Thread and post; no match is `unresolved`, and multiple matches (including copied ids) are `ambiguous` with **no chosen parent**. Both forms resolving to the same post produce the same reverse child-Thread link. A reader MUST NOT scan arbitrary filesystem roots, pick the first match, or substitute working-tree HEAD when an authored pin lacks the post. Hosted resolution needs a platform-provided mapping; the protocol neither fetches nor grants access. A worktree-backed root uses the pinned tree's two-step `_threads/` path lookup described below.
 
 ### Immutable posts
 
@@ -151,7 +157,10 @@ Independent implementations share three portable operations:
    - Handles multi-parent joins (merges) where a post replies to multiple parent posts.
    - Handles corrections (`kind: "correction"`, `supersedes: "<id>"`) and closures (`kind: "closure"`).
 
-3. **`resolve_thread_git_path` (`resolveThreadGitPath`)**:
+3. **`parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
+   - Read the optional `attached_to` only in a Thread Agreement, classify path or id, and resolve it against explicitly supplied pinned root snapshots. Report resolved, unresolved, or ambiguous without changing an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
+
+4. **`resolve_thread_git_path` (`resolveThreadGitPath`)**:
    - Resolves an authored repository-relative `_threads/...` Map position against a pinned Git tree,
      transparently supporting both unified repository trees and dedicated worktree branch commit roots.
 

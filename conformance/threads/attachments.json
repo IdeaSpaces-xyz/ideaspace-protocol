@@ -1,0 +1,54 @@
+{
+  "format": "ideaspaces-thread-attachments/v1",
+  "description": "Six language-neutral Thread parent attachment cases. Roots are explicit authorized snapshots, not live HEAD. Paths are repository-root-relative.",
+  "vectors": [
+    {
+      "id": "path-parent-and-reverse-child",
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nname: Child\nattached_to: _threads/parent/first.md\n---\n",
+      "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/first.md", "id": "msg_first" }] }],
+      "children": [{ "threadPath": "_threads/child", "attachment": "_threads/parent/first.md" }],
+      "expected": { "kind": "path", "status": "resolved", "parent": { "root": "local", "pin": "aaa", "path": "_threads/parent/first.md", "id": "msg_first" }, "children": ["_threads/child"] }
+    },
+    {
+      "id": "id-parent-same-reverse-child",
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nname: Child\nattached_to: msg_first\n---\n",
+      "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/first.md", "id": "msg_first" }] }],
+      "children": [{ "threadPath": "_threads/child", "attachment": "msg_first" }],
+      "expected": { "kind": "id", "status": "resolved", "parent": { "root": "local", "pin": "aaa", "path": "_threads/parent/first.md", "id": "msg_first" }, "children": ["_threads/child"] }
+    },
+    {
+      "id": "missing-id-unresolved",
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nattached_to: msg_missing\n---\n",
+      "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/latest.md", "id": "msg_latest" }] }],
+      "expected": { "kind": "id", "status": "unresolved" }
+    },
+    {
+      "id": "copied-id-ambiguous",
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nattached_to: msg_copied\n---\n",
+      "roots": [
+        { "root": "first", "pin": "aaa", "posts": [{ "path": "_threads/a/one.md", "id": "msg_copied" }] },
+        { "root": "second", "pin": "bbb", "posts": [{ "path": "_threads/b/two.md", "id": "msg_copied" }] }
+      ],
+      "expected": { "kind": "id", "status": "ambiguous" }
+    },
+    {
+      "id": "authored-pin-absent-no-head-fallback",
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nattached_to: msg_old\n---\n",
+      "authoredPin": "aaa",
+      "roots": [{ "root": "local", "pin": "bbb", "posts": [{ "path": "_threads/parent/old.md", "id": "msg_old" }] }],
+      "expected": { "kind": "id", "status": "unresolved" }
+    },
+    {
+      "id": "note-subject-not-thread-parent",
+      "agreementPath": "notes/subject.md",
+      "agreement": "---\nname: Subject\nattached_to: node:thing\n---\n",
+      "roots": [],
+      "expected": { "status": "invalid", "issue": "invalid_context" }
+    }
+  ]
+}

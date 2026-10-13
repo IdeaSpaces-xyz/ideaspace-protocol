@@ -10,6 +10,10 @@ import {
   reconstructThreadTimeline,
   resolveThreadGitPath,
   isThreadPosition,
+  parseThreadAttachment,
+  parseThreadAgreementAttachment,
+  resolveThreadParent,
+  childThreadsOfPost,
   type ThreadPost,
   type ThreadKind,
 } from "./threads.js";
@@ -27,7 +31,49 @@ const manifest = JSON.parse(
   thread_directory: string;
   required_coverage: string[];
   vectors: any[];
+  attachment_vectors: string;
 };
+
+const attachments = JSON.parse(readFileSync(
+  new URL("../conformance/threads/attachments.json", import.meta.url), "utf-8",
+));
+
+describe("portable Thread attachments", () => {
+  it("publishes exactly the approved six vectors", () => {
+    expect(manifest.attachment_vectors).toBe("attachments.json");
+    expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
+    expect(attachments.vectors).toHaveLength(6);
+  });
+
+  it.each(attachments.vectors)("executes $id", (vector: any) => {
+    const parsed = parseThreadAgreementAttachment(vector.agreement, vector.agreementPath);
+    expect(parsed.status).toBe(vector.expected.status === "invalid" ? "invalid" : "valid");
+    if (parsed.status === "invalid") {
+      expect(parsed.issue).toBe(vector.expected.issue);
+      return;
+    }
+    if (parsed.status !== "valid") throw new Error("Expected a parent attachment");
+    expect(parsed.attachment.kind).toBe(vector.expected.kind);
+    const resolved = resolveThreadParent(parsed.attachment, vector.roots, vector.authoredPin);
+    expect(resolved.status).toBe(vector.expected.status);
+    if (resolved.status === "resolved") {
+      expect(resolved.parent).toEqual(vector.expected.parent);
+      const children = (vector.children ?? []).map((child: any) => ({
+        threadPath: child.threadPath,
+        attachment: parseThreadAttachment(child.attachment),
+      }));
+      expect(childThreadsOfPost(resolved.parent, children, vector.roots)).toEqual(vector.expected.children);
+    } else {
+      expect("parent" in resolved).toBe(false);
+    }
+  });
+
+  it("does not interpret a Note's typed subject as a Thread parent", () => {
+    expect(parseThreadAgreementAttachment("---\nattached_to: node:thing\n---\n", "_threads/child/_agent/agreement.md"))
+      .toEqual({ status: "invalid", issue: "invalid_attached_to" });
+    expect(parseThreadAttachment("_threads/../parent/post.md")).toBeNull();
+  });
+});
 
 describe("threads primitives", () => {
   it("exports expected constants and kind definitions", () => {
