@@ -1,6 +1,15 @@
 {
   "format": "ideaspaces-thread-attachments/v1",
   "description": "Six language-neutral Thread parent attachment cases. Roots are explicit authorized snapshots, not live HEAD. Paths are repository-root-relative.",
+  "negative_cases": [
+    { "id": "absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nname: Child\n---\n", "expected": { "status": "absent" } },
+    { "id": "invalid-frontmatter", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "not YAML", "expected": { "status": "invalid", "issue": "invalid_frontmatter" } },
+    { "id": "array-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: [one, two]\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "note-style-not-thread-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: node:thing\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "empty-id-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: msg_\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "readme-not-post", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/parent/README.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "traversal-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/../parent/post.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } }
+  ],
   "vectors": [
     {
       "id": "path-parent-and-reverse-child",
@@ -23,7 +32,8 @@
       "agreementPath": "_threads/child/_agent/agreement.md",
       "agreement": "---\nattached_to: msg_missing\n---\n",
       "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/latest.md", "id": "msg_latest" }] }],
-      "expected": { "kind": "id", "status": "unresolved" }
+      "children": [{ "threadPath": "_threads/child", "attachment": "msg_missing" }],
+      "expected": { "kind": "id", "status": "unresolved", "children": [] }
     },
     {
       "id": "copied-id-ambiguous",
@@ -48,7 +58,7 @@
       "agreementPath": "notes/subject.md",
       "agreement": "---\nname: Subject\nattached_to: node:thing\n---\n",
       "roots": [],
-      "expected": { "status": "invalid", "issue": "invalid_context" }
+      "expected": { "status": "invalid", "issue": "invalid_context", "subject": "node:thing" }
     }
   ]
 }

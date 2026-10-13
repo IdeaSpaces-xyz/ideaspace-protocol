@@ -45,11 +45,18 @@ describe("portable Thread attachments", () => {
     expect(attachments.vectors.length).toBeGreaterThan(0);
   });
 
+  it.each(attachments.negative_cases)("rejects $id", (vector: any) => {
+    expect(parseThreadAgreementAttachment(vector.agreement, vector.agreementPath)).toEqual(vector.expected);
+  });
+
   it.each(attachments.vectors)("executes $id", (vector: any) => {
     const parsed = parseThreadAgreementAttachment(vector.agreement, vector.agreementPath);
     expect(parsed.status).toBe(vector.expected.status === "invalid" ? "invalid" : "valid");
     if (parsed.status === "invalid") {
       expect(parsed.issue).toBe(vector.expected.issue);
+      if (vector.expected.subject) {
+        expect(parseFrontmatter(vector.agreement)?.attached_to).toBe(vector.expected.subject);
+      }
       return;
     }
     if (parsed.status !== "valid") throw new Error("Expected a parent attachment");
@@ -65,6 +72,16 @@ describe("portable Thread attachments", () => {
       expect(childThreadsOfPost(resolved.parent, children, vector.roots)).toEqual(vector.expected.children);
     } else {
       expect("parent" in resolved).toBe(false);
+      if (vector.children) {
+        const children = vector.children.map((child: any) => ({
+          threadPath: child.threadPath,
+          attachment: parseThreadAttachment(child.attachment),
+        }));
+        for (const child of children) {
+          expect(resolveThreadParent(child.attachment, vector.roots, vector.authoredPin).status).not.toBe("resolved");
+        }
+        expect(vector.expected.children).toEqual([]);
+      }
     }
   });
 

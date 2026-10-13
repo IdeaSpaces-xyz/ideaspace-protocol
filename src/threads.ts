@@ -94,7 +94,6 @@ export function parseThreadAttachment(value: unknown): ThreadAttachment | null {
   if (typeof value !== "string") return null;
   if (/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value)) return { kind: "id", value };
   if (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(value) &&
-      !value.split("/").some((part) => part === "." || part === "..") &&
       !value.endsWith("/README.md")) return { kind: "path", value };
   return null;
 }
@@ -104,7 +103,7 @@ export function parseThreadAgreementAttachment(
   content: string,
   agreementPath: string,
 ): ThreadAttachmentParseResult {
-  if (!/(?:^|\/)_threads\/[^/]+\/_agent\/agreement\.md$/.test(agreementPath)) {
+  if (!/^_threads\/[^/]+\/_agent\/agreement\.md$/.test(agreementPath)) {
     return { status: "invalid", issue: "invalid_context" };
   }
   const frontmatter = parseFrontmatter(content);
@@ -142,6 +141,7 @@ export function resolveThreadParent(
   for (const root of roots) {
     if (authoredPin !== undefined && root.pin !== authoredPin) continue;
     for (const post of root.posts) {
+      // Snapshots contain canonical positions, not stripped worktree tree paths.
       if (parseThreadAttachment(post.path)?.kind !== "path") continue;
       if (attachment.kind === "id" ? post.id === attachment.value : post.path === attachment.value) {
         matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
