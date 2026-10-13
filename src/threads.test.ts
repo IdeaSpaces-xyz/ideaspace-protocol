@@ -100,8 +100,8 @@ describe("portable Thread attachments", () => {
     }
     expect(parseThreadAgreementAttachment("---\nname: Child\n---\n", "_threads/child/_agent/agreement.md"))
       .toEqual({ status: "absent" });
-    expect(parseThreadAgreementAttachment("not YAML", "_threads/child/_agent/agreement.md"))
-      .toEqual({ status: "invalid", issue: "invalid_frontmatter" });
+    expect(parseThreadAgreementAttachment("# Plain Markdown", "_threads/child/_agent/agreement.md"))
+      .toEqual({ status: "absent" });
     for (const value of ["[one, two]", "''", "msg_"]) {
       expect(parseThreadAgreementAttachment(`---\nattached_to: ${value}\n---\n`, "_threads/child/_agent/agreement.md"))
         .toEqual({ status: "invalid", issue: "invalid_attached_to" });

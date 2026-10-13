@@ -106,6 +106,8 @@ export function parseThreadAgreementAttachment(
   if (!/^_threads\/[^/.][^/]*\/_agent\/agreement\.md$/.test(agreementPath)) {
     return { status: "invalid", issue: "invalid_context" };
   }
+  // A plain-Markdown Agreement has no declared parent; a broken YAML block is invalid.
+  if (!/^---\r?\n/.test(content)) return { status: "absent" };
   const frontmatter = parseFrontmatter(content);
   if (!frontmatter) return { status: "invalid", issue: "invalid_frontmatter" };
   if (!("attached_to" in frontmatter)) return { status: "absent" };

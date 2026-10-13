@@ -3,7 +3,9 @@
   "description": "Six parent-resolution vectors and supplementary parser refusals. For each vector, parse the Agreement and compare status/issue; when valid, compare attachment kind and resolution status/parent. For resolved results compare childThreadsOfPost to expected children; for unresolved results assert no parent and no reverse child link. A note-subject case also asserts that ordinary Note parsing preserves expected.subject. Roots are explicit authorized snapshots, never live HEAD. Paths are repository-root-relative.",
   "negative_cases": [
     { "id": "absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nname: Child\n---\n", "expected": { "status": "absent" } },
-    { "id": "invalid-frontmatter", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "not YAML", "expected": { "status": "invalid", "issue": "invalid_frontmatter" } },
+    { "id": "plain-markdown-absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "# Agreement\n", "expected": { "status": "absent" } },
+    { "id": "invalid-frontmatter", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: [\n---\n", "expected": { "status": "invalid", "issue": "invalid_frontmatter" } },
+    { "id": "empty-attached-to", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to:\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
     { "id": "array-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: [one, two]\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
     { "id": "note-style-not-thread-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: node:thing\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
     { "id": "empty-id-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: msg_\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
