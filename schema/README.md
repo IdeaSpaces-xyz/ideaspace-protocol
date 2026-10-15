@@ -2,7 +2,7 @@
 
 The machine-readable, language-neutral contract — so non-TypeScript runtimes can conform without importing the reference library.
 
-Present (v0.25.0, provisional; Map v3 intentionally relaxes pins and depths for live Space Maps):
+Present (v0.26.0, provisional; Thread Agreement parent attachment gains a separate JSON Schema without widening ordinary Note subjects; Map v3 intentionally relaxes pins and depths for live Space Maps):
 
 - [`frontmatter.schema.json`](frontmatter.schema.json) — the ordinary Note Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (single typed `<type>:<id>` subject link), `tags`. Nothing strictly required (absent = drift, not error); `additionalProperties` allowed (extensible). Do not apply this schema to Thread Agreements.
 - [`thread-agreement.schema.json`](thread-agreement.schema.json) — separate optional Thread Agreement frontmatter shape: `attached_to` names a parent post by canonical path or `msg_…` id, not a Note subject; see [`threads.md`](threads.md).
