@@ -1,0 +1,73 @@
+{
+  "format": "ideaspaces-thread-attachments/v1",
+  "description": "Six parent-resolution vectors and supplementary parser refusals. For each vector, parse the Agreement and compare status/issue; when valid, compare attachment kind and resolution status/parent. For resolved results compare childThreadsOfPost to expected children; for unresolved results assert no parent and no reverse child link. A note-subject case also asserts that ordinary Note parsing preserves expected.subject. Roots are explicit authorized snapshots, never live HEAD. Paths are repository-root-relative.",
+  "negative_cases": [
+    { "id": "absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nname: Child\n---\n", "expected": { "status": "absent" } },
+    { "id": "plain-markdown-absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "# Agreement\n", "expected": { "status": "absent" } },
+    { "id": "invalid-frontmatter", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: [\n---\n", "expected": { "status": "invalid", "issue": "invalid_frontmatter" } },
+    { "id": "empty-attached-to", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to:\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "array-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: [one, two]\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "note-style-not-thread-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: node:thing\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "empty-id-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: msg_\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "readme-not-post", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/parent/README.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "traversal-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/../parent/post.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "wrong-agreement-position", "agreementPath": "_threads/child/not-agreement.md", "agreement": "---\nattached_to: msg_parent\n---\n", "expected": { "status": "invalid", "issue": "invalid_context" } }
+  ],
+  "vectors": [
+    {
+      "id": "path-parent-and-reverse-child",
+      "covers": ["attachment_path_parent"],
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nname: Child\nattached_to: _threads/parent/first.md\n---\n",
+      "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/first.md", "id": "msg_first" }] }],
+      "children": [{ "threadPath": "_threads/child", "attachment": "_threads/parent/first.md" }],
+      "expected": { "kind": "path", "status": "resolved", "parent": { "root": "local", "pin": "aaa", "path": "_threads/parent/first.md", "id": "msg_first" }, "children": ["_threads/child"] }
+    },
+    {
+      "id": "id-parent-same-reverse-child",
+      "covers": ["attachment_id_parent"],
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nname: Child\nattached_to: msg_first\n---\n",
+      "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/first.md", "id": "msg_first" }] }],
+      "children": [{ "threadPath": "_threads/child", "attachment": "msg_first" }],
+      "expected": { "kind": "id", "status": "resolved", "parent": { "root": "local", "pin": "aaa", "path": "_threads/parent/first.md", "id": "msg_first" }, "children": ["_threads/child"] }
+    },
+    {
+      "id": "missing-id-unresolved",
+      "covers": ["attachment_missing_id"],
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nattached_to: msg_missing\n---\n",
+      "roots": [{ "root": "local", "pin": "aaa", "posts": [{ "path": "_threads/parent/latest.md", "id": "msg_latest" }] }],
+      "children": [{ "threadPath": "_threads/child", "attachment": "msg_missing" }],
+      "expected": { "kind": "id", "status": "unresolved", "children": [] }
+    },
+    {
+      "id": "copied-id-ambiguous",
+      "covers": ["attachment_duplicate_id"],
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nattached_to: msg_copied\n---\n",
+      "roots": [
+        { "root": "first", "pin": "aaa", "posts": [{ "path": "_threads/a/one.md", "id": "msg_copied" }] },
+        { "root": "second", "pin": "bbb", "posts": [{ "path": "_threads/b/two.md", "id": "msg_copied" }] }
+      ],
+      "expected": { "kind": "id", "status": "ambiguous" }
+    },
+    {
+      "id": "authored-pin-absent-no-head-fallback",
+      "covers": ["attachment_missing_pin"],
+      "agreementPath": "_threads/child/_agent/agreement.md",
+      "agreement": "---\nattached_to: msg_old\n---\n",
+      "authoredPin": "aaa",
+      "roots": [{ "root": "local", "pin": "bbb", "posts": [{ "path": "_threads/parent/old.md", "id": "msg_old" }] }],
+      "expected": { "kind": "id", "status": "unresolved" }
+    },
+    {
+      "id": "note-subject-not-thread-parent",
+      "covers": ["attachment_note_subject"],
+      "agreementPath": "notes/subject.md",
+      "agreement": "---\nname: Subject\nattached_to: node:thing\n---\n",
+      "roots": [],
+      "expected": { "status": "invalid", "issue": "invalid_context", "subject": "node:thing" }
+    }
+  ]
+}

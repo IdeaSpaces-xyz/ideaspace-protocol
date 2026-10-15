@@ -258,8 +258,17 @@ export {
   reconstructThreadTimeline,
   isThreadPosition,
   resolveThreadGitPath,
+  parseThreadAttachment,
+  parseThreadAgreementAttachment,
+  resolveThreadParent,
+  childThreadsOfPost,
 } from "./threads.js";
 export type {
+  ThreadAttachment,
+  ThreadAttachmentParseResult,
+  ThreadAttachmentRoot,
+  ResolvedThreadParent,
+  ThreadParentResolution,
   ThreadKind,
   ThreadPostFrontmatter,
   ThreadPost,

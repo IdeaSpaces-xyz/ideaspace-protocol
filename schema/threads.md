@@ -41,9 +41,17 @@ host filesystem does not normalize `_Threads/` into the convention. `_Threads/`,
 
 Each thread folder (e.g. `_threads/<thread>/`) contains:
 
-1. `_agent/agreement.md` — standing terms and entry schema for the thread.
+1. `_agent/agreement.md` — standing terms and entry schema for the thread; optionally attaches this Thread to a parent post.
 2. **Posts** — dated Markdown files (e.g. `2026-09-26-01-decision.md` or `2026-09-26T12-00-00Z.md`).
 3. `README.md` — the curated lens for the thread.
+
+### Parent attachment on a Thread Agreement
+
+A child Thread's `_agent/agreement.md` MAY declare one `attached_to` string naming a parent **post**, either a canonical repository-root-relative `_threads/<thread>/<post>.md` path or an opaque `msg_…` post id. The path form remains valid; an id is not a filename or a link to the newest post. An id starts `msg_` followed by an ASCII letter or digit, then zero or more ASCII letters, digits, `_` or `-` (`^msg_[A-Za-z0-9][A-Za-z0-9_-]*$`). Legacy post ids outside this grammar remain readable as posts and are attachable by path, not by id. A path has exactly three segments: `_threads/`, a nonempty thread name not beginning with `.`, and a nonempty `.md` post filename not beginning with `.` and not `README.md`; `.`/`..` segments, absolute paths and extra segments are invalid. This relation belongs to the child Thread and is distinct from an ordinary Note's `attached_to: <type>:<id>` subject binding. The ordinary Note frontmatter JSON Schema does not govern `_threads/` Agreements; validate a parsed leading YAML object with [`thread-agreement.schema.json`](thread-agreement.schema.json) instead. That separate JSON Schema checks the optional parent grammar without requiring any field or restricting additional Agreement fields. Repository validation skips `_threads/` as a named extension. A Thread Agreement's path and YAML-block parsing are checked before applying the JSON Schema; the schema does not turn plain Markdown into an invalid Agreement. No leading frontmatter block, or a block without `attached_to`, means no declared parent; an unparseable block or malformed field is invalid, not a fallback to the newest post.
+
+A parser receives the Agreement path relative to the selected Space root, starting `_threads/<thread>/_agent/agreement.md` (a nested Space first removes its own root prefix); a similarly named file elsewhere is not a Thread Agreement. This field contains no pin. When a caller reads the Agreement through a pinned Map coordinate, that Map root's authored `sha` is the pin used for resolution; otherwise the caller selects an explicit root snapshot. No resolver invents a pin from the Agreement or substitutes HEAD for an unavailable authored Map pin. To enumerate posts in a worktree-backed pinned root, readers normalize each post to its canonical `_threads/...` position using the two-step lookup below before passing its path and parsed id to the pure resolver. Noncanonical supplied paths are skipped, not silently resolved as stripped tree paths.
+
+A reader resolves the authored value using **only** root snapshots explicitly supplied or authorized by its caller. A path matches that exact canonical post position within a supplied root; an id matches the post's authored `id` within those roots. A unique match reports both the original authored value and the parent root, pin, Thread and post; no match is `unresolved`, and multiple matches (including copied ids) are `ambiguous` with **no chosen parent**. Both forms resolving to the same post produce the same reverse child-Thread link. A reader MUST NOT scan arbitrary filesystem roots, pick the first match, or substitute working-tree HEAD when an authored pin lacks the post. Hosted resolution needs a platform-provided mapping; the protocol neither fetches nor grants access. A worktree-backed root uses the pinned tree's two-step `_threads/` path lookup described below.
 
 ### Immutable posts
 
@@ -151,11 +159,14 @@ Independent implementations share three portable operations:
    - Handles multi-parent joins (merges) where a post replies to multiple parent posts.
    - Handles corrections (`kind: "correction"`, `supersedes: "<id>"`) and closures (`kind: "closure"`).
 
-3. **`resolve_thread_git_path` (`resolveThreadGitPath`)**:
+3. **`parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
+   - Read the optional `attached_to` only in a Thread Agreement, classify path or id, and resolve it against explicitly supplied pinned root snapshots. Report resolved, unresolved, or ambiguous without changing an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
+
+4. **`resolve_thread_git_path` (`resolveThreadGitPath`)**:
    - Resolves an authored repository-relative `_threads/...` Map position against a pinned Git tree,
      transparently supporting both unified repository trees and dedicated worktree branch commit roots.
 
-Language-neutral test vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json).
+Language-neutral test vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including the separate Thread Agreement JSON Schema cases in `agreement-schema.json`.
 
 ## Format evolution
 

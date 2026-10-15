@@ -10,6 +10,10 @@ import {
   reconstructThreadTimeline,
   resolveThreadGitPath,
   isThreadPosition,
+  parseThreadAttachment,
+  parseThreadAgreementAttachment,
+  resolveThreadParent,
+  childThreadsOfPost,
   type ThreadPost,
   type ThreadKind,
 } from "./threads.js";
@@ -27,7 +31,146 @@ const manifest = JSON.parse(
   thread_directory: string;
   required_coverage: string[];
   vectors: any[];
+  attachment_vectors: string;
 };
+
+const attachments = JSON.parse(readFileSync(
+  new URL("../conformance/threads/attachments.json", import.meta.url), "utf-8",
+));
+const agreementSchemaVectors = JSON.parse(readFileSync(
+  new URL("../conformance/threads/agreement-schema.json", import.meta.url), "utf-8",
+));
+const threadAgreementSchema = JSON.parse(readFileSync(
+  new URL("../schema/thread-agreement.schema.json", import.meta.url), "utf-8",
+));
+const noteSchema = JSON.parse(readFileSync(
+  new URL("../schema/frontmatter.schema.json", import.meta.url), "utf-8",
+));
+
+// Exercise the published JSON Schema's optional field and disjoint oneOf patterns.
+// The other Agreement fields are intentionally unconstrained by this schema.
+function acceptsAttachment(schema: any, frontmatter: Record<string, unknown>): boolean {
+  if (!("attached_to" in frontmatter)) return true;
+  const value = frontmatter.attached_to;
+  const alternatives = schema.properties.attached_to.oneOf ?? [schema.properties.attached_to];
+  return alternatives.filter((alternative: any) =>
+    alternative.type === "string" && typeof value === "string" &&
+    new RegExp(alternative.pattern).test(value) &&
+    (!alternative.not || !new RegExp(alternative.not.pattern).test(value))
+  ).length === 1;
+}
+
+describe("Thread Agreement JSON Schema vectors", () => {
+  it("publishes a separate optional schema and portable cases", () => {
+    expect(manifest.agreement_schema_vectors).toBe("agreement-schema.json");
+    expect(agreementSchemaVectors.format).toBe("ideaspaces-thread-agreement-schema/v1");
+    expect(agreementSchemaVectors.schema).toBe("../../schema/thread-agreement.schema.json");
+    expect(threadAgreementSchema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
+    expect(threadAgreementSchema.type).toBe("object");
+    expect(threadAgreementSchema.additionalProperties).toBe(true);
+    expect(threadAgreementSchema.required).toBeUndefined();
+    expect(noteSchema.properties.attached_to.pattern).toBe("^[a-z][a-z0-9_]*:.+$");
+  });
+
+  it.each(agreementSchemaVectors.cases)("checks $id", (vector: any) => {
+    expect(acceptsAttachment(threadAgreementSchema, vector.frontmatter)).toBe(vector.valid);
+    if ("attached_to" in vector.frontmatter) {
+      expect(parseThreadAttachment(vector.frontmatter.attached_to) !== null).toBe(vector.valid);
+    }
+  });
+
+  it.each(agreementSchemaVectors.note_schema_boundary)("keeps Note subjects separate: $frontmatter.attached_to", (vector: any) => {
+    const value = vector.frontmatter.attached_to;
+    expect(new RegExp(noteSchema.properties.attached_to.pattern).test(value)).toBe(vector.valid);
+  });
+});
+
+describe("portable Thread attachments", () => {
+  it("publishes language-neutral attachment vectors", () => {
+    expect(manifest.attachment_vectors).toBe("attachments.json");
+    expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
+    expect(attachments.vectors.length).toBeGreaterThan(0);
+    const covered = new Set([...manifest.vectors, ...attachments.vectors].flatMap((vector: any) => vector.covers));
+    for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
+  });
+
+  it.each(attachments.negative_cases)("rejects $id", (vector: any) => {
+    expect(parseThreadAgreementAttachment(vector.agreement, vector.agreementPath)).toEqual(vector.expected);
+  });
+
+  it.each(attachments.vectors)("executes $id", (vector: any) => {
+    const parsed = parseThreadAgreementAttachment(vector.agreement, vector.agreementPath);
+    expect(parsed.status).toBe(vector.expected.status === "invalid" ? "invalid" : "valid");
+    if (parsed.status === "invalid") {
+      expect(parsed.issue).toBe(vector.expected.issue);
+      if (vector.expected.subject) {
+        expect(parseFrontmatter(vector.agreement)?.attached_to).toBe(vector.expected.subject);
+      }
+      return;
+    }
+    if (parsed.status !== "valid") throw new Error("Expected a parent attachment");
+    expect(parsed.attachment.kind).toBe(vector.expected.kind);
+    const resolved = resolveThreadParent(parsed.attachment, vector.roots, vector.authoredPin);
+    expect(resolved.status).toBe(vector.expected.status);
+    if (resolved.status === "resolved") {
+      expect(resolved.parent).toEqual(vector.expected.parent);
+      const children = (vector.children ?? []).map((child: any) => ({
+        threadPath: child.threadPath,
+        attachment: parseThreadAttachment(child.attachment),
+      }));
+      expect(childThreadsOfPost(resolved.parent, children, vector.roots)).toEqual(vector.expected.children);
+    } else {
+      expect("parent" in resolved).toBe(false);
+      if (vector.children) {
+        const children = vector.children.map((child: any) => ({
+          threadPath: child.threadPath,
+          attachment: parseThreadAttachment(child.attachment),
+        }));
+        for (const child of children) {
+          expect(resolveThreadParent(child.attachment, vector.roots, vector.authoredPin).status).not.toBe("resolved");
+        }
+        const candidate = vector.roots[0]?.posts[0];
+        if (candidate) {
+          expect(childThreadsOfPost({ root: vector.roots[0].root, pin: vector.roots[0].pin, ...candidate }, children, vector.roots))
+            .toEqual(vector.expected.children);
+        }
+      }
+    }
+  });
+
+  it("does not interpret a Note's typed subject as a Thread parent", () => {
+    expect(parseThreadAgreementAttachment("---\nattached_to: node:thing\n---\n", "_threads/child/_agent/agreement.md"))
+      .toEqual({ status: "invalid", issue: "invalid_attached_to" });
+    expect(parseFrontmatter("---\nattached_to: node:thing\n---\n")?.attached_to).toBe("node:thing");
+    for (const value of ["_threads/../parent/post.md", "_threads/x/README.md", "_threads/.hidden/post.md", "msg_", "_threads/x/./post.md"]) {
+      expect(parseThreadAttachment(value)).toBeNull();
+    }
+    expect(parseThreadAgreementAttachment("---\nname: Child\n---\n", "_threads/child/_agent/agreement.md"))
+      .toEqual({ status: "absent" });
+    expect(parseThreadAgreementAttachment("# Plain Markdown", "_threads/child/_agent/agreement.md"))
+      .toEqual({ status: "absent" });
+    for (const value of ["[one, two]", "''", "msg_"]) {
+      expect(parseThreadAgreementAttachment(`---\nattached_to: ${value}\n---\n`, "_threads/child/_agent/agreement.md"))
+        .toEqual({ status: "invalid", issue: "invalid_attached_to" });
+    }
+  });
+
+  it("does not choose duplicate paths or ids, or reverse-link an unresolved child", () => {
+    const first = { root: "first", pin: "a", posts: [{ path: "_threads/a/one.md", id: "msg_same" }] };
+    const second = { root: "second", pin: "b", posts: [{ path: "_threads/a/one.md", id: "msg_same" }] };
+    expect(resolveThreadParent({ kind: "path", value: "_threads/a/one.md" }, [first, second]))
+      .toEqual({ status: "ambiguous" });
+    expect(resolveThreadParent({ kind: "id", value: "msg_same" }, [{ ...first, posts: [...first.posts, { path: "_threads/a/two.md", id: "msg_same" }] }]))
+      .toEqual({ status: "ambiguous" });
+    const parent = resolveThreadParent({ kind: "id", value: "msg_same" }, [first]);
+    if (parent.status !== "resolved") throw new Error("Expected resolved parent");
+    expect(childThreadsOfPost(parent.parent, [
+      { threadPath: "_threads/valid", attachment: { kind: "id", value: "msg_same" }, authoredPin: "a" },
+      { threadPath: "_threads/wrong-pin", attachment: { kind: "id", value: "msg_same" }, authoredPin: "b" },
+      { threadPath: "_threads/missing", attachment: { kind: "id", value: "msg_missing" } },
+    ], [first])).toEqual(["_threads/valid"]);
+  });
+});
 
 describe("threads primitives", () => {
   it("exports expected constants and kind definitions", () => {
@@ -107,7 +250,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set(manifest.vectors.flatMap((vector) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }

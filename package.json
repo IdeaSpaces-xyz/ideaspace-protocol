@@ -42,6 +42,7 @@
       "import": "./dist/threads.js"
     },
     "./schema/frontmatter": "./schema/frontmatter.schema.json",
+    "./schema/thread-agreement": "./schema/thread-agreement.schema.json",
     "./schema/repository-path": "./schema/repository-path.md",
     "./schema/extensions": "./schema/extensions.md",
     "./schema/assets": "./schema/assets.md",
