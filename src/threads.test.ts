@@ -37,6 +37,53 @@ const manifest = JSON.parse(
 const attachments = JSON.parse(readFileSync(
   new URL("../conformance/threads/attachments.json", import.meta.url), "utf-8",
 ));
+const agreementSchemaVectors = JSON.parse(readFileSync(
+  new URL("../conformance/threads/agreement-schema.json", import.meta.url), "utf-8",
+));
+const threadAgreementSchema = JSON.parse(readFileSync(
+  new URL("../schema/thread-agreement.schema.json", import.meta.url), "utf-8",
+));
+const noteSchema = JSON.parse(readFileSync(
+  new URL("../schema/frontmatter.schema.json", import.meta.url), "utf-8",
+));
+
+// Exercise the published JSON Schema's optional field and disjoint oneOf patterns.
+// The other Agreement fields are intentionally unconstrained by this schema.
+function acceptsAttachment(schema: any, frontmatter: Record<string, unknown>): boolean {
+  if (!("attached_to" in frontmatter)) return true;
+  const value = frontmatter.attached_to;
+  const alternatives = schema.properties.attached_to.oneOf ?? [schema.properties.attached_to];
+  return alternatives.filter((alternative: any) =>
+    alternative.type === "string" && typeof value === "string" &&
+    new RegExp(alternative.pattern).test(value) &&
+    (!alternative.not || !new RegExp(alternative.not.pattern).test(value))
+  ).length === 1;
+}
+
+describe("Thread Agreement JSON Schema vectors", () => {
+  it("publishes a separate optional schema and portable cases", () => {
+    expect(manifest.agreement_schema_vectors).toBe("agreement-schema.json");
+    expect(agreementSchemaVectors.format).toBe("ideaspaces-thread-agreement-schema/v1");
+    expect(agreementSchemaVectors.schema).toBe("../../schema/thread-agreement.schema.json");
+    expect(threadAgreementSchema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
+    expect(threadAgreementSchema.type).toBe("object");
+    expect(threadAgreementSchema.additionalProperties).toBe(true);
+    expect(threadAgreementSchema.required).toBeUndefined();
+    expect(noteSchema.properties.attached_to.pattern).toBe("^[a-z][a-z0-9_]*:.+$");
+  });
+
+  it.each(agreementSchemaVectors.cases)("checks $id", (vector: any) => {
+    expect(acceptsAttachment(threadAgreementSchema, vector.frontmatter)).toBe(vector.valid);
+    if ("attached_to" in vector.frontmatter) {
+      expect(parseThreadAttachment(vector.frontmatter.attached_to) !== null).toBe(vector.valid);
+    }
+  });
+
+  it.each(agreementSchemaVectors.note_schema_boundary)("keeps Note subjects separate: $frontmatter.attached_to", (vector: any) => {
+    const value = vector.frontmatter.attached_to;
+    expect(new RegExp(noteSchema.properties.attached_to.pattern).test(value)).toBe(vector.valid);
+  });
+});
 
 describe("portable Thread attachments", () => {
   it("publishes language-neutral attachment vectors", () => {

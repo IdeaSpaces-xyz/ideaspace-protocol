@@ -4,7 +4,8 @@ The machine-readable, language-neutral contract — so non-TypeScript runtimes c
 
 Present (v0.25.0, provisional; Map v3 intentionally relaxes pins and depths for live Space Maps):
 
-- [`frontmatter.schema.json`](frontmatter.schema.json) — the Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (on Notes: single typed `<type>:<id>` subject link; Thread Agreements instead attach a parent post by path or `msg_…` id under [`threads.md`](threads.md)), `tags`. Nothing strictly required (absent = drift, not error); `additionalProperties` allowed (extensible).
+- [`frontmatter.schema.json`](frontmatter.schema.json) — the ordinary Note Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (single typed `<type>:<id>` subject link), `tags`. Nothing strictly required (absent = drift, not error); `additionalProperties` allowed (extensible). Do not apply this schema to Thread Agreements.
+- [`thread-agreement.schema.json`](thread-agreement.schema.json) — separate optional Thread Agreement frontmatter shape: `attached_to` names a parent post by canonical path or `msg_…` id, not a Note subject; see [`threads.md`](threads.md).
 - [`agent-contract.md`](agent-contract.md) — selectable Foundation/Agreement frames, Agreement full-load declarations, floor orientation, root composition, prompt placement, skills, extensions, and conformance.
 - [`repository-path.md`](repository-path.md) — pure lexical classification of Markdown knowledge, core `_agent`, ordinary paths, reserved Git state, and the first opaque extension owner.
 - [`extensions.md`](extensions.md) — the bounded documentation contract for a named extension, its maturity path, extension-owned format evolution, and `_assets/` as the worked example.

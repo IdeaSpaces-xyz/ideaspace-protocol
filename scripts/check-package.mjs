@@ -18,6 +18,7 @@ const expected = [
   "conformance/assets/manifest.json",
   "conformance/threads/manifest.json",
   "conformance/threads/attachments.json",
+  "conformance/threads/agreement-schema.json",
   "conformance/awareness/focus-render.txt",
   "conformance/awareness/foundation-render.txt",
   "conformance/awareness/foundation-vector-render.txt",
@@ -167,6 +168,7 @@ const expected = [
   "schema/content-look.md",
   "schema/extensions.md",
   "schema/frontmatter.schema.json",
+  "schema/thread-agreement.schema.json",
   "schema/local-effects.md",
   "schema/map-projection.md",
   "schema/markdown-inspection.md",
@@ -212,6 +214,7 @@ try {
     "./maps",
     "./threads",
     "./schema/frontmatter",
+    "./schema/thread-agreement",
     "./schema/repository-path",
     "./schema/extensions",
     "./schema/assets",
@@ -281,6 +284,7 @@ try {
     import * as threadsRuntime from "@ideaspaces/protocol/threads";
     const require = createRequire(import.meta.url);
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
+    const threadAgreementSchema = require("@ideaspaces/protocol/schema/thread-agreement");
     const extensions = require("@ideaspaces/protocol/conformance/extensions");
     const assets = require("@ideaspaces/protocol/conformance/assets");
     const threads = require("@ideaspaces/protocol/conformance/threads");
@@ -357,6 +361,9 @@ try {
     }
     if (schema?.title !== "Ideaspace Note frontmatter (Layer 1)") {
       throw new Error("Frontmatter schema export did not load");
+    }
+    if (threadAgreementSchema?.title !== "Ideaspace Thread Agreement frontmatter") {
+      throw new Error("Thread Agreement schema export did not load");
     }
     if (extensions?.format !== "ideaspaces-extensions/v1" || !extensions.required_coverage?.length) {
       throw new Error("Extensions conformance manifest did not load");
