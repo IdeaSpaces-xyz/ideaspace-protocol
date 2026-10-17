@@ -178,23 +178,28 @@ describe("Map construction and disclosure", () => {
     });
   });
 
-  it("accepts _threads extension positions while refusing _agent, _assets, and unknown extensions", () => {
-    const validThreads = buildMap({
+  it("accepts exact _agent and _threads positions but refuses escapes and opaque extensions", () => {
+    const valid = buildMap({
       roots: [root],
       members: [
         { root: 0, position: "_threads/2026-09-26-authorization/README.md", depth: "summary" },
         { root: 0, position: "_threads/2026-09-26-authorization/2026-09-26-01.md", depth: "full" },
+        { root: 0, position: "_agent", depth: "children" },
+        { root: 0, position: "_agent/agreement.md", depth: "full" },
+        { root: 0, position: "notes/_agent/guide.md", depth: "surface" },
+        { root: 0, position: "_threads/decision/_agent/agreement.md", depth: "summary" },
       ],
     });
-    expect(validThreads.status).toBe("valid");
+    expect(valid.status).toBe("valid");
 
     for (const invalidPos of [
-      "_agent/agreement.md",
+      "_agent/../outside.md",
+      "/_agent/agreement.md",
+      "_Agent/agreement.md",
+      "_agent/.git/config",
       "_assets/diagram.png",
       "_scratch/draft.md",
-      "notes/_agent/guide.md",
       "notes/_assets/img.png",
-      "_threads/_agent/agreement.md",
     ]) {
       const rejected = parseMap({
         roots: [root],

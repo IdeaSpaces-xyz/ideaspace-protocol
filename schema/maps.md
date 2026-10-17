@@ -125,9 +125,14 @@ not authority: access is evaluated independently, members may dangle, and a read
 than both access and the declared depth permit. Without a declared depth, the reader chooses a rung independently; absence is not a `full` ceiling encoded by the Map.
 
 A Note, folder, and repository use the same form. A map-of-maps needs no special case because a
-map-note is itself a position. Protocol positions do not enter `_agent/`, `_assets/`, or arbitrary
-extension payload, with the standard exception of `_threads/` (`_threads/<thread>/README.md` or
-`_threads/<thread>/<post>.md`) per [`threads.md`](threads.md).
+map-note is itself a position. Exact `_agent/` context is permitted as a position member at the
+repository root or beneath a branch (including a Thread's `_agent/`), whether it names a directory
+or Markdown file. It uses the same five depth ceilings and the root's authored pin; membership
+selects a view, not permission to read. The standard `_threads/` extension is permitted
+(`_threads/<thread>/README.md` or `_threads/<thread>/<post>.md`) per [`threads.md`](threads.md).
+`_assets/`, case lookalikes, arbitrary underscore extensions, `.git`, absolute paths and traversal
+remain invalid position members. Open position addresses may still name other extensions; they
+are not automatically valid members.
 
 When a Map points to a `_threads/` folder that lives on an independent `threads` worktree branch in a
 code repository, the Map carries a second pinned root entry for that branch's commit SHA. A conformant
@@ -191,8 +196,8 @@ holding a Map points at a member without a filesystem path:
 Everything after `//` is a canonical repository-relative path, validated like
 [`repository-path.md`](repository-path.md): no leading or trailing slash, no `.` or `..` segment, no
 backslash or NUL, nothing inside `.git`. An empty position is the root itself, so `@research//`
-addresses position `.`. Unlike a position member, an address may point inside `_agent/` or an
-extension: it names bytes, and whether the reader may disclose them is decided separately. A
+addresses position `.`. Unlike a position member, an address may point inside extensions other
+than `_threads/`: it names bytes, and whether the reader may disclose them is decided separately. A
 reference that parses as a root identity is always an identity, which is why a name may never take
 that form.
 

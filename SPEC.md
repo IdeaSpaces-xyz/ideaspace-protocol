@@ -201,7 +201,7 @@ block adds a navigation layer without changing the repository model. A reader th
 understand Maps ignores the block and reads the Note; an invalid block is projection drift, not a
 base repository-conformance failure.
 
-Repository-position members use a root index and canonical repository-relative position (including the standard `_threads/` extension). An optional depth
+Repository-position members use a root index and canonical repository-relative position, including exact `_agent/` context at the root or beneath a branch and the standard `_threads/` extension. `_agent` members use the same five depth ceilings and pinned-root semantics as Notes; membership selects a view, never grants read authority. `_assets/`, unknown underscore extensions, `.git`, absolute and escaping paths remain invalid as position members. An optional depth
 name is `name`, `summary`, `surface`, `children`, or `full`. Roots MAY carry a full commit pin and are addressed by an absolute canonical `/repos/{root_node_id}` web URL, portable
 `root_node_id`, or both. A shallow Space Map without pins or depths points to the latest committed state at a depth chosen by its reader; even a mixed Map with some pinned roots remains a live Space Map. A Thread-post or conversation Map intended to capture a moment requires all root pins and position-member depth ceilings, enforced by its attaching consumer, not by generic Map parsing. Production URLs use HTTPS; loopback development URLs may use HTTP. Open external members reuse the `<type>:<id>` address grammar (such as `repo:<root_node_id>`,
 `person:<id>`, `agent:<id>`, `thread:x_<24hex>`, `hostname:<host>`, or `https://...`) and carry at most name/summary

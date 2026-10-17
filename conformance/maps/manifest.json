@@ -19,6 +19,7 @@
     "exact_pin",
     "ordered_positions",
     "all_depths",
+    "agent_member_positions",
     "open_external_address",
     "external_depth_ceiling",
     "thread_address",
@@ -455,12 +456,48 @@
       }
     },
     {
-      "id": "reject-agent-position",
+      "id": "build-agent-context-position-members",
+      "operation": "build",
+      "covers": ["agent_member_positions", "exact_pin", "ordered_positions", "all_depths"],
+      "input": {
+        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
+        "members": [
+          { "root": 0, "position": "_agent", "depth": "children" },
+          { "root": 0, "position": "_agent/agreement.md", "depth": "full" },
+          { "root": 0, "position": "notes/_agent/guide.md", "depth": "surface" },
+          { "root": 0, "position": "_threads/decision/_agent/agreement.md", "depth": "summary" }
+        ]
+      },
+      "expected": {
+        "status": "valid",
+        "map": {
+          "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
+          "members": [
+            { "root": 0, "position": "_agent", "depth": "children" },
+            { "root": 0, "position": "_agent/agreement.md", "depth": "full" },
+            { "root": 0, "position": "notes/_agent/guide.md", "depth": "surface" },
+            { "root": 0, "position": "_threads/decision/_agent/agreement.md", "depth": "summary" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "reject-agent-position-escape",
       "operation": "parse",
       "covers": ["invalid_position", "graceful_invalid_block"],
       "input": {
-        "roots": [{ "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111" }],
-        "members": [{ "root": 0, "position": "_agent/agreement.md", "depth": "summary" }]
+        "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }],
+        "members": [{ "root": 0, "position": "_agent/../private.md", "depth": "summary" }]
+      },
+      "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].position", "code": "invalid_position" }] }
+    },
+    {
+      "id": "reject-agent-case-lookalike",
+      "operation": "parse",
+      "covers": ["invalid_position", "graceful_invalid_block"],
+      "input": {
+        "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }],
+        "members": [{ "root": 0, "position": "_Agent/agreement.md", "depth": "summary" }]
       },
       "expected": { "status": "invalid", "issues": [{ "path": "map.members[0].position", "code": "invalid_position" }] }
     },

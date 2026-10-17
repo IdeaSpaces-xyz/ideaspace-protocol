@@ -313,7 +313,7 @@ export interface MapPositionAddressContext {
  * root by its name in one Map. `//position` names the reader's own root. An empty position is the
  * root itself (`.`). Positions are canonical repository-relative paths: no leading or trailing
  * slash, no `.`/`..` segments, no backslash or NUL, and nothing inside `.git`. Unlike Map
- * members, an address may point inside `_agent/` or an extension; access is still the reader's.
+ * members, an address may point inside other extensions too; access is still the reader's.
  */
 export function parseMapPositionAddress(value: unknown): MapPositionAddressParseResult {
   if (typeof value !== "string") return { status: "invalid", code: "invalid_address_form" };
@@ -648,7 +648,7 @@ function isMapPosition(value: unknown): value is string {
       segment === "." ||
       segment === ".." ||
       segment.toLowerCase() === ".git" ||
-      (segment.startsWith("_") && segment !== "_threads"),
+      (segment.startsWith("_") && segment !== "_threads" && segment !== "_agent"),
   );
 }
 

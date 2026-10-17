@@ -17,7 +17,7 @@
     "closure_post",
     "home_map_member",
     "code_repo_separate_worktree_pin",
-    "refuse_agent_and_assets_positions",
+    "refuse_assets_unknown_and_escaping_positions",
     "unaware_extension_skip",
     "attachment_path_parent",
     "attachment_id_parent",
@@ -382,16 +382,15 @@
       }
     },
     {
-      "id": "refuse-agent-assets-and-unknown-positions",
+      "id": "refuse-assets-unknown-and-escaping-positions",
       "operation": "map_member_refusals",
-      "covers": ["refuse_agent_and_assets_positions"],
+      "covers": ["refuse_assets_unknown_and_escaping_positions"],
       "cases": [
-        { "position": "_agent/agreement.md", "expected_code": "invalid_position" },
         { "position": "_assets/photo.png", "expected_code": "invalid_position" },
         { "position": "_custom/note.md", "expected_code": "invalid_position" },
-        { "position": "notes/_agent/guide.md", "expected_code": "invalid_position" },
         { "position": "notes/_assets/img.png", "expected_code": "invalid_position" },
-        { "position": "_threads/_agent/agreement.md", "expected_code": "invalid_position" }
+        { "position": "_agent/../private.md", "expected_code": "invalid_position" },
+        { "position": "_Agent/agreement.md", "expected_code": "invalid_position" }
       ]
     },
     {
