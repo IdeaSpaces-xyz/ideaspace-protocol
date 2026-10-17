@@ -17,17 +17,17 @@ The five depth values are the same vocabulary as Map member depth. Here depth re
 
 ## Target semantics
 
-| Depth | Markdown Note | Directory / repository |
+| Depth | Markdown Note / Thread post / Thread README / `_agent` file | Directory / repository / Thread folder / `_agent` directory |
 |---|---|---|
-| `name` | Layer-1 `name`, else filename | README Layer-1 `name`, else directory name |
-| `summary` | Layer-1 summary, else first meaningful body line | README summary, else first meaningful README body line |
+| `name` | Layer-1 `name`, else filename/id | README Layer-1 `name`, else Agreement name, else directory name |
+| `summary` | Layer-1 summary, else first meaningful body line | README summary, else Agreement summary, else `null` |
 | `surface` | Markdown body | README body, or `null` when absent |
-| `children` | ATX heading records | direct Content child handles with names and available summaries |
+| `children` | ATX heading records | direct child handles (or direct post handles for Thread folders) with names and available summaries |
 | `full` | equivalent to `surface` | surface plus direct children |
 
 Higher target representations retain name and, except at `name`, summary. `children` and `surface` are sibling facets: a children request does not load the surface. A Note's `full` is its surface and does not add heading records.
 
-Directory children preserve the Content tree's deterministic producer order and exclusion rules. `README.md` is the directory surface and is not also returned as a child. A child cap is honest through `omittedChildren`.
+Directory children preserve the Content tree's deterministic producer order and exclusion rules. `README.md` is the directory surface and is not also returned as a child. A child cap is honest through `omittedChildren`. For a Thread folder, children enumerate direct post markdown files in timeline/lexical order with their parsed names and summaries.
 
 ## Result
 
@@ -44,7 +44,7 @@ The target revision is SHA-256 over exactly the semantic target representation r
 
 Foundation/Agreement selection remains neutral. Two available entrypoints without an explicit choice return `contract_choice_required`; unavailable and invalid target frames preserve the Content-focus diagnostics. The unselected entrypoint contributes neither body nor summary.
 
-Reserved `_agent`, opaque extension payload, non-Markdown files, and other non-Content targets return no Content look. Local filesystem errors propagate to the host so it can provide its own bounded error channel.
+Standard `_threads/` targets (Thread folder, Thread README, Thread post) and `_agent/` contract files and directories are valid targets at requested rungs. Reserved `.git` state, opaque extension payload from unknown extensions, non-Markdown files, and other non-Content targets return no Content look (`null`). Local filesystem errors propagate to the host so it can provide its own bounded error channel.
 
 ## Rendering
 

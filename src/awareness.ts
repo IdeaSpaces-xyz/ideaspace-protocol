@@ -503,7 +503,7 @@ export async function assembleContentAwareness(
 export async function assembleContentFocus(
   opts: AssembleContentFocusOpts,
 ): Promise<ContentFocusResult | null> {
-  const selected = await selectContentFrame(opts.position, opts.contractSource);
+  const selected = await selectContentFrame(opts.position, opts.contractSource, true);
   if (!selected) return null;
   if ("status" in selected) return { ...selected, kind: "content-focus" };
   const {
@@ -628,6 +628,7 @@ function renderContentAwarenessDiagnostic(
 async function selectContentFrame(
   requested: string,
   requestedSource?: ContractSource,
+  allowExtensionsAndAgent = false,
 ): Promise<SelectedContentFrame | ContentAwarenessDiagnostic | null> {
   const requestedPosition = resolve(requested);
   const position = await fs.realpath(requestedPosition).catch(() => requestedPosition);
@@ -636,9 +637,19 @@ async function selectContentFrame(
     const repositoryPath = relative(repoRoot, position).split(sep).join("/");
     if (repositoryPath) {
       const classification = classifyRepositoryPath(repositoryPath, "directory");
-      if (classification.status !== "ok" || classification.role !== "ordinary") return null;
+      if (allowExtensionsAndAgent) {
+        if (
+          classification.status !== "ok" ||
+          classification.role === "reserved" ||
+          (classification.role === "extension" && classification.extension !== "_threads")
+        ) {
+          return null;
+        }
+      } else {
+        if (classification.status !== "ok" || classification.role !== "ordinary") return null;
+      }
     }
-  } else if (hasOpaqueFilesystemAncestor(position)) {
+  } else if (!allowExtensionsAndAgent && hasOpaqueFilesystemAncestor(position)) {
     return null;
   }
 
@@ -693,7 +704,17 @@ async function selectContentFrame(
     const spacePath = relative(spaceRoot, position).split(sep).join("/");
     if (spacePath) {
       const classification = classifyRepositoryPath(spacePath, "directory");
-      if (classification.status !== "ok" || classification.role !== "ordinary") return null;
+      if (allowExtensionsAndAgent) {
+        if (
+          classification.status !== "ok" ||
+          classification.role === "reserved" ||
+          (classification.role === "extension" && classification.extension !== "_threads")
+        ) {
+          return null;
+        }
+      } else {
+        if (classification.status !== "ok" || classification.role !== "ordinary") return null;
+      }
     }
   }
 

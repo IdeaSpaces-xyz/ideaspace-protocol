@@ -10,6 +10,7 @@ import {
   type ContentFocusManifest,
 } from "./awareness.js";
 import { parseFrontmatter, stripFrontmatter } from "./frontmatter.js";
+import { parseThreadPost } from "./threads.js";
 import {
   inspectMarkdown,
   summarizeMarkdown,
@@ -138,7 +139,7 @@ export async function assembleContentLook(
 
   const base = focused.position.repoRoot ?? focused.spaceRoot;
   const position = portablePosition(base, path);
-  if (!isOrdinaryTarget(position, kind, focused.position.repoRoot !== null)) return null;
+  if (!isLookTarget(position, kind, focused.position.repoRoot !== null)) return null;
 
   const target = kind === "markdown"
     ? await readMarkdownTarget(path, position, depth)
@@ -175,9 +176,28 @@ async function readMarkdownTarget(
   depth: MapDepth,
 ): Promise<ContentLookTarget> {
   const source = await fs.readFile(path, "utf-8");
+  const isPost = isThreadPostPosition(position);
   const frontmatter = parseFrontmatter(source);
-  const name = nonEmptyString(frontmatter?.name) ?? basename(path, extname(path));
-  const summary = summarizeMarkdown(source);
+  let name: string;
+  let summary: string | null;
+
+  if (isPost) {
+    const postResult = parseThreadPost(source, position);
+    if (postResult.status === "valid") {
+      name = nonEmptyString(postResult.post.frontmatter.name) ??
+        nonEmptyString(postResult.post.id) ??
+        basename(path, extname(path));
+      summary = nonEmptyString(postResult.post.frontmatter.summary) ??
+        summarizeMarkdown(source);
+    } else {
+      name = nonEmptyString(frontmatter?.name) ?? basename(path, extname(path));
+      summary = summarizeMarkdown(source);
+    }
+  } else {
+    name = nonEmptyString(frontmatter?.name) ?? basename(path, extname(path));
+    summary = summarizeMarkdown(source);
+  }
+
   const target = baseTarget(path, position, "markdown", depth, name, summary);
 
   if (depth === "surface" || depth === "full") {
@@ -202,6 +222,147 @@ async function readDirectoryTarget(
   if (!Number.isInteger(maxChildren) || maxChildren < 0) {
     throw new RangeError("Content look maxChildren must be a non-negative integer");
   }
+
+  const isThreadFolder = isThreadFolderPosition(position);
+  const isAgentDir = isAgentPosition(position);
+
+  if (isThreadFolder) {
+    const readme = await readDirectoryReadme(path);
+    const readmeFm = readme.content === null ? null : parseFrontmatter(readme.content);
+    const readmeSummary = readme.content === null ? null : summarizeMarkdown(readme.content);
+
+    let agreementFm: Record<string, unknown> | null = null;
+    let agreementSummary: string | null = null;
+    try {
+      const agreementPath = join(path, "_agent", "agreement.md");
+      const agreementContent = await fs.readFile(agreementPath, "utf-8");
+      agreementFm = parseFrontmatter(agreementContent);
+      agreementSummary = summarizeMarkdown(agreementContent);
+    } catch {}
+
+    const name = nonEmptyString(readmeFm?.name) ??
+      nonEmptyString(agreementFm?.name)?.replace(/^(Agreement|Foundation)\s*[—–-]\s*/i, "").trim() ??
+      basename(path);
+    const summary = (readme.content !== null ? readmeSummary : null) ??
+      (agreementFm !== null ? (nonEmptyString(agreementFm.summary) ?? agreementSummary) : null);
+
+    const target = baseTarget(path, position, "directory", depth, name, summary);
+
+    if (depth === "surface" || depth === "full") {
+      target.surface = readme.content === null ? null : stripFrontmatter(readme.content);
+    }
+    if (depth === "children" || depth === "full") {
+      let entries: Array<{ name: string; isDir: boolean }> = [];
+      try {
+        const dirents = await fs.readdir(path, { withFileTypes: true });
+        entries = dirents.map((e) => ({ name: e.name, isDir: e.isDirectory() }));
+      } catch {}
+
+      const postFiles = entries
+        .filter((e) => !e.isDir && e.name.endsWith(".md") && e.name !== "README.md" && !e.name.startsWith("."))
+        .map((e) => e.name)
+        .sort();
+
+      const children: ContentLookDirectoryChild[] = [];
+      for (const fileName of postFiles) {
+        const postPath = join(path, fileName);
+        try {
+          const content = await fs.readFile(postPath, "utf-8");
+          const postResult = parseThreadPost(content, joinPortable(position, fileName));
+          let postName: string;
+          let postSummary: string | undefined;
+          if (postResult.status === "valid") {
+            postName = nonEmptyString(postResult.post.frontmatter.name) ??
+              nonEmptyString(postResult.post.id) ??
+              basename(fileName, ".md");
+            postSummary = nonEmptyString(postResult.post.frontmatter.summary) ??
+              (summarizeMarkdown(content) || undefined);
+          } else {
+            const fm = parseFrontmatter(content);
+            postName = nonEmptyString(fm?.name) ?? basename(fileName, ".md");
+            postSummary = (fm?.summary ? String(fm.summary) : summarizeMarkdown(content)) || undefined;
+          }
+          children.push({
+            kind: "markdown",
+            name: postName,
+            position: joinPortable(position, fileName),
+            ...(postSummary ? { summary: postSummary } : {}),
+          });
+        } catch {
+          children.push({
+            kind: "markdown",
+            name: basename(fileName, ".md"),
+            position: joinPortable(position, fileName),
+          });
+        }
+      }
+
+      target.children = children.slice(0, maxChildren);
+      const omitted = Math.max(0, children.length - target.children.length);
+      if (omitted) target.omittedChildren = omitted;
+    }
+
+    return finishTarget(target);
+  }
+
+  if (isAgentDir) {
+    const readme = await readDirectoryReadme(path);
+    const frontmatter = readme.content === null ? null : parseFrontmatter(readme.content);
+    const name = nonEmptyString(frontmatter?.name) ?? basename(path);
+    const summary = readme.content === null ? null : summarizeMarkdown(readme.content);
+    const target = baseTarget(path, position, "directory", depth, name, summary);
+
+    if (depth === "surface" || depth === "full") {
+      target.surface = readme.content === null ? null : stripFrontmatter(readme.content);
+    }
+    if (depth === "children" || depth === "full") {
+      let entries: Array<{ name: string; isDir: boolean }> = [];
+      try {
+        const dirents = await fs.readdir(path, { withFileTypes: true });
+        entries = dirents.map((e) => ({ name: e.name, isDir: e.isDirectory() }));
+      } catch {}
+
+      const files = entries
+        .filter((e) => !e.name.startsWith(".") && e.name !== "README.md")
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      const children: ContentLookDirectoryChild[] = [];
+      for (const entry of files) {
+        const entryPath = join(path, entry.name);
+        if (entry.isDir) {
+          children.push({
+            kind: "directory",
+            name: entry.name,
+            position: joinPortable(position, entry.name),
+          });
+        } else {
+          let childSummary: string | undefined;
+          let childName = entry.name;
+          if (entry.name.endsWith(".md")) {
+            try {
+              const content = await fs.readFile(entryPath, "utf-8");
+              const fm = parseFrontmatter(content);
+              childName = nonEmptyString(fm?.name) ?? basename(entry.name, ".md");
+              childSummary = (fm?.summary ? String(fm.summary) : summarizeMarkdown(content)) || undefined;
+            } catch {}
+          }
+          children.push({
+            kind: "markdown",
+            name: childName,
+            position: joinPortable(position, entry.name),
+            ...(childSummary ? { summary: childSummary } : {}),
+          });
+        }
+      }
+
+      target.children = children.slice(0, maxChildren);
+      const omitted = Math.max(0, children.length - target.children.length);
+      if (omitted) target.omittedChildren = omitted;
+    }
+
+    return finishTarget(target);
+  }
+
   const readme = await readDirectoryReadme(path);
   const frontmatter = readme.content === null ? null : parseFrontmatter(readme.content);
   const name = nonEmptyString(frontmatter?.name) ?? basename(path);
@@ -334,7 +495,7 @@ function portablePosition(base: string, target: string): string {
   return value || ".";
 }
 
-function isOrdinaryTarget(
+function isLookTarget(
   position: string,
   kind: "directory" | "markdown",
   hasRepoRoot: boolean,
@@ -342,9 +503,38 @@ function isOrdinaryTarget(
   if (!hasRepoRoot || position === ".") return true;
   const classified = classifyRepositoryPath(position, kind === "directory" ? "directory" : "file");
   if (classified.status !== "ok") return false;
-  return kind === "directory"
-    ? classified.role === "ordinary"
-    : classified.role === "knowledge";
+  if (classified.role === "reserved") return false;
+  if (classified.role === "ordinary" || classified.role === "knowledge") return true;
+  if (classified.role === "agent-context") return true;
+  if (classified.role === "extension") {
+    return classified.extension === "_threads";
+  }
+  return false;
+}
+
+function isThreadPostPosition(position: string): boolean {
+  const segments = position.split("/");
+  const threadsIdx = segments.indexOf("_threads");
+  if (threadsIdx === -1) return false;
+  if (segments.length >= threadsIdx + 3) {
+    const fileName = segments[segments.length - 1];
+    if (fileName.toLowerCase() === "readme.md") return false;
+    if (segments.includes("_agent")) return false;
+    return fileName.endsWith(".md");
+  }
+  return false;
+}
+
+function isThreadFolderPosition(position: string): boolean {
+  const segments = position.split("/");
+  const threadsIdx = segments.indexOf("_threads");
+  if (threadsIdx === -1) return false;
+  return segments.length === threadsIdx + 2 && !segments[threadsIdx + 1].startsWith(".");
+}
+
+function isAgentPosition(position: string): boolean {
+  const segments = position.split("/");
+  return segments.includes("_agent");
 }
 
 function joinPortable(parent: string, child: string): string {

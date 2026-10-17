@@ -197,6 +197,58 @@ describe("Content focus", () => {
     });
     expect(JSON.stringify(selected)).not.toContain("FOUNDATION SENTINEL");
   });
+
+  it("assembles reference focus for a Thread folder and its posts", async () => {
+    const root = join(tmp, "thread-space");
+    await writeAgent(root, {
+      "agreement.md": "# Space Agreement\n\nSPACE TERMS",
+    });
+    const threadDir = join(root, "_threads", "2026-09-30-spine");
+    await writeAgent(threadDir, {
+      "agreement.md": "# Thread Agreement\n\nTHREAD TERMS",
+    });
+    await fs.writeFile(
+      join(threadDir, "README.md"),
+      "---\nname: Spine\nsummary: Thread overview.\n---\n# Spine",
+      "utf-8",
+    );
+    await fs.writeFile(
+      join(threadDir, "2026-10-16T12-00-00Z-post.md"),
+      "---\nid: msg_01\nname: First Post\nsummary: Post summary.\n---\n# First Post",
+      "utf-8",
+    );
+
+    const focus = await assembleContentFocus({ position: threadDir });
+    expect(focus).toMatchObject({
+      status: "ok",
+      kind: "content-focus",
+      contractRole: "reference",
+      contractSource: "agreement",
+      contract: [
+        expect.objectContaining({
+          name: "agreement",
+          content: expect.stringContaining("SPACE TERMS"),
+        }),
+        expect.objectContaining({
+          name: "agreement",
+          content: expect.stringContaining("THREAD TERMS"),
+        }),
+      ],
+      tree: {
+        placement: "history",
+        entries: expect.arrayContaining([
+          expect.objectContaining({
+            name: "2026-10-16T12-00-00Z-post.md",
+            kind: "markdown",
+          }),
+        ]),
+      },
+    });
+
+    const rendered = renderContentFocus(focus!);
+    expect(rendered).toContain("THREAD TERMS");
+    expect(rendered).toContain("Focus:");
+  });
 });
 
 function allTreeEntriesAreHistory(entries: ContentFocusTreeEntry[]): boolean {

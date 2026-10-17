@@ -166,6 +166,11 @@ Independent implementations share three portable operations:
    - Resolves an authored repository-relative `_threads/...` Map position against a pinned Git tree,
      transparently supporting both unified repository trees and dedicated worktree branch commit roots.
 
+5. **`look` and `navigate` for Threads**:
+   - `assembleContentLook` deepens Thread folders, READMEs, posts, and `_agent/` files at five canonical rungs (`name`, `summary`, `surface`, `children`, `full`).
+   - `assembleContentFocus` assembles reference context for Thread folders, READMEs, posts, and `_agent/` positions, providing reference-frame Agreement and depth-1 post outline.
+   - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical contract.
+
 Language-neutral test vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including the separate Thread Agreement JSON Schema cases in `agreement-schema.json`.
 
 ## Format evolution

@@ -214,12 +214,126 @@ describe("Content look", () => {
     expect(rendered).not.toContain("FOUNDATION SENTINEL");
   });
 
-  it("rejects reserved context, non-Markdown files, and invalid limits", async () => {
+  it("reads _agent files and directories at requested rungs", async () => {
+    const root = await agreementRoot();
+    const agreementPath = join(root, "_agent", "agreement.md");
+
+    const lookedAgreement = ok(await assembleContentLook({ position: agreementPath, depth: "summary" }));
+    expect(lookedAgreement.target).toMatchObject({
+      kind: "markdown",
+      position: "_agent/agreement.md",
+      name: "agreement",
+      summary: "REFERENCE TERMS",
+    });
+
+    const lookedAgentDir = ok(await assembleContentLook({ position: join(root, "_agent"), depth: "children" }));
+    expect(lookedAgentDir.target).toMatchObject({
+      kind: "directory",
+      position: "_agent",
+      name: "_agent",
+    });
+    expect(lookedAgentDir.target.children).toContainEqual(
+      expect.objectContaining({ position: "_agent/agreement.md" }),
+    );
+  });
+
+  it("reads Thread folders, READMEs, and posts across all five rungs", async () => {
+    const root = await agreementRoot();
+    const threadDir = join(root, "_threads", "2026-09-30-spine");
+    const threadReadme = join(threadDir, "README.md");
+    const post1 = join(threadDir, "2026-09-30T10-00-00Z-init.md");
+    const post2 = join(threadDir, "2026-10-16T12-00-00Z-direction.md");
+
+    await write(
+      threadReadme,
+      "---\nname: Spine\nsummary: Active jump and coordinator for the roadmap.\n---\n# Spine\n\nThe curated lens for the roadmap.\n\n## Goals\n\nDeliver the spine.",
+    );
+    await write(
+      post1,
+      "---\nid: msg_001\ndate: 2026-09-30T10:00:00.000Z\nname: Initial Spine\nsummary: Initial kick-off post.\n---\n# Initial Spine\n\nStarting the work.",
+    );
+    await write(
+      post2,
+      "---\nid: msg_002\ndate: 2026-10-16T12:00:00.000Z\nname: Direction Update\nsummary: Latest direction for desktop.\n---\n# Direction Update\n\nFocusing on explorer.",
+    );
+
+    // 1. Thread folder: 5 rungs
+    const folderName = ok(await assembleContentLook({ position: threadDir, depth: "name" }));
+    expect(folderName.target).toMatchObject({
+      kind: "directory",
+      position: "_threads/2026-09-30-spine",
+      name: "Spine",
+    });
+    expect(folderName.target).not.toHaveProperty("summary");
+
+    const folderSummary = ok(await assembleContentLook({ position: threadDir, depth: "summary" }));
+    expect(folderSummary.target.summary).toBe("Active jump and coordinator for the roadmap.");
+
+    const folderSurface = ok(await assembleContentLook({ position: threadDir, depth: "surface" }));
+    expect(folderSurface.target.surface).toBe("# Spine\n\nThe curated lens for the roadmap.\n\n## Goals\n\nDeliver the spine.");
+
+    const folderChildren = ok(await assembleContentLook({ position: threadDir, depth: "children" }));
+    expect(folderChildren.target.children).toEqual([
+      {
+        kind: "markdown",
+        name: "Initial Spine",
+        position: "_threads/2026-09-30-spine/2026-09-30T10-00-00Z-init.md",
+        summary: "Initial kick-off post.",
+      },
+      {
+        kind: "markdown",
+        name: "Direction Update",
+        position: "_threads/2026-09-30-spine/2026-10-16T12-00-00Z-direction.md",
+        summary: "Latest direction for desktop.",
+      },
+    ]);
+
+    const folderFull = ok(await assembleContentLook({ position: threadDir, depth: "full" }));
+    expect(folderFull.target.surface).toBe(folderSurface.target.surface);
+    expect(folderFull.target.children).toEqual(folderChildren.target.children);
+
+    // 2. Thread README: 5 rungs
+    const readmeName = ok(await assembleContentLook({ position: threadReadme, depth: "name" }));
+    expect(readmeName.target.name).toBe("Spine");
+
+    const readmeSummary = ok(await assembleContentLook({ position: threadReadme, depth: "summary" }));
+    expect(readmeSummary.target.summary).toBe("Active jump and coordinator for the roadmap.");
+
+    const readmeSurface = ok(await assembleContentLook({ position: threadReadme, depth: "surface" }));
+    expect(readmeSurface.target.surface).toBe("# Spine\n\nThe curated lens for the roadmap.\n\n## Goals\n\nDeliver the spine.");
+
+    const readmeChildren = ok(await assembleContentLook({ position: threadReadme, depth: "children" }));
+    expect(readmeChildren.target.children).toEqual([
+      { kind: "section", name: "Spine", level: 1, text: "Spine", line: 5, occurrence: 1 },
+      { kind: "section", name: "Goals", level: 2, text: "Goals", line: 9, occurrence: 1 },
+    ]);
+
+    const readmeFull = ok(await assembleContentLook({ position: threadReadme, depth: "full" }));
+    expect(readmeFull.target.surface).toBe(readmeSurface.target.surface);
+
+    // 3. Thread post: 5 rungs
+    const postName = ok(await assembleContentLook({ position: post2, depth: "name" }));
+    expect(postName.target.name).toBe("Direction Update");
+
+    const postSummary = ok(await assembleContentLook({ position: post2, depth: "summary" }));
+    expect(postSummary.target.summary).toBe("Latest direction for desktop.");
+
+    const postSurface = ok(await assembleContentLook({ position: post2, depth: "surface" }));
+    expect(postSurface.target.surface).toBe("# Direction Update\n\nFocusing on explorer.");
+
+    const postChildren = ok(await assembleContentLook({ position: post2, depth: "children" }));
+    expect(postChildren.target.children).toEqual([
+      { kind: "section", name: "Direction Update", level: 1, text: "Direction Update", line: 7, occurrence: 1 },
+    ]);
+
+    const postFull = ok(await assembleContentLook({ position: post2, depth: "full" }));
+    expect(postFull.target.surface).toBe(postSurface.target.surface);
+  });
+
+  it("rejects non-Markdown files and invalid limits", async () => {
     const root = await agreementRoot();
     await write(join(root, "data.txt"), "not Content");
 
-    await expect(assembleContentLook({ position: join(root, "_agent", "agreement.md") }))
-      .resolves.toBeNull();
     await expect(assembleContentLook({ position: join(root, "data.txt") }))
       .resolves.toBeNull();
     await expect(assembleContentLook({ position: root, depth: "children", maxChildren: -1 }))
