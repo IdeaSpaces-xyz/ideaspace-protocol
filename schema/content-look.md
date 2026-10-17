@@ -1,6 +1,6 @@
 # Content look
 
-Content look is the portable, read-only local operation for deepening exactly one Markdown Note or Content directory at a requested Map rung. It combines the target's applicable reference frame with one target projection without accepting or changing caller authority.
+Content look is the portable, read-only local operation for deepening exactly one Markdown Note or directory, including standard `_threads/` and `_agent/` targets, at a requested Map rung. It combines the target's applicable reference frame with one target projection without accepting or changing caller authority.
 
 This is a reader capability, not a repository-conformance requirement. It performs no network access, fetch, checkout movement, identity minting, write, or Git mutation.
 
@@ -27,7 +27,7 @@ The five depth values are the same vocabulary as Map member depth. Here depth re
 
 Higher target representations retain name and, except at `name`, summary. `children` and `surface` are sibling facets: a children request does not load the surface. A Note's `full` is its surface and does not add heading records.
 
-Directory children preserve the Content tree's deterministic producer order and exclusion rules. `README.md` is the directory surface and is not also returned as a child. A child cap is honest through `omittedChildren`. For a Thread folder, children enumerate direct post markdown files in timeline/lexical order with their parsed names and summaries.
+Directory children preserve the Content tree's deterministic producer order and exclusion rules. `README.md` is the directory surface and is not also returned as a child. The default direct-child cap is 50, or a caller may supply a non-negative cap; omissions are reported through `omittedChildren`. For a Thread folder, children enumerate direct post Markdown files in deterministic filename order with parsed names and available summaries, not post bodies or a recursive timeline. `full` includes one selected README body and those direct child handles; it does not include child surfaces. The cap bounds disclosure of child handles, not the byte length of an individual Markdown body.
 
 ## Result
 
@@ -44,7 +44,7 @@ The target revision is SHA-256 over exactly the semantic target representation r
 
 Foundation/Agreement selection remains neutral. Two available entrypoints without an explicit choice return `contract_choice_required`; unavailable and invalid target frames preserve the Content-focus diagnostics. The unselected entrypoint contributes neither body nor summary.
 
-Standard `_threads/` targets (Thread folder, Thread README, Thread post) and `_agent/` contract files and directories are valid targets at requested rungs. Reserved `.git` state, opaque extension payload from unknown extensions, non-Markdown files, and other non-Content targets return no Content look (`null`). Local filesystem errors propagate to the host so it can provide its own bounded error channel.
+Standard `_threads/` targets (Thread folder, Thread README, Thread post) and exact `_agent/` files and directories are valid targets at requested rungs. Reserved `.git` state, opaque extension payload from unknown extensions, non-Markdown files, and other non-Content targets return no Content look (`null`). Local filesystem errors propagate to the host so it can provide its own bounded error channel.
 
 ## Rendering
 

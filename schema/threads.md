@@ -169,9 +169,10 @@ Independent implementations share three portable operations:
 5. **`look` and `navigate` for Threads**:
    - `assembleContentLook` deepens Thread folders, READMEs, posts, and `_agent/` files at five canonical rungs (`name`, `summary`, `surface`, `children`, `full`).
    - `assembleContentFocus` assembles reference context for Thread folders, READMEs, posts, and `_agent/` positions, providing reference-frame Agreement and depth-1 post outline.
-   - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical contract.
+   - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical local contract after the authored tree is selected; Map membership is not filesystem authorization.
+   - A Thread folder's `full` is one README surface plus a capped list of direct post handles, not the post bodies or a timeline. See [`content-look.md`](content-look.md) for the five rung and cap rules.
 
-Language-neutral test vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including the separate Thread Agreement JSON Schema cases in `agreement-schema.json`.
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including the separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Format evolution
 

@@ -1,0 +1,65 @@
+{
+  "format": "ideaspaces-thread-reader/v1",
+  "fixture": "../reference-thread-reader",
+  "depths": ["name", "summary", "surface", "children", "full"],
+  "targets": [
+    {
+      "id": "folder",
+      "position": "_threads/decision",
+      "kind": "directory",
+      "name": "Decision Thread",
+      "summary": "Curated decision lens.",
+      "surface": "# Decision\n\nThe current view.\n\n## Direction\n\nRead the posts.\n",
+      "children": [
+        "_threads/decision/2026-10-01T10-00-00Z-opening.md",
+        "_threads/decision/2026-10-02T10-00-00Z-direction.md"
+      ],
+      "child_names": ["Opening", "Direction"]
+    },
+    {
+      "id": "readme",
+      "position": "_threads/decision/README.md",
+      "kind": "markdown",
+      "name": "Decision Thread",
+      "summary": "Curated decision lens.",
+      "surface": "# Decision\n\nThe current view.\n\n## Direction\n\nRead the posts.\n",
+      "child_names": ["Decision", "Direction"]
+    },
+    {
+      "id": "post",
+      "position": "_threads/decision/2026-10-02T10-00-00Z-direction.md",
+      "kind": "markdown",
+      "name": "Direction",
+      "summary": "Next decision.",
+      "surface": "# Direction\n\nNext body.\n",
+      "child_names": ["Direction"]
+    },
+    {
+      "id": "agent-file",
+      "position": "_threads/decision/_agent/agreement.md",
+      "kind": "markdown",
+      "name": "Agreement — Decision",
+      "summary": "Thread reference terms.",
+      "surface": "# Decision terms\n\nTHREAD_READER_TERMS\n",
+      "child_names": ["Decision terms"]
+    },
+    {
+      "id": "agent-directory",
+      "position": "_threads/decision/_agent",
+      "kind": "directory",
+      "name": "_agent",
+      "summary": null,
+      "surface": null,
+      "children": ["_threads/decision/_agent/agreement.md"],
+      "child_names": ["Agreement — Decision"]
+    }
+  ],
+  "cap": { "target": "_threads/decision", "max_children": 1, "child_names": ["Opening"], "omitted_children": 1 },
+  "focus": [
+    { "target": "_threads/decision", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"], "tree_post": "2026-10-02T10-00-00Z-direction.md" },
+    { "target": "_threads/decision/README.md", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] },
+    { "target": "_threads/decision/2026-10-02T10-00-00Z-direction.md", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] },
+    { "target": "_threads/decision/_agent/agreement.md", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] }
+  ],
+  "opaque": ["_assets/opaque.md"]
+}

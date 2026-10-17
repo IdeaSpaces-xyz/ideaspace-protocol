@@ -124,7 +124,8 @@ absent; the tail then carries only local inputs. Handles and the Change line are
 protocol orders but does not define. Two conforming harnesses MUST render byte-identical tails for
 equal manifest, State, handle, and Change inputs.
 
-A **Content focus** is the bounded reference form of a later read. It resolves one target position
+A **Content focus** is the bounded reference form of a later read. It resolves one target position,
+including a local standard `_threads/` Thread folder, README, or post and an exact `_agent/` position,
 under the same explicit Foundation/Agreement selection rules, but it MUST NOT accept, return, mutate,
 or extend the caller's composed contract stack. Its `contractRole` is always `reference`: target
 agent context is read, never composed as caller authority. It returns only the target position, a
@@ -134,15 +135,21 @@ Foundation keeps its compatibility representations; floor remains valid. Activit
 and direction warnings do not enter a focus. A conforming renderer emits one deterministic focus
 block so a caller can retain its head once and append one reference block per explicit focus read.
 
-A **Content look** deepens exactly one local Markdown Note or Content directory under that
-reference-only frame. Its requested depth uses the five Map rungs: `name` returns the Layer-1 or
-filename label; `summary` returns Layer 1 or the first meaningful body line; `surface` returns the
-Note or README body; `children` returns Note ATX headings or direct Content child handles; and `full`
-is equivalent to surface for a Note or returns surface plus direct children for a directory. Surface
-and children are sibling facets: requesting children does not load the body. `README.md` is a
-directory's surface, not one of its children. Every target fact has `placement: history`; the
-applicable Agreement/Foundation frame remains `contractRole: reference` and contributes no ambient
-tree or caller authority.
+A **Content look** deepens exactly one local Markdown Note or directory, including the standard
+`_threads/` Thread folder, its README and posts, and exact `_agent/` files or directories, under that
+reference-only frame. Other extension payload and reserved Git state remain opaque. Its requested
+depth uses the five Map rungs: `name` returns the Layer-1 or filename label (a Thread post may fall
+back to its id); `summary` returns Layer 1 or the first meaningful body line; `surface` returns the
+Markdown or README body; `children` returns Markdown ATX headings or direct directory child handles;
+and `full` is equivalent to surface for a Markdown file or returns surface plus direct children for
+a directory. Thread folder children are direct posts in deterministic filename order with names and
+available summaries, **not** post bodies or an unbounded timeline. Surface and children are sibling
+facets: requesting children does not load the surface. `README.md` is a directory's surface, not
+one of its children. Directory `children` and `full` requests default to 50 handles (or an explicit non-negative cap)
+and report an honest omitted count when capped; `full` includes just the selected surface and those
+direct handles, not descendant surfaces. This is a depth and handle bound, not a Markdown byte cap.
+Every target fact has `placement: history`; the applicable Agreement/Foundation frame remains
+`contractRole: reference` and contributes no ambient tree or caller authority.
 
 A Content-look result carries a rootless projected member with portable position, requested depth,
 and observed disclosure. A consumer adds a Map root ordinal only after independently establishing a
@@ -152,7 +159,10 @@ semantic target representation returned, excluding private path, placement, and 
 field. A child cap changes the returned child list and omission count, so it deliberately changes the
 representation revision.
 The operation performs no network access, fetch, identity minting, write, Git mutation, or caller
-position change. The language-neutral contract is [`schema/content-look.md`](schema/content-look.md).
+position change. A Map position under `_threads/` or `_agent/` may be resolved at its authored pin
+before the same local reader runs; Map membership grants no filesystem authority. The language-neutral
+contract is [`schema/content-look.md`](schema/content-look.md), with named-extension vectors in
+[`conformance/thread-reader/manifest.json`](conformance/thread-reader/manifest.json).
 
 A folder with neither entrypoint remains valid at the floor: bounded Content orientation with no
 agent terms. Exact `_agent/` is optional for base Content conformance; adding an entrypoint adds a

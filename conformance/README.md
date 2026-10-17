@@ -14,6 +14,8 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`content-look/manifest.json`** — language-neutral vectors for reading exactly one local Note or Content directory at each canonical Map rung beneath a reference-only frame. They prove Note/directory semantics, history placement, rootless projection, README/children separation, honest omissions, neutral frame selection, deterministic rendering, and non-Content refusal against `reference-look/`.
 
+- **`thread-reader/manifest.json`** — language-neutral five-rung matrix for a standard `_threads/` folder, its README and post, and `_agent/` file/directory in `reference-thread-reader/`. The TypeScript runner verifies reference-only focus on folder, README, post and agent file, direct post handles with an honest full-rung cap, and opaque `_assets/` refusal. This is a named-extension reader claim, not ambient base Content loading or a pinned-Map resolver test.
+
 - **`maps/manifest.json`** — language-neutral parse/build vectors for the provisional `map` block: pinned repository positions and rootless external addresses, canonical HTTPS and loopback-development repo URLs, matching root identities, all five ceilings, observed name/summary distinct from curator annotations, optional root names, position-address parse/format round-trip and resolution against a Map (added in `ideaspaces-maps/v3`; a tool that claimed v2 must now pass these too; in a resolve vector's `context.defaultNames`, `null` means no default name is known for that root), retired-field refusal, unknown types/fields, and graceful invalid-block refusal. Parse-only readers parse both `parse` and `build` inputs; constructors additionally build the `build` inputs and parse valid output back equal. These are pure representation checks, not remote-availability or authorization tests.
 
 - **`map-projection/manifest.json`** — language-neutral vectors for projecting bounded Content trees and thin root handles into ordered Map members. They prove summary/name ceilings, observed disclosure, deterministic producer order, honest omissions, strict portable wrapping, existing-address and unresolved-root behavior, private-presentation isolation, and shared root rendering.
@@ -58,6 +60,8 @@ Makes "conforms to the protocol" testable rather than aspirational.
 
 - **`reference-look/`** — a dual-entrypoint fixture with one Note and one directory surface. Content
   look vectors select Agreement explicitly and prove that Foundation never contaminates the result.
+
+- **`reference-thread-reader/`** — a small git-initialized-by-the-runner fixture with a root and Thread Agreement, curated README, two dated posts, and an opaque asset. Its Markdown is portable fixture data; no workspace-private paths or external services are needed.
 
 ```ts
 import { validateSpace } from "@ideaspaces/protocol";
