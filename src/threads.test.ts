@@ -11,6 +11,7 @@ import {
   resolveThreadGitPath,
   isThreadPosition,
   parseThreadAttachment,
+  parseThreadOpeningPostAttachment,
   parseThreadAgreementAttachment,
   resolveThreadParent,
   childThreadsOfPost,
@@ -136,6 +137,34 @@ describe("portable Thread attachments", () => {
         }
       }
     }
+  });
+
+  it("parses typed attachments on opening posts and resolves post parents", () => {
+    expect(parseThreadOpeningPostAttachment("---\nid: msg_open\nattached_to: post:msg_parent\n---\nOpening"))
+      .toEqual({ status: "valid", attachment: { kind: "post", value: "msg_parent", raw: "post:msg_parent" } });
+    expect(parseThreadOpeningPostAttachment("---\nid: msg_open\nattached_to: post:_threads/p/one.md\n---\nOpening"))
+      .toEqual({ status: "valid", attachment: { kind: "post", value: "_threads/p/one.md", raw: "post:_threads/p/one.md" } });
+    expect(parseThreadOpeningPostAttachment("---\nid: msg_open\nattached_to: note:@notes//ideas/plan.md\n---\nOpening"))
+      .toEqual({ status: "valid", attachment: { kind: "note", value: "@notes//ideas/plan.md", raw: "note:@notes//ideas/plan.md" } });
+    expect(parseThreadOpeningPostAttachment("---\nid: msg_open\nattached_to: repo:n_0123456789abcdef01234567\n---\nOpening"))
+      .toEqual({ status: "valid", attachment: { kind: "repo", value: "n_0123456789abcdef01234567", raw: "repo:n_0123456789abcdef01234567" } });
+    expect(parseThreadOpeningPostAttachment("---\nid: msg_open\nattached_to: change:chg_feature-decision\n---\nOpening"))
+      .toEqual({ status: "valid", attachment: { kind: "change", value: "chg_feature-decision", raw: "change:chg_feature-decision" } });
+    expect(parseThreadOpeningPostAttachment("---\nid: msg_open\n---\nNo parent"))
+      .toEqual({ status: "absent" });
+
+    // resolveThreadParent resolves typed post: attachments
+    const root = { root: "space", pin: "p1", posts: [{ path: "_threads/p/one.md", id: "msg_parent" }] };
+    expect(resolveThreadParent({ kind: "post", value: "msg_parent", raw: "post:msg_parent" }, [root]))
+      .toEqual({ status: "resolved", parent: { root: "space", pin: "p1", path: "_threads/p/one.md", id: "msg_parent" } });
+    expect(resolveThreadParent({ kind: "post", value: "_threads/p/one.md", raw: "post:_threads/p/one.md" }, [root]))
+      .toEqual({ status: "resolved", parent: { root: "space", pin: "p1", path: "_threads/p/one.md", id: "msg_parent" } });
+
+    // Non-post attachments (note, repo, change) do not create parent edges in the thread tree
+    expect(resolveThreadParent({ kind: "note", value: "@notes//plan.md", raw: "note:@notes//plan.md" }, [root]))
+      .toEqual({ status: "unresolved" });
+    expect(resolveThreadParent({ kind: "repo", value: "n_123", raw: "repo:n_123" }, [root]))
+      .toEqual({ status: "unresolved" });
   });
 
   it("does not interpret a Note's typed subject as a Thread parent", () => {

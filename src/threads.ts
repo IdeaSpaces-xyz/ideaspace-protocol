@@ -47,6 +47,8 @@ export interface ThreadPostFrontmatter {
   name?: string;
   /** Dense summary for search and orientation. */
   summary?: string;
+  /** Primary entity binding or parent attachment on opening post (e.g. post:msg_..., note:@root//pos). */
+  attached_to?: string;
   /** Retrieval descriptors. */
   tags?: string[];
   /** Actor identity reference. */
@@ -79,8 +81,12 @@ export type ThreadPostParseResult =
   | { status: "valid"; post: ThreadPost }
   | { status: "invalid"; issues: string[] };
 
-/** A child Thread's parent link, authored on its Agreement, not a Note subject binding. */
+/** A child Thread's parent link, authored on its opening post or legacy Agreement. */
 export type ThreadAttachment =
+  | { kind: "post"; value: string; raw: string }
+  | { kind: "note"; value: string; raw: string }
+  | { kind: "repo"; value: string; raw: string }
+  | { kind: "change"; value: string; raw: string }
   | { kind: "path"; value: string }
   | { kind: "id"; value: string };
 
@@ -89,13 +95,55 @@ export type ThreadAttachmentParseResult =
   | { status: "absent" }
   | { status: "invalid"; issue: "invalid_context" | "invalid_frontmatter" | "invalid_attached_to" };
 
-/** Only canonical root-relative local post paths or opaque msg_ ids name a parent. */
+/** Parse an attached_to value into a structured ThreadAttachment. */
 export function parseThreadAttachment(value: unknown): ThreadAttachment | null {
-  if (typeof value !== "string") return null;
-  if (/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value)) return { kind: "id", value };
-  if (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(value) &&
-      !value.endsWith("/README.md")) return { kind: "path", value };
+  if (typeof value !== "string" || !value.trim()) return null;
+  const raw = value.trim();
+
+  // Typed prefixes: post:, note:, repo:, change:
+  if (raw.startsWith("post:")) {
+    const val = raw.slice(5).trim();
+    if (/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(val)) return { kind: "post", value: val, raw };
+    if (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(val) && !val.endsWith("/README.md")) return { kind: "post", value: val, raw };
+    return null;
+  }
+  if (raw.startsWith("note:")) {
+    const val = raw.slice(5).trim();
+    if (val.length > 0) return { kind: "note", value: val, raw };
+    return null;
+  }
+  if (raw.startsWith("repo:")) {
+    const val = raw.slice(5).trim();
+    if (/^n_[0-9a-f]{24}$/.test(val) || val.length > 0) return { kind: "repo", value: val, raw };
+    return null;
+  }
+  if (raw.startsWith("change:")) {
+    const val = raw.slice(7).trim();
+    if (/^chg_[A-Za-z0-9_-]+$/.test(val) || val.length > 0) return { kind: "change", value: val, raw };
+    return null;
+  }
+
+  // Bare aliases: msg_... id or _threads/...md path
+  if (/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(raw)) return { kind: "id", value: raw };
+  if (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(raw) && !raw.endsWith("/README.md")) return { kind: "path", value: raw };
   return null;
+}
+
+/** Read the relation from a Thread's opening post frontmatter. */
+export function parseThreadOpeningPostAttachment(
+  post: ThreadPost | string,
+): ThreadAttachmentParseResult {
+  let fm;
+  if (typeof post === "string") {
+    if (!/^---\r?\n/.test(post)) return { status: "absent" };
+    fm = parseFrontmatter(post);
+  } else {
+    fm = post.frontmatter;
+  }
+  if (!fm) return { status: "invalid", issue: "invalid_frontmatter" };
+  if (!("attached_to" in fm) || fm.attached_to === undefined) return { status: "absent" };
+  const attachment = parseThreadAttachment(fm.attached_to);
+  return attachment ? { status: "valid", attachment } : { status: "invalid", issue: "invalid_attached_to" };
 }
 
 /** Read the relation only from a Thread Agreement; ordinary Notes keep subject semantics. */
@@ -139,13 +187,20 @@ export function resolveThreadParent(
   roots: ThreadAttachmentRoot[],
   authoredPin?: string,
 ): ThreadParentResolution {
+  if (attachment.kind !== "post" && attachment.kind !== "id" && attachment.kind !== "path") {
+    return { status: "unresolved" };
+  }
+  const targetVal = attachment.value;
   const matches: ResolvedThreadParent[] = [];
   for (const root of roots) {
     if (authoredPin !== undefined && root.pin !== authoredPin) continue;
     for (const post of root.posts) {
       // Snapshots contain canonical positions, not stripped worktree tree paths.
-      if (parseThreadAttachment(post.path)?.kind !== "path") continue;
-      if (attachment.kind === "id" ? post.id === attachment.value : post.path === attachment.value) {
+      const parsedPath = parseThreadAttachment(post.path);
+      if (parsedPath?.kind !== "path" && !post.path.startsWith("_threads/")) continue;
+      const isIdMatch = targetVal.startsWith("msg_") ? post.id === targetVal : false;
+      const isPathMatch = post.path === targetVal;
+      if (isIdMatch || isPathMatch) {
         matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
       }
     }
