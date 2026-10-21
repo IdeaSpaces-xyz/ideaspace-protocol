@@ -4,6 +4,7 @@
   "attachment_vectors": "attachments.json",
   "agreement_schema_vectors": "agreement-schema.json",
   "metalayer_vectors": "metalayer.json",
+  "post_selection_vectors": "post-selection.json",
   "required_coverage": [
     "post_frontmatter",
     "post_date_authored",
@@ -45,7 +46,8 @@
     "mark_target_warning",
     "mark_superseded_target",
     "mark_of_mark_visible",
-    "mark_unreadable_target"
+    "mark_unreadable_target",
+    "post_id_selection"
   ],
   "vectors": [
     {

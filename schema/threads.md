@@ -1,6 +1,6 @@
 # Collaboration threads and `_threads/`
 
-> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, and root-relative Map pointers. **Provisional, v0.28.0.**
+> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, and root-relative Map pointers. **Provisional, v0.29.0.**
 
 ## Role, name, and placement
 
@@ -97,6 +97,26 @@ When a post is unreadable, the reader skips and names it with diagnostic issues;
 - Any **other** unreadable post warns but **does not block writes**. A malformed post may have been a closure, so closed state reads `unknown` unless a readable closure settles it. A visible misplaced write into a closed Thread is preferable to locking out every writer.
 
 **Anyone who may write in the Thread may repair an unreadable post** whose frontmatter never parsed (or whose id was never valid). Commit the repair with a message stating why; once-valid posts remain immutable. This is not a license to silently edit authored history.
+
+#### Post-id look and child pages
+
+A reader MAY look up one immutable post by id within a caller-selected Thread folder, or within
+the selected Space root's `_threads/` only. It selects the file whose authored `id` matches the full
+`msg_…` string. An eight-hex shorthand such as `msg_75cc2f37` can match a longer id only when the
+next character is `-`; an exact id takes precedence. A unique match opens that file through the
+normal post reader; no match is `unresolved` and more than one match is `ambiguous`. Never scan a
+second root, pick the first duplicate or repin an authored Map commit to HEAD. A Map address ending
+`_threads/<thread>/msg_…` is a **read-time selector** inside that named Thread; it does not create
+an actual `.md` path or grant access. A caller may instead pass the id as a `postId` alongside the
+Thread folder or supplied root. Its reference frame is the selected post's Thread frame.
+
+A folder look at `children` or `full` reports all eligible direct post handles as `total` but shows
+only the selected page (default 50), with `nextCursor` equal to its last filename when more remain.
+`order: older` is code-unit filename order, and `newer` is its reverse. Pass the page's
+`nextCursor` filename as exclusive `since` in that directory and order; a missing filename is an
+error, not a reset. A page
+never loads post bodies just to display other pages. The same page vocabulary works on other
+Content directories; generic Content ordering retains directories before Markdown files.
 
 #### `kind: mark` folding
 
@@ -202,7 +222,7 @@ Independent implementations share these portable operations:
    - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical local contract after the authored tree is selected; Map membership is not filesystem authorization.
    - A Thread folder's `full` is one README surface plus a capped list of direct post handles, not the post bodies or a timeline. See [`content-look.md`](content-look.md) for the five rung and cap rules.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including field-tolerance, mark, and unreadable-post cases in `metalayer.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: 0.27.0 → 0.28.0
 
@@ -212,6 +232,19 @@ This pre-1.0 update changes the **reader API**, not the files already on disk:
 - A malformed legacy Agreement `attached_to` reads as `absent` with `warning: invalid_attached_to`, rather than `invalid`. New authors still validate against the strict Agreement JSON Schema. Optional post-field failures now live on `post.warnings`; only unreadable frontmatter or id returns `invalid`.
 - `reconstructThreadTimeline` returns copied post objects, not caller-owned references. Do not compare them to the inputs by object identity. Filename tie-breaking is code-unit rather than locale-aware, so non-ASCII paths may sort differently. Marks are rederived per call.
 - `inspectThreadPosts` takes canonical direct post files; an empty Thread can be started, an unreadable opening blocks writes with an actionable refusal, and later unreadable posts never block writes. Content look may return `target.warnings` on post targets and Thread-folder `children`/`full` reads.
+
+## Consumer migration: 0.28.0 → 0.29.0
+
+Directory Content look at `children`/`full` now returns `target.page` (`total`, `shown`, `order`,
+optional `nextCursor`) and pages in filename order with `limit`, `since` and
+`order: older|newer`. The first-page display remains bounded at 50, but its representation
+revision changes because page facts are returned. `_agent/` directory child ties previously
+used locale-aware sorting and now use code-unit order, matching Thread and generic Content handles;
+non-ASCII `_agent/` filenames may move between pages. Consumers should follow `nextCursor`, not
+infer the next page from a filename or silently restart after a stale cursor. A post-id look
+returns the selected post's normal target (or an explicit `unresolved`/`ambiguous` diagnostic),
+not the folder body. The Map address ending in `msg_…` is a read-time selector at its selected
+commit and does not add a real `.md` file.
 
 ## Format evolution
 

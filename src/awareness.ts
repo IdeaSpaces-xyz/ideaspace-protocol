@@ -71,6 +71,8 @@ export interface AssembleContentTreeOpts {
   maxEntries?: number;
   /** Cap on each summary-rung excerpt. Default: 200 characters. */
   summaryExcerptLength?: number;
+  /** Optional top-level handle page; nested levels keep their normal cap/order. */
+  page?: { cursor?: string; order?: "older" | "newer"; excludeReadme?: boolean };
 }
 
 export interface AssembleContentAwarenessOpts {
@@ -193,8 +195,10 @@ export interface ContentAwarenessTree {
   placement: PromptPlacement;
   totalMarkdownFiles: number;
   entries: ContentAwarenessTreeEntry[];
-  /** Top-level entries over the per-directory cap, when truncated. */
+  /** Top-level entries after this page, when truncated. */
   omittedEntries?: number;
+  /** Only on explicit top-level paging. Cursor is the last shown child name. */
+  page?: { total: number; shown: number; order: "older" | "newer"; nextCursor?: string };
 }
 
 export interface ContentAwarenessContractEntry {
@@ -386,6 +390,7 @@ export async function assembleContentTree(
     summaries: true,
     summaryLength: opts.summaryExcerptLength ?? 200,
     strict: true,
+    ...(opts.page ? { page: opts.page } : {}),
   });
 }
 
@@ -1295,6 +1300,8 @@ interface BuildTreeOpts {
   summaryLength: number;
   /** Fail on an unreadable directory instead of treating it as absent. */
   strict: boolean;
+  /** Only applied to the requested top-level directory. */
+  page?: { cursor?: string; order?: "older" | "newer"; excludeReadme?: boolean };
 }
 
 function normalizeContentTreeDepth(depth: ContentTreeDepth | undefined): ContentTreeDepth {
@@ -1336,6 +1343,7 @@ async function buildTree(
     totalMarkdownFiles,
     entries: listed.entries,
     ...(listed.omitted ? { omittedEntries: listed.omitted } : {}),
+    ...(listed.page ? { page: listed.page } : {}),
   };
 }
 
@@ -1350,7 +1358,7 @@ async function listTreeLevel(
   opts: BuildTreeOpts,
   levelsLeft: ContentTreeDepth,
   topLevel: boolean,
-): Promise<{ entries: ContentAwarenessTreeEntry[]; omitted: number } | null> {
+): Promise<{ entries: ContentAwarenessTreeEntry[]; omitted: number; page?: ContentAwarenessTree["page"] } | null> {
   let raw: Array<{ name: string; isDir: boolean }>;
   try {
     const dirents = await fs.readdir(dir, { withFileTypes: true });
@@ -1379,12 +1387,18 @@ async function listTreeLevel(
     .sort();
   if (!dirs.length && !files.length) return null;
 
+  const page = topLevel ? opts.page : undefined;
   const all = [
     ...dirs.map((name) => ({ name, isDir: true })),
-    ...files.map((name) => ({ name, isDir: false })),
+    ...files.filter((name) => !(page?.excludeReadme && name === "README.md"))
+      .map((name) => ({ name, isDir: false })),
   ];
-  const shown = Number.isFinite(opts.maxEntries) ? all.slice(0, opts.maxEntries) : all;
-  const omitted = all.length - shown.length;
+  if (page?.order === "newer") all.reverse();
+  const after = page?.cursor === undefined ? -1 : all.findIndex((entry) => entry.name === page.cursor);
+  if (page?.cursor !== undefined && after < 0) throw new RangeError(`Child cursor ${JSON.stringify(page.cursor)} is not in ${dir}. Re-read the first page.`);
+  const start = after + 1;
+  const shown = Number.isFinite(opts.maxEntries) ? all.slice(start, start + opts.maxEntries) : all.slice(start);
+  const omitted = all.length - start - shown.length;
   const withSummaries = opts.summaries && (topLevel || opts.depth === "full");
 
   const entries = await Promise.all(
@@ -1410,7 +1424,11 @@ async function listTreeLevel(
     }),
   );
 
-  return { entries, omitted };
+  return {
+    entries, omitted,
+    ...(page ? { page: { total: all.length, shown: shown.length, order: page.order ?? "older",
+      ...(omitted && shown.length ? { nextCursor: shown.at(-1)!.name } : {}) } } : {}),
+  };
 }
 
 async function countMarkdown(dir: string, strict = false): Promise<number> {

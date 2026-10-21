@@ -178,6 +178,13 @@ Tree depth defaults to 1 and numeric probes clamp to 1..4. Level 1 carries summa
 lower bounded levels carry names only. Per-directory caps are honest through omitted counts. Core
 `_agent/`, extensions, reserved Git state, and build/local exclusions do not enter entries or counts.
 
+An explicit standalone tree read MAY request one top-level `page` (`cursor`, `order: older|newer`,
+optional README exclusion) with the existing `maxEntries` cap. It reports `total`, `shown`,
+`order` and a last-shown-filename `nextCursor` when more entries remain. A missing cursor
+refuses instead of restarting; nested levels and ambient awareness do not page or change order.
+Content look uses this same tree seam for ordinary directory child pages; its paging vectors
+are in `conformance/content-look/paging.json`.
+
 The standalone tree assembler requires no contract. Its entries project through the shared
 [`projectContentTreeMembers`](map-projection.md) operation: observed names/summaries become Map
 member disclosure while placement, kind, counts, and omissions remain presentation facts. `depth:

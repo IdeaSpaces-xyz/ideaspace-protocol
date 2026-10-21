@@ -10,7 +10,7 @@ import {
   type ContentFocusManifest,
 } from "./awareness.js";
 import { parseFrontmatter, stripFrontmatter } from "./frontmatter.js";
-import { parseThreadPost, type ThreadPostFieldWarning } from "./threads.js";
+import { parseThreadPost, resolveThreadPostById, type ThreadPostFieldWarning } from "./threads.js";
 import {
   inspectMarkdown,
   summarizeMarkdown,
@@ -33,8 +33,16 @@ export interface AssembleContentLookOpts {
   contractSource?: ContractSource;
   /** Cap on contract, skill, and directory-child summaries. Default: 200 characters. */
   summaryExcerptLength?: number;
-  /** Soft cap on direct directory children. Default: 50. */
+  /** Legacy soft cap on direct directory children. Default: 50. */
   maxChildren?: number;
+  /** Direct child handles on this page (alias of maxChildren). */
+  limit?: number;
+  /** Exclusive child filename; pass the prior page's nextCursor here. */
+  since?: string;
+  /** Default older (producer order); newer reverses that order. */
+  order?: "older" | "newer";
+  /** Select one post by full msg_ id or a unique eight-hex msg_ shorthand. */
+  postId?: string;
 }
 
 export interface ContentLookDirectoryChild {
@@ -77,8 +85,10 @@ export interface ContentLookTarget {
   surface?: string | null;
   /** Present at children; also present at full for directories. */
   children?: ContentLookChild[];
-  /** Direct children omitted by the caller's soft cap. */
+  /** Direct children after this page, when any remain. */
   omittedChildren?: number;
+  /** Directory child page, only at children/full. Cursor is the last shown child filename. */
+  page?: { total: number; shown: number; order: "older" | "newer"; nextCursor?: string };
   /** Post diagnostics, with authored position, even when the post cannot be parsed. */
   warnings?: Array<ThreadPostFieldWarning & { post: string }>;
   /** The target in Map member vocabulary, without fabricating a root ordinal. */
@@ -98,7 +108,16 @@ export interface ContentLookDiagnostic extends Omit<ContentFocusDiagnostic, "kin
   kind: "content-look";
 }
 
-export type ContentLookResult = ContentLookManifest | ContentLookDiagnostic;
+export interface ContentLookPostDiagnostic {
+  status: "unresolved" | "ambiguous" | "invalid_post_scope";
+  kind: "content-look";
+  contractRole: "reference";
+  postId: string;
+  position: string;
+  reason: string;
+}
+
+export type ContentLookResult = ContentLookManifest | ContentLookDiagnostic | ContentLookPostDiagnostic;
 
 /**
  * Read one local Content target at one canonical Map rung.
@@ -112,6 +131,15 @@ export async function assembleContentLook(
   opts: AssembleContentLookOpts,
 ): Promise<ContentLookResult | null> {
   const depth = opts.depth ?? "summary";
+  if (opts.limit !== undefined && opts.maxChildren !== undefined && opts.limit !== opts.maxChildren) {
+    throw new RangeError("Use limit or maxChildren for a directory page, not conflicting caps.");
+  }
+  const cap = opts.limit ?? opts.maxChildren ?? 50;
+  if (!Number.isSafeInteger(cap) || cap < 0) throw new RangeError(opts.limit === undefined
+    ? "Content look maxChildren must be a non-negative integer"
+    : "Directory look limit must be a non-negative safe integer.");
+  if (opts.order !== undefined && opts.order !== "older" && opts.order !== "newer") throw new RangeError("Directory order must be older or newer.");
+  const cursor = opts.since;
   if (!MAP_DEPTHS.includes(depth)) {
     throw new RangeError(`Content look depth must be one of: ${MAP_DEPTHS.join(", ")}`);
   }
@@ -142,6 +170,23 @@ export async function assembleContentLook(
   const base = focused.position.repoRoot ?? focused.spaceRoot;
   const position = portablePosition(base, path);
   if (!isLookTarget(position, kind, focused.position.repoRoot !== null)) return null;
+  if (opts.postId !== undefined) {
+    if (cursor !== undefined || opts.order !== undefined || opts.limit !== undefined || opts.maxChildren !== undefined) {
+      throw new RangeError("One post-id look cannot also page directory children.");
+    }
+    const selected = await selectThreadPost(path, position, kind, opts.postId);
+    if (selected.status !== "resolved") {
+      return { status: selected.status, kind: "content-look", contractRole: "reference",
+        postId: opts.postId, position, reason: selected.reason };
+    }
+    return assembleContentLook({ position: selected.path, depth,
+      ...(opts.contractSource ? { contractSource: opts.contractSource } : {}),
+      ...(opts.summaryExcerptLength !== undefined ? { summaryExcerptLength: opts.summaryExcerptLength } : {}) });
+  }
+  if ((cursor !== undefined || opts.order !== undefined || opts.limit !== undefined) &&
+      (kind !== "directory" || (depth !== "children" && depth !== "full"))) {
+    throw new RangeError("limit, since and order require a directory at children or full depth.");
+  }
 
   const target = kind === "markdown"
     ? await readMarkdownTarget(path, position, depth)
@@ -149,8 +194,10 @@ export async function assembleContentLook(
         path,
         position,
         depth,
-        opts.maxChildren ?? 50,
+        cap,
         opts.summaryExcerptLength ?? 200,
+        cursor,
+        opts.order ?? "older",
       );
 
   return {
@@ -162,8 +209,57 @@ export async function assembleContentLook(
   };
 }
 
+/** Resolve one post only inside the caller-selected Thread or root, never by scanning another Space. */
+async function selectThreadPost(
+  path: string, position: string, kind: "directory" | "markdown", postId: string,
+): Promise<{ status: "resolved"; path: string } | { status: "unresolved" | "ambiguous" | "invalid_post_scope"; reason: string }> {
+  if (kind !== "directory" || !(isThreadFolderPosition(position) || position === "." || position === "_threads")) {
+    return { status: "invalid_post_scope", reason: "Select a Thread folder, _threads, or this repository root for a post id." };
+  }
+  const threadDirs = isThreadFolderPosition(position)
+    ? [{ name: basename(path), path }]
+    : await fs.readdir(position === "_threads" ? path : join(path, "_threads"), { withFileTypes: true })
+        .then((entries) => entries.filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+          .map((entry) => ({ name: entry.name, path: join(position === "_threads" ? path : join(path, "_threads"), entry.name) })))
+        .catch((error: NodeJS.ErrnoException) => { if (error.code === "ENOENT") return []; throw error; });
+  const candidates: Array<{ path: string; id: string }> = [];
+  const paths = new Map<string, string>();
+  for (const dir of threadDirs) {
+    const entries = await fs.readdir(dir.path, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile() || entry.name.startsWith(".") || entry.name === "README.md" || !entry.name.endsWith(".md")) continue;
+      const file = join(dir.path, entry.name);
+      const portable = `_threads/${dir.name}/${entry.name}`;
+      const parsed = parseThreadPost(await fs.readFile(file, "utf8"), portable);
+      if (parsed.status === "valid") {
+        candidates.push({ path: portable, id: parsed.post.id });
+        paths.set(portable, file);
+      }
+    }
+  }
+  const selected = resolveThreadPostById(postId, candidates);
+  return selected.status === "resolved" ? { status: "resolved", path: paths.get(selected.post.path)! }
+    : { status: selected.status, reason: selected.status === "ambiguous"
+      ? `${postId} names several posts in the selected root; use a full id or narrower Thread folder.`
+      : `${postId} is not a readable post in the selected root or Thread.` };
+}
+
+function pageNames(names: string[], limit: number, cursor: string | undefined, order: "older" | "newer") {
+  const ordered = order === "newer" ? [...names].reverse() : names;
+  const after = cursor === undefined ? -1 : ordered.indexOf(cursor);
+  if (cursor !== undefined && after < 0) throw new RangeError(`Child cursor ${JSON.stringify(cursor)} is not in this directory. Re-read the first page.`);
+  const start = after + 1;
+  const shown = ordered.slice(start, start + limit);
+  const remaining = ordered.length - start - shown.length;
+  return { shown, remaining, page: { total: ordered.length, shown: shown.length, order,
+    ...(remaining && shown.length ? { nextCursor: shown.at(-1)! } : {}) } };
+}
+
 /** Render the canonical reference frame followed by exactly one target representation. */
 export function renderContentLook(result: ContentLookResult): string {
+  if ("postId" in result) {
+    return `Look: ${result.position}\n  post: ${result.postId}\n  status: ${result.status} — ${result.reason}`;
+  }
   if (result.status !== "ok") {
     return renderContentFocus({ ...result, kind: "content-focus" });
   }
@@ -224,6 +320,8 @@ async function readDirectoryTarget(
   depth: MapDepth,
   maxChildren: number,
   summaryExcerptLength: number,
+  cursor?: string,
+  order: "older" | "newer" = "older",
 ): Promise<ContentLookTarget> {
   if (!Number.isInteger(maxChildren) || maxChildren < 0) {
     throw new RangeError("Content look maxChildren must be a non-negative integer");
@@ -269,9 +367,10 @@ async function readDirectoryTarget(
         .map((e) => e.name)
         .sort();
 
+      const selected = pageNames(postFiles, maxChildren, cursor, order);
       const children: ContentLookDirectoryChild[] = [];
       const warnings: NonNullable<ContentLookTarget["warnings"]> = [];
-      for (const fileName of postFiles) {
+      for (const fileName of selected.shown) {
         const postPath = join(path, fileName);
         try {
           const content = await fs.readFile(postPath, "utf-8");
@@ -306,10 +405,10 @@ async function readDirectoryTarget(
         }
       }
 
-      target.children = children.slice(0, maxChildren);
+      target.children = children;
+      target.page = selected.page;
       if (warnings.length) target.warnings = warnings;
-      const omitted = Math.max(0, children.length - target.children.length);
-      if (omitted) target.omittedChildren = omitted;
+      if (selected.remaining) target.omittedChildren = selected.remaining;
     }
 
     return finishTarget(target);
@@ -334,10 +433,13 @@ async function readDirectoryTarget(
 
       const files = entries
         .filter((e) => !e.name.startsWith(".") && e.name !== "README.md")
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+      const selected = pageNames(files.map((entry) => entry.name), maxChildren, cursor, order);
+      const byName = new Map(files.map((entry) => [entry.name, entry]));
 
       const children: ContentLookDirectoryChild[] = [];
-      for (const entry of files) {
+      for (const childName of selected.shown) {
+        const entry = byName.get(childName)!;
         const entryPath = join(path, entry.name);
         if (entry.isDir) {
           children.push({
@@ -365,9 +467,9 @@ async function readDirectoryTarget(
         }
       }
 
-      target.children = children.slice(0, maxChildren);
-      const omitted = Math.max(0, children.length - target.children.length);
-      if (omitted) target.omittedChildren = omitted;
+      target.children = children;
+      target.page = selected.page;
+      if (selected.remaining) target.omittedChildren = selected.remaining;
     }
 
     return finishTarget(target);
@@ -386,15 +488,11 @@ async function readDirectoryTarget(
     const tree = await assembleContentTree({
       position: path,
       depth: 1,
-      // README is the directory surface, not one of its children. Pull one
-      // extra entry so filtering it cannot consume the caller's child budget.
-      maxEntries: maxChildren + 1,
+      maxEntries: maxChildren,
       summaryExcerptLength,
+      page: { ...(cursor !== undefined ? { cursor } : {}), order, excludeReadme: true },
     });
-    const rawEntries = tree?.entries ?? [];
-    const entries = rawEntries
-      .filter((entry) => entry.name !== "README.md")
-      .slice(0, maxChildren);
+    const entries = tree?.entries ?? [];
     target.children = entries.map((entry) => ({
       kind: entry.kind,
       name: entry.name,
@@ -402,10 +500,8 @@ async function readDirectoryTarget(
       ...(entry.summary ? { summary: entry.summary } : {}),
       ...(entry.markdownFiles !== undefined ? { markdownFiles: entry.markdownFiles } : {}),
     }));
-    const rawTotal = rawEntries.length + (tree?.omittedEntries ?? 0);
-    const contentTotal = Math.max(0, rawTotal - (readme.exists ? 1 : 0));
-    const omitted = Math.max(0, contentTotal - target.children.length);
-    if (omitted) target.omittedChildren = omitted;
+    target.page = tree?.page ?? { total: 0, shown: 0, order };
+    if (tree?.omittedEntries) target.omittedChildren = tree.omittedEntries;
   }
 
   return finishTarget(target);
@@ -445,6 +541,7 @@ function finishTarget(target: ContentLookTarget): ContentLookTarget {
     ...(target.surface !== undefined ? { surface: target.surface } : {}),
     ...(target.children !== undefined ? { children: target.children } : {}),
     ...(target.omittedChildren !== undefined ? { omittedChildren: target.omittedChildren } : {}),
+    ...(target.page !== undefined ? { page: target.page } : {}),
     ...(target.warnings !== undefined ? { warnings: target.warnings } : {}),
   };
   target.revision = contentRevision(JSON.stringify(represented));
@@ -489,6 +586,7 @@ function renderTarget(target: ContentLookTarget): string {
   }
   if (target.children) {
     lines.push("", "Children:");
+    if (target.page) lines.push(`  showing ${target.page.shown} of ${target.page.total} (${target.page.order})`);
     if (!target.children.length) lines.push("  (none)");
     for (const child of target.children) {
       if (child.kind === "section") {
@@ -501,6 +599,7 @@ function renderTarget(target: ContentLookTarget): string {
       }
     }
     if (target.omittedChildren) lines.push(`  … and ${target.omittedChildren} more`);
+    if (target.page?.nextCursor) lines.push(`  next cursor: ${target.page.nextCursor}`);
   }
   return lines.join("\n");
 }

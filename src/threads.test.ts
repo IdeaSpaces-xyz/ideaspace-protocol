@@ -14,6 +14,7 @@ import {
   parseThreadAttachment,
   parseThreadAgreementAttachment,
   resolveThreadParent,
+  resolveThreadPostById,
   childThreadsOfPost,
   type ThreadPost,
   type ThreadKind,
@@ -33,10 +34,14 @@ const manifest = JSON.parse(
   required_coverage: string[];
   vectors: any[];
   attachment_vectors: string;
+  post_selection_vectors: string;
 };
 
 const attachments = JSON.parse(readFileSync(
   new URL("../conformance/threads/attachments.json", import.meta.url), "utf-8",
+));
+const postSelection = JSON.parse(readFileSync(
+  new URL("../conformance/threads/post-selection.json", import.meta.url), "utf-8",
 ));
 const metalayer = JSON.parse(readFileSync(
   new URL("../conformance/threads/metalayer.json", import.meta.url), "utf-8",
@@ -101,7 +106,7 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
@@ -261,6 +266,31 @@ describe("metalayer conformance vectors", () => {
       }
       if (vector.expected.warnings) expect(inspection.warnings).toEqual(vector.expected.warnings);
     } else throw new Error(`Unknown operation ${vector.operation}`);
+  });
+});
+
+describe("bounded post-id selection", () => {
+  it("publishes independently executable selection vectors", () => {
+    expect(manifest.post_selection_vectors).toBe("post-selection.json");
+    expect(postSelection.format).toBe("ideaspaces-thread-post-selection/v1");
+  });
+  it.each(postSelection.vectors)("selects $id", (vector: any) => {
+    expect(resolveThreadPostById(vector.query, vector.posts)).toEqual(vector.expected);
+  });
+  const posts = [
+    { path: "_threads/engine/01.md", id: "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be" },
+    { path: "_threads/other/02.md", id: "msg_other" },
+  ];
+  it("selects a unique full id or eight-hex shorthand from supplied posts only", () => {
+    expect(resolveThreadPostById(posts[0].id, posts)).toEqual({ status: "resolved", post: posts[0] });
+    expect(resolveThreadPostById("msg_75cc2f37", posts)).toEqual({ status: "resolved", post: posts[0] });
+    expect(resolveThreadPostById("msg_75cc2f38", posts)).toEqual({ status: "unresolved" });
+  });
+  it("never guesses a duplicate id or shared shorthand and ignores non-post paths", () => {
+    expect(resolveThreadPostById("msg_other", [...posts, { path: "_threads/copied/03.md", id: "msg_other" }])).toEqual({ status: "ambiguous" });
+    expect(resolveThreadPostById("msg_75cc2f37", [...posts,
+      { path: "_threads/another/04.md", id: "msg_75cc2f37-aaaaaaaa-bbbb-cccc-dddddddddddd" }])).toEqual({ status: "ambiguous" });
+    expect(resolveThreadPostById("msg_other", [{ path: "notes/other.md", id: "msg_other" }])).toEqual({ status: "unresolved" });
   });
 });
 
@@ -582,7 +612,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }

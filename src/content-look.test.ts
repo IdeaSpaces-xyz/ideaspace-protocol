@@ -349,6 +349,61 @@ describe("Content look", () => {
     expect(post.target.warnings).toEqual([{ post: "_threads/fixture/02-later.md", field: "map", warning: "invalid_map_type" }]);
   });
 
+  it("pages a 58-post Thread past the default cap and opens a post by full or unique short id", async () => {
+    const root = await agreementRoot();
+    const folder = join(root, "_threads", "engine");
+    const fixId = "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be";
+    for (let i = 0; i < 58; i++) {
+      const id = i === 55 ? fixId : `msg_${String(i).padStart(8, "0")}-test`;
+      await write(join(folder, `${String(i).padStart(2, "0")}-post.md`),
+        `---\nid: ${id}\nname: ${i === 55 ? "Fix the dev run" : `Post ${i}`}\n${i === 57 ? "map: [broken]\n" : ""}---\nPost body ${i}\n`);
+    }
+    const first = ok(await assembleContentLook({ position: folder, depth: "children" }));
+    expect(first.target.page).toEqual({ total: 58, shown: 50, order: "older", nextCursor: "49-post.md" });
+    expect(first.target.omittedChildren).toBe(8);
+    expect(first.target.warnings).toBeUndefined(); // Other-page warnings do not leak into this rung.
+    const next = ok(await assembleContentLook({ position: folder, depth: "children", since: first.target.page?.nextCursor, limit: 10 }));
+    expect(next.target.children).toHaveLength(8);
+    expect(next.target.page).toEqual({ total: 58, shown: 8, order: "older" });
+    expect(next.target.children?.map((child) => child.name)).toContain("Fix the dev run");
+    expect(next.target.warnings).toContainEqual({ post: "_threads/engine/57-post.md", field: "map", warning: "invalid_map_type" });
+    const newer = ok(await assembleContentLook({ position: folder, depth: "children", limit: 3, order: "newer" }));
+    expect(newer.target.children?.map((child) => child.name)).toEqual(["Post 57", "Post 56", "Fix the dev run"]);
+    expect(newer.target.page).toEqual({ total: 58, shown: 3, order: "newer", nextCursor: "55-post.md" });
+    const byShortId = ok(await assembleContentLook({ position: folder, depth: "full", postId: "msg_75cc2f37" }));
+    expect(byShortId.target.position).toBe("_threads/engine/55-post.md");
+    expect(byShortId.target.surface).toContain("Post body 55");
+    const byRoot = ok(await assembleContentLook({ position: root, depth: "summary", postId: fixId }));
+    expect(byRoot.target.position).toBe("_threads/engine/55-post.md");
+    await write(join(folder, "99-unreadable.md"), "---\nid: [\n---\nNo readable id");
+    expect(ok(await assembleContentLook({ position: folder, depth: "summary", postId: fixId })).target.position)
+      .toBe("_threads/engine/55-post.md");
+    await write(join(root, "_threads", "copy", "copy.md"), `---\nid: ${fixId}\n---\nCopy`);
+    expect(await assembleContentLook({ position: root, depth: "summary", postId: fixId }))
+      .toMatchObject({ status: "ambiguous", postId: fixId });
+    expect(await assembleContentLook({ position: folder, depth: "summary", postId: "msg_absent" }))
+      .toMatchObject({ status: "unresolved", postId: "msg_absent" });
+    await expect(assembleContentLook({ position: folder, depth: "children", since: "gone.md" })).rejects.toThrow(/cursor/);
+  });
+
+  it("pages ordinary Content handles in both orders without exposing README as a child", async () => {
+    const root = await agreementRoot();
+    const folder = join(root, "docs");
+    await write(join(folder, "README.md"), "---\nname: Docs\n---\n# Lens");
+    await write(join(folder, "sub", "one.md"), "# Sub note");
+    await write(join(folder, "_assets", "ignored.md"), "# Opaque");
+    for (let i = 0; i < 55; i++) await write(join(folder, `${String(i).padStart(2, "0")}.md`), `# Note ${i}\n`);
+    const first = ok(await assembleContentLook({ position: folder, depth: "children", limit: 50 }));
+    expect(first.target.page).toEqual({ total: 56, shown: 50, order: "older", nextCursor: "48.md" });
+    expect(first.target.children?.[0]).toMatchObject({ kind: "directory", name: "sub" });
+    const next = ok(await assembleContentLook({ position: folder, depth: "children", since: first.target.page?.nextCursor, limit: 10 }));
+    expect(next.target.page).toEqual({ total: 56, shown: 6, order: "older" });
+    expect(next.target.children?.map((child) => child.name)).toEqual(["49.md", "50.md", "51.md", "52.md", "53.md", "54.md"]);
+    const newer = ok(await assembleContentLook({ position: folder, depth: "children", limit: 2, order: "newer" }));
+    expect(newer.target.children?.map((child) => child.name)).toEqual(["54.md", "53.md"]);
+    expect(newer.target.page?.nextCursor).toBe("53.md");
+  });
+
   it("rejects non-Markdown files and invalid limits", async () => {
     const root = await agreementRoot();
     await write(join(root, "data.txt"), "not Content");

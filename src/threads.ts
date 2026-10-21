@@ -214,6 +214,25 @@ export function resolveThreadParent(
     : { status: matches.length ? "ambiguous" : "unresolved" };
 }
 
+/**
+ * Select one post from an explicitly supplied root or Thread snapshot by id.
+ * An exact id wins. The common eight-hex msg_ shorthand is accepted only at
+ * a hyphen boundary and only when it identifies one post; copied ids or shared
+ * prefixes are ambiguous, never a first-match guess. No root is discovered here.
+ */
+export function resolveThreadPostById(
+  id: string,
+  posts: readonly { path: string; id: string }[],
+): { status: "resolved"; post: { path: string; id: string } } | { status: "unresolved" | "ambiguous" } {
+  if (!/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(id)) return { status: "unresolved" };
+  const candidates = posts.filter((post) => parseThreadAttachment(post.path)?.kind === "path");
+  const exact = candidates.filter((post) => post.id === id);
+  const matches = exact.length || !/^msg_[0-9a-f]{8}$/.test(id)
+    ? exact : candidates.filter((post) => post.id.startsWith(`${id}-`));
+  return matches.length === 1 ? { status: "resolved", post: { ...matches[0] } }
+    : { status: matches.length ? "ambiguous" : "unresolved" };
+}
+
 /** Reverse lookup uses the same resolver, so path and id yield the same child link. */
 export function childThreadsOfPost(
   parent: ResolvedThreadParent,
