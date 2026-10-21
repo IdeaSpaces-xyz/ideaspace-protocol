@@ -39,6 +39,18 @@
       "expected": { "linearized_ids": ["msg_root", "msg_retract"], "markValues": ["claimed", "done"], "markIds": ["msg_repeat", "msg_done"], "childIds": ["msg_old", "msg_repeat", "msg_done", "msg_retract"] }
     },
     {
+      "id": "malformed-mark-visible-anonymous-distinct",
+      "operation": "reconstruct_timeline",
+      "covers": ["malformed_mark_visible", "anonymous_marks_distinct"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_root\n---\nStart" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_bad\nkind: mark\nin_reply_to: msg_root\n---\nMissing mark value" },
+        { "path": "_threads/a/03.md", "content": "---\nid: msg_anon1\nkind: mark\nmark: '+1'\nin_reply_to: msg_root\n---\nFirst anonymous" },
+        { "path": "_threads/a/04.md", "content": "---\nid: msg_anon2\nkind: mark\nmark: '+1'\nin_reply_to: msg_root\n---\nSecond anonymous" }
+      ] },
+      "expected": { "linearized_ids": ["msg_root", "msg_bad"], "childIds": ["msg_bad", "msg_anon1", "msg_anon2"], "markIds": ["msg_anon1", "msg_anon2"], "markValues": ["+1", "+1"], "warningPost": "msg_bad", "warning": { "field": "mark", "warning": "missing_mark" } }
+    },
+    {
       "id": "opening-attachment-wins-over-legacy",
       "operation": "inspect_posts",
       "covers": ["opening_attachment"],

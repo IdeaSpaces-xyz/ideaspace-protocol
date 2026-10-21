@@ -464,7 +464,7 @@ export function inspectThreadPosts(
   sources: ThreadPostSource[],
   legacyAgreement?: ThreadAttachmentParseResult,
 ): ThreadPostInspection {
-  const sorted = [...sources].sort((a, b) => a.path.localeCompare(b.path));
+  const sorted = [...sources].sort((a, b) => compareOrdinal(a.path, b.path));
   const posts: ThreadPost[] = [];
   const unreadable: ThreadPostInspection["unreadable"] = [];
   const warnings: ThreadPostInspection["warnings"] = [];
@@ -498,6 +498,16 @@ export function inspectThreadPosts(
   };
 }
 
+/** Portable code-unit order; never depend on a caller's locale for opening-post selection. */
+function compareOrdinal(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function foldableMark(post: ThreadPost): boolean {
+  return post.kind === "mark" && post.inReplyTo.length === 1 &&
+    typeof post.mark === "string" && post.mark.trim().length > 0;
+}
+
 /** Reconstructed thread DAG node. */
 export interface ThreadNode {
   post: ThreadPost;
@@ -521,20 +531,28 @@ export interface ThreadTimeline {
  * Reconstruct a thread DAG and linearized timeline from an unordered list of posts.
  *
  * Handles out-of-order posts, multi-parent joins (merges), corrections, and closures.
- * Marks (kind: "mark") are folded onto their target post and excluded from the main timeline.
- * Secondary ordering uses post path/filename or id for stable deterministic output.
+ * Valid marks are folded onto their target and excluded from the main timeline.
+ * Malformed marks remain visible in the timeline with their field warnings.
+ * No caller-owned post is mutated. Secondary order is portable code-unit order.
  */
 export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
   const postsById = new Map<string, ThreadPost>();
   const childrenByParentId = new Map<string, ThreadPost[]>();
 
-  for (const post of posts) {
+  // Copy input posts: folding must not attach marks to caller-owned objects, and
+  // repeated reconstruction must not carry stale marks from a previous result.
+  const projected = posts.map((post) => {
+    const copy = { ...post };
+    delete copy.marks;
+    return copy;
+  });
+  for (const post of projected) {
     postsById.set(post.id, post);
   }
 
   // Identify superseded post ids (retractions/corrections)
   const superseded = new Set<string>();
-  for (const post of posts) {
+  for (const post of projected) {
     if (post.kind === "correction" && post.supersedes) {
       superseded.add(post.supersedes);
     }
@@ -542,14 +560,20 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
 
   // Fold marks onto target posts: collect (author, mark), drop superseded, dedup per author
   const targetMarks = new Map<string, Map<string, ThreadMark>>();
-  const markPosts = posts.filter((p) => p.kind === "mark");
-  const nonMarkPosts = posts.filter((p) => p.kind !== "mark");
+  const isFoldable = (post: ThreadPost) => foldableMark(post) && postsById.has(post.inReplyTo[0]);
+  for (const post of projected) {
+    if (foldableMark(post) && !postsById.has(post.inReplyTo[0])) {
+      post.warnings = [...(post.warnings ?? []), { field: "in_reply_to", warning: "mark_target_missing" }];
+    }
+  }
+  const markPosts = projected.filter(isFoldable);
+  const nonMarkPosts = projected.filter((p) => !isFoldable(p));
 
   const sortedMarkPosts = [...markPosts].sort((a, b) => {
     if (a.path && b.path && a.path !== b.path) {
-      return a.path.localeCompare(b.path);
+      return compareOrdinal(a.path, b.path);
     }
-    return a.id.localeCompare(b.id);
+    return compareOrdinal(a.id, b.id);
   });
 
   for (const markPost of sortedMarkPosts) {
@@ -561,7 +585,8 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
     const author =
       (typeof markPost.frontmatter.author === "string" ? markPost.frontmatter.author : "") ||
       (typeof markPost.frontmatter.actor_ref === "string" ? markPost.frontmatter.actor_ref : "");
-    const authorKey = `${author}\0${markVal}`;
+    // An absent author is not evidence that two marks came from the same author.
+    const authorKey = author ? `${author}\0${markVal}` : `anonymous\0${markPost.id}`;
     let authorMap = targetMarks.get(targetId);
     if (!authorMap) {
       authorMap = new Map();
@@ -587,14 +612,14 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
   // Sort posts deterministically by path / id first as initial baseline
   const sortedInput = [...nonMarkPosts].sort((a, b) => {
     if (a.path && b.path && a.path !== b.path) {
-      return a.path.localeCompare(b.path);
+      return compareOrdinal(a.path, b.path);
     }
-    return a.id.localeCompare(b.id);
+    return compareOrdinal(a.id, b.id);
   });
 
   // Keep marks in the reply DAG even though they are not timeline entries.
   for (const post of [...sortedInput, ...sortedMarkPosts].sort((a, b) =>
-    a.path.localeCompare(b.path) || a.id.localeCompare(b.id))) {
+    compareOrdinal(a.path, b.path) || compareOrdinal(a.id, b.id))) {
     for (const parentId of post.inReplyTo) {
       const existing = childrenByParentId.get(parentId) ?? [];
       existing.push(post);
@@ -631,7 +656,10 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
   const inDegree = new Map<string, number>();
   for (const post of sortedInput) {
     // Only count dependencies that exist within this collection of non-mark posts
-    const validParents = post.inReplyTo.filter((pId) => postsById.has(pId) && postsById.get(pId)?.kind !== "mark");
+    const validParents = post.inReplyTo.filter((pId) => {
+      const parent = postsById.get(pId);
+      return parent && !isFoldable(parent);
+    });
     inDegree.set(post.id, validParents.length);
   }
 
@@ -646,16 +674,16 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
   while (ready.length > 0) {
     ready.sort((a, b) => {
       if (a.path && b.path && a.path !== b.path) {
-        return a.path.localeCompare(b.path);
+        return compareOrdinal(a.path, b.path);
       }
-      return a.id.localeCompare(b.id);
+      return compareOrdinal(a.id, b.id);
     });
     const next = ready.shift()!;
     linearized.push(next);
 
     const children = childrenByParentId.get(next.id) ?? [];
     for (const child of children) {
-      if (child.kind === "mark") continue;
+      if (isFoldable(child)) continue;
       const currentDeg = inDegree.get(child.id) ?? 0;
       if (currentDeg > 0) {
         const newDeg = currentDeg - 1;

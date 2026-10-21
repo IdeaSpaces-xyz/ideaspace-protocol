@@ -214,6 +214,9 @@ describe("metalayer conformance vectors", () => {
       expect(timeline.posts.map((p) => p.id)).toEqual(vector.expected.linearized_ids);
       expect(timeline.childrenByParentId.get("msg_root")?.map((p) => p.id)).toEqual(vector.expected.childIds);
       if (vector.expected.kind) expect(timeline.postsById.get("msg_reply")?.kind).toBe(vector.expected.kind);
+      if (vector.expected.warningPost) {
+        expect(timeline.postsById.get(vector.expected.warningPost)?.warnings).toContainEqual(vector.expected.warning);
+      }
       if (vector.expected.markValues) {
         expect(timeline.postsById.get("msg_root")?.marks?.map((m) => m.mark)).toEqual(vector.expected.markValues);
         expect(timeline.postsById.get("msg_root")?.marks?.map((m) => m.id)).toEqual(vector.expected.markIds);
@@ -438,6 +441,45 @@ Superseded old claim.`;
         },
       ]);
     }
+  });
+
+  it("reconstructs without mutating input or keeping marks from an earlier result", () => {
+    const post = (id: string, fields = "") => {
+      const result = parseThreadPost(`---\nid: ${id}\n${fields}---\nBody`, `_threads/a/${id}.md`);
+      if (result.status !== "valid") throw new Error(`Fixture ${id} is unreadable`);
+      return result.post;
+    };
+    const opening = post("msg_open");
+    const mark = post("msg_mark", "kind: mark\nmark: claimed\nauthor: Agent\nin_reply_to: msg_open\n");
+    const correction = post("msg_fix", "kind: correction\nsupersedes: msg_mark\nin_reply_to: msg_open\n");
+    const before = reconstructThreadTimeline([opening, mark]);
+    expect(before.postsById.get("msg_open")?.marks?.map((m) => m.id)).toEqual(["msg_mark"]);
+    expect(opening.marks).toBeUndefined();
+    expect(mark.marks).toBeUndefined();
+    const after = reconstructThreadTimeline([opening, mark, correction]);
+    expect(after.postsById.get("msg_open")?.marks).toBeUndefined();
+    expect(before.postsById.get("msg_open")?.marks?.map((m) => m.id)).toEqual(["msg_mark"]);
+    expect(reconstructThreadTimeline([opening]).postsById.get("msg_open")?.marks).toBeUndefined();
+  });
+
+  it("keeps malformed and orphaned marks visible, and does not merge anonymous authors", () => {
+    const post = (id: string, fields = "") => {
+      const result = parseThreadPost(`---\nid: ${id}\n${fields}---\nBody`, `_threads/a/${id}.md`);
+      if (result.status !== "valid") throw new Error(`Fixture ${id} is unreadable`);
+      return result.post;
+    };
+    const opening = post("msg_open");
+    const missingValue = post("msg_missing_mark", "kind: mark\nin_reply_to: msg_open\n");
+    const multiTarget = post("msg_multi", "kind: mark\nmark: claimed\nin_reply_to: [msg_open, msg_other]\n");
+    const orphan = post("msg_orphan", "kind: mark\nmark: claimed\nin_reply_to: msg_other\n");
+    const anonymousA = post("msg_anon_a", "kind: mark\nmark: claimed\nin_reply_to: msg_open\n");
+    const anonymousB = post("msg_anon_b", "kind: mark\nmark: claimed\nin_reply_to: msg_open\n");
+    const timeline = reconstructThreadTimeline([opening, missingValue, multiTarget, orphan, anonymousA, anonymousB]);
+    expect(timeline.posts.map((p) => p.id)).toEqual(["msg_open", "msg_missing_mark", "msg_multi", "msg_orphan"]);
+    expect(timeline.postsById.get("msg_missing_mark")?.warnings).toContainEqual({ field: "mark", warning: "missing_mark" });
+    expect(timeline.postsById.get("msg_multi")?.warnings).toContainEqual({ field: "in_reply_to", warning: "mark_requires_one_target" });
+    expect(timeline.postsById.get("msg_orphan")?.warnings).toContainEqual({ field: "in_reply_to", warning: "mark_target_missing" });
+    expect(timeline.postsById.get("msg_open")?.marks?.map((m) => m.id)).toEqual(["msg_anon_a", "msg_anon_b"]);
   });
 
   it("parses typed attached_to on opening post and resolves only post: as tree edges", () => {
