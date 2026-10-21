@@ -151,7 +151,9 @@ caller MAY request `order: older|newer` (default older) and resume after an exac
 with `cursor` or `since`; a missing cursor refuses instead of restarting at page one. A Thread
 folder orders direct post filenames by code unit; an ordinary Content tree keeps directories
 before Markdown files, each in code-unit order. The cursor is local to that directory and order,
-not a Git pin or an authorization grant. `full` includes just the selected surface and those
+not a Git pin or an authorization grant. A working tree may change between pages; when the
+last-shown filename disappears, a reader refuses the stale cursor and the caller restarts from
+page one. A pinned commit holds one stable page sequence. `full` includes just the selected surface and those
 direct handles, not descendant surfaces. This is a depth and handle bound, not a Markdown byte cap.
 Every target fact has `placement: history`; the applicable Agreement/Foundation frame remains
 `contractRole: reference` and contributes no ambient tree or caller authority.

@@ -19,6 +19,15 @@
       "expected": { "status": "resolved", "post": { "path": "_threads/engine/fix.md", "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be" } }
     },
     {
+      "id": "exact-id-wins-over-its-longer-prefix-match",
+      "query": "msg_75cc2f37",
+      "posts": [
+        { "path": "_threads/engine/exact.md", "id": "msg_75cc2f37" },
+        { "path": "_threads/engine/longer.md", "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be" }
+      ],
+      "expected": { "status": "resolved", "post": { "path": "_threads/engine/exact.md", "id": "msg_75cc2f37" } }
+    },
+    {
       "id": "copied-id-ambiguous-across-root-threads",
       "query": "msg_same",
       "posts": [
