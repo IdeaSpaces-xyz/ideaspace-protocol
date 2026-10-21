@@ -5,7 +5,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { assembleContentLook } from "./content-look.js";
+import { assembleContentLook, renderContentLook } from "./content-look.js";
 import { assembleContentFocus, renderContentFocus } from "./awareness.js";
 import type { MapDepth } from "./maps.js";
 
@@ -26,6 +26,11 @@ interface Manifest {
   targets: Target[];
   cap: { target: string; max_children: number; child_names: string[]; omitted_children: number };
   focus: Array<{ target: string; contract_markers: string[]; tree_post?: string }>;
+  warnings: {
+    folder: string;
+    posts: Array<{ file: string; content: string }>;
+    expected: Array<{ post: string; field: string; warning: string }>;
+  };
   opaque: string[];
 }
 const here = dirname(fileURLToPath(import.meta.url));
@@ -104,6 +109,27 @@ describe("Thread and agent-context reader conformance", () => {
     expect(result.target.surface).toBe(manifest.targets[0]?.surface);
     expect(JSON.stringify(result.target)).not.toContain("First body.");
     expect(JSON.stringify(result.target)).not.toContain("Next body.");
+  });
+
+  it("exposes post-and-field warnings in Thread look without hiding siblings", async () => {
+    const { warnings } = manifest;
+    const folder = join(root, warnings.folder);
+    await fs.mkdir(folder, { recursive: true });
+    for (const post of warnings.posts) await fs.writeFile(join(folder, post.file), post.content);
+    const looked = await assembleContentLook({ position: folder, depth: "children" });
+    expect(looked?.status).toBe("ok");
+    if (!looked || looked.status !== "ok") return;
+    expect(looked.target.children).toHaveLength(2);
+    expect(looked.target.warnings).toEqual(warnings.expected);
+    const rendered = renderContentLook(looked);
+    expect(rendered).toContain("Warnings:");
+    for (const warning of warnings.expected) {
+      expect(rendered).toContain(`${warning.post}: ${warning.field}: ${warning.warning}`);
+    }
+    const postLook = await assembleContentLook({ position: join(folder, warnings.posts[1].file), depth: "summary" });
+    expect(postLook?.status).toBe("ok");
+    if (!postLook || postLook.status !== "ok") return;
+    expect(postLook.target.warnings).toEqual([warnings.expected[1]]);
   });
 
   for (const vector of manifest.focus) {

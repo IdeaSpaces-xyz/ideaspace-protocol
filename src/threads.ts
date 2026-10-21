@@ -103,7 +103,7 @@ export type ThreadPostParseResult =
   | { status: "valid"; post: ThreadPost }
   | { status: "invalid"; issues: string[] };
 
-/** A child Thread's parent link, authored on its opening post or legacy Agreement. */
+/** A child Thread's open typed attachment. `raw` preserves the authored value when parsed. */
 export interface ThreadAttachment {
   kind: string;
   value: string;
@@ -141,23 +141,6 @@ export function parseThreadAttachment(value: unknown): ThreadAttachment | null {
 function isPostAttachmentTarget(value: string): boolean {
   return /^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value) ||
     (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(value) && !value.endsWith("/README.md"));
-}
-
-/** Read the relation from a Thread's opening post frontmatter. */
-export function parseThreadOpeningPostAttachment(
-  post: ThreadPost | string,
-): ThreadAttachmentParseResult {
-  let fm: Record<string, unknown> | null | undefined;
-  if (typeof post === "string") {
-    if (!/^---\r?\n/.test(post)) return { status: "absent" };
-    fm = parseFrontmatter(post);
-  } else {
-    fm = post.frontmatter;
-  }
-  if (!fm) return { status: "invalid", issue: "invalid_frontmatter" };
-  if (!("attached_to" in fm)) return { status: "absent" };
-  const attachment = parseThreadAttachment(fm.attached_to);
-  return attachment ? { status: "valid", attachment } : { status: "invalid", issue: "invalid_attached_to" };
 }
 
 /** Read the relation only from a Thread Agreement; ordinary Notes keep subject semantics. */
@@ -217,9 +200,7 @@ export function resolveThreadParent(
     for (const post of root.posts) {
       // Snapshots contain canonical positions, not stripped worktree tree paths.
       if (parseThreadAttachment(post.path)?.kind !== "path") continue;
-      const isIdMatch = targetVal.startsWith("msg_") ? post.id === targetVal : false;
-      const isPathMatch = post.path === targetVal;
-      if (isIdMatch || isPathMatch) {
+      if (post.id === targetVal || post.path === targetVal) {
         matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
       }
     }
@@ -482,9 +463,10 @@ export function inspectThreadPosts(
     warnings.push({ post: "_agent/agreement.md", field: "attached_to", warning: legacyAgreement.warning });
   }
   const opening = sorted[0];
-  const openingUnreadable = !opening || unreadable.some((entry) => entry.path === opening.path);
+  // An empty Thread may still be starting: there is no broken opening to repair.
+  const openingUnreadable = Boolean(opening && unreadable.some((entry) => entry.path === opening.path));
   const firstPost = posts.find((post) => post.path === opening?.path);
-  const parent = openingUnreadable ? "unknown" :
+  const parent = !opening ? null : openingUnreadable ? "unknown" :
     firstPost?.attachedTo ?? (legacyAgreement?.status === "valid" ? legacyAgreement.attachment : null);
   const closed = posts.some((post) => post.kind === "closure") ? true :
     unreadable.length ? "unknown" : false;
@@ -560,9 +542,10 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
 
   // Fold marks onto target posts: collect (author, mark), drop superseded, dedup per author
   const targetMarks = new Map<string, Map<string, ThreadMark>>();
-  const isFoldable = (post: ThreadPost) => foldableMark(post) && postsById.has(post.inReplyTo[0]);
+  const isFoldable = (post: ThreadPost) => foldableMark(post) &&
+    postsById.get(post.inReplyTo[0])?.kind !== "mark" && postsById.has(post.inReplyTo[0]);
   for (const post of projected) {
-    if (foldableMark(post) && !postsById.has(post.inReplyTo[0])) {
+    if (foldableMark(post) && !isFoldable(post)) {
       post.warnings = [...(post.warnings ?? []), { field: "in_reply_to", warning: "mark_target_missing" }];
     }
   }

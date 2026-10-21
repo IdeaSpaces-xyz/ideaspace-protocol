@@ -2,11 +2,22 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ideaspaces.xyz/schema/thread-agreement.schema.json",
   "title": "Ideaspace Thread Agreement frontmatter",
-  "description": "Optional frontmatter on _threads/<thread>/_agent/agreement.md only. Validate the parsed YAML object against this schema, not the ordinary Note frontmatter schema. A plain Markdown Agreement has no declared parent; malformed YAML is invalid before schema validation. Other Agreement fields remain extensible. PROVISIONAL, v0.28.0.",
+  "description": "Optional legacy frontmatter on _threads/<thread>/_agent/agreement.md only. For new authoring, validate a parsed YAML object against this schema, not the ordinary Note schema. A reader tolerates an old malformed attached_to, drops that field and reports invalid_attached_to instead of rejecting the Agreement. A plain Markdown Agreement has no declared parent; malformed YAML is diagnosed before schema validation. PROVISIONAL, v0.28.0.",
   "type": "object",
   "properties": {
     "attached_to": {
-      "description": "Legacy optional parent post link. The opening post wins. A malformed Agreement attached_to is ignored with a warning, not grounds to reject the parent. No pin is carried here; see threads.md for resolution."
+      "description": "Optional legacy parent post: a canonical repository-root-relative post path or opaque msg_ id. Opening post attachment wins when both exist. No pin is carried here; see threads.md for resolution.",
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^msg_[A-Za-z0-9][A-Za-z0-9_-]*$"
+        },
+        {
+          "type": "string",
+          "pattern": "^_threads/[^/.][^/]*/[^/.][^/]*\\.md$",
+          "not": { "pattern": "/README\\.md$" }
+        }
+      ]
     }
   },
   "additionalProperties": true,

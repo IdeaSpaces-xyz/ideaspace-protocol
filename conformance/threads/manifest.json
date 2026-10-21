@@ -33,6 +33,7 @@
     "malformed_mark_visible",
     "anonymous_marks_distinct",
     "opening_attachment",
+    "empty_thread_writable",
     "unreadable_opening",
     "unreadable_closure",
     "readable_closure_settles",

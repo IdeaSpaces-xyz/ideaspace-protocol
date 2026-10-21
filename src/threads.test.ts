@@ -57,7 +57,6 @@ function acceptsAttachment(schema: any, frontmatter: Record<string, unknown>): b
   if (!("attached_to" in frontmatter)) return true;
   const value = frontmatter.attached_to;
   const fieldSchema = schema.properties.attached_to;
-  if (!fieldSchema.type && !fieldSchema.oneOf) return true;
   const alternatives = fieldSchema.oneOf ?? [fieldSchema];
   return alternatives.filter((alternative: any) =>
     alternative.type === "string" && typeof value === "string" &&
@@ -75,6 +74,7 @@ describe("Thread Agreement JSON Schema vectors", () => {
     expect(threadAgreementSchema.type).toBe("object");
     expect(threadAgreementSchema.additionalProperties).toBe(true);
     expect(threadAgreementSchema.required).toBeUndefined();
+    expect(threadAgreementSchema.properties.attached_to.oneOf).toHaveLength(2);
     expect(noteSchema.properties.attached_to.pattern).toBe("^[a-z][a-z0-9_]*:.+$");
   });
 
@@ -212,14 +212,14 @@ describe("metalayer conformance vectors", () => {
       });
       const timeline = reconstructThreadTimeline(posts);
       expect(timeline.posts.map((p) => p.id)).toEqual(vector.expected.linearized_ids);
-      expect(timeline.childrenByParentId.get("msg_root")?.map((p) => p.id)).toEqual(vector.expected.childIds);
-      if (vector.expected.kind) expect(timeline.postsById.get("msg_reply")?.kind).toBe(vector.expected.kind);
+      expect(timeline.childrenByParentId.get(vector.expected.childOf)?.map((p) => p.id)).toEqual(vector.expected.childIds);
+      if (vector.expected.kind) expect(timeline.postsById.get(vector.expected.kindPost)?.kind).toBe(vector.expected.kind);
       if (vector.expected.warningPost) {
         expect(timeline.postsById.get(vector.expected.warningPost)?.warnings).toContainEqual(vector.expected.warning);
       }
       if (vector.expected.markValues) {
-        expect(timeline.postsById.get("msg_root")?.marks?.map((m) => m.mark)).toEqual(vector.expected.markValues);
-        expect(timeline.postsById.get("msg_root")?.marks?.map((m) => m.id)).toEqual(vector.expected.markIds);
+        expect(timeline.postsById.get(vector.expected.markTarget)?.marks?.map((m) => m.mark)).toEqual(vector.expected.markValues);
+        expect(timeline.postsById.get(vector.expected.markTarget)?.marks?.map((m) => m.id)).toEqual(vector.expected.markIds);
       }
     } else if (vector.operation === "resolve_parent") {
       const attachment = parseThreadAttachment(vector.input.attached_to);
@@ -474,12 +474,23 @@ Superseded old claim.`;
     const orphan = post("msg_orphan", "kind: mark\nmark: claimed\nin_reply_to: msg_other\n");
     const anonymousA = post("msg_anon_a", "kind: mark\nmark: claimed\nin_reply_to: msg_open\n");
     const anonymousB = post("msg_anon_b", "kind: mark\nmark: claimed\nin_reply_to: msg_open\n");
-    const timeline = reconstructThreadTimeline([opening, missingValue, multiTarget, orphan, anonymousA, anonymousB]);
-    expect(timeline.posts.map((p) => p.id)).toEqual(["msg_open", "msg_missing_mark", "msg_multi", "msg_orphan"]);
+    const onMark = post("msg_on_mark", "kind: mark\nmark: done\nin_reply_to: msg_anon_a\n");
+    const timeline = reconstructThreadTimeline([opening, missingValue, multiTarget, orphan, anonymousA, anonymousB, onMark]);
+    expect(timeline.posts.map((p) => p.id)).toEqual(["msg_on_mark", "msg_open", "msg_missing_mark", "msg_multi", "msg_orphan"]);
     expect(timeline.postsById.get("msg_missing_mark")?.warnings).toContainEqual({ field: "mark", warning: "missing_mark" });
     expect(timeline.postsById.get("msg_multi")?.warnings).toContainEqual({ field: "in_reply_to", warning: "mark_requires_one_target" });
     expect(timeline.postsById.get("msg_orphan")?.warnings).toContainEqual({ field: "in_reply_to", warning: "mark_target_missing" });
+    expect(timeline.postsById.get("msg_on_mark")?.warnings).toContainEqual({ field: "in_reply_to", warning: "mark_target_missing" });
     expect(timeline.postsById.get("msg_open")?.marks?.map((m) => m.id)).toEqual(["msg_anon_a", "msg_anon_b"]);
+  });
+
+  it("identifies the same opening from filename order as the DAG's conforming root", () => {
+    const open = { path: "_threads/a/01.md", content: "---\nid: msg_open\n---\nStart" };
+    const reply = { path: "_threads/a/02.md", content: "---\nid: msg_reply\nin_reply_to: msg_open\n---\nReply" };
+    const inspected = inspectThreadPosts([reply, open]);
+    expect(inspected.posts[0]?.id).toBe("msg_open");
+    expect(inspected.writable).toBe(true);
+    expect(reconstructThreadTimeline(inspected.posts).roots.map((node) => node.post.id)).toEqual(["msg_open"]);
   });
 
   it("parses typed attached_to on opening post and resolves only post: as tree edges", () => {

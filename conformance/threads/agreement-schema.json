@@ -1,20 +1,20 @@
 {
   "format": "ideaspaces-thread-agreement-schema/v1",
   "schema": "../../schema/thread-agreement.schema.json",
-  "description": "Apply only to parsed leading YAML frontmatter of _threads/<thread>/_agent/agreement.md. No frontmatter block is an absent relation; broken YAML is diagnosed before JSON Schema. The legacy attached_to field is tolerated even when unusable as a parent edge. The Note schema remains separate.",
+  "description": "For new authoring, apply the separate schema to parsed YAML frontmatter of _threads/<thread>/_agent/agreement.md; invalid attached_to values fail schema validation. A tolerant reader drops only the malformed legacy field and reports a warning (parent: false), keeping the Agreement. The Note schema remains separate.",
   "cases": [
     { "id": "absent-field", "frontmatter": { "name": "Child" }, "valid": true },
     { "id": "empty-frontmatter", "frontmatter": {}, "valid": true },
     { "id": "extension-field", "frontmatter": { "other": { "future": true } }, "valid": true },
     { "id": "id-parent", "frontmatter": { "attached_to": "msg_first" }, "valid": true, "parent": true },
     { "id": "path-parent", "frontmatter": { "attached_to": "_threads/parent/first.md" }, "valid": true, "parent": true },
-    { "id": "typed-note-subject", "frontmatter": { "attached_to": "node:thing" }, "valid": true },
-    { "id": "empty-id", "frontmatter": { "attached_to": "msg_" }, "valid": true },
-    { "id": "readme-not-post", "frontmatter": { "attached_to": "_threads/parent/README.md" }, "valid": true },
-    { "id": "hidden-thread", "frontmatter": { "attached_to": "_threads/.hidden/first.md" }, "valid": true },
-    { "id": "traversal", "frontmatter": { "attached_to": "_threads/../first.md" }, "valid": true },
-    { "id": "null-parent", "frontmatter": { "attached_to": null }, "valid": true },
-    { "id": "array-parent", "frontmatter": { "attached_to": ["msg_first"] }, "valid": true }
+    { "id": "typed-note-subject", "frontmatter": { "attached_to": "node:thing" }, "valid": false },
+    { "id": "empty-id", "frontmatter": { "attached_to": "msg_" }, "valid": false },
+    { "id": "readme-not-post", "frontmatter": { "attached_to": "_threads/parent/README.md" }, "valid": false },
+    { "id": "hidden-thread", "frontmatter": { "attached_to": "_threads/.hidden/first.md" }, "valid": false },
+    { "id": "traversal", "frontmatter": { "attached_to": "_threads/../first.md" }, "valid": false },
+    { "id": "null-parent", "frontmatter": { "attached_to": null }, "valid": false },
+    { "id": "array-parent", "frontmatter": { "attached_to": ["msg_first"] }, "valid": false }
   ],
   "note_schema_boundary": [
     { "frontmatter": { "attached_to": "node:thing" }, "valid": true },

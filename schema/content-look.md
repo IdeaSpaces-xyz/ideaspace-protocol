@@ -36,6 +36,8 @@ A successful result has `kind: content-look`, fixed `contractRole: reference`, a
 - `reference` — the applicable Content-focus frame with its ambient tree removed. Agreement/Foundation selection, full-load declarations, skills, exact revisions, diagnostics, and `placement: history` retain Content-focus semantics. Target terms are read, never composed as caller authority.
 - `target` — canonical local path, portable repository-relative or reference-root-relative `position`, target kind, requested depth, exact representation revision, name, requested representation fields, and `placement: history`.
 
+For a Thread post, the target MAY carry `warnings: [{ post, field, warning }]` for malformed optional frontmatter fields or an unreadable post. `post` is its portable position, `field` names the affected frontmatter field (or `frontmatter` for an unreadable post), and `warning` names the diagnostic. At `children` and `full` on a Thread folder the reader also reports warnings discovered while enumerating direct post handles, naming each post; other folder rungs do not scan posts. Warnings never remove readable siblings or mutate the authored source. These returned warnings are part of the semantic target representation and therefore its revision.
+
 `target.member` is the rootless local projection `{ position, depth, disclosure }`. It uses Map member vocabulary but does not fabricate root ordinal `0`. A consumer may wrap it as a portable Map member only after independently proving a clean, pinned, identified root. Invalid, dirty, unborn, ignored, or local-only roots remain useful local projections and MUST NOT emit malformed portable Maps.
 
 The target revision is SHA-256 over exactly the semantic target representation returned at that rung, excluding machine-local path, prompt placement, and the requested depth field. A child cap changes the returned child list and `omittedChildren`, so it deliberately changes the representation revision. A Note's equivalent `surface` and `full` reads have the same revision.
@@ -48,4 +50,4 @@ Standard `_threads/` targets (Thread folder, Thread README, Thread post) and exa
 
 ## Rendering
 
-The canonical renderer emits the reference frame first and one `Look:` block second. It preserves exact target ordering, renders only requested target fields, and contains no caller contract or authority mutation. CLI, agent tools, and plugins use this renderer rather than reformatting the manifest independently.
+The canonical renderer emits the reference frame first and one `Look:` block second. For a target with warnings, it emits a `Warnings:` block after the target name/summary and before Surface/Children, one line per warning as `  <post>: <field>: <warning>`. It preserves exact target ordering, renders only requested target fields, and contains no caller contract or authority mutation. CLI, agent tools, and plugins use this renderer rather than reformatting the manifest independently.

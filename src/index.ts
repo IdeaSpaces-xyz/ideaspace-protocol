@@ -260,7 +260,6 @@ export {
   isThreadPosition,
   resolveThreadGitPath,
   parseThreadAttachment,
-  parseThreadOpeningPostAttachment,
   parseThreadAgreementAttachment,
   resolveThreadParent,
   childThreadsOfPost,
