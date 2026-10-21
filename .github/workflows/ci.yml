@@ -32,6 +32,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Test fail-closed SLC verdict gate
+        run: node --test .github/scripts/slc-review-gate.node.mjs
+
       - name: Build and verify the publishable package
         run: npm run check:package
 

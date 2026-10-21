@@ -24,12 +24,29 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Mark review start
+        id: start
+        run: echo "time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
       - name: Run SLC Review
+        id: review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             Review this pull request using our SLC (Simple, Lovable, Complete) principles for the Ideaspace Protocol.
+            Read the PR body and source diff with Read, Grep and Glob. Post one review comment
+            for this exact head: ${{ github.event.pull_request.head.sha }}.
+            Include these two lines verbatim in the posted comment:
+            SLC-Review-Head: ${{ github.event.pull_request.head.sha }}
+            Recommendation: Approve | Request Changes | Comment
+            Replace the alternatives with exactly one recommendation and name concrete blockers.
+            Write the comment body to ${{ runner.temp }}/slc-review-body.md with Write,
+            then post it with gh pr comment ${{ github.event.pull_request.number }}
+            --body-file ${{ runner.temp }}/slc-review-body.md. The Write permission
+            is only for that temp file, never source. If Write is denied, post a short
+            verdict with gh pr comment --body and the same two lines. A review not
+            posted as a PR comment is not a completed review.
 
             ## Context
             - This repo (`@ideaspaces/protocol`): the platform-neutral SHAPE of a knowledge repo — an inhabitation contract, not a data format. It holds: `SPEC.md` + `SKILLS.md` (normative), `schema/` (machine-readable: frontmatter JSON Schema + the `_agent/` contract), `src/` (the reference TypeScript implementation), and `conformance/` (reference space + validator).
@@ -91,4 +108,16 @@ jobs:
 
             Use `gh pr comment` to post your review.
 
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: '--allowed-tools "Read,Grep,Glob,Write(${{ runner.temp }}/slc-review-body.md),Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+
+      - name: Verify a posted verdict and report denials
+        if: always() && steps.start.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_HEAD: ${{ github.event.pull_request.head.sha }}
+          REVIEW_STARTED: ${{ steps.start.outputs.time }}
+          EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments?per_page=100" > "$RUNNER_TEMP/slc-comments.json"
+          node .github/scripts/slc-review-gate.mjs "$RUNNER_TEMP/slc-comments.json" "$EXECUTION_FILE" "$REVIEW_HEAD" "$REVIEW_STARTED"

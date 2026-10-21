@@ -24,3 +24,9 @@ the TypeScript consumers. The next work belongs at the boundaries that consume t
   remove it in a minor release.
 - **Attach-type namespace.** Extend the open `attached_to` vocabulary only when real platform behavior
   earns it.
+- **Independent Thread metalayer reader (0.28.0).** No non-TypeScript implementation has yet proved
+  that `conformance/threads/metalayer.json` alone is sufficient to reproduce `inspectThreadPosts`
+  (including unreadable openings and closure uncertainty) and `kind: mark` folding, retractions,
+  anonymous marks, and ordering. Build one independent reader against the published vectors;
+  if it cannot choose the same result without reading TypeScript, tighten the language-neutral
+  vectors and `schema/threads.md` before calling that behavior independently conformant.
