@@ -61,5 +61,16 @@
     { "target": "_threads/decision/2026-10-02T10-00-00Z-direction.md", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] },
     { "target": "_threads/decision/_agent/agreement.md", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] }
   ],
+  "warnings": {
+    "folder": "_threads/warning-fixture",
+    "posts": [
+      { "file": "01-opening.md", "content": "---\nid: [\n---\nUnreadable opening" },
+      { "file": "02-later.md", "content": "---\nid: msg_later\nkind: future_kind\nmap: [broken]\n---\nReadable sibling" }
+    ],
+    "expected": [
+      { "post": "_threads/warning-fixture/01-opening.md", "field": "frontmatter", "warning": "missing_or_malformed_frontmatter" },
+      { "post": "_threads/warning-fixture/02-later.md", "field": "map", "warning": "invalid_map_type" }
+    ]
+  },
   "opaque": ["_assets/opaque.md"]
 }

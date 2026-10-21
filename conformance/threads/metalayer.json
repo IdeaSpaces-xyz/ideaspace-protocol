@@ -1,0 +1,193 @@
+{
+  "format": "ideaspaces-thread-metalayer/v1",
+  "vectors": [
+    {
+      "id": "drop-bad-map-member-keep-good",
+      "operation": "parse_post",
+      "covers": ["field_tolerance", "map_member_tolerance"],
+      "input": { "path": "_threads/a/02.md", "content": "---\nid: msg_two\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n  members:\n    - root: 0\n      position: notes/good.md\n    - root: 0\n      position: _assets/invalid.md\n---\nBody\n" },
+      "expected": { "status": "valid", "id": "msg_two", "mapMemberPositions": ["notes/good.md"], "warnings": [{ "field": "map.members[1].position", "warning": "invalid_position" }] }
+    },
+    {
+      "id": "drop-bad-fields-keep-post",
+      "operation": "parse_post",
+      "covers": ["field_tolerance"],
+      "input": { "path": "_threads/a/03.md", "content": "---\nid: msg_three\nreferences: no\nsupersedes: 123\nattached_to: [bad]\n---\nBody\n" },
+      "expected": { "status": "valid", "id": "msg_three", "references": [], "warnings": [{ "field": "references", "warning": "invalid_references" }, { "field": "supersedes", "warning": "invalid_supersedes" }, { "field": "attached_to", "warning": "invalid_attached_to" }] }
+    },
+    {
+      "id": "bad-map-root-drops-map-not-post",
+      "operation": "parse_post",
+      "covers": ["map_nonmember_tolerance"],
+      "input": { "path": "_threads/a/02.md", "content": "---\nid: msg_two\nmap:\n  roots: invalid\n  members:\n    - root: 0\n      position: notes/good.md\n---\nBody\n" },
+      "expected": { "status": "valid", "id": "msg_two", "mapDropped": true, "warnings": [{ "field": "map.roots", "warning": "invalid_roots_type" }, { "field": "map.members[0].root", "warning": "invalid_root_index" }] }
+    },
+    {
+      "id": "unknown-kind-kept-in-dag",
+      "operation": "reconstruct_timeline",
+      "covers": ["unknown_kind"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_root\n---\nStart" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_reply\nkind: custom_idea\nin_reply_to: msg_root\n---\nCustom" }
+      ] },
+      "expected": { "linearized_ids": ["msg_root", "msg_reply"], "childOf": "msg_root", "childIds": ["msg_reply"], "kindPost": "msg_reply", "kind": "custom_idea" }
+    },
+    {
+      "id": "fold-deduplicate-and-retract-marks",
+      "operation": "reconstruct_timeline",
+      "covers": ["mark_fold"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_root\n---\nStart" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_old\nkind: mark\nmark: claimed\nauthor: Integrator\nin_reply_to: msg_root\n---\nClaimed" },
+        { "path": "_threads/a/03.md", "content": "---\nid: msg_repeat\nkind: mark\nmark: claimed\nauthor: Integrator\nin_reply_to: msg_root\n---\nAgain" },
+        { "path": "_threads/a/04.md", "content": "---\nid: msg_done\nkind: mark\nmark: done\nauthor: Integrator\nin_reply_to: msg_root\n---\nDone" },
+        { "path": "_threads/a/05.md", "content": "---\nid: msg_retract\nkind: correction\nsupersedes: msg_old\nin_reply_to: msg_root\n---\nRetract" }
+      ] },
+      "expected": { "linearized_ids": ["msg_root", "msg_retract"], "markTarget": "msg_root", "markValues": ["claimed", "done"], "markIds": ["msg_repeat", "msg_done"], "childOf": "msg_root", "childIds": ["msg_old", "msg_repeat", "msg_done", "msg_retract"] }
+    },
+    {
+      "id": "mark-on-superseded-post-stays-with-target",
+      "operation": "reconstruct_timeline",
+      "covers": ["mark_superseded_target"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_target\n---\nTarget" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_mark\nkind: mark\nmark: claimed\nauthor: Agent\nin_reply_to: msg_target\n---\nClaimed" },
+        { "path": "_threads/a/03.md", "content": "---\nid: msg_fix\nkind: correction\nsupersedes: msg_target\nin_reply_to: msg_target\n---\nSuperseded target" }
+      ] },
+      "expected": { "linearized_ids": ["msg_target", "msg_fix"], "markTarget": "msg_target", "markValues": ["claimed"], "markIds": ["msg_mark"], "childOf": "msg_target", "childIds": ["msg_mark", "msg_fix"] }
+    },
+    {
+      "id": "malformed-mark-visible-anonymous-distinct",
+      "operation": "reconstruct_timeline",
+      "covers": ["malformed_mark_visible", "anonymous_marks_distinct"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_root\n---\nStart" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_bad\nkind: mark\nin_reply_to: msg_root\n---\nMissing mark value" },
+        { "path": "_threads/a/03.md", "content": "---\nid: msg_anon1\nkind: mark\nmark: '+1'\nin_reply_to: msg_root\n---\nFirst anonymous" },
+        { "path": "_threads/a/04.md", "content": "---\nid: msg_anon2\nkind: mark\nmark: '+1'\nin_reply_to: msg_root\n---\nSecond anonymous" }
+      ] },
+      "expected": { "linearized_ids": ["msg_root", "msg_bad"], "childOf": "msg_root", "childIds": ["msg_bad", "msg_anon1", "msg_anon2"], "markTarget": "msg_root", "markIds": ["msg_anon1", "msg_anon2"], "markValues": ["+1", "+1"], "warningPost": "msg_bad", "warning": { "field": "mark", "warning": "missing_mark" } }
+    },
+    {
+      "id": "mark-of-mark-remains-visible",
+      "operation": "reconstruct_timeline",
+      "covers": ["mark_of_mark_visible"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_root\n---\nStart" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_mark\nkind: mark\nmark: claimed\nin_reply_to: msg_root\n---\nClaim" },
+        { "path": "_threads/a/03.md", "content": "---\nid: msg_on_mark\nkind: mark\nmark: done\nin_reply_to: msg_mark\n---\nMark of mark" }
+      ] },
+      "expected": { "linearized_ids": ["msg_root", "msg_on_mark"], "markTarget": "msg_root", "markValues": ["claimed"], "markIds": ["msg_mark"], "childOf": "msg_mark", "childIds": ["msg_on_mark"], "warningPost": "msg_on_mark", "warning": { "field": "in_reply_to", "warning": "mark_target_missing" } }
+    },
+    {
+      "id": "opening-attachment-wins-over-legacy",
+      "operation": "inspect_posts",
+      "covers": ["opening_attachment"],
+      "input": { "agreement": "---\nattached_to: msg_legacy\n---\n", "sources": [{ "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: note:@home//notes/topic.md\n---\nNew topic" }] },
+      "expected": { "parent": "note:@home//notes/topic.md", "closed": false, "writable": true }
+    },
+    {
+      "id": "empty-thread-can-create-opening",
+      "operation": "inspect_posts",
+      "covers": ["empty_thread_writable"],
+      "input": { "sources": [] },
+      "expected": { "parent": null, "closed": false, "writable": true, "readableIds": [] }
+    },
+    {
+      "id": "readme-is-not-an-opening-post",
+      "operation": "inspect_posts",
+      "covers": ["direct_post_sources_only"],
+      "input": { "sources": [
+        { "path": "_threads/child/README.md", "content": "---\nid: msg_readme\n---\nCurated lens" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_open\n---\nOpening" }
+      ] },
+      "expected": { "parent": null, "closed": false, "writable": true, "readableIds": ["msg_open"] }
+    },
+    {
+      "id": "unreadable-opening-refuses-writes",
+      "operation": "inspect_posts",
+      "covers": ["unreadable_opening"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: [\n---\nBroken" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_valid\n---\nGood reply" }
+      ] },
+      "expected": { "parent": "unknown", "closed": "unknown", "writable": false, "writeRefusal": "Opening post _threads/child/01.md is unreadable; writes refused. Any Thread writer may repair it with a commit explaining why.", "readableIds": ["msg_valid"] }
+    },
+    {
+      "id": "unreadable-closure-warns-but-allows-writes",
+      "operation": "inspect_posts",
+      "covers": ["unreadable_closure"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nStart" },
+        { "path": "_threads/child/02.md", "content": "---\nid: [\nkind: closure\n---\nBroken" }
+      ] },
+      "expected": { "parent": null, "closed": "unknown", "writable": true, "readableIds": ["msg_open"], "unreadablePaths": ["_threads/child/02.md"] }
+    },
+    {
+      "id": "readable-closure-settles-unreadable-post",
+      "operation": "inspect_posts",
+      "covers": ["readable_closure_settles"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nStart" },
+        { "path": "_threads/child/02.md", "content": "---\nid: [\n---\nBroken" },
+        { "path": "_threads/child/03.md", "content": "---\nid: msg_close\nkind: closure\n---\nClosed" }
+      ] },
+      "expected": { "parent": null, "closed": true, "writable": true, "readableIds": ["msg_open", "msg_close"], "unreadablePaths": ["_threads/child/02.md"] }
+    },
+    {
+      "id": "orphaned-mark-warns-in-inspection",
+      "operation": "inspect_posts",
+      "covers": ["mark_target_warning"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nOpening" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_mark\nkind: mark\nmark: done\nin_reply_to: msg_missing\n---\nOrphaned mark" }
+      ] },
+      "expected": { "parent": null, "closed": false, "writable": true, "readableIds": ["msg_open", "msg_mark"], "warnings": [{ "post": "_threads/child/02.md", "field": "in_reply_to", "warning": "mark_target_missing" }] }
+    },
+    {
+      "id": "path-target-ignores-colliding-post-id",
+      "operation": "resolve_parent",
+      "covers": ["parent_form_not_guess"],
+      "input": { "attached_to": "post:_threads/parent/02.md", "roots": [{ "root": "home", "pin": "aaaa", "posts": [
+        { "path": "_threads/parent/01.md", "id": "_threads/parent/02.md" },
+        { "path": "_threads/parent/02.md", "id": "msg_two" }
+      ] }] },
+      "expected": { "status": "resolved", "parent": { "root": "home", "pin": "aaaa", "path": "_threads/parent/02.md", "id": "msg_two" } }
+    },
+    {
+      "id": "mark-target-unreadable-warns-without-lockout",
+      "operation": "inspect_posts",
+      "covers": ["mark_unreadable_target"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nOpening" },
+        { "path": "_threads/child/02.md", "content": "---\nid: [\n---\nUnreadable target" },
+        { "path": "_threads/child/03.md", "content": "---\nid: msg_mark\nkind: mark\nmark: done\nin_reply_to: msg_missing\n---\nOrphaned mark" }
+      ] },
+      "expected": { "parent": null, "closed": "unknown", "writable": true, "readableIds": ["msg_open", "msg_mark"], "unreadablePaths": ["_threads/child/02.md"], "warnings": [
+        { "post": "_threads/child/02.md", "field": "frontmatter", "warning": "missing_or_malformed_frontmatter" },
+        { "post": "_threads/child/03.md", "field": "in_reply_to", "warning": "mark_target_missing" }
+      ] }
+    },
+    {
+      "id": "typed-id-is-not-a-bare-alias",
+      "operation": "resolve_parent",
+      "covers": ["typed_alias_not_edge"],
+      "input": { "attached_to": "id:msg_parent", "roots": [{ "root": "home", "pin": "aaaa", "posts": [{ "path": "_threads/parent/01.md", "id": "msg_parent" }] }] },
+      "expected": { "status": "none", "attachmentKind": "typed:id" }
+    },
+    {
+      "id": "typed-path-is-not-a-bare-alias",
+      "operation": "resolve_parent",
+      "covers": ["typed_alias_not_edge"],
+      "input": { "attached_to": "path:../../x", "roots": [{ "root": "home", "pin": "aaaa", "posts": [{ "path": "_threads/parent/01.md", "id": "msg_parent" }] }] },
+      "expected": { "status": "none", "attachmentKind": "typed:path" }
+    },
+    {
+      "id": "non-post-attachment-has-no-parent-edge",
+      "operation": "resolve_parent",
+      "covers": ["non_post_no_edge"],
+      "input": { "attached_to": "note:@home//notes/topic.md", "roots": [{ "root": "home", "pin": "aaaa", "posts": [{ "path": "_threads/parent/01.md", "id": "msg_parent" }] }] },
+      "expected": { "status": "none" }
+    }
+  ]
+}

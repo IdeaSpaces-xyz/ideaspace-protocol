@@ -330,6 +330,25 @@ describe("Content look", () => {
     expect(postFull.target.surface).toBe(postSurface.target.surface);
   });
 
+  it("keeps a Thread folder readable and names malformed posts and fields", async () => {
+    const root = await agreementRoot();
+    const threadDir = join(root, "_threads", "fixture");
+    const opening = join(threadDir, "01-opening.md");
+    const later = join(threadDir, "02-later.md");
+    await write(join(threadDir, "README.md"), "# Fixture\n");
+    await write(opening, "---\nid: [\n---\nUnreadable opening");
+    await write(later, "---\nid: msg_later\nmap: [broken]\nkind: future_kind\n---\nReadable later");
+    const folder = ok(await assembleContentLook({ position: threadDir, depth: "full" }));
+    expect(folder.target.children?.length).toBe(2);
+    expect(folder.target.warnings).toEqual([
+      { post: "_threads/fixture/01-opening.md", field: "frontmatter", warning: "missing_or_malformed_frontmatter" },
+      { post: "_threads/fixture/02-later.md", field: "map", warning: "invalid_map_type" },
+    ]);
+    const post = ok(await assembleContentLook({ position: later, depth: "summary" }));
+    expect(post.target.name).toBe("msg_later");
+    expect(post.target.warnings).toEqual([{ post: "_threads/fixture/02-later.md", field: "map", warning: "invalid_map_type" }]);
+  });
+
   it("rejects non-Markdown files and invalid limits", async () => {
     const root = await agreementRoot();
     await write(join(root, "data.txt"), "not Content");

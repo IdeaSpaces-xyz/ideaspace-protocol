@@ -7,6 +7,7 @@ import {
   THREADS_DIRECTORY,
   THREAD_KINDS,
   parseThreadPost,
+  inspectThreadPosts,
   reconstructThreadTimeline,
   resolveThreadGitPath,
   isThreadPosition,
@@ -37,6 +38,9 @@ const manifest = JSON.parse(
 const attachments = JSON.parse(readFileSync(
   new URL("../conformance/threads/attachments.json", import.meta.url), "utf-8",
 ));
+const metalayer = JSON.parse(readFileSync(
+  new URL("../conformance/threads/metalayer.json", import.meta.url), "utf-8",
+));
 const agreementSchemaVectors = JSON.parse(readFileSync(
   new URL("../conformance/threads/agreement-schema.json", import.meta.url), "utf-8",
 ));
@@ -52,7 +56,8 @@ const noteSchema = JSON.parse(readFileSync(
 function acceptsAttachment(schema: any, frontmatter: Record<string, unknown>): boolean {
   if (!("attached_to" in frontmatter)) return true;
   const value = frontmatter.attached_to;
-  const alternatives = schema.properties.attached_to.oneOf ?? [schema.properties.attached_to];
+  const fieldSchema = schema.properties.attached_to;
+  const alternatives = fieldSchema.oneOf ?? [fieldSchema];
   return alternatives.filter((alternative: any) =>
     alternative.type === "string" && typeof value === "string" &&
     new RegExp(alternative.pattern).test(value) &&
@@ -69,13 +74,19 @@ describe("Thread Agreement JSON Schema vectors", () => {
     expect(threadAgreementSchema.type).toBe("object");
     expect(threadAgreementSchema.additionalProperties).toBe(true);
     expect(threadAgreementSchema.required).toBeUndefined();
+    expect(threadAgreementSchema.properties.attached_to.oneOf).toHaveLength(2);
     expect(noteSchema.properties.attached_to.pattern).toBe("^[a-z][a-z0-9_]*:.+$");
   });
 
   it.each(agreementSchemaVectors.cases)("checks $id", (vector: any) => {
     expect(acceptsAttachment(threadAgreementSchema, vector.frontmatter)).toBe(vector.valid);
     if ("attached_to" in vector.frontmatter) {
-      expect(parseThreadAttachment(vector.frontmatter.attached_to) !== null).toBe(vector.valid);
+      const parsedAgreement = parseThreadAgreementAttachment(
+        `---\nattached_to: ${JSON.stringify(vector.frontmatter.attached_to)}\n---\n`,
+        "_threads/t/_agent/agreement.md",
+      );
+      expect(parsedAgreement.status).toBe(vector.parent ? "valid" : "absent");
+      if (!vector.parent) expect(parsedAgreement).toEqual({ status: "absent", warning: "invalid_attached_to" });
     }
   });
 
@@ -90,8 +101,18 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
-    const covered = new Set([...manifest.vectors, ...attachments.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
+  });
+
+  it.each(attachments.opening_alias_cases)("opening link $attached_to", (vector: any) => {
+    const attachment = parseThreadAttachment(vector.attached_to);
+    expect(attachment).toEqual({ kind: vector.kind, value: vector.value, raw: vector.attached_to });
+    if (!attachment) return;
+    const resolved = resolveThreadParent(attachment, [{
+      root: "home", pin: "aaaa", posts: [{ path: "_threads/parent/first.md", id: "msg_parent" }],
+    }]);
+    expect(resolved.status).toBe(vector.resolution);
   });
 
   it.each(attachments.negative_cases)("rejects $id", (vector: any) => {
@@ -140,7 +161,7 @@ describe("portable Thread attachments", () => {
 
   it("does not interpret a Note's typed subject as a Thread parent", () => {
     expect(parseThreadAgreementAttachment("---\nattached_to: node:thing\n---\n", "_threads/child/_agent/agreement.md"))
-      .toEqual({ status: "invalid", issue: "invalid_attached_to" });
+      .toEqual({ status: "absent", warning: "invalid_attached_to" });
     expect(parseFrontmatter("---\nattached_to: node:thing\n---\n")?.attached_to).toBe("node:thing");
     for (const value of ["_threads/../parent/post.md", "_threads/x/README.md", "_threads/.hidden/post.md", "msg_", "_threads/x/./post.md"]) {
       expect(parseThreadAttachment(value)).toBeNull();
@@ -151,7 +172,7 @@ describe("portable Thread attachments", () => {
       .toEqual({ status: "absent" });
     for (const value of ["[one, two]", "''", "msg_"]) {
       expect(parseThreadAgreementAttachment(`---\nattached_to: ${value}\n---\n`, "_threads/child/_agent/agreement.md"))
-        .toEqual({ status: "invalid", issue: "invalid_attached_to" });
+        .toEqual({ status: "absent", warning: "invalid_attached_to" });
     }
   });
 
@@ -172,10 +193,81 @@ describe("portable Thread attachments", () => {
   });
 });
 
+describe("metalayer conformance vectors", () => {
+  it("publishes independent field, mark, parent, and unreadable cases", () => {
+    expect(metalayer.format).toBe("ideaspaces-thread-metalayer/v1");
+    expect(metalayer.vectors.length).toBeGreaterThanOrEqual(7);
+  });
+
+  it.each(metalayer.vectors)("executes $id", (vector: any) => {
+    if (vector.operation === "parse_post") {
+      const parsed = parseThreadPost(vector.input.content, vector.input.path);
+      expect(parsed.status).toBe(vector.expected.status);
+      if (parsed.status !== "valid") throw new Error("Expected readable post");
+      expect(parsed.post.id).toBe(vector.expected.id);
+      expect(parsed.post.warnings).toEqual(vector.expected.warnings);
+      if (vector.expected.references) expect(parsed.post.references).toEqual(vector.expected.references);
+      if (vector.expected.mapDropped) expect(parsed.post.mapResult).toBeUndefined();
+      if (vector.expected.mapMemberPositions) {
+        expect(parsed.post.mapResult?.status).toBe("valid");
+        if (parsed.post.mapResult?.status === "valid") {
+          expect(parsed.post.mapResult.map.members.filter((m) => "position" in m).map((m) => m.position))
+            .toEqual(vector.expected.mapMemberPositions);
+        }
+      }
+    } else if (vector.operation === "reconstruct_timeline") {
+      const posts = vector.input.posts.map(({ content, path }: any) => {
+        const parsed = parseThreadPost(content, path);
+        if (parsed.status !== "valid") throw new Error(`Invalid fixture ${path}`);
+        return parsed.post;
+      });
+      const timeline = reconstructThreadTimeline(posts);
+      expect(timeline.posts.map((p) => p.id)).toEqual(vector.expected.linearized_ids);
+      expect(timeline.childrenByParentId.get(vector.expected.childOf)?.map((p) => p.id)).toEqual(vector.expected.childIds);
+      if (vector.expected.kind) expect(timeline.postsById.get(vector.expected.kindPost)?.kind).toBe(vector.expected.kind);
+      if (vector.expected.warningPost) {
+        expect(timeline.postsById.get(vector.expected.warningPost)?.warnings).toContainEqual(vector.expected.warning);
+      }
+      if (vector.expected.markValues) {
+        expect(timeline.postsById.get(vector.expected.markTarget)?.marks?.map((m) => m.mark)).toEqual(vector.expected.markValues);
+        expect(timeline.postsById.get(vector.expected.markTarget)?.marks?.map((m) => m.id)).toEqual(vector.expected.markIds);
+      }
+    } else if (vector.operation === "resolve_parent") {
+      const attachment = parseThreadAttachment(vector.input.attached_to);
+      expect(attachment).not.toBeNull();
+      if (!attachment) throw new Error("Expected typed attachment");
+      const resolved = resolveThreadParent(attachment, vector.input.roots);
+      if (vector.expected.attachmentKind) expect(attachment.kind).toBe(vector.expected.attachmentKind);
+      if (vector.expected.status === "resolved") {
+        expect(resolved).toEqual({ status: "resolved", parent: vector.expected.parent });
+      } else {
+        expect(resolved).toEqual({ status: vector.expected.status, attachment });
+      }
+    } else if (vector.operation === "inspect_posts") {
+      const legacy = vector.input.agreement
+        ? parseThreadAgreementAttachment(vector.input.agreement, "_threads/child/_agent/agreement.md") : undefined;
+      const inspection = inspectThreadPosts(vector.input.sources, legacy);
+      expect(inspection.parent === "unknown" || inspection.parent === null ? inspection.parent : inspection.parent.raw)
+        .toBe(vector.expected.parent);
+      expect(inspection.closed).toBe(vector.expected.closed);
+      expect(inspection.writable).toBe(vector.expected.writable);
+      expect(inspection.writeRefusal).toBe(vector.expected.writeRefusal);
+      if (vector.expected.readableIds) expect(inspection.posts.map((p) => p.id)).toEqual(vector.expected.readableIds);
+      if (vector.expected.unreadablePaths) {
+        expect(inspection.unreadable.map((p) => p.path)).toEqual(vector.expected.unreadablePaths);
+        for (const path of vector.expected.unreadablePaths) {
+          expect(inspection.warnings.some((w) => w.post === path)).toBe(true);
+        }
+      }
+      if (vector.expected.warnings) expect(inspection.warnings).toEqual(vector.expected.warnings);
+    } else throw new Error(`Unknown operation ${vector.operation}`);
+  });
+});
+
 describe("threads primitives", () => {
   it("exports expected constants and kind definitions", () => {
     expect(THREADS_DIRECTORY).toBe("_threads");
-    expect(THREAD_KINDS).toEqual(["post", "snapshot", "reframe", "correction", "closure"]);
+    expect(THREAD_KINDS).toEqual(["post", "snapshot", "reframe", "correction", "closure", "mark"]);
   });
 
   it("identifies thread positions", () => {
@@ -214,14 +306,25 @@ Body content`;
     });
   });
 
-  it("rejects post with invalid kind", () => {
+  it("accepts post with unknown kind and keeps raw kind", () => {
     expect(parseThreadPost("---\nid: p1\nkind: unknown_kind\n---\nbody")).toEqual({
-      status: "invalid",
-      issues: ["invalid_kind"],
+      status: "valid",
+      post: {
+        id: "p1",
+        path: "",
+        kind: "unknown_kind",
+        frontmatter: {
+          id: "p1",
+          kind: "unknown_kind",
+        },
+        body: "body",
+        inReplyTo: [],
+        references: [],
+      },
     });
   });
 
-  it("rejects post with invalid map block", () => {
+  it("tolerates bad map block, drops map and records field warning", () => {
     const content = `---
 id: p1
 map:
@@ -230,10 +333,239 @@ map:
       position: _agent/foundation.md
 ---
 body`;
-    expect(parseThreadPost(content)).toEqual({
-      status: "invalid",
-      issues: ["invalid_map"],
-    });
+    const result = parseThreadPost(content);
+    expect(result.status).toBe("valid");
+    if (result.status === "valid") {
+      expect(result.post.mapResult).toMatchObject({ status: "valid", map: { members: [] } });
+      expect(result.post.warnings).toEqual([
+        { field: "map.members[0].root", warning: "invalid_root_index" },
+      ]);
+    }
+  });
+
+  it("tolerates invalid references, in_reply_to, and supersedes with field warnings", () => {
+    const content = `---
+id: p1
+in_reply_to: 1234
+references: "not-an-array"
+supersedes: ""
+---
+body`;
+    const result = parseThreadPost(content);
+    expect(result.status).toBe("valid");
+    if (result.status === "valid") {
+      expect(result.post.inReplyTo).toEqual([]);
+      expect(result.post.references).toEqual([]);
+      expect(result.post.supersedes).toBeUndefined();
+      expect(result.post.warnings).toEqual([
+        { field: "in_reply_to", warning: "invalid_in_reply_to" },
+        { field: "references", warning: "invalid_references" },
+        { field: "supersedes", warning: "invalid_supersedes" },
+      ]);
+    }
+  });
+
+  it("parses kind: mark and folds marks onto target post in timeline reconstruction", () => {
+    const targetPostContent = `---
+id: msg_target
+author: Alice
+date: 2026-10-21T07:00:00.000Z
+---
+Target task post.`;
+    const mark1Content = `---
+id: msg_m1
+kind: mark
+mark: claimed
+author: Integrator
+in_reply_to: msg_target
+date: 2026-10-21T07:10:00.000Z
+---
+Claimed.`;
+    const mark2Content = `---
+id: msg_m2
+kind: mark
+mark: claimed
+author: Integrator
+in_reply_to: msg_target
+date: 2026-10-21T07:15:00.000Z
+---
+Claimed again.`;
+    const mark3Content = `---
+id: msg_m3
+kind: mark
+mark: done
+author: Integrator
+in_reply_to: msg_target
+date: 2026-10-21T07:20:00.000Z
+---
+Done.`;
+    const correctionContent = `---
+id: msg_m4
+kind: correction
+supersedes: msg_m1
+in_reply_to: msg_target
+date: 2026-10-21T07:25:00.000Z
+---
+Superseded old claim.`;
+
+    const parsedTarget = parseThreadPost(targetPostContent, "_threads/t/01.md");
+    const parsedM1 = parseThreadPost(mark1Content, "_threads/t/02.md");
+    const parsedM2 = parseThreadPost(mark2Content, "_threads/t/03.md");
+    const parsedM3 = parseThreadPost(mark3Content, "_threads/t/04.md");
+    const parsedM4 = parseThreadPost(correctionContent, "_threads/t/05.md");
+
+    expect(parsedTarget.status).toBe("valid");
+    expect(parsedM1.status).toBe("valid");
+    expect(parsedM2.status).toBe("valid");
+    expect(parsedM3.status).toBe("valid");
+    expect(parsedM4.status).toBe("valid");
+
+    if (
+      parsedTarget.status === "valid" &&
+      parsedM1.status === "valid" &&
+      parsedM2.status === "valid" &&
+      parsedM3.status === "valid" &&
+      parsedM4.status === "valid"
+    ) {
+      expect(parsedM1.post.kind).toBe("mark");
+      expect(parsedM1.post.mark).toBe("claimed");
+
+      const timeline = reconstructThreadTimeline([
+        parsedTarget.post,
+        parsedM1.post,
+        parsedM2.post,
+        parsedM3.post,
+        parsedM4.post,
+      ]);
+
+      // Timeline only contains non-mark posts
+      expect(timeline.posts.map((p) => p.id)).toEqual(["msg_target", "msg_m4"]);
+
+      // Target post has marks folded: msg_m1 was superseded by msg_m4, msg_m2 is deduplicated, msg_m3 is done
+      const targetInTimeline = timeline.postsById.get("msg_target");
+      expect(targetInTimeline?.marks).toEqual([
+        {
+          author: "Integrator",
+          mark: "claimed",
+          id: "msg_m2",
+          date: "2026-10-21T07:15:00.000Z",
+        },
+        {
+          author: "Integrator",
+          mark: "done",
+          id: "msg_m3",
+          date: "2026-10-21T07:20:00.000Z",
+        },
+      ]);
+    }
+  });
+
+  it("reconstructs without mutating input or keeping marks from an earlier result", () => {
+    const post = (id: string, fields = "") => {
+      const result = parseThreadPost(`---\nid: ${id}\n${fields}---\nBody`, `_threads/a/${id}.md`);
+      if (result.status !== "valid") throw new Error(`Fixture ${id} is unreadable`);
+      return result.post;
+    };
+    const opening = post("msg_open");
+    const mark = post("msg_mark", "kind: mark\nmark: claimed\nauthor: Agent\nin_reply_to: msg_open\n");
+    const correction = post("msg_fix", "kind: correction\nsupersedes: msg_mark\nin_reply_to: msg_open\n");
+    const before = reconstructThreadTimeline([opening, mark]);
+    expect(before.postsById.get("msg_open")?.marks?.map((m) => m.id)).toEqual(["msg_mark"]);
+    expect(opening.marks).toBeUndefined();
+    expect(mark.marks).toBeUndefined();
+    const after = reconstructThreadTimeline([opening, mark, correction]);
+    expect(after.postsById.get("msg_open")?.marks).toBeUndefined();
+    expect(before.postsById.get("msg_open")?.marks?.map((m) => m.id)).toEqual(["msg_mark"]);
+    expect(reconstructThreadTimeline([opening]).postsById.get("msg_open")?.marks).toBeUndefined();
+  });
+
+  it("keeps malformed and orphaned marks visible, and does not merge anonymous authors", () => {
+    const post = (id: string, fields = "") => {
+      const result = parseThreadPost(`---\nid: ${id}\n${fields}---\nBody`, `_threads/a/${id}.md`);
+      if (result.status !== "valid") throw new Error(`Fixture ${id} is unreadable`);
+      return result.post;
+    };
+    const opening = post("msg_open");
+    const missingValue = post("msg_missing_mark", "kind: mark\nin_reply_to: msg_open\n");
+    const multiTarget = post("msg_multi", "kind: mark\nmark: claimed\nin_reply_to: [msg_open, msg_other]\n");
+    const orphan = post("msg_orphan", "kind: mark\nmark: claimed\nin_reply_to: msg_other\n");
+    const anonymousA = post("msg_anon_a", "kind: mark\nmark: claimed\nin_reply_to: msg_open\n");
+    const anonymousB = post("msg_anon_b", "kind: mark\nmark: claimed\nin_reply_to: msg_open\n");
+    const onMark = post("msg_on_mark", "kind: mark\nmark: done\nin_reply_to: msg_anon_a\n");
+    const timeline = reconstructThreadTimeline([opening, missingValue, multiTarget, orphan, anonymousA, anonymousB, onMark]);
+    expect(timeline.posts.map((p) => p.id)).toEqual(["msg_on_mark", "msg_open", "msg_missing_mark", "msg_multi", "msg_orphan"]);
+    expect(timeline.postsById.get("msg_missing_mark")?.warnings).toContainEqual({ field: "mark", warning: "missing_mark" });
+    expect(timeline.postsById.get("msg_multi")?.warnings).toContainEqual({ field: "in_reply_to", warning: "mark_requires_one_target" });
+    expect(timeline.postsById.get("msg_orphan")?.warnings).toContainEqual({ field: "in_reply_to", warning: "mark_target_missing" });
+    expect(timeline.postsById.get("msg_on_mark")?.warnings).toContainEqual({ field: "in_reply_to", warning: "mark_target_missing" });
+    expect(timeline.postsById.get("msg_open")?.marks?.map((m) => m.id)).toEqual(["msg_anon_a", "msg_anon_b"]);
+  });
+
+  it("identifies the same opening from filename order as the DAG's conforming root", () => {
+    const open = { path: "_threads/a/01.md", content: "---\nid: msg_open\n---\nStart" };
+    const reply = { path: "_threads/a/02.md", content: "---\nid: msg_reply\nin_reply_to: msg_open\n---\nReply" };
+    const inspected = inspectThreadPosts([reply, open]);
+    expect(inspected.posts[0]?.id).toBe("msg_open");
+    expect(inspected.writable).toBe(true);
+    expect(reconstructThreadTimeline(inspected.posts).roots.map((node) => node.post.id)).toEqual(["msg_open"]);
+  });
+
+  it("parses typed attached_to on opening post and resolves only post: as tree edges", () => {
+    const postNote = parseThreadPost(`---
+id: msg_open1
+attached_to: note:@notes//docs/api.md
+---
+Opening post`);
+    const postRepo = parseThreadPost(`---
+id: msg_open2
+attached_to: repo:n_0123456789abcdef01234567
+---
+Opening post`);
+    const postParent = parseThreadPost(`---
+id: msg_open3
+attached_to: post:msg_parent
+---
+Opening post`);
+
+    expect(postNote.status).toBe("valid");
+    expect(postRepo.status).toBe("valid");
+    expect(postParent.status).toBe("valid");
+
+    if (postNote.status === "valid" && postRepo.status === "valid" && postParent.status === "valid") {
+      expect(postNote.post.attachedTo).toEqual({
+        kind: "note",
+        value: "@notes//docs/api.md",
+        raw: "note:@notes//docs/api.md",
+      });
+      expect(postRepo.post.attachedTo).toEqual({
+        kind: "repo",
+        value: "n_0123456789abcdef01234567",
+        raw: "repo:n_0123456789abcdef01234567",
+      });
+      expect(postParent.post.attachedTo).toEqual({
+        kind: "post",
+        value: "msg_parent",
+        raw: "post:msg_parent",
+      });
+
+      const root = {
+        root: "space",
+        pin: "p1",
+        posts: [{ path: "_threads/t1/01.md", id: "msg_parent" }],
+      };
+
+      // Only post: resolves as a parent edge
+      expect(resolveThreadParent(postParent.post.attachedTo!, [root])).toEqual({
+        status: "resolved",
+        parent: { root: "space", pin: "p1", path: "_threads/t1/01.md", id: "msg_parent" },
+      });
+      expect(resolveThreadParent(postNote.post.attachedTo!, [root])).toEqual({
+        status: "none", attachment: postNote.post.attachedTo,
+      });
+      expect(resolveThreadParent(postRepo.post.attachedTo!, [root])).toEqual({
+        status: "none", attachment: postRepo.post.attachedTo,
+      });
+    }
   });
 });
 
@@ -250,7 +582,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set([...manifest.vectors, ...attachments.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }

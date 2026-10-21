@@ -21,11 +21,12 @@ export const THREAD_KINDS = [
   "reframe",
   "correction",
   "closure",
+  "mark",
 ] as const;
 
-export type ThreadKind = (typeof THREAD_KINDS)[number];
+export type KnownThreadKind = (typeof THREAD_KINDS)[number];
 
-const KIND_SET = new Set<string>(THREAD_KINDS);
+export type ThreadKind = KnownThreadKind | (string & {});
 
 /** Structured Layer 1/2 frontmatter of one thread post. */
 export interface ThreadPostFrontmatter {
@@ -39,7 +40,11 @@ export interface ThreadPostFrontmatter {
   references?: string[];
   /** Post role/type. Defaults to "post". */
   kind?: ThreadKind;
-  /** Superseded post id when kind is "correction". */
+  /** Mark value when kind is "mark" (e.g. "claimed", "done"). */
+  mark?: string;
+  /** Primary entity binding or parent attachment on opening post (e.g. post:msg_..., note:@root//pos). */
+  attached_to?: string;
+  /** Superseded post id when kind is "correction" or retracting a mark. */
   supersedes?: string;
   /** Optional Map block capturing citations and coordinates. */
   map?: MapBuildInput;
@@ -56,6 +61,20 @@ export interface ThreadPostFrontmatter {
   [key: string]: unknown;
 }
 
+/** Warning for a dropped or invalid frontmatter field on an otherwise valid post. */
+export interface ThreadPostFieldWarning {
+  field: string;
+  warning: string;
+}
+
+/** Folded mark metadata on a target post. */
+export interface ThreadMark {
+  author: string;
+  mark: string;
+  id: string;
+  date?: string;
+}
+
 /** One parsed immutable thread post. */
 export interface ThreadPost {
   id: string;
@@ -66,36 +85,64 @@ export interface ThreadPost {
   fileDate?: string;
   /** Invalid authored date is diagnostic, never a reason to reject the post. */
   dateWarning?: "invalid_date";
+  /** Field-level warnings for dropped/invalid frontmatter fields. */
+  warnings?: ThreadPostFieldWarning[];
   frontmatter: ThreadPostFrontmatter;
   body: string;
   inReplyTo: string[];
   references: string[];
-  kind: ThreadKind;
+  kind: string;
+  mark?: string;
+  attachedTo?: ThreadAttachment;
   supersedes?: string;
   mapResult?: MapParseResult;
+  marks?: ThreadMark[];
 }
 
 export type ThreadPostParseResult =
   | { status: "valid"; post: ThreadPost }
   | { status: "invalid"; issues: string[] };
 
-/** A child Thread's parent link, authored on its Agreement, not a Note subject binding. */
-export type ThreadAttachment =
-  | { kind: "path"; value: string }
-  | { kind: "id"; value: string };
+/** A child Thread's open typed attachment. `raw` preserves the authored value when parsed. */
+export interface ThreadAttachment {
+  kind: string;
+  value: string;
+  raw?: string;
+}
 
 export type ThreadAttachmentParseResult =
   | { status: "valid"; attachment: ThreadAttachment }
-  | { status: "absent" }
+  | { status: "absent"; warning?: "invalid_attached_to" }
   | { status: "invalid"; issue: "invalid_context" | "invalid_frontmatter" | "invalid_attached_to" };
 
-/** Only canonical root-relative local post paths or opaque msg_ ids name a parent. */
+/** Parse an attached_to value into a structured ThreadAttachment. */
 export function parseThreadAttachment(value: unknown): ThreadAttachment | null {
-  if (typeof value !== "string") return null;
-  if (/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value)) return { kind: "id", value };
-  if (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(value) &&
-      !value.endsWith("/README.md")) return { kind: "path", value };
+  if (typeof value !== "string" || !value.trim()) return null;
+  const raw = value.trim();
+
+  const colon = raw.indexOf(":");
+  if (colon > 0) {
+    const type = raw.slice(0, colon);
+    const val = raw.slice(colon + 1);
+    // The type namespace is open. Post targets alone have a checked local grammar.
+    if (/^[a-z][a-z0-9_]*$/.test(type) && val.length > 0 &&
+      (type !== "post" || isPostAttachmentTarget(val))) {
+      // `id` and `path` are internal bare-alias kinds, not typed tree edges.
+      // Preserve these open typed values as metadata without reinterpreting them.
+      return { kind: type === "id" || type === "path" ? `typed:${type}` : type, value: val, raw };
+    }
+  }
+
+  if (/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(raw)) return { kind: "id", value: raw, raw };
+  if (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(raw) && !raw.endsWith("/README.md")) {
+    return { kind: "path", value: raw, raw };
+  }
   return null;
+}
+
+function isPostAttachmentTarget(value: string): boolean {
+  return /^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value) ||
+    (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(value) && !value.endsWith("/README.md"));
 }
 
 /** Read the relation only from a Thread Agreement; ordinary Notes keep subject semantics. */
@@ -110,9 +157,14 @@ export function parseThreadAgreementAttachment(
   if (!/^---\r?\n/.test(content)) return { status: "absent" };
   const frontmatter = parseFrontmatter(content);
   if (!frontmatter) return { status: "invalid", issue: "invalid_frontmatter" };
-  if (!("attached_to" in frontmatter)) return { status: "absent" };
+  if (!("attached_to" in frontmatter)) {
+    return { status: "absent" };
+  }
   const attachment = parseThreadAttachment(frontmatter.attached_to);
-  return attachment ? { status: "valid", attachment } : { status: "invalid", issue: "invalid_attached_to" };
+  if (!attachment || (attachment.kind !== "post" && attachment.kind !== "id" && attachment.kind !== "path")) {
+    return { status: "absent", warning: "invalid_attached_to" };
+  }
+  return { status: "valid", attachment };
 }
 
 /** Caller-supplied, authorized root snapshot. The protocol never fetches or selects HEAD. */
@@ -131,6 +183,7 @@ export interface ResolvedThreadParent {
 
 export type ThreadParentResolution =
   | { status: "resolved"; parent: ResolvedThreadParent }
+  | { status: "none"; attachment: ThreadAttachment }
   | { status: "unresolved" | "ambiguous" };
 
 /** Resolve against only supplied root snapshots; an authored pin is never replaced by HEAD. */
@@ -139,13 +192,20 @@ export function resolveThreadParent(
   roots: ThreadAttachmentRoot[],
   authoredPin?: string,
 ): ThreadParentResolution {
+  if (attachment.kind !== "post" && attachment.kind !== "id" && attachment.kind !== "path") {
+    return { status: "none", attachment };
+  }
+  const targetVal = attachment.value;
+  const matchId = attachment.kind === "id" || (attachment.kind === "post" && /^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(targetVal));
+  const matchPath = attachment.kind === "path" || (attachment.kind === "post" && !matchId && isPostAttachmentTarget(targetVal));
+  if (!matchId && !matchPath) return { status: "unresolved" };
   const matches: ResolvedThreadParent[] = [];
   for (const root of roots) {
     if (authoredPin !== undefined && root.pin !== authoredPin) continue;
     for (const post of root.posts) {
       // Snapshots contain canonical positions, not stripped worktree tree paths.
       if (parseThreadAttachment(post.path)?.kind !== "path") continue;
-      if (attachment.kind === "id" ? post.id === attachment.value : post.path === attachment.value) {
+      if ((matchId && post.id === targetVal) || (matchPath && post.path === targetVal)) {
         matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
       }
     }
@@ -200,6 +260,7 @@ function dateFromFileName(path: string): string | undefined {
  *
  * Inputs are the raw markdown content and an optional repository or file path.
  * The post must contain valid frontmatter with a non-empty `id`.
+ * Dropped/invalid optional fields generate warnings rather than invalidating the post.
  */
 export function parseThreadPost(
   content: string,
@@ -210,61 +271,89 @@ export function parseThreadPost(
     return { status: "invalid", issues: ["missing_or_malformed_frontmatter"] };
   }
 
-  const issues: string[] = [];
-  const fileDate = dateFromFileName(path);
-  const authored = "date" in fm ? authoredPostDate(fm.date) : undefined;
-  const dateWarning = "date" in fm && !authored ? "invalid_date" as const : undefined;
-  // A malformed authored date never falls back silently and never invalidates the post.
-  const date = dateWarning ? undefined : authored ?? fileDate;
-
   if (typeof fm.id !== "string" || fm.id.trim().length === 0) {
-    issues.push("invalid_id");
+    return { status: "invalid", issues: ["invalid_id"] };
   }
 
-  let kind: ThreadKind = "post";
+  const warnings: ThreadPostFieldWarning[] = [];
+  const fileDate = dateFromFileName(path);
+  const authored = "date" in fm ? authoredPostDate(fm.date) : undefined;
+  const dateWarning = "date" in fm && !authored ? ("invalid_date" as const) : undefined;
+  if (dateWarning) {
+    warnings.push({ field: "date", warning: "invalid_date" });
+  }
+  const date = dateWarning ? undefined : authored ?? fileDate;
+
+  let kind: string = "post";
   if ("kind" in fm) {
-    if (typeof fm.kind !== "string" || !KIND_SET.has(fm.kind)) {
-      issues.push("invalid_kind");
+    if (typeof fm.kind === "string" && fm.kind.trim().length > 0) {
+      kind = fm.kind;
     } else {
-      kind = fm.kind as ThreadKind;
+      warnings.push({ field: "kind", warning: "invalid_kind" });
+    }
+  }
+
+  let mark: string | undefined;
+  if ("mark" in fm) {
+    if (typeof fm.mark === "string" && fm.mark.trim().length > 0) {
+      mark = fm.mark;
+    } else {
+      warnings.push({ field: "mark", warning: "invalid_mark" });
     }
   }
 
   const inReplyTo: string[] = [];
   if ("in_reply_to" in fm) {
+    let valid = true;
     if (typeof fm.in_reply_to === "string") {
       if (fm.in_reply_to.trim().length > 0) {
         inReplyTo.push(fm.in_reply_to.trim());
       } else {
-        issues.push("invalid_in_reply_to");
+        valid = false;
       }
     } else if (Array.isArray(fm.in_reply_to)) {
       for (const item of fm.in_reply_to) {
         if (typeof item === "string" && item.trim().length > 0) {
           inReplyTo.push(item.trim());
         } else {
-          issues.push("invalid_in_reply_to");
+          valid = false;
           break;
         }
       }
     } else {
-      issues.push("invalid_in_reply_to");
+      valid = false;
+    }
+    if (!valid) {
+      inReplyTo.length = 0;
+      warnings.push({ field: "in_reply_to", warning: "invalid_in_reply_to" });
     }
   }
 
   const references: string[] = [];
   if ("references" in fm) {
+    let valid = true;
     if (Array.isArray(fm.references)) {
       for (const item of fm.references) {
         if (typeof item === "string" && item.trim().length > 0) {
           references.push(item.trim());
         } else {
-          issues.push("invalid_references");
+          valid = false;
           break;
         }
       }
     } else {
-      issues.push("invalid_references");
+      valid = false;
+    }
+    if (!valid) {
+      references.length = 0;
+      warnings.push({ field: "references", warning: "invalid_references" });
+    }
+  }
+
+  if (kind === "mark") {
+    if (!mark && !("mark" in fm)) warnings.push({ field: "mark", warning: "missing_mark" });
+    if (inReplyTo.length !== 1 && !warnings.some((w) => w.field === "in_reply_to")) {
+      warnings.push({ field: "in_reply_to", warning: "mark_requires_one_target" });
     }
   }
 
@@ -273,39 +362,145 @@ export function parseThreadPost(
     if (typeof fm.supersedes === "string" && fm.supersedes.trim().length > 0) {
       supersedes = fm.supersedes.trim();
     } else {
-      issues.push("invalid_supersedes");
+      warnings.push({ field: "supersedes", warning: "invalid_supersedes" });
+    }
+  }
+
+  let attachedTo: ThreadAttachment | undefined;
+  if ("attached_to" in fm) {
+    const parsed = parseThreadAttachment(fm.attached_to);
+    if (parsed) {
+      attachedTo = parsed;
+    } else {
+      warnings.push({ field: "attached_to", warning: "invalid_attached_to" });
     }
   }
 
   let mapResult: MapParseResult | undefined;
   if ("map" in fm) {
-    mapResult = parseMap(fm.map);
-    if (mapResult.status === "invalid") {
-      issues.push("invalid_map");
+    const parsed = parseMap(fm.map);
+    if (parsed.status === "valid") {
+      mapResult = parsed;
+    } else if (parsed.status === "invalid") {
+      // An invalid member must not erase independent, valid Map members.
+      const members = (fm.map as { members?: unknown })?.members;
+      const badIndices = new Set<number>();
+      let onlyMembers = true;
+      for (const issue of parsed.issues) {
+        const match = /^map\.members\[(\d+)\](?:\.|$)/.exec(issue.path);
+        if (match) badIndices.add(Number(match[1]));
+        else onlyMembers = false;
+        warnings.push({ field: issue.path, warning: issue.code });
+      }
+      if (onlyMembers && Array.isArray(members) && badIndices.size) {
+        const filtered = members.filter((_, i) => !badIndices.has(i));
+        const repaired = parseMap({ ...(fm.map as object), members: filtered });
+        if (repaired.status === "valid") mapResult = repaired;
+      }
     }
-  }
-
-  if (issues.length > 0) {
-    return { status: "invalid", issues };
   }
 
   const body = stripFrontmatter(content);
   const post: ThreadPost = {
-    id: fm.id as string,
+    id: fm.id,
     path,
     ...(date ? { date } : {}),
     ...(fileDate ? { fileDate } : {}),
     ...(dateWarning ? { dateWarning } : {}),
+    ...(warnings.length > 0 ? { warnings } : {}),
     frontmatter: fm as unknown as ThreadPostFrontmatter,
     body,
     inReplyTo,
     references,
     kind,
-    supersedes,
-    mapResult,
+    ...(mark ? { mark } : {}),
+    ...(attachedTo ? { attachedTo } : {}),
+    ...(supersedes ? { supersedes } : {}),
+    ...(mapResult ? { mapResult } : {}),
   };
 
   return { status: "valid", post };
+}
+
+/** One caller-supplied post file. The protocol never reads the filesystem for this operation. */
+export interface ThreadPostSource {
+  path: string;
+  content: string;
+}
+
+export interface ThreadPostInspection {
+  posts: ThreadPost[];
+  unreadable: Array<{ path: string; issues: string[] }>;
+  warnings: Array<ThreadPostFieldWarning & { post: string }>;
+  parent: ThreadAttachment | "unknown" | null;
+  closed: boolean | "unknown";
+  writable: boolean;
+  /** Actionable message, only when the opening post cannot be read. */
+  writeRefusal?: string;
+}
+
+/**
+ * Inspect a caller-selected snapshot. Never infer an opening post from parsed survivors:
+ * an unreadable opening file would otherwise silently become an unrelated root.
+ * A later unreadable post may have been a closure, so closed is unknown unless
+ * a readable closure settles it. Only an unreadable opening prevents writes:
+ * without its id, a reply with no target cannot branch from the Thread.
+ */
+export function inspectThreadPosts(
+  sources: ThreadPostSource[],
+  legacyAgreement?: ThreadAttachmentParseResult,
+): ThreadPostInspection {
+  // A caller supplies direct canonical post files, not a README or nested payload.
+  const sorted = sources.filter((source) => parseThreadAttachment(source.path)?.kind === "path")
+    .sort((a, b) => compareOrdinal(a.path, b.path));
+  const posts: ThreadPost[] = [];
+  const unreadable: ThreadPostInspection["unreadable"] = [];
+  const warnings: ThreadPostInspection["warnings"] = [];
+  for (const source of sorted) {
+    const result = parseThreadPost(source.content, source.path);
+    if (result.status === "invalid") {
+      unreadable.push({ path: source.path, issues: result.issues });
+      warnings.push(...result.issues.map((warning) => ({ post: source.path, field: "frontmatter", warning })));
+    } else {
+      posts.push(result.post);
+      warnings.push(...(result.post.warnings ?? []).map((warning) => ({ post: source.path, ...warning })));
+    }
+  }
+  if (legacyAgreement?.status === "absent" && legacyAgreement.warning) {
+    warnings.push({ post: "_agent/agreement.md", field: "attached_to", warning: legacyAgreement.warning });
+  }
+  const byId = new Map(posts.map((post) => [post.id, post]));
+  for (const post of posts) {
+    if (foldableMark(post) && (!byId.has(post.inReplyTo[0]) || byId.get(post.inReplyTo[0])?.kind === "mark")) {
+      warnings.push({ post: post.path, field: "in_reply_to", warning: "mark_target_missing" });
+    }
+  }
+  const opening = sorted[0];
+  // An empty Thread may still be starting: there is no broken opening to repair.
+  const openingUnreadable = Boolean(opening && unreadable.some((entry) => entry.path === opening.path));
+  const firstPost = posts.find((post) => post.path === opening?.path);
+  const parent = !opening ? null : openingUnreadable ? "unknown" :
+    firstPost?.attachedTo ?? (legacyAgreement?.status === "valid" ? legacyAgreement.attachment : null);
+  const closed = posts.some((post) => post.kind === "closure") ? true :
+    unreadable.length ? "unknown" : false;
+  const writeRefusal = openingUnreadable
+    ? `Opening post ${opening?.path ?? "(missing)"} is unreadable; writes refused. Any Thread writer may repair it with a commit explaining why.`
+    : undefined;
+  return {
+    posts, unreadable, warnings, parent, closed,
+    writable: !openingUnreadable,
+    ...(writeRefusal ? { writeRefusal } : {}),
+  };
+}
+
+/** Portable code-unit order; never depend on a caller's locale for opening-post selection. */
+function compareOrdinal(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function foldableMark(post: ThreadPost): boolean {
+  return post.kind === "mark" && post.inReplyTo.length === 1 &&
+    typeof post.mark === "string" && post.mark.trim().length > 0;
 }
 
 /** Reconstructed thread DAG node. */
@@ -331,25 +526,96 @@ export interface ThreadTimeline {
  * Reconstruct a thread DAG and linearized timeline from an unordered list of posts.
  *
  * Handles out-of-order posts, multi-parent joins (merges), corrections, and closures.
- * Secondary ordering uses post path/filename or id for stable deterministic output.
+ * Valid marks are folded onto their target and excluded from the main timeline.
+ * Malformed marks remain visible in the timeline with their field warnings.
+ * No caller-owned post is mutated. Secondary order is portable code-unit order.
  */
 export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
   const postsById = new Map<string, ThreadPost>();
   const childrenByParentId = new Map<string, ThreadPost[]>();
 
-  for (const post of posts) {
+  // Copy input posts: folding must not attach marks to caller-owned objects, and
+  // repeated reconstruction must not carry stale marks from a previous result.
+  const projected = posts.map((post) => {
+    const copy = { ...post };
+    delete copy.marks;
+    return copy;
+  });
+  for (const post of projected) {
     postsById.set(post.id, post);
   }
 
-  // Sort posts deterministically by path / id first as initial baseline
-  const sortedInput = [...posts].sort((a, b) => {
-    if (a.path && b.path && a.path !== b.path) {
-      return a.path.localeCompare(b.path);
+  // Identify superseded post ids (retractions/corrections)
+  const superseded = new Set<string>();
+  for (const post of projected) {
+    if (post.kind === "correction" && post.supersedes) {
+      superseded.add(post.supersedes);
     }
-    return a.id.localeCompare(b.id);
+  }
+
+  // Fold marks onto target posts: collect (author, mark), drop superseded, dedup per author
+  const targetMarks = new Map<string, Map<string, ThreadMark>>();
+  const isFoldable = (post: ThreadPost) => foldableMark(post) &&
+    postsById.get(post.inReplyTo[0])?.kind !== "mark" && postsById.has(post.inReplyTo[0]);
+  for (const post of projected) {
+    if (foldableMark(post) && !isFoldable(post)) {
+      post.warnings = [...(post.warnings ?? []), { field: "in_reply_to", warning: "mark_target_missing" }];
+    }
+  }
+  const markPosts = projected.filter(isFoldable);
+  const nonMarkPosts = projected.filter((p) => !isFoldable(p));
+
+  const sortedMarkPosts = [...markPosts].sort((a, b) => {
+    if (a.path && b.path && a.path !== b.path) {
+      return compareOrdinal(a.path, b.path);
+    }
+    return compareOrdinal(a.id, b.id);
   });
 
-  for (const post of sortedInput) {
+  for (const markPost of sortedMarkPosts) {
+    if (superseded.has(markPost.id)) continue;
+    if (markPost.inReplyTo.length !== 1) continue;
+    const targetId = markPost.inReplyTo[0];
+    const markVal = markPost.mark ?? (typeof markPost.frontmatter.mark === "string" ? markPost.frontmatter.mark.trim() : "");
+    if (!markVal) continue;
+    const author =
+      (typeof markPost.frontmatter.author === "string" ? markPost.frontmatter.author : "") ||
+      (typeof markPost.frontmatter.actor_ref === "string" ? markPost.frontmatter.actor_ref : "");
+    // An absent author is not evidence that two marks came from the same author.
+    const authorKey = author ? `${author}\0${markVal}` : `anonymous\0${markPost.id}`;
+    let authorMap = targetMarks.get(targetId);
+    if (!authorMap) {
+      authorMap = new Map();
+      targetMarks.set(targetId, authorMap);
+    }
+    if (!authorMap.has(authorKey)) {
+      authorMap.set(authorKey, {
+        author,
+        mark: markVal,
+        id: markPost.id,
+        ...(markPost.date ? { date: markPost.date } : {}),
+      });
+    }
+  }
+
+  for (const [targetId, authorMap] of targetMarks.entries()) {
+    const targetPost = postsById.get(targetId);
+    if (targetPost) {
+      targetPost.marks = Array.from(authorMap.values());
+    }
+  }
+
+  // Sort posts deterministically by path / id first as initial baseline
+  const sortedInput = [...nonMarkPosts].sort((a, b) => {
+    if (a.path && b.path && a.path !== b.path) {
+      return compareOrdinal(a.path, b.path);
+    }
+    return compareOrdinal(a.id, b.id);
+  });
+
+  // Keep marks in the reply DAG even though they are not timeline entries.
+  for (const post of [...sortedInput, ...sortedMarkPosts].sort((a, b) =>
+    compareOrdinal(a.path, b.path) || compareOrdinal(a.id, b.id))) {
     for (const parentId of post.inReplyTo) {
       const existing = childrenByParentId.get(parentId) ?? [];
       existing.push(post);
@@ -358,7 +624,7 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
   }
 
   const nodeMap = new Map<string, ThreadNode>();
-  for (const post of sortedInput) {
+  for (const post of [...sortedInput, ...sortedMarkPosts]) {
     nodeMap.set(post.id, {
       post,
       parents: [...post.inReplyTo],
@@ -374,19 +640,22 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
     if (!hasKnownParent) {
       rootNodes.push(node);
     }
+  }
+  for (const post of [...sortedInput, ...sortedMarkPosts]) {
+    const node = nodeMap.get(post.id)!;
     for (const pId of post.inReplyTo) {
-      const parentNode = nodeMap.get(pId);
-      if (parentNode) {
-        parentNode.children.push(node);
-      }
+      nodeMap.get(pId)?.children.push(node);
     }
   }
 
   // Topological sort: Kahn's algorithm with priority queue (deterministic secondary order)
   const inDegree = new Map<string, number>();
   for (const post of sortedInput) {
-    // Only count dependencies that exist within this collection of posts
-    const validParents = post.inReplyTo.filter((pId) => postsById.has(pId));
+    // Only count dependencies that exist within this collection of non-mark posts
+    const validParents = post.inReplyTo.filter((pId) => {
+      const parent = postsById.get(pId);
+      return parent && !isFoldable(parent);
+    });
     inDegree.set(post.id, validParents.length);
   }
 
@@ -401,15 +670,16 @@ export function reconstructThreadTimeline(posts: ThreadPost[]): ThreadTimeline {
   while (ready.length > 0) {
     ready.sort((a, b) => {
       if (a.path && b.path && a.path !== b.path) {
-        return a.path.localeCompare(b.path);
+        return compareOrdinal(a.path, b.path);
       }
-      return a.id.localeCompare(b.id);
+      return compareOrdinal(a.id, b.id);
     });
     const next = ready.shift()!;
     linearized.push(next);
 
     const children = childrenByParentId.get(next.id) ?? [];
     for (const child of children) {
+      if (isFoldable(child)) continue;
       const currentDeg = inDegree.get(child.id) ?? 0;
       if (currentDeg > 0) {
         const newDeg = currentDeg - 1;
