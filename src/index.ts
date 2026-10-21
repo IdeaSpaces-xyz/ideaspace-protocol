@@ -262,6 +262,7 @@ export {
   parseThreadAttachment,
   parseThreadAgreementAttachment,
   resolveThreadParent,
+  resolveThreadPostById,
   childThreadsOfPost,
 } from "./threads.js";
 export type {

@@ -1,6 +1,7 @@
 {
   "format": "ideaspaces-content-look/v1",
   "fixture": "../reference-look",
+  "paging_vectors": "paging.json",
   "required_coverage": [
     "reference_only",
     "history_placement",

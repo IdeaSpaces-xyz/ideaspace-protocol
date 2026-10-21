@@ -2,7 +2,7 @@
 
 The machine-readable, language-neutral contract — so non-TypeScript runtimes can conform without importing the reference library.
 
-Present (v0.28.0, provisional; Thread posts have a field-tolerant metalayer, open kinds, marks and opening-post attachments; content look and focus read Thread folders, READMEs, posts and agent context; Map v3 intentionally relaxes pins and depths for live Space Maps):
+Present (v0.29.0, provisional; Content look pages directory handles and resolves a Thread post by id at a selected root/pin; Thread posts retain the field-tolerant metalayer, open kinds, marks and opening attachments; Map v3 keeps live Space Maps without mandatory pins/depths):
 
 - [`frontmatter.schema.json`](frontmatter.schema.json) — the ordinary Note Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (single typed `<type>:<id>` subject link), `tags`. Nothing strictly required (absent = drift, not error); `additionalProperties` allowed (extensible). Do not apply this schema to Thread Agreements.
 - [`thread-agreement.schema.json`](thread-agreement.schema.json) — separate optional legacy Thread Agreement frontmatter; new writers validate its post-target grammar, while readers tolerate a malformed existing `attached_to` with a warning. The opening post's open typed attachment wins; only a post target is a tree edge. See [`threads.md`](threads.md).
