@@ -237,7 +237,9 @@ This pre-1.0 update changes the **reader API**, not the files already on disk:
 Directory Content look at `children`/`full` now returns `target.page` (`total`, `shown`, `order`,
 optional `nextCursor`) and pages in filename order with `limit`, `cursor|since` and
 `order: older|newer`. The first-page display remains bounded at 50, but its representation
-revision changes because page facts are returned. Consumers should follow `nextCursor`, not
+revision changes because page facts are returned. `_agent/` directory child ties previously
+used locale-aware sorting and now use code-unit order, matching Thread and generic Content handles;
+non-ASCII `_agent/` filenames may move between pages. Consumers should follow `nextCursor`, not
 infer the next page from a filename or silently restart after a stale cursor. A post-id look
 returns the selected post's normal target (or an explicit `unresolved`/`ambiguous` diagnostic),
 not the folder body. The Map address ending in `msg_…` is a read-time selector at its selected

@@ -182,7 +182,9 @@ export async function assembleContentLook(
       return { status: selected.status, kind: "content-look", contractRole: "reference",
         postId: opts.postId, position, reason: selected.reason };
     }
-    return assembleContentLook({ position: selected.path, depth, ...(opts.contractSource ? { contractSource: opts.contractSource } : {}) });
+    return assembleContentLook({ position: selected.path, depth,
+      ...(opts.contractSource ? { contractSource: opts.contractSource } : {}),
+      ...(opts.summaryExcerptLength !== undefined ? { summaryExcerptLength: opts.summaryExcerptLength } : {}) });
   }
   if ((cursor !== undefined || opts.order !== undefined || opts.limit !== undefined) &&
       (kind !== "directory" || (depth !== "children" && depth !== "full"))) {

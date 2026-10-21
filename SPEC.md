@@ -150,7 +150,8 @@ report the total eligible direct handles, and return a cursor for the next page 
 caller MAY request `order: older|newer` (default older) and resume after an exact child filename
 with `cursor` or `since`; a missing cursor refuses instead of restarting at page one. A Thread
 folder orders direct post filenames by code unit; an ordinary Content tree keeps directories
-before Markdown files, each in code-unit order. The cursor is local to that directory and order,
+before Markdown files, each in code-unit order. Exact `_agent/` directory children now use that
+code-unit order too, replacing their earlier locale-aware tie order. The cursor is local to that directory and order,
 not a Git pin or an authorization grant. A working tree may change between pages; when the
 last-shown filename disappears, a reader refuses the stale cursor and the caller restarts from
 page one. A pinned commit holds one stable page sequence. `full` includes just the selected surface and those
