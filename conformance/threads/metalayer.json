@@ -53,17 +53,35 @@
         { "path": "_threads/child/01.md", "content": "---\nid: [\n---\nBroken" },
         { "path": "_threads/child/02.md", "content": "---\nid: msg_valid\n---\nGood reply" }
       ] },
-      "expected": { "parent": "unknown", "closed": "unknown", "writable": false, "writeRefusal": "_threads/child/01.md", "readableIds": ["msg_valid"] }
+      "expected": { "parent": "unknown", "closed": "unknown", "writable": false, "writeRefusal": "Opening post _threads/child/01.md is unreadable; writes refused. Any Thread writer may repair it with a commit explaining why.", "readableIds": ["msg_valid"] }
     },
     {
-      "id": "unreadable-closure-conservatively-refuses-writes",
+      "id": "unreadable-closure-warns-but-allows-writes",
       "operation": "inspect_posts",
       "covers": ["unreadable_closure"],
       "input": { "sources": [
         { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nStart" },
         { "path": "_threads/child/02.md", "content": "---\nid: [\nkind: closure\n---\nBroken" }
       ] },
-      "expected": { "parent": null, "closed": "unknown", "writable": false, "writeRefusal": "_threads/child/02.md", "readableIds": ["msg_open"] }
+      "expected": { "parent": null, "closed": "unknown", "writable": true, "readableIds": ["msg_open"], "unreadablePaths": ["_threads/child/02.md"] }
+    },
+    {
+      "id": "readable-closure-settles-unreadable-post",
+      "operation": "inspect_posts",
+      "covers": ["readable_closure_settles"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nStart" },
+        { "path": "_threads/child/02.md", "content": "---\nid: [\n---\nBroken" },
+        { "path": "_threads/child/03.md", "content": "---\nid: msg_close\nkind: closure\n---\nClosed" }
+      ] },
+      "expected": { "parent": null, "closed": true, "writable": true, "readableIds": ["msg_open", "msg_close"], "unreadablePaths": ["_threads/child/02.md"] }
+    },
+    {
+      "id": "non-post-attachment-has-no-parent-edge",
+      "operation": "resolve_parent",
+      "covers": ["non_post_no_edge"],
+      "input": { "attached_to": "note:@home//notes/topic.md", "roots": [{ "root": "home", "pin": "aaaa", "posts": [{ "path": "_threads/parent/01.md", "id": "msg_parent" }] }] },
+      "expected": { "status": "none" }
     }
   ]
 }

@@ -198,6 +198,7 @@ export interface ResolvedThreadParent {
 
 export type ThreadParentResolution =
   | { status: "resolved"; parent: ResolvedThreadParent }
+  | { status: "none"; attachment: ThreadAttachment }
   | { status: "unresolved" | "ambiguous" };
 
 /** Resolve against only supplied root snapshots; an authored pin is never replaced by HEAD. */
@@ -207,7 +208,7 @@ export function resolveThreadParent(
   authoredPin?: string,
 ): ThreadParentResolution {
   if (attachment.kind !== "post" && attachment.kind !== "id" && attachment.kind !== "path") {
-    return { status: "unresolved" };
+    return { status: "none", attachment };
   }
   const targetVal = attachment.value;
   const matches: ResolvedThreadParent[] = [];
@@ -448,14 +449,16 @@ export interface ThreadPostInspection {
   parent: ThreadAttachment | "unknown" | null;
   closed: boolean | "unknown";
   writable: boolean;
+  /** Actionable message, only when the opening post cannot be read. */
   writeRefusal?: string;
 }
 
 /**
  * Inspect a caller-selected snapshot. Never infer an opening post from parsed survivors:
  * an unreadable opening file would otherwise silently become an unrelated root.
- * Since a malformed post cannot identify itself as a closure, refuse writes until
- * unreadable files are repaired rather than risk appending after an unknown closure.
+ * A later unreadable post may have been a closure, so closed is unknown unless
+ * a readable closure settles it. Only an unreadable opening prevents writes:
+ * without its id, a reply with no target cannot branch from the Thread.
  */
 export function inspectThreadPosts(
   sources: ThreadPostSource[],
@@ -483,11 +486,14 @@ export function inspectThreadPosts(
   const firstPost = posts.find((post) => post.path === opening?.path);
   const parent = openingUnreadable ? "unknown" :
     firstPost?.attachedTo ?? (legacyAgreement?.status === "valid" ? legacyAgreement.attachment : null);
-  const closed = unreadable.length ? "unknown" : posts.some((post) => post.kind === "closure");
-  const writeRefusal = unreadable[0]?.path ?? (openingUnreadable ? opening?.path ?? "opening post" : undefined);
+  const closed = posts.some((post) => post.kind === "closure") ? true :
+    unreadable.length ? "unknown" : false;
+  const writeRefusal = openingUnreadable
+    ? `Opening post ${opening?.path ?? "(missing)"} is unreadable; writes refused. Any Thread writer may repair it with a commit explaining why.`
+    : undefined;
   return {
     posts, unreadable, warnings, parent, closed,
-    writable: !writeRefusal,
+    writable: !openingUnreadable,
     ...(writeRefusal ? { writeRefusal } : {}),
   };
 }

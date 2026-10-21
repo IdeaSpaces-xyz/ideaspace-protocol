@@ -32,7 +32,9 @@
     "mark_fold",
     "opening_attachment",
     "unreadable_opening",
-    "unreadable_closure"
+    "unreadable_closure",
+    "readable_closure_settles",
+    "non_post_no_edge"
   ],
   "vectors": [
     {

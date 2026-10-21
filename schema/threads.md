@@ -57,7 +57,7 @@ A Thread's opening post MAY declare one `attached_to: <type>:<id>` typed link, c
 
 The path form of a post attachment has exactly three segments: `_threads/`, a nonempty thread name not beginning with `.`, and a nonempty `.md` post filename not beginning with `.` and not `README.md`; `.`/`..` segments, absolute paths and extra segments are invalid. An id starts `msg_` followed by an ASCII letter or digit, then zero or more ASCII letters, digits, `_` or `-` (`^msg_[A-Za-z0-9][A-Za-z0-9_-]*$`).
 
-A reader resolves a `post:` attachment using **only** root snapshots explicitly supplied or authorized by its caller. A path matches that exact canonical post position within a supplied root; an id matches the post's authored `id` within those roots. A unique match reports both the original authored value and the parent root, pin, Thread and post; no match is `unresolved`, and multiple matches are `ambiguous` with **no chosen parent**. Both forms produce the same reverse child-Thread link. A reader MUST NOT scan arbitrary filesystem roots, pick the first match, or substitute working-tree HEAD when an authored pin lacks the post. Non-post attachments (`note:`, `repo:`, `change:`, or custom types) do not establish edges in the Thread tree and resolve as `unresolved` parent edges while remaining preserved as metadata for listeners.
+A reader resolves a `post:` attachment using **only** root snapshots explicitly supplied or authorized by its caller. A path matches that exact canonical post position within a supplied root; an id matches the post's authored `id` within those roots. A unique match reports both the original authored value and the parent root, pin, Thread and post; no match is `unresolved`, and multiple matches are `ambiguous` with **no chosen parent**. Both forms produce the same reverse child-Thread link. A reader MUST NOT scan arbitrary filesystem roots, pick the first match, or substitute working-tree HEAD when an authored pin lacks the post. Non-post attachments (`note:`, `repo:`, `change:`, or custom types) do not establish edges in the Thread tree. Report `status: none` (no parent edge), keeping the attachment as metadata for listeners; `unresolved` is reserved for a missing post edge.
 
 ### Immutable posts and field tolerance
 
@@ -91,13 +91,11 @@ Only two flaws make a post completely unreadable:
 1. Missing or unparseable YAML frontmatter.
 2. Missing, non-string, or whitespace-only `id`.
 
-When an ordinary post is unreadable, the reader skips and names it with diagnostic issues; the Thread still opens. However, if the **opening post** or a **closure post** is unreadable:
-- The Thread lists and opens by its folder.
-- Its parent reads `unknown` (not "none").
-- Its closed status reads `unknown`.
-- **Writes to the Thread are refused**, naming the unreadable post file to repair.
+When a post is unreadable, the reader skips and names it with diagnostic issues; the Thread still lists and opens by its folder.
+- If the **opening post** is unreadable, its parent reads `unknown` (not "none") and **writes are refused**, naming that post and the repair step. Without its id, an untargeted reply has nowhere to branch from.
+- Any **other** unreadable post warns but **does not block writes**. A malformed post may have been a closure, so closed state reads `unknown` unless a readable closure settles it. A visible misplaced write into a closed Thread is preferable to locking out every writer.
 
-Repairing a post whose frontmatter never parsed is a supported workflow: commit a repair with a commit message stating why; once-valid posts remain immutable. This is not a license to silently edit authored history.
+**Anyone who may write in the Thread may repair an unreadable post** whose frontmatter never parsed (or whose id was never valid). Commit the repair with a message stating why; once-valid posts remain immutable. This is not a license to silently edit authored history.
 
 #### `kind: mark` folding
 
@@ -186,11 +184,11 @@ Independent implementations share these portable operations:
    - Keeps unknown `kind` values and tolerates optional fields with post-and-field warnings. A bad Map member is dropped without erasing good members. Invalid authored dates retain `dateWarning: invalid_date`.
 
 2. **`inspect_thread_posts` (`inspectThreadPosts`) and `reconstruct_thread_timeline` (`reconstructThreadTimeline`)**:
-   - Inspect caller-supplied post files without inferring the opening from surviving parsed posts. An unreadable opening means unknown parent and closed state; any unreadable file could have been a closure, so a writer conservatively refuses until repair, naming it. Look still reads the folder and surviving posts.
+   - Inspect caller-supplied post files without inferring the opening from surviving parsed posts. An unreadable opening means unknown parent and refuses writes, naming the file and repair step. Later unreadable posts warn but do not block writes; closure reads unknown unless a readable closure settles it. Look still reads the folder and surviving posts.
    - Reconstruct the reply DAG and topologically ordered timeline. Keep unknown kinds in the DAG. Fold `kind: mark` posts onto their target by `(author, mark)`, dropping those retracted by a correction and counting an author's repeat once; do not put marks in the linear timeline.
 
 3. **`parse_thread_opening_post_attachment` (`parseThreadOpeningPostAttachment`), `parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
-   - Prefer the opening post's open typed attachment over a legacy Agreement attachment; only post targets are tree edges. Resolve a post edge against explicitly supplied pinned root snapshots. Report resolved, unresolved, or ambiguous without guessing or changing an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
+   - Prefer the opening post's open typed attachment over a legacy Agreement attachment; only post targets are tree edges. Resolve a post edge against explicitly supplied pinned root snapshots. Report resolved, unresolved, or ambiguous for a post edge; return `none` for a non-post attachment while keeping its metadata. Never guess or change an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
 
 4. **`resolve_thread_git_path` (`resolveThreadGitPath`)**:
    - Resolves an authored repository-relative `_threads/...` Map position against a pinned Git tree,

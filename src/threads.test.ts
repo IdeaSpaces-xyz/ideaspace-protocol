@@ -218,6 +218,12 @@ describe("metalayer conformance vectors", () => {
         expect(timeline.postsById.get("msg_root")?.marks?.map((m) => m.mark)).toEqual(vector.expected.markValues);
         expect(timeline.postsById.get("msg_root")?.marks?.map((m) => m.id)).toEqual(vector.expected.markIds);
       }
+    } else if (vector.operation === "resolve_parent") {
+      const attachment = parseThreadAttachment(vector.input.attached_to);
+      expect(attachment).not.toBeNull();
+      if (!attachment) throw new Error("Expected typed attachment");
+      const resolved = resolveThreadParent(attachment, vector.input.roots);
+      expect(resolved).toEqual({ status: vector.expected.status, attachment });
     } else if (vector.operation === "inspect_posts") {
       const legacy = vector.input.agreement
         ? parseThreadAgreementAttachment(vector.input.agreement, "_threads/child/_agent/agreement.md") : undefined;
@@ -226,8 +232,14 @@ describe("metalayer conformance vectors", () => {
         .toBe(vector.expected.parent);
       expect(inspection.closed).toBe(vector.expected.closed);
       expect(inspection.writable).toBe(vector.expected.writable);
-      if (vector.expected.writeRefusal) expect(inspection.writeRefusal).toBe(vector.expected.writeRefusal);
+      expect(inspection.writeRefusal).toBe(vector.expected.writeRefusal);
       if (vector.expected.readableIds) expect(inspection.posts.map((p) => p.id)).toEqual(vector.expected.readableIds);
+      if (vector.expected.unreadablePaths) {
+        expect(inspection.unreadable.map((p) => p.path)).toEqual(vector.expected.unreadablePaths);
+        for (const path of vector.expected.unreadablePaths) {
+          expect(inspection.warnings.some((w) => w.post === path)).toBe(true);
+        }
+      }
     } else throw new Error(`Unknown operation ${vector.operation}`);
   });
 });
@@ -478,10 +490,10 @@ Opening post`);
         parent: { root: "space", pin: "p1", path: "_threads/t1/01.md", id: "msg_parent" },
       });
       expect(resolveThreadParent(postNote.post.attachedTo!, [root])).toEqual({
-        status: "unresolved",
+        status: "none", attachment: postNote.post.attachedTo,
       });
       expect(resolveThreadParent(postRepo.post.attachedTo!, [root])).toEqual({
-        status: "unresolved",
+        status: "none", attachment: postRepo.post.attachedTo,
       });
     }
   });
