@@ -21,7 +21,7 @@
       "target": "_threads/engine",
       "depth": "children",
       "limit": 10,
-      "cursor": "49-post.md",
+      "since": "49-post.md",
       "expected": { "status": "ok", "page": { "total": 58, "shown": 8, "order": "older" }, "first": "50-post.md", "last": "57-post.md", "contains": "55-post.md" }
     },
     {

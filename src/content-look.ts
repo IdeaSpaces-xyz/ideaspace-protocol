@@ -37,9 +37,7 @@ export interface AssembleContentLookOpts {
   maxChildren?: number;
   /** Direct child handles on this page (alias of maxChildren). */
   limit?: number;
-  /** Exclusive child-name cursor from a previous page, or an exact child name. */
-  cursor?: string;
-  /** Exclusive authored child name; alias for cursor. */
+  /** Exclusive child filename; pass the prior page's nextCursor here. */
   since?: string;
   /** Default older (producer order); newer reverses that order. */
   order?: "older" | "newer";
@@ -140,9 +138,8 @@ export async function assembleContentLook(
   if (!Number.isSafeInteger(cap) || cap < 0) throw new RangeError(opts.limit === undefined
     ? "Content look maxChildren must be a non-negative integer"
     : "Directory look limit must be a non-negative safe integer.");
-  if (opts.since !== undefined && opts.cursor !== undefined) throw new RangeError("Use cursor or since, not both.");
   if (opts.order !== undefined && opts.order !== "older" && opts.order !== "newer") throw new RangeError("Directory order must be older or newer.");
-  const cursor = opts.cursor ?? opts.since;
+  const cursor = opts.since;
   if (!MAP_DEPTHS.includes(depth)) {
     throw new RangeError(`Content look depth must be one of: ${MAP_DEPTHS.join(", ")}`);
   }
@@ -188,7 +185,7 @@ export async function assembleContentLook(
   }
   if ((cursor !== undefined || opts.order !== undefined || opts.limit !== undefined) &&
       (kind !== "directory" || (depth !== "children" && depth !== "full"))) {
-    throw new RangeError("limit, cursor, since and order require a directory at children or full depth.");
+    throw new RangeError("limit, since and order require a directory at children or full depth.");
   }
 
   const target = kind === "markdown"

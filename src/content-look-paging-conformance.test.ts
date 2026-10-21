@@ -39,7 +39,6 @@ describe("language-neutral Content look page vectors", () => {
     const result = await assembleContentLook({
       position: join(root, vector.target), depth: vector.depth,
       ...(vector.limit !== undefined ? { limit: vector.limit } : {}),
-      ...(vector.cursor !== undefined ? { cursor: vector.cursor } : {}),
       ...(vector.since !== undefined ? { since: vector.since } : {}),
       ...(vector.order !== undefined ? { order: vector.order } : {}),
       ...(vector.postId !== undefined ? { postId: vector.postId } : {}),

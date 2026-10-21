@@ -112,8 +112,9 @@ Thread folder or supplied root. Its reference frame is the selected post's Threa
 
 A folder look at `children` or `full` reports all eligible direct post handles as `total` but shows
 only the selected page (default 50), with `nextCursor` equal to its last filename when more remain.
-`order: older` is code-unit filename order, and `newer` is its reverse. `cursor` or `since` is an
-exclusive filename in that directory and order; a missing cursor is an error, not a reset. A page
+`order: older` is code-unit filename order, and `newer` is its reverse. Pass the page's
+`nextCursor` filename as exclusive `since` in that directory and order; a missing filename is an
+error, not a reset. A page
 never loads post bodies just to display other pages. The same page vocabulary works on other
 Content directories; generic Content ordering retains directories before Markdown files.
 
@@ -235,7 +236,7 @@ This pre-1.0 update changes the **reader API**, not the files already on disk:
 ## Consumer migration: 0.28.0 → 0.29.0
 
 Directory Content look at `children`/`full` now returns `target.page` (`total`, `shown`, `order`,
-optional `nextCursor`) and pages in filename order with `limit`, `cursor|since` and
+optional `nextCursor`) and pages in filename order with `limit`, `since` and
 `order: older|newer`. The first-page display remains bounded at 50, but its representation
 revision changes because page facts are returned. `_agent/` directory child ties previously
 used locale-aware sorting and now use code-unit order, matching Thread and generic Content handles;

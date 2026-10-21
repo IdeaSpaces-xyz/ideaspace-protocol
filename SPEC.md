@@ -147,8 +147,9 @@ available summaries, **not** post bodies or an unbounded timeline. Thread post l
 facets: requesting children does not load the surface. `README.md` is a directory's surface, not
 one of its children. Directory `children` and `full` requests default to 50 handles (or an explicit non-negative limit),
 report the total eligible direct handles, and return a cursor for the next page when capped. A
-caller MAY request `order: older|newer` (default older) and resume after an exact child filename
-with `cursor` or `since`; a missing cursor refuses instead of restarting at page one. A Thread
+caller MAY request `order: older|newer` (default older) and resume with `since` set to the prior
+page's `nextCursor` (an exact child filename); a missing filename refuses instead of restarting
+at page one. A Thread
 folder orders direct post filenames by code unit; an ordinary Content tree keeps directories
 before Markdown files, each in code-unit order. Exact `_agent/` directory children now use that
 code-unit order too, replacing their earlier locale-aware tie order. The cursor is local to that directory and order,

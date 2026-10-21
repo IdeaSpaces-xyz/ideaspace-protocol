@@ -375,12 +375,15 @@ describe("Content look", () => {
     expect(byShortId.target.surface).toContain("Post body 55");
     const byRoot = ok(await assembleContentLook({ position: root, depth: "summary", postId: fixId }));
     expect(byRoot.target.position).toBe("_threads/engine/55-post.md");
+    await write(join(folder, "99-unreadable.md"), "---\nid: [\n---\nNo readable id");
+    expect(ok(await assembleContentLook({ position: folder, depth: "summary", postId: fixId })).target.position)
+      .toBe("_threads/engine/55-post.md");
     await write(join(root, "_threads", "copy", "copy.md"), `---\nid: ${fixId}\n---\nCopy`);
     expect(await assembleContentLook({ position: root, depth: "summary", postId: fixId }))
       .toMatchObject({ status: "ambiguous", postId: fixId });
     expect(await assembleContentLook({ position: folder, depth: "summary", postId: "msg_absent" }))
       .toMatchObject({ status: "unresolved", postId: "msg_absent" });
-    await expect(assembleContentLook({ position: folder, depth: "children", cursor: "gone.md" })).rejects.toThrow(/cursor/);
+    await expect(assembleContentLook({ position: folder, depth: "children", since: "gone.md" })).rejects.toThrow(/cursor/);
   });
 
   it("pages ordinary Content handles in both orders without exposing README as a child", async () => {
@@ -393,7 +396,7 @@ describe("Content look", () => {
     const first = ok(await assembleContentLook({ position: folder, depth: "children", limit: 50 }));
     expect(first.target.page).toEqual({ total: 56, shown: 50, order: "older", nextCursor: "48.md" });
     expect(first.target.children?.[0]).toMatchObject({ kind: "directory", name: "sub" });
-    const next = ok(await assembleContentLook({ position: folder, depth: "children", cursor: first.target.page?.nextCursor, limit: 10 }));
+    const next = ok(await assembleContentLook({ position: folder, depth: "children", since: first.target.page?.nextCursor, limit: 10 }));
     expect(next.target.page).toEqual({ total: 56, shown: 6, order: "older" });
     expect(next.target.children?.map((child) => child.name)).toEqual(["49.md", "50.md", "51.md", "52.md", "53.md", "54.md"]);
     const newer = ok(await assembleContentLook({ position: folder, depth: "children", limit: 2, order: "newer" }));
