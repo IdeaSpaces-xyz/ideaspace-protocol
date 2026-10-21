@@ -2,22 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ideaspaces.xyz/schema/thread-agreement.schema.json",
   "title": "Ideaspace Thread Agreement frontmatter",
-  "description": "Optional frontmatter on _threads/<thread>/_agent/agreement.md only. Validate the parsed YAML object against this schema, not the ordinary Note frontmatter schema. A plain Markdown Agreement has no declared parent; malformed YAML is invalid before schema validation. Other Agreement fields remain extensible. PROVISIONAL, v0.26.0.",
+  "description": "Optional frontmatter on _threads/<thread>/_agent/agreement.md only. Validate the parsed YAML object against this schema, not the ordinary Note frontmatter schema. A plain Markdown Agreement has no declared parent; malformed YAML is invalid before schema validation. Other Agreement fields remain extensible. PROVISIONAL, v0.28.0.",
   "type": "object",
   "properties": {
     "attached_to": {
-      "description": "Optional parent post: a canonical repository-root-relative post path or an opaque msg_ id. This is not a Note subject binding. No pin is carried here; see threads.md for resolution.",
-      "oneOf": [
-        {
-          "type": "string",
-          "pattern": "^msg_[A-Za-z0-9][A-Za-z0-9_-]*$"
-        },
-        {
-          "type": "string",
-          "pattern": "^_threads/[^/.][^/]*/[^/.][^/]*\\.md$",
-          "not": { "pattern": "/README\\.md$" }
-        }
-      ]
+      "description": "Legacy optional parent post link. The opening post wins. A malformed Agreement attached_to is ignored with a warning, not grounds to reject the parent. No pin is carried here; see threads.md for resolution."
     }
   },
   "additionalProperties": true,

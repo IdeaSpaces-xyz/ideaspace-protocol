@@ -10,7 +10,7 @@ import {
   type ContentFocusManifest,
 } from "./awareness.js";
 import { parseFrontmatter, stripFrontmatter } from "./frontmatter.js";
-import { parseThreadPost } from "./threads.js";
+import { parseThreadPost, type ThreadPostFieldWarning } from "./threads.js";
 import {
   inspectMarkdown,
   summarizeMarkdown,
@@ -79,6 +79,8 @@ export interface ContentLookTarget {
   children?: ContentLookChild[];
   /** Direct children omitted by the caller's soft cap. */
   omittedChildren?: number;
+  /** Post diagnostics, with authored position, even when the post cannot be parsed. */
+  warnings?: Array<ThreadPostFieldWarning & { post: string }>;
   /** The target in Map member vocabulary, without fabricating a root ordinal. */
   member: ContentLookProjectedMember;
 }
@@ -180,6 +182,7 @@ async function readMarkdownTarget(
   const frontmatter = parseFrontmatter(source);
   let name: string;
   let summary: string | null;
+  let warnings: ContentLookTarget["warnings"];
 
   if (isPost) {
     const postResult = parseThreadPost(source, position);
@@ -189,9 +192,11 @@ async function readMarkdownTarget(
         basename(path, extname(path));
       summary = nonEmptyString(postResult.post.frontmatter.summary) ??
         summarizeMarkdown(source);
+      warnings = postResult.post.warnings?.map((warning) => ({ post: position, ...warning }));
     } else {
       name = nonEmptyString(frontmatter?.name) ?? basename(path, extname(path));
       summary = summarizeMarkdown(source);
+      warnings = postResult.issues.map((warning) => ({ post: position, field: "frontmatter", warning }));
     }
   } else {
     name = nonEmptyString(frontmatter?.name) ?? basename(path, extname(path));
@@ -199,6 +204,7 @@ async function readMarkdownTarget(
   }
 
   const target = baseTarget(path, position, "markdown", depth, name, summary);
+  if (warnings?.length) target.warnings = warnings;
 
   if (depth === "surface" || depth === "full") {
     target.surface = stripFrontmatter(source);
@@ -264,6 +270,7 @@ async function readDirectoryTarget(
         .sort();
 
       const children: ContentLookDirectoryChild[] = [];
+      const warnings: NonNullable<ContentLookTarget["warnings"]> = [];
       for (const fileName of postFiles) {
         const postPath = join(path, fileName);
         try {
@@ -272,12 +279,14 @@ async function readDirectoryTarget(
           let postName: string;
           let postSummary: string | undefined;
           if (postResult.status === "valid") {
+            warnings.push(...(postResult.post.warnings ?? []).map((warning) => ({ post: joinPortable(position, fileName), ...warning })));
             postName = nonEmptyString(postResult.post.frontmatter.name) ??
               nonEmptyString(postResult.post.id) ??
               basename(fileName, ".md");
             postSummary = nonEmptyString(postResult.post.frontmatter.summary) ??
               (summarizeMarkdown(content) || undefined);
           } else {
+            warnings.push(...postResult.issues.map((warning) => ({ post: joinPortable(position, fileName), field: "frontmatter", warning })));
             const fm = parseFrontmatter(content);
             postName = nonEmptyString(fm?.name) ?? basename(fileName, ".md");
             postSummary = (fm?.summary ? String(fm.summary) : summarizeMarkdown(content)) || undefined;
@@ -298,6 +307,7 @@ async function readDirectoryTarget(
       }
 
       target.children = children.slice(0, maxChildren);
+      if (warnings.length) target.warnings = warnings;
       const omitted = Math.max(0, children.length - target.children.length);
       if (omitted) target.omittedChildren = omitted;
     }
@@ -435,6 +445,7 @@ function finishTarget(target: ContentLookTarget): ContentLookTarget {
     ...(target.surface !== undefined ? { surface: target.surface } : {}),
     ...(target.children !== undefined ? { children: target.children } : {}),
     ...(target.omittedChildren !== undefined ? { omittedChildren: target.omittedChildren } : {}),
+    ...(target.warnings !== undefined ? { warnings: target.warnings } : {}),
   };
   target.revision = contentRevision(JSON.stringify(represented));
   return target;
@@ -467,6 +478,10 @@ function renderTarget(target: ContentLookTarget): string {
     `  name: ${target.name}`,
   ];
   if ("summary" in target) lines.push(`  summary: ${target.summary ?? "(none)"}`);
+  if (target.warnings?.length) {
+    lines.push("", "Warnings:");
+    for (const warning of target.warnings) lines.push(`  ${warning.post}: ${warning.field}: ${warning.warning}`);
+  }
   if ("surface" in target) {
     lines.push("", "Surface:");
     if (target.surface === null) lines.push("  (none)");

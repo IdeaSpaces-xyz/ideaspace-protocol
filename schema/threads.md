@@ -1,6 +1,6 @@
 # Collaboration threads and `_threads/`
 
-> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, and root-relative Map pointers. **Provisional, v0.16.0.**
+> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, and root-relative Map pointers. **Provisional, v0.28.0.**
 
 ## Role, name, and placement
 
@@ -45,18 +45,23 @@ Each thread folder (e.g. `_threads/<thread>/`) contains:
 2. **Posts** — dated Markdown files (e.g. `2026-09-26-01-decision.md` or `2026-09-26T12-00-00Z.md`).
 3. `README.md` — the curated lens for the thread.
 
-### Parent attachment on a Thread Agreement
+### Parent attachment on a Thread's opening post (and legacy Agreement)
 
-A child Thread's `_agent/agreement.md` MAY declare one `attached_to` string naming a parent **post**, either a canonical repository-root-relative `_threads/<thread>/<post>.md` path or an opaque `msg_…` post id. The path form remains valid; an id is not a filename or a link to the newest post. An id starts `msg_` followed by an ASCII letter or digit, then zero or more ASCII letters, digits, `_` or `-` (`^msg_[A-Za-z0-9][A-Za-z0-9_-]*$`). Legacy post ids outside this grammar remain readable as posts and are attachable by path, not by id. A path has exactly three segments: `_threads/`, a nonempty thread name not beginning with `.`, and a nonempty `.md` post filename not beginning with `.` and not `README.md`; `.`/`..` segments, absolute paths and extra segments are invalid. This relation belongs to the child Thread and is distinct from an ordinary Note's `attached_to: <type>:<id>` subject binding. The ordinary Note frontmatter JSON Schema does not govern `_threads/` Agreements; validate a parsed leading YAML object with [`thread-agreement.schema.json`](thread-agreement.schema.json) instead. That separate JSON Schema checks the optional parent grammar without requiring any field or restricting additional Agreement fields. Repository validation skips `_threads/` as a named extension. A Thread Agreement's path and YAML-block parsing are checked before applying the JSON Schema; the schema does not turn plain Markdown into an invalid Agreement. No leading frontmatter block, or a block without `attached_to`, means no declared parent; an unparseable block or malformed field is invalid, not a fallback to the newest post.
+A Thread's opening post MAY declare one `attached_to: <type>:<id>` typed link, capturing what the Thread grew out of at birth. The type namespace is open, not a protocol-defined list. For example, `note:@<root>//<position>`, `repo:n_…`, `change:chg_…` and unfamiliar types are kept and shown; readers and listeners interpret what they recognise. Only `post:msg_…` or `post:_threads/<thread>/<post>.md` establishes an edge in the Thread tree. Bare `msg_…` post ids and canonical post paths are accepted as aliases. Absent means the Thread starts independently from nothing.
 
-A parser receives the Agreement path relative to the selected Space root, starting `_threads/<thread>/_agent/agreement.md` (a nested Space first removes its own root prefix); a similarly named file elsewhere is not a Thread Agreement. This field contains no pin. When a caller reads the Agreement through a pinned Map coordinate, that Map root's authored `sha` is the pin used for resolution; otherwise the caller selects an explicit root snapshot. No resolver invents a pin from the Agreement or substitutes HEAD for an unavailable authored Map pin. To enumerate posts in a worktree-backed pinned root, readers normalize each post to its canonical `_threads/...` position using the two-step lookup below before passing its path and parsed id to the pure resolver. Noncanonical supplied paths are skipped, not silently resolved as stripped tree paths.
+**One relation, one parent:** A Thread's parent and what it is about are unified in `attached_to`. A Thread has at most one parent. When a Thread starts from multiple points of context across threads or notes, `attached_to` names the primary parent, while the opening post's `map` block carries pointers in time to all cited posts and notes.
 
-A reader resolves the authored value using **only** root snapshots explicitly supplied or authorized by its caller. A path matches that exact canonical post position within a supplied root; an id matches the post's authored `id` within those roots. A unique match reports both the original authored value and the parent root, pin, Thread and post; no match is `unresolved`, and multiple matches (including copied ids) are `ambiguous` with **no chosen parent**. Both forms resolving to the same post produce the same reverse child-Thread link. A reader MUST NOT scan arbitrary filesystem roots, pick the first match, or substitute working-tree HEAD when an authored pin lacks the post. Hosted resolution needs a platform-provided mapping; the protocol neither fetches nor grants access. A worktree-backed root uses the pinned tree's two-step `_threads/` path lookup described below.
+**Precedence and legacy:** Posts are immutable, whereas an Agreement can change over time. Writing `attached_to` on the opening post anchors the Thread's origin immutably. Legacy Thread Agreements declaring `attached_to` as a bare `msg_…` id or canonical post path remain readable; when both are present, a reader MUST prefer the opening post's `attached_to`. The ordinary Note frontmatter JSON Schema does not govern `_threads/` Agreements; the separate [`thread-agreement.schema.json`](thread-agreement.schema.json) tolerates optional legacy fields rather than rejecting the entire Agreement. A malformed legacy `attached_to` loses only that field, warns `invalid_attached_to`, and establishes no parent. A malformed YAML block still cannot be read as an Agreement.
 
-### Immutable posts
+**Rejected alternative — cross-Thread `in_reply_to`:** An `in_reply_to` field on the opening post pointing to another Thread is rejected because it would conflate within-Thread timeline DAG ancestry with the Thread tree hierarchy. `in_reply_to` is reserved for replies within the same Thread's timeline.
 
-Every post is an immutable Markdown file. Once written and committed, a post is never edited in place;
-updates and corrections are appended as new posts.
+The path form of a post attachment has exactly three segments: `_threads/`, a nonempty thread name not beginning with `.`, and a nonempty `.md` post filename not beginning with `.` and not `README.md`; `.`/`..` segments, absolute paths and extra segments are invalid. An id starts `msg_` followed by an ASCII letter or digit, then zero or more ASCII letters, digits, `_` or `-` (`^msg_[A-Za-z0-9][A-Za-z0-9_-]*$`).
+
+A reader resolves a `post:` attachment using **only** root snapshots explicitly supplied or authorized by its caller. A path matches that exact canonical post position within a supplied root; an id matches the post's authored `id` within those roots. A unique match reports both the original authored value and the parent root, pin, Thread and post; no match is `unresolved`, and multiple matches are `ambiguous` with **no chosen parent**. Both forms produce the same reverse child-Thread link. A reader MUST NOT scan arbitrary filesystem roots, pick the first match, or substitute working-tree HEAD when an authored pin lacks the post. Non-post attachments (`note:`, `repo:`, `change:`, or custom types) do not establish edges in the Thread tree and resolve as `unresolved` parent edges while remaining preserved as metadata for listeners.
+
+### Immutable posts and field tolerance
+
+Every post is an immutable Markdown file with a YAML frontmatter metalayer. Once written and committed, a post is never edited in place; updates and corrections are appended as new posts.
 
 A post MUST declare valid leading YAML frontmatter containing at least a non-empty `id`:
 
@@ -66,13 +71,42 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | `date` | Calendar-valid ISO instant: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or `YYYY-MM-DDTHH:mm:ss[.sss]±HH:mm` (fraction 1–3 digits); legacy `YYYY-MM-DD` | Optional for old posts; new writers record the instant used in the filename stamp. Readers prefer the authored date: an instant normalizes to UTC `Z`, a date-only value stays a day with no instant. Treat a YAML-coerced timestamp as that same ISO instant; implementations read the scalar without rejecting the post due to YAML timestamp typing. With no field, a valid filename stamp supplies UTC instant; an unstamped name supplies no time. Malformed authored date yields diagnostic `dateWarning: invalid_date`, never invalidates the post and never falls back silently. |
 | `in_reply_to` | String or string array | Optional parent post id(s). Absent for the initial thread post; a string for a single parent reply; an array of 2+ ids for a multi-parent join (merge). |
 | `references` | Array of strings | Optional ancestor chain of post ids, ordered from oldest ancestor to immediate parent. |
-| `kind` | Enum string | Role of the post: `post` (default), `snapshot`, `reframe`, `correction`, or `closure`. |
-| `supersedes` | String | Optional post id being superseded when `kind` is `correction`. |
+| `kind` | String | Role of the post: standard `post` (default), `snapshot`, `reframe`, `correction`, `closure`, `mark`, or any open custom kind. Unknown kinds are valid and preserved in the DAG. |
+| `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). |
+| `attached_to` | String (`<type>:<id>`) | Optional open typed link on the opening post; only `post:` (or a bare post alias) has tree-edge semantics. |
+| `supersedes` | String | Optional post id being superseded when `kind` is `correction` or when retracting a mark. |
 | `map` | Object | Optional Map block (`roots`, `members`) capturing cited coordinates and selections. |
 | `name` | String | Optional title or subject line. |
 | `summary` | String | Optional dense summary for search and orientation. |
 | `tags` | Array of strings | Optional retrieval tags. |
 | `actor_ref` / `author` | String | Optional author identity or human-readable author attribution. |
+
+#### Field tolerance rule
+
+A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one member, `references`, `supersedes`, `attached_to`, `in_reply_to`, `date`) is dropped with a diagnostic warning naming the post and field; the post itself remains valid and readable.
+
+#### Unreadable posts and repair
+
+Only two flaws make a post completely unreadable:
+1. Missing or unparseable YAML frontmatter.
+2. Missing, non-string, or whitespace-only `id`.
+
+When an ordinary post is unreadable, the reader skips and names it with diagnostic issues; the Thread still opens. However, if the **opening post** or a **closure post** is unreadable:
+- The Thread lists and opens by its folder.
+- Its parent reads `unknown` (not "none").
+- Its closed status reads `unknown`.
+- **Writes to the Thread are refused**, naming the unreadable post file to repair.
+
+Repairing a post whose frontmatter never parsed is a supported workflow: commit a repair with a commit message stating why; once-valid posts remain immutable. This is not a license to silently edit authored history.
+
+#### `kind: mark` folding
+
+Posts with `kind: mark` attach open-ended status or reaction marks (e.g. `claimed`, `done`) to a target post:
+- `mark` carries the string value.
+- `in_reply_to` names exactly one target post id.
+- A mark can be retracted or superseded by a `correction` post carrying `supersedes: <mark_post_id>`.
+- In timeline reconstruction, marks are folded onto the target post's `marks` array and excluded from the linear post sequence.
+- Fold rule: collect `(author, mark)` pairs on each target post, drop superseded marks, and deduplicate repeated marks by the same author so one author's repeat counts once.
 
 The Markdown body follows the frontmatter and contains the message text. The reader also exposes optional derived `fileDate`: the valid filename instant **or day**, independent of the authored `date`. It recognizes `YYYY-MM-DDTHH-mm-ss[-SSS]Z-…`, minute-precision `YYYY-MM-DDTHHmm-…`, and day-only `YYYY-MM-DD-…` (or a `.md` terminator for timestamp forms); invalid calendar/time stamps supply no `fileDate`. An authored or filename-only day displays as `YYYY-MM-DD`, never as an invented midnight instant. Consumers order date-only authored `date` by `fileDate` when present, otherwise by that day; other valid authored instants normalize to UTC before time comparison. This is a consumer ordering rule, not a change to the timeline DAG's topological order.
 
@@ -145,22 +179,18 @@ A thread-unaware reader follows the base protocol's extension rules:
 
 ## Portable operations and conformance
 
-Independent implementations share three portable operations:
+Independent implementations share these portable operations:
 
 1. **`parse_thread_post` (`parseThreadPost`)**:
-   - Extracts frontmatter and body.
-   - Validates required `id`, optional `kind` (`post`, `snapshot`, `reframe`, `correction`, `closure`),
-     `in_reply_to`, `references`, and `supersedes`; reads date without rejecting the post, exposing `dateWarning: invalid_date` for malformed values, and projects `date` from an old post's filename when absent.
-   - Parses embedded `map` when present.
+   - Extracts frontmatter and body. Only unparseable frontmatter or an invalid `id` makes a post unreadable.
+   - Keeps unknown `kind` values and tolerates optional fields with post-and-field warnings. A bad Map member is dropped without erasing good members. Invalid authored dates retain `dateWarning: invalid_date`.
 
-2. **`reconstruct_thread_timeline` (`reconstructThreadTimeline`)**:
-   - Reconstructs a thread DAG and topologically ordered timeline from an unordered set of posts.
-   - Correctly orders out-of-order posts based on `in_reply_to` and `references`.
-   - Handles multi-parent joins (merges) where a post replies to multiple parent posts.
-   - Handles corrections (`kind: "correction"`, `supersedes: "<id>"`) and closures (`kind: "closure"`).
+2. **`inspect_thread_posts` (`inspectThreadPosts`) and `reconstruct_thread_timeline` (`reconstructThreadTimeline`)**:
+   - Inspect caller-supplied post files without inferring the opening from surviving parsed posts. An unreadable opening means unknown parent and closed state; any unreadable file could have been a closure, so a writer conservatively refuses until repair, naming it. Look still reads the folder and surviving posts.
+   - Reconstruct the reply DAG and topologically ordered timeline. Keep unknown kinds in the DAG. Fold `kind: mark` posts onto their target by `(author, mark)`, dropping those retracted by a correction and counting an author's repeat once; do not put marks in the linear timeline.
 
-3. **`parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
-   - Read the optional `attached_to` only in a Thread Agreement, classify path or id, and resolve it against explicitly supplied pinned root snapshots. Report resolved, unresolved, or ambiguous without changing an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
+3. **`parse_thread_opening_post_attachment` (`parseThreadOpeningPostAttachment`), `parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
+   - Prefer the opening post's open typed attachment over a legacy Agreement attachment; only post targets are tree edges. Resolve a post edge against explicitly supplied pinned root snapshots. Report resolved, unresolved, or ambiguous without guessing or changing an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
 
 4. **`resolve_thread_git_path` (`resolveThreadGitPath`)**:
    - Resolves an authored repository-relative `_threads/...` Map position against a pinned Git tree,
@@ -172,7 +202,7 @@ Independent implementations share three portable operations:
    - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical local contract after the authored tree is selected; Map membership is not filesystem authorization.
    - A Thread folder's `full` is one README surface plus a capped list of direct post handles, not the post bodies or a timeline. See [`content-look.md`](content-look.md) for the five rung and cap rules.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including the separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including field-tolerance, mark, and unreadable-post cases in `metalayer.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Format evolution
 

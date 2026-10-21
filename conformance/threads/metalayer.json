@@ -1,0 +1,69 @@
+{
+  "format": "ideaspaces-thread-metalayer/v1",
+  "vectors": [
+    {
+      "id": "drop-bad-map-member-keep-good",
+      "operation": "parse_post",
+      "covers": ["field_tolerance", "map_member_tolerance"],
+      "input": { "path": "_threads/a/02.md", "content": "---\nid: msg_two\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n  members:\n    - root: 0\n      position: notes/good.md\n    - root: 0\n      position: _assets/invalid.md\n---\nBody\n" },
+      "expected": { "status": "valid", "id": "msg_two", "mapMemberPositions": ["notes/good.md"], "warnings": [{ "field": "map.members[1].position", "warning": "invalid_position" }] }
+    },
+    {
+      "id": "drop-bad-fields-keep-post",
+      "operation": "parse_post",
+      "covers": ["field_tolerance"],
+      "input": { "path": "_threads/a/03.md", "content": "---\nid: msg_three\nreferences: no\nsupersedes: 123\nattached_to: [bad]\n---\nBody\n" },
+      "expected": { "status": "valid", "id": "msg_three", "references": [], "warnings": [{ "field": "references", "warning": "invalid_references" }, { "field": "supersedes", "warning": "invalid_supersedes" }, { "field": "attached_to", "warning": "invalid_attached_to" }] }
+    },
+    {
+      "id": "unknown-kind-kept-in-dag",
+      "operation": "reconstruct_timeline",
+      "covers": ["unknown_kind"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_root\n---\nStart" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_reply\nkind: custom_idea\nin_reply_to: msg_root\n---\nCustom" }
+      ] },
+      "expected": { "linearized_ids": ["msg_root", "msg_reply"], "childIds": ["msg_reply"], "kind": "custom_idea" }
+    },
+    {
+      "id": "fold-deduplicate-and-retract-marks",
+      "operation": "reconstruct_timeline",
+      "covers": ["mark_fold"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_root\n---\nStart" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_old\nkind: mark\nmark: claimed\nauthor: Integrator\nin_reply_to: msg_root\n---\nClaimed" },
+        { "path": "_threads/a/03.md", "content": "---\nid: msg_repeat\nkind: mark\nmark: claimed\nauthor: Integrator\nin_reply_to: msg_root\n---\nAgain" },
+        { "path": "_threads/a/04.md", "content": "---\nid: msg_done\nkind: mark\nmark: done\nauthor: Integrator\nin_reply_to: msg_root\n---\nDone" },
+        { "path": "_threads/a/05.md", "content": "---\nid: msg_retract\nkind: correction\nsupersedes: msg_old\nin_reply_to: msg_root\n---\nRetract" }
+      ] },
+      "expected": { "linearized_ids": ["msg_root", "msg_retract"], "markValues": ["claimed", "done"], "markIds": ["msg_repeat", "msg_done"], "childIds": ["msg_old", "msg_repeat", "msg_done", "msg_retract"] }
+    },
+    {
+      "id": "opening-attachment-wins-over-legacy",
+      "operation": "inspect_posts",
+      "covers": ["opening_attachment"],
+      "input": { "agreement": "---\nattached_to: msg_legacy\n---\n", "sources": [{ "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: note:@home//notes/topic.md\n---\nNew topic" }] },
+      "expected": { "parent": "note:@home//notes/topic.md", "closed": false, "writable": true }
+    },
+    {
+      "id": "unreadable-opening-refuses-writes",
+      "operation": "inspect_posts",
+      "covers": ["unreadable_opening"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: [\n---\nBroken" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_valid\n---\nGood reply" }
+      ] },
+      "expected": { "parent": "unknown", "closed": "unknown", "writable": false, "writeRefusal": "_threads/child/01.md", "readableIds": ["msg_valid"] }
+    },
+    {
+      "id": "unreadable-closure-conservatively-refuses-writes",
+      "operation": "inspect_posts",
+      "covers": ["unreadable_closure"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nStart" },
+        { "path": "_threads/child/02.md", "content": "---\nid: [\nkind: closure\n---\nBroken" }
+      ] },
+      "expected": { "parent": null, "closed": "unknown", "writable": false, "writeRefusal": "_threads/child/02.md", "readableIds": ["msg_open"] }
+    }
+  ]
+}

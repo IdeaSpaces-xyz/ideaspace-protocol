@@ -5,12 +5,12 @@
     { "id": "absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nname: Child\n---\n", "expected": { "status": "absent" } },
     { "id": "plain-markdown-absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "# Agreement\n", "expected": { "status": "absent" } },
     { "id": "invalid-frontmatter", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: [\n---\n", "expected": { "status": "invalid", "issue": "invalid_frontmatter" } },
-    { "id": "empty-attached-to", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to:\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
-    { "id": "array-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: [one, two]\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
-    { "id": "note-style-not-thread-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: node:thing\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
-    { "id": "empty-id-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: msg_\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
-    { "id": "readme-not-post", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/parent/README.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
-    { "id": "traversal-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/../parent/post.md\n---\n", "expected": { "status": "invalid", "issue": "invalid_attached_to" } },
+    { "id": "empty-attached-to", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to:\n---\n", "expected": { "status": "absent", "warning": "invalid_attached_to" } },
+    { "id": "array-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: [one, two]\n---\n", "expected": { "status": "absent", "warning": "invalid_attached_to" } },
+    { "id": "note-style-not-thread-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: node:thing\n---\n", "expected": { "status": "absent", "warning": "invalid_attached_to" } },
+    { "id": "empty-id-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: msg_\n---\n", "expected": { "status": "absent", "warning": "invalid_attached_to" } },
+    { "id": "readme-not-post", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/parent/README.md\n---\n", "expected": { "status": "absent", "warning": "invalid_attached_to" } },
+    { "id": "traversal-not-parent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nattached_to: _threads/../parent/post.md\n---\n", "expected": { "status": "absent", "warning": "invalid_attached_to" } },
     { "id": "wrong-agreement-position", "agreementPath": "_threads/child/not-agreement.md", "agreement": "---\nattached_to: msg_parent\n---\n", "expected": { "status": "invalid", "issue": "invalid_context" } }
   ],
   "vectors": [
