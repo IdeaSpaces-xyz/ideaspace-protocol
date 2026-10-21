@@ -105,6 +105,16 @@ describe("portable Thread attachments", () => {
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
+  it.each(attachments.opening_alias_cases)("opening link $attached_to", (vector: any) => {
+    const attachment = parseThreadAttachment(vector.attached_to);
+    expect(attachment).toEqual({ kind: vector.kind, value: vector.value, raw: vector.attached_to });
+    if (!attachment) return;
+    const resolved = resolveThreadParent(attachment, [{
+      root: "home", pin: "aaaa", posts: [{ path: "_threads/parent/first.md", id: "msg_parent" }],
+    }]);
+    expect(resolved.status).toBe(vector.resolution);
+  });
+
   it.each(attachments.negative_cases)("rejects $id", (vector: any) => {
     expect(parseThreadAgreementAttachment(vector.agreement, vector.agreementPath)).toEqual(vector.expected);
   });
@@ -197,6 +207,7 @@ describe("metalayer conformance vectors", () => {
       expect(parsed.post.id).toBe(vector.expected.id);
       expect(parsed.post.warnings).toEqual(vector.expected.warnings);
       if (vector.expected.references) expect(parsed.post.references).toEqual(vector.expected.references);
+      if (vector.expected.mapDropped) expect(parsed.post.mapResult).toBeUndefined();
       if (vector.expected.mapMemberPositions) {
         expect(parsed.post.mapResult?.status).toBe("valid");
         if (parsed.post.mapResult?.status === "valid") {

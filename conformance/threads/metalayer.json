@@ -16,6 +16,13 @@
       "expected": { "status": "valid", "id": "msg_three", "references": [], "warnings": [{ "field": "references", "warning": "invalid_references" }, { "field": "supersedes", "warning": "invalid_supersedes" }, { "field": "attached_to", "warning": "invalid_attached_to" }] }
     },
     {
+      "id": "bad-map-root-drops-map-not-post",
+      "operation": "parse_post",
+      "covers": ["map_nonmember_tolerance"],
+      "input": { "path": "_threads/a/02.md", "content": "---\nid: msg_two\nmap:\n  roots: invalid\n  members:\n    - root: 0\n      position: notes/good.md\n---\nBody\n" },
+      "expected": { "status": "valid", "id": "msg_two", "mapDropped": true, "warnings": [{ "field": "map.roots", "warning": "invalid_roots_type" }, { "field": "map.members[0].root", "warning": "invalid_root_index" }] }
+    },
+    {
       "id": "unknown-kind-kept-in-dag",
       "operation": "reconstruct_timeline",
       "covers": ["unknown_kind"],
@@ -39,6 +46,17 @@
       "expected": { "linearized_ids": ["msg_root", "msg_retract"], "markTarget": "msg_root", "markValues": ["claimed", "done"], "markIds": ["msg_repeat", "msg_done"], "childOf": "msg_root", "childIds": ["msg_old", "msg_repeat", "msg_done", "msg_retract"] }
     },
     {
+      "id": "mark-on-superseded-post-stays-with-target",
+      "operation": "reconstruct_timeline",
+      "covers": ["mark_superseded_target"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_target\n---\nTarget" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_mark\nkind: mark\nmark: claimed\nauthor: Agent\nin_reply_to: msg_target\n---\nClaimed" },
+        { "path": "_threads/a/03.md", "content": "---\nid: msg_fix\nkind: correction\nsupersedes: msg_target\nin_reply_to: msg_target\n---\nSuperseded target" }
+      ] },
+      "expected": { "linearized_ids": ["msg_target", "msg_fix"], "markTarget": "msg_target", "markValues": ["claimed"], "markIds": ["msg_mark"], "childOf": "msg_target", "childIds": ["msg_mark", "msg_fix"] }
+    },
+    {
       "id": "malformed-mark-visible-anonymous-distinct",
       "operation": "reconstruct_timeline",
       "covers": ["malformed_mark_visible", "anonymous_marks_distinct"],
@@ -49,6 +67,17 @@
         { "path": "_threads/a/04.md", "content": "---\nid: msg_anon2\nkind: mark\nmark: '+1'\nin_reply_to: msg_root\n---\nSecond anonymous" }
       ] },
       "expected": { "linearized_ids": ["msg_root", "msg_bad"], "childOf": "msg_root", "childIds": ["msg_bad", "msg_anon1", "msg_anon2"], "markTarget": "msg_root", "markIds": ["msg_anon1", "msg_anon2"], "markValues": ["+1", "+1"], "warningPost": "msg_bad", "warning": { "field": "mark", "warning": "missing_mark" } }
+    },
+    {
+      "id": "mark-of-mark-remains-visible",
+      "operation": "reconstruct_timeline",
+      "covers": ["mark_of_mark_visible"],
+      "input": { "posts": [
+        { "path": "_threads/a/01.md", "content": "---\nid: msg_root\n---\nStart" },
+        { "path": "_threads/a/02.md", "content": "---\nid: msg_mark\nkind: mark\nmark: claimed\nin_reply_to: msg_root\n---\nClaim" },
+        { "path": "_threads/a/03.md", "content": "---\nid: msg_on_mark\nkind: mark\nmark: done\nin_reply_to: msg_mark\n---\nMark of mark" }
+      ] },
+      "expected": { "linearized_ids": ["msg_root", "msg_on_mark"], "markTarget": "msg_root", "markValues": ["claimed"], "markIds": ["msg_mark"], "childOf": "msg_mark", "childIds": ["msg_on_mark"], "warningPost": "msg_on_mark", "warning": { "field": "in_reply_to", "warning": "mark_target_missing" } }
     },
     {
       "id": "opening-attachment-wins-over-legacy",
@@ -124,6 +153,20 @@
         { "path": "_threads/parent/02.md", "id": "msg_two" }
       ] }] },
       "expected": { "status": "resolved", "parent": { "root": "home", "pin": "aaaa", "path": "_threads/parent/02.md", "id": "msg_two" } }
+    },
+    {
+      "id": "mark-target-unreadable-warns-without-lockout",
+      "operation": "inspect_posts",
+      "covers": ["mark_unreadable_target"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nOpening" },
+        { "path": "_threads/child/02.md", "content": "---\nid: [\n---\nUnreadable target" },
+        { "path": "_threads/child/03.md", "content": "---\nid: msg_mark\nkind: mark\nmark: done\nin_reply_to: msg_missing\n---\nOrphaned mark" }
+      ] },
+      "expected": { "parent": null, "closed": "unknown", "writable": true, "readableIds": ["msg_open", "msg_mark"], "unreadablePaths": ["_threads/child/02.md"], "warnings": [
+        { "post": "_threads/child/02.md", "field": "frontmatter", "warning": "missing_or_malformed_frontmatter" },
+        { "post": "_threads/child/03.md", "field": "in_reply_to", "warning": "mark_target_missing" }
+      ] }
     },
     {
       "id": "typed-id-is-not-a-bare-alias",

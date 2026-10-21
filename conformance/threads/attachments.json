@@ -1,6 +1,14 @@
 {
   "format": "ideaspaces-thread-attachments/v1",
   "description": "Six parent-resolution vectors and supplementary parser refusals. For each vector, parse the Agreement and compare status/issue; when valid, compare attachment kind and resolution status/parent. For resolved results compare childThreadsOfPost to expected children; for unresolved results assert no parent and no reverse child link. A note-subject case also asserts that ordinary Note parsing preserves expected.subject. Roots are explicit authorized snapshots, never live HEAD. Paths are repository-root-relative.",
+  "opening_alias_cases": [
+    { "attached_to": "msg_parent", "kind": "id", "value": "msg_parent", "resolution": "resolved" },
+    { "attached_to": "_threads/parent/first.md", "kind": "path", "value": "_threads/parent/first.md", "resolution": "resolved" },
+    { "attached_to": "post:msg_parent", "kind": "post", "value": "msg_parent", "resolution": "resolved" },
+    { "attached_to": "id:msg_parent", "kind": "typed:id", "value": "msg_parent", "resolution": "none" },
+    { "attached_to": "path:../../x", "kind": "typed:path", "value": "../../x", "resolution": "none" },
+    { "attached_to": "note:@home//notes/topic.md", "kind": "note", "value": "@home//notes/topic.md", "resolution": "none" }
+  ],
   "negative_cases": [
     { "id": "absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "---\nname: Child\n---\n", "expected": { "status": "absent" } },
     { "id": "plain-markdown-absent", "agreementPath": "_threads/child/_agent/agreement.md", "agreement": "# Agreement\n", "expected": { "status": "absent" } },

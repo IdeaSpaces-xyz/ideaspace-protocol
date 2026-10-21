@@ -28,6 +28,7 @@
     "attachment_note_subject",
     "field_tolerance",
     "map_member_tolerance",
+    "map_nonmember_tolerance",
     "unknown_kind",
     "mark_fold",
     "malformed_mark_visible",
@@ -41,7 +42,10 @@
     "non_post_no_edge",
     "typed_alias_not_edge",
     "parent_form_not_guess",
-    "mark_target_warning"
+    "mark_target_warning",
+    "mark_superseded_target",
+    "mark_of_mark_visible",
+    "mark_unreadable_target"
   ],
   "vectors": [
     {
