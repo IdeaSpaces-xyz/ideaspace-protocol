@@ -127,7 +127,9 @@ export function parseThreadAttachment(value: unknown): ThreadAttachment | null {
     // The type namespace is open. Post targets alone have a checked local grammar.
     if (/^[a-z][a-z0-9_]*$/.test(type) && val.length > 0 &&
       (type !== "post" || isPostAttachmentTarget(val))) {
-      return { kind: type, value: val, raw };
+      // `id` and `path` are internal bare-alias kinds, not typed tree edges.
+      // Preserve these open typed values as metadata without reinterpreting them.
+      return { kind: type === "id" || type === "path" ? `typed:${type}` : type, value: val, raw };
     }
   }
 
@@ -194,13 +196,16 @@ export function resolveThreadParent(
     return { status: "none", attachment };
   }
   const targetVal = attachment.value;
+  const matchId = attachment.kind === "id" || (attachment.kind === "post" && /^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(targetVal));
+  const matchPath = attachment.kind === "path" || (attachment.kind === "post" && !matchId && isPostAttachmentTarget(targetVal));
+  if (!matchId && !matchPath) return { status: "unresolved" };
   const matches: ResolvedThreadParent[] = [];
   for (const root of roots) {
     if (authoredPin !== undefined && root.pin !== authoredPin) continue;
     for (const post of root.posts) {
       // Snapshots contain canonical positions, not stripped worktree tree paths.
       if (parseThreadAttachment(post.path)?.kind !== "path") continue;
-      if (post.id === targetVal || post.path === targetVal) {
+      if ((matchId && post.id === targetVal) || (matchPath && post.path === targetVal)) {
         matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
       }
     }
@@ -445,7 +450,9 @@ export function inspectThreadPosts(
   sources: ThreadPostSource[],
   legacyAgreement?: ThreadAttachmentParseResult,
 ): ThreadPostInspection {
-  const sorted = [...sources].sort((a, b) => compareOrdinal(a.path, b.path));
+  // A caller supplies direct canonical post files, not a README or nested payload.
+  const sorted = sources.filter((source) => parseThreadAttachment(source.path)?.kind === "path")
+    .sort((a, b) => compareOrdinal(a.path, b.path));
   const posts: ThreadPost[] = [];
   const unreadable: ThreadPostInspection["unreadable"] = [];
   const warnings: ThreadPostInspection["warnings"] = [];
@@ -461,6 +468,12 @@ export function inspectThreadPosts(
   }
   if (legacyAgreement?.status === "absent" && legacyAgreement.warning) {
     warnings.push({ post: "_agent/agreement.md", field: "attached_to", warning: legacyAgreement.warning });
+  }
+  const byId = new Map(posts.map((post) => [post.id, post]));
+  for (const post of posts) {
+    if (foldableMark(post) && (!byId.has(post.inReplyTo[0]) || byId.get(post.inReplyTo[0])?.kind === "mark")) {
+      warnings.push({ post: post.path, field: "in_reply_to", warning: "mark_target_missing" });
+    }
   }
   const opening = sorted[0];
   // An empty Thread may still be starting: there is no broken opening to repair.

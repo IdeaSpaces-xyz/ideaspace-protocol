@@ -65,6 +65,16 @@
       "expected": { "parent": null, "closed": false, "writable": true, "readableIds": [] }
     },
     {
+      "id": "readme-is-not-an-opening-post",
+      "operation": "inspect_posts",
+      "covers": ["direct_post_sources_only"],
+      "input": { "sources": [
+        { "path": "_threads/child/README.md", "content": "---\nid: msg_readme\n---\nCurated lens" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_open\n---\nOpening" }
+      ] },
+      "expected": { "parent": null, "closed": false, "writable": true, "readableIds": ["msg_open"] }
+    },
+    {
       "id": "unreadable-opening-refuses-writes",
       "operation": "inspect_posts",
       "covers": ["unreadable_opening"],
@@ -94,6 +104,40 @@
         { "path": "_threads/child/03.md", "content": "---\nid: msg_close\nkind: closure\n---\nClosed" }
       ] },
       "expected": { "parent": null, "closed": true, "writable": true, "readableIds": ["msg_open", "msg_close"], "unreadablePaths": ["_threads/child/02.md"] }
+    },
+    {
+      "id": "orphaned-mark-warns-in-inspection",
+      "operation": "inspect_posts",
+      "covers": ["mark_target_warning"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nOpening" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_mark\nkind: mark\nmark: done\nin_reply_to: msg_missing\n---\nOrphaned mark" }
+      ] },
+      "expected": { "parent": null, "closed": false, "writable": true, "readableIds": ["msg_open", "msg_mark"], "warnings": [{ "post": "_threads/child/02.md", "field": "in_reply_to", "warning": "mark_target_missing" }] }
+    },
+    {
+      "id": "path-target-ignores-colliding-post-id",
+      "operation": "resolve_parent",
+      "covers": ["parent_form_not_guess"],
+      "input": { "attached_to": "post:_threads/parent/02.md", "roots": [{ "root": "home", "pin": "aaaa", "posts": [
+        { "path": "_threads/parent/01.md", "id": "_threads/parent/02.md" },
+        { "path": "_threads/parent/02.md", "id": "msg_two" }
+      ] }] },
+      "expected": { "status": "resolved", "parent": { "root": "home", "pin": "aaaa", "path": "_threads/parent/02.md", "id": "msg_two" } }
+    },
+    {
+      "id": "typed-id-is-not-a-bare-alias",
+      "operation": "resolve_parent",
+      "covers": ["typed_alias_not_edge"],
+      "input": { "attached_to": "id:msg_parent", "roots": [{ "root": "home", "pin": "aaaa", "posts": [{ "path": "_threads/parent/01.md", "id": "msg_parent" }] }] },
+      "expected": { "status": "none", "attachmentKind": "typed:id" }
+    },
+    {
+      "id": "typed-path-is-not-a-bare-alias",
+      "operation": "resolve_parent",
+      "covers": ["typed_alias_not_edge"],
+      "input": { "attached_to": "path:../../x", "roots": [{ "root": "home", "pin": "aaaa", "posts": [{ "path": "_threads/parent/01.md", "id": "msg_parent" }] }] },
+      "expected": { "status": "none", "attachmentKind": "typed:path" }
     },
     {
       "id": "non-post-attachment-has-no-parent-edge",

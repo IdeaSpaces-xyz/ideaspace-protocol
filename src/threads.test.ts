@@ -226,7 +226,12 @@ describe("metalayer conformance vectors", () => {
       expect(attachment).not.toBeNull();
       if (!attachment) throw new Error("Expected typed attachment");
       const resolved = resolveThreadParent(attachment, vector.input.roots);
-      expect(resolved).toEqual({ status: vector.expected.status, attachment });
+      if (vector.expected.attachmentKind) expect(attachment.kind).toBe(vector.expected.attachmentKind);
+      if (vector.expected.status === "resolved") {
+        expect(resolved).toEqual({ status: "resolved", parent: vector.expected.parent });
+      } else {
+        expect(resolved).toEqual({ status: vector.expected.status, attachment });
+      }
     } else if (vector.operation === "inspect_posts") {
       const legacy = vector.input.agreement
         ? parseThreadAgreementAttachment(vector.input.agreement, "_threads/child/_agent/agreement.md") : undefined;
@@ -243,6 +248,7 @@ describe("metalayer conformance vectors", () => {
           expect(inspection.warnings.some((w) => w.post === path)).toBe(true);
         }
       }
+      if (vector.expected.warnings) expect(inspection.warnings).toEqual(vector.expected.warnings);
     } else throw new Error(`Unknown operation ${vector.operation}`);
   });
 });
