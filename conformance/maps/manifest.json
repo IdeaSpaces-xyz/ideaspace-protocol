@@ -55,7 +55,8 @@
     "resolve_declared_name_wins",
     "resolve_self",
     "resolve_absent_root",
-    "resolve_ambiguous"
+    "resolve_ambiguous",
+    "core_thread_reference"
   ],
   "vectors": [
     {
@@ -1344,6 +1345,283 @@
         "status": "unresolved",
         "code": "unknown_name"
       }
+    },
+  {
+    "id": "core-thread-no-designation",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {},
+    "expected": {
+      "status": "absent"
     }
+  },
+{
+    "id": "core-thread-legacy-alias-ignored",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "coreThread": "_threads/spine"
+    },
+    "expected": {
+      "status": "absent"
+    }
+  },
+{
+    "id": "core-thread-root-spine",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "_threads/2026-09-30-spine"
+    },
+    "expected": {
+      "status": "valid",
+      "path": "_threads/2026-09-30-spine"
+    }
+  },
+{
+    "id": "core-thread-nested-git",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "nested/_threads/core"
+    },
+    "expected": {
+      "status": "valid",
+      "path": "nested/_threads/core"
+    }
+  },
+{
+    "id": "core-thread-standalone-container",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "project.space/_threads/created-core"
+    },
+    "expected": {
+      "status": "valid",
+      "path": "project.space/_threads/created-core"
+    }
+  },
+{
+    "id": "core-thread-invalid-type",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": 42
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-empty",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": ""
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-absolute-posix",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "/_threads/x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-absolute-drive",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "C:/_threads/x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-drive-relative",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "C:_threads/x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-unc",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "\\\\server\\_threads\\x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-parent",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "../_threads/x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-internal-parent",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "a/../_threads/x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-dot",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "./_threads/x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-file-target",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "_threads/x/README.md"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-wrong-folder",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "notes/x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-dot-slug",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "_threads/.hidden"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-reserved",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": ".git/_threads/x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-backslash",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "_threads\\x"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  },
+{
+    "id": "core-thread-alias-cannot-override-invalid",
+    "operation": "core_thread_reference",
+    "covers": [
+      "core_thread_reference"
+    ],
+    "input": {
+      "core_thread": "../_threads/x",
+      "coreThread": "_threads/good"
+    },
+    "expected": {
+      "status": "invalid",
+      "code": "invalid_core_thread"
+    }
+  }
   ]
 }

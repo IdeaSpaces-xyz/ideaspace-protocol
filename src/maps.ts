@@ -53,6 +53,27 @@ export type Capability = (typeof CAPABILITY_LADDER)[number];
  */
 export const MAP_DISCLOSURE_CAPABILITY: Capability = "view";
 
+/** Optional Space Core metadata, independent of a Map's roots and members. */
+export type CoreThreadReference =
+  | { status: "absent" }
+  | { status: "valid"; path: string }
+  | { status: "invalid"; code: "invalid_core_thread" };
+
+/** Pure portable shape check; actual root resolution, symlink containment and Thread reads belong to the consumer. */
+export function parseCoreThreadReference(frontmatter: unknown): CoreThreadReference {
+  if (!frontmatter || typeof frontmatter !== "object" || Array.isArray(frontmatter) || !("core_thread" in frontmatter))
+    return { status: "absent" }; // `coreThread` is not a frontmatter alias.
+  const value = (frontmatter as Record<string, unknown>).core_thread;
+  if (typeof value !== "string" || /^[A-Za-z]:/.test(value)) return { status: "invalid", code: "invalid_core_thread" };
+  const classified = classifyRepositoryPath(value, "directory");
+  if (classified.status !== "ok" || value.split("/").some((part) => part.toLowerCase() === ".git"))
+    return { status: "invalid", code: "invalid_core_thread" };
+  const segments = value.split("/");
+  if (segments.length < 2 || segments.at(-2) !== "_threads" || !segments.at(-1) || segments.at(-1)!.startsWith("."))
+    return { status: "invalid", code: "invalid_core_thread" };
+  return { status: "valid", path: value };
+}
+
 export interface MapRoot extends Record<string, unknown> {
   /** Canonical absolute repository URL: `<web-origin>/repos/{root_node_id}`. */
   repo?: string;

@@ -5,6 +5,7 @@ import {
   SUBJECT_KINDS,
   CAPABILITY_LADDER,
   MAP_DISCLOSURE_CAPABILITY,
+  parseCoreThreadReference,
   REVISION_PATTERN,
   normalizeSubjectKind,
   isValidSubjectKind,
@@ -75,7 +76,16 @@ interface MomentVector {
   cases: { map: MapBlock; pinned: boolean }[];
 }
 
+interface CoreThreadVector {
+  id: string;
+  operation: "core_thread_reference";
+  covers: string[];
+  input: unknown;
+  expected: ReturnType<typeof parseCoreThreadReference>;
+}
+
 type MapVector =
+  | CoreThreadVector
   | MomentVector
   | ParseVector
   | ParseRepoUrlCasesVector
@@ -320,6 +330,9 @@ describe("Map conformance manifest", () => {
 
   it.each(manifest.vectors)("executes $id", (vector) => {
     switch (vector.operation) {
+      case "core_thread_reference":
+        expect(parseCoreThreadReference(vector.input)).toEqual(vector.expected);
+        break;
       case "parse":
         expect(parseMap(vector.input)).toEqual(vector.expected);
         break;

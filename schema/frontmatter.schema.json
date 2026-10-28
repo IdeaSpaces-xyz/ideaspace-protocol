@@ -39,7 +39,7 @@
     },
     "core_thread": {
       "type": "string",
-      "description": "Optional portable path to the Space's default Core Thread directory."
+      "description": "Optional relative Core Thread directory path ending _threads/<thread-name>, from the checkout root inside Git or Map-note folder outside Git. No absolute, parent or realpath escape is allowed; invalid optional metadata does not invalidate the Note. Portable validation and runtime containment are defined in schema/maps.md. No coreThread alias."
     }
   },
   "$defs": {

@@ -199,7 +199,13 @@ A knowledge Note MAY carry an optional `map` frontmatter block: ordered addresse
 Git pins and representation ceilings, with its Markdown body serving as the human-readable legend. The
 block adds a navigation layer without changing the repository model. A reader that does not
 understand Maps ignores the block and reads the Note; an invalid block is projection drift, not a
-base repository-conformance failure.
+base repository-conformance failure. A curated Space Map MAY designate its Core Thread by the
+optional `core_thread` frontmatter field (and **not** a `coreThread` alias). Its path is relative
+only: to the checkout root for a Map inside Git, or to the Map note's folder outside Git, and
+names an ordinary `_threads/<thread>` folder inside that base. Portable syntax and resolution
+rules are in [`schema/maps.md`](schema/maps.md); actual realpath containment and Thread existence
+are the reader's responsibility. An invalid optional reference does not invalidate the Note or
+its generic Map projection, and a Map never grants access to an unrelated root.
 
 Repository-position members use a root index and canonical repository-relative position, including exact `_agent/` context at the root or beneath a branch and the standard `_threads/` extension. `_agent` members use the same five depth ceilings and pinned-root semantics as Notes; membership selects a view, never grants read authority. `_assets/`, unknown underscore extensions, `.git`, absolute and escaping paths remain invalid as position members. An optional depth
 name is `name`, `summary`, `surface`, `children`, or `full`. Roots MAY carry a full commit pin and are addressed by an absolute canonical `/repos/{root_node_id}` web URL, portable
