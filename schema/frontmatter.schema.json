@@ -36,6 +36,10 @@
     "map": {
       "$ref": "#/$defs/map",
       "description": "Optional provisional Map projection. Invalid Map guidance does not make the surrounding Note unreadable or add a base repository-conformance failure."
+    },
+    "core_thread": {
+      "type": "string",
+      "description": "Optional portable path to the Space's default Core Thread directory."
     }
   },
   "$defs": {

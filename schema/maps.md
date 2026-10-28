@@ -55,6 +55,24 @@ The block is additive. A Map-unaware reader ignores it and reads the legend. A m
 the Map projection unavailable and SHOULD be surfaced as drift; it does not make the Note invalid or
 unreadable. Unknown fields are preserved and ignored by readers that do not understand them.
 
+A curated Map that establishes a Space MAY designate a default Core Thread via optional frontmatter
+attribute `core_thread`:
+
+```yaml
+---
+name: Desktop v3
+summary: Desktop v3 space map.
+core_thread: _threads/2026-10-15-desktop-spine
+map:
+  roots: []
+  members: []
+---
+```
+
+`core_thread` is a portable path to the Space's default Core Thread directory (repo-relative when inside
+a repository, or relative to the map note when outside Git). A generic Map reader treats `core_thread`
+as optional metadata; a Space-aware environment resolves it to expose the Space's activity log and current frame.
+
 `roots` and `members` are ordered arrays. Either may be absent and is then empty. Member order is
 curated meaning and MUST be preserved.
 
