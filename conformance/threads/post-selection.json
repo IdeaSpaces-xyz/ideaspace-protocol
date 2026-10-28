@@ -1,0 +1,61 @@
+{
+  "format": "ideaspaces-thread-post-selection/v1",
+  "rule": "The caller supplies exactly the posts in one authorized root or named Thread. Exact id wins; eight-hex msg_ shorthand matches only at a hyphen boundary. No match is unresolved; multiple matches are ambiguous. No checkout, fetch, HEAD substitution or first-match fallback.",
+  "vectors": [
+    {
+      "id": "full-id-in-named-thread",
+      "covers": ["post_id_selection"],
+      "query": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be",
+      "posts": [{ "path": "_threads/engine/fix.md", "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be" }],
+      "expected": { "status": "resolved", "post": { "path": "_threads/engine/fix.md", "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be" } }
+    },
+    {
+      "id": "unique-eight-hex-shorthand",
+      "query": "msg_75cc2f37",
+      "posts": [
+        { "path": "_threads/engine/fix.md", "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be" },
+        { "path": "_threads/engine/other.md", "id": "msg_75cc2f370-e925-48e0-a801-c0ac7920c8be" }
+      ],
+      "expected": { "status": "resolved", "post": { "path": "_threads/engine/fix.md", "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be" } }
+    },
+    {
+      "id": "exact-id-wins-over-its-longer-prefix-match",
+      "query": "msg_75cc2f37",
+      "posts": [
+        { "path": "_threads/engine/exact.md", "id": "msg_75cc2f37" },
+        { "path": "_threads/engine/longer.md", "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be" }
+      ],
+      "expected": { "status": "resolved", "post": { "path": "_threads/engine/exact.md", "id": "msg_75cc2f37" } }
+    },
+    {
+      "id": "copied-id-ambiguous-across-root-threads",
+      "query": "msg_same",
+      "posts": [
+        { "path": "_threads/a/one.md", "id": "msg_same" },
+        { "path": "_threads/b/two.md", "id": "msg_same" }
+      ],
+      "expected": { "status": "ambiguous" }
+    },
+    {
+      "id": "shared-prefix-ambiguous",
+      "query": "msg_75cc2f37",
+      "posts": [
+        { "path": "_threads/a/one.md", "id": "msg_75cc2f37-1111" },
+        { "path": "_threads/b/two.md", "id": "msg_75cc2f37-2222" }
+      ],
+      "expected": { "status": "ambiguous" }
+    },
+    {
+      "id": "missing-in-supplied-root",
+      "query": "msg_absent",
+      "posts": [{ "path": "_threads/a/one.md", "id": "msg_other" }],
+      "expected": { "status": "unresolved" }
+    },
+    {
+      "id": "ordinary-note-is-not-a-thread-post",
+      "query": "msg_only_note",
+      "posts": [{ "path": "notes/one.md", "id": "msg_only_note" }],
+      "expected": { "status": "unresolved" }
+    }
+  ]
+}

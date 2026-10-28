@@ -3,6 +3,8 @@
   "thread_directory": "_threads",
   "attachment_vectors": "attachments.json",
   "agreement_schema_vectors": "agreement-schema.json",
+  "metalayer_vectors": "metalayer.json",
+  "post_selection_vectors": "post-selection.json",
   "required_coverage": [
     "post_frontmatter",
     "post_date_authored",
@@ -24,7 +26,28 @@
     "attachment_missing_id",
     "attachment_duplicate_id",
     "attachment_missing_pin",
-    "attachment_note_subject"
+    "attachment_note_subject",
+    "field_tolerance",
+    "map_member_tolerance",
+    "map_nonmember_tolerance",
+    "unknown_kind",
+    "mark_fold",
+    "malformed_mark_visible",
+    "anonymous_marks_distinct",
+    "opening_attachment",
+    "empty_thread_writable",
+    "direct_post_sources_only",
+    "unreadable_opening",
+    "unreadable_closure",
+    "readable_closure_settles",
+    "non_post_no_edge",
+    "typed_alias_not_edge",
+    "parent_form_not_guess",
+    "mark_target_warning",
+    "mark_superseded_target",
+    "mark_of_mark_visible",
+    "mark_unreadable_target",
+    "post_id_selection"
   ],
   "vectors": [
     {

@@ -23,6 +23,7 @@
     "open_external_address",
     "external_depth_ceiling",
     "thread_address",
+    "post_id_selector",
     "opaque_revision",
     "invalid_revision",
     "invalid_root_identity",
@@ -759,6 +760,19 @@
             "kind": "self"
           },
           "position": "_threads/decision/README.md"
+        }
+      }
+    },
+    {
+      "id": "address-thread-post-id-selector",
+      "operation": "parse_address",
+      "covers": ["post_id_selector", "address_round_trip"],
+      "input": "@n_0123456789abcdef01234567//_threads/engine/msg_75cc2f37",
+      "expected": {
+        "status": "valid",
+        "address": {
+          "root": { "kind": "identity", "rootNodeId": "n_0123456789abcdef01234567" },
+          "position": "_threads/engine/msg_75cc2f37"
         }
       }
     },

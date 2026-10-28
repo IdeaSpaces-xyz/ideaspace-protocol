@@ -162,6 +162,11 @@ repository root or beneath a branch (including a Thread's `_agent/`), whether it
 or Markdown file. It uses the same five depth ceilings and the root's authored pin; membership
 selects a view, not permission to read. The standard `_threads/` extension is permitted
 (`_threads/<thread>/README.md` or `_threads/<thread>/<post>.md`) per [`threads.md`](threads.md).
+An address (or an explicitly selected member) at `_threads/<thread>/msg_…` MAY use the terminal
+`msg_` segment as a read-time post-id selector instead of an authored filename. A full id or a
+unique eight-hex shorthand resolves only inside that Thread at the Map root's selected commit;
+missing/duplicate matches report `unresolved`/`ambiguous`, with no HEAD or first-match fallback.
+The selector does not create a file and grants no read authority.
 `_assets/`, case lookalikes, arbitrary underscore extensions, `.git`, absolute paths and traversal
 remain invalid position members. Open position addresses may still name other extensions; they
 are not automatically valid members.
