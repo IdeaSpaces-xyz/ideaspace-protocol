@@ -55,6 +55,38 @@ The block is additive. A Map-unaware reader ignores it and reads the legend. A m
 the Map projection unavailable and SHOULD be surfaced as drift; it does not make the Note invalid or
 unreadable. Unknown fields are preserved and ignored by readers that do not understand them.
 
+A curated Map that establishes a Space MAY designate a default Core Thread via optional frontmatter
+attribute `core_thread`:
+
+```yaml
+---
+name: Desktop v3
+summary: Desktop v3 space map.
+core_thread: _threads/2026-10-15-desktop-spine
+map:
+  roots: []
+  members: []
+---
+```
+
+`core_thread` is the **only** frontmatter spelling for this optional designation; a field named
+`coreThread` does not designate a Core. The value is a nonempty, portable relative **directory** path
+using `/` separators, ending in exactly `_threads/<thread-name>` (the final name does not start with
+`.`). It follows the existing canonical repository-path grammar: no leading `/`, `//`, trailing `/`,
+backslash, NUL, `.` or `..` segments, or `.git` segment; drive-prefixed paths such as `C:/...` and
+absolute file/UNC paths are not relative. No parent traversal or cross-root addressing is implied.
+
+For a Map **inside Git**, the base is its own checkout root, even when the Map is nested under a
+folder such as `maps/` or the checkout is a worktree. For a Map **outside Git**, the base is the Map
+note's containing folder; e.g. `project.space/_threads/2026-10-28-project-core` for a standalone
+`project.map.md`. A root-level `home.map.md` may use `_threads/2026-09-30-spine` unchanged. A
+Space-aware consumer resolves against that base, requires the resolved real path to remain *inside*
+that same base (including across symlinks), and reports a missing, unreadable or non-Thread target
+honestly; a directory alone is not a Thread. This protocol defines the shape, **not** filesystem,
+Git or platform access authority: the Map is never permission to read arbitrary local material.
+Invalid optional `core_thread` metadata does not invalidate the surrounding Note or its generic Map
+projection. A generic Map reader treats this field as optional metadata; it does not resolve it.
+
 `roots` and `members` are ordered arrays. Either may be absent and is then empty. Member order is
 curated meaning and MUST be preserved.
 

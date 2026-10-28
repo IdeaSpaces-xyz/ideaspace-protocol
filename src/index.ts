@@ -291,6 +291,7 @@ export {
   SUBJECT_KINDS,
   CAPABILITY_LADDER,
   MAP_DISCLOSURE_CAPABILITY,
+  parseCoreThreadReference,
   REVISION_PATTERN,
   normalizeSubjectKind,
   isValidSubjectKind,
@@ -307,6 +308,7 @@ export {
 } from "./maps.js";
 export type {
   MapDepth,
+  CoreThreadReference,
   SubjectKind,
   Capability,
   MapDisclosure,
