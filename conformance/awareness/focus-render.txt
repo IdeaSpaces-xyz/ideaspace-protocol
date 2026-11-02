@@ -9,8 +9,8 @@ Tree (3 files):
   README.md — Focus root.
 
 Agent context:
-  agreement [full]:
-    AGREEMENT_BODY
+  agreement — Reference terms.
+    summary only — read _agent/agreement.md in full before writing here
   purpose — Purpose summary.
 
 Operating skills:

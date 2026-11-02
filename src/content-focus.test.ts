@@ -39,7 +39,7 @@ describe("Content focus", () => {
       "agreement.md": "# Caller Agreement\n\nCALLER TERMS",
     });
     await writeAgent(target, {
-      "agreement.md": "# Target Agreement\n\nTARGET TERMS",
+      "agreement.md": "---\nsummary: Target Agreement\n---\n# Target Agreement\n\nTARGET TERMS",
       "purpose.md": "---\nsummary: Target purpose.\n---\nPURPOSE BODY",
     });
     await fs.mkdir(join(target, "_agent", "skills"), { recursive: true });
@@ -95,8 +95,8 @@ describe("Content focus", () => {
       contract: [
         {
           name: "agreement",
-          representation: "full",
-          content: expect.stringContaining("TARGET TERMS"),
+          representation: "summary",
+          summary: "Target Agreement",
           placement: "history",
         },
         {
@@ -123,7 +123,10 @@ describe("Content focus", () => {
     expect(renderedFocus).toContain(
       "contract role: reference — read, never composed",
     );
-    expect(renderedFocus).toContain("TARGET TERMS");
+    expect(renderedFocus).not.toContain("TARGET TERMS");
+    expect(renderedFocus).toContain(
+      "summary only — read _agent/agreement.md in full before writing here",
+    );
     expect(renderedFocus).not.toContain("PURPOSE BODY");
     expect(renderedFocus).not.toContain("CALLER TERMS");
     expect(`${renderedHead}\n\n${renderedFocus}`.match(/^Position:/gm)).toHaveLength(1);
@@ -132,6 +135,28 @@ describe("Content focus", () => {
     const repeated = await assembleContentFocus({ position: target });
     expect(repeated?.status).toBe("ok");
     expect(renderContentFocus(repeated!)).toBe(renderedFocus);
+
+    const full = await assembleContentFocus({ position: target, agreement: "full" });
+    expect(full).toMatchObject({
+      status: "ok",
+      contract: [
+        {
+          name: "agreement",
+          representation: "full",
+          content: expect.stringContaining("TARGET TERMS"),
+        },
+        { name: "purpose", representation: "summary" },
+      ],
+    });
+    expect(renderContentFocus(full!)).toContain("TARGET TERMS");
+    expect(JSON.stringify(head)).toBe(headBefore);
+  });
+
+  it("refuses an unknown reference Agreement representation", async () => {
+    await writeAgent(tmp, { "agreement.md": "TERMS" });
+    await expect(
+      assembleContentFocus({ position: tmp, agreement: "body" as never }),
+    ).rejects.toThrow(/summary, full/);
   });
 
   it("keeps Foundation compatibility and supports a contract-free floor", async () => {
@@ -201,11 +226,11 @@ describe("Content focus", () => {
   it("assembles reference focus for a Thread folder and its posts", async () => {
     const root = join(tmp, "thread-space");
     await writeAgent(root, {
-      "agreement.md": "# Space Agreement\n\nSPACE TERMS",
+      "agreement.md": "---\nsummary: Space Agreement\n---\n# Space Agreement\n\nSPACE TERMS",
     });
     const threadDir = join(root, "_threads", "2026-09-30-spine");
     await writeAgent(threadDir, {
-      "agreement.md": "# Thread Agreement\n\nTHREAD TERMS",
+      "agreement.md": "---\nsummary: Thread Agreement\n---\n# Thread Agreement\n\nTHREAD TERMS",
     });
     await fs.writeFile(
       join(threadDir, "README.md"),
@@ -227,11 +252,13 @@ describe("Content focus", () => {
       contract: [
         expect.objectContaining({
           name: "agreement",
-          content: expect.stringContaining("SPACE TERMS"),
+          representation: "summary",
+          summary: "Space Agreement",
         }),
         expect.objectContaining({
           name: "agreement",
-          content: expect.stringContaining("THREAD TERMS"),
+          representation: "summary",
+          summary: "Thread Agreement",
         }),
       ],
       tree: {
@@ -246,8 +273,28 @@ describe("Content focus", () => {
     });
 
     const rendered = renderContentFocus(focus!);
-    expect(rendered).toContain("THREAD TERMS");
+    expect(rendered).not.toContain("THREAD TERMS");
+    expect(rendered).toContain(
+      "read _threads/2026-09-30-spine/_agent/agreement.md in full before writing here",
+    );
     expect(rendered).toContain("Focus:");
+
+    // Full on request: the Thread's own Agreement only; the Space's stays summary.
+    const full = await assembleContentFocus({ position: threadDir, agreement: "full" });
+    expect(full).toMatchObject({
+      status: "ok",
+      contract: [
+        expect.objectContaining({ name: "agreement", representation: "summary" }),
+        expect.objectContaining({
+          name: "agreement",
+          representation: "full",
+          content: expect.stringContaining("THREAD TERMS"),
+        }),
+      ],
+    });
+    const renderedFull = renderContentFocus(full!);
+    expect(renderedFull).toContain("THREAD TERMS");
+    expect(renderedFull).not.toContain("SPACE TERMS");
   });
 });
 

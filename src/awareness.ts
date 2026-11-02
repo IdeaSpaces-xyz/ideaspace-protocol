@@ -37,6 +37,7 @@ import {
   renderContentTreeProjection,
 } from "./map-projection.js";
 import {
+  CONTENT_REPRESENTATIONS,
   composeAgreementAlongPath,
   type AgreementIssue,
   type ComposedAgreement,
@@ -117,6 +118,14 @@ export interface AssembleContentFocusOpts {
   summaryExcerptLength?: number;
   /** Soft display cap for the target's depth-one Content tree. Default: 50. */
   treeMaxEntries?: number;
+  /**
+   * Reference Agreement representation. Default `summary`: every selected
+   * Agreement in the target stack loads at summary, and `context.full`
+   * declarations do not expand. `full` loads the nearest Agreement (the
+   * target's own) and its declared full loads in full; ancestors stay summary.
+   * Ambient awareness of the caller's own position is unaffected.
+   */
+  agreement?: ContentRepresentation;
 }
 
 export const CONTENT_AWARENESS_SECTIONS = [
@@ -502,12 +511,19 @@ export async function assembleContentAwareness(
  *
  * Selection and validation match ambient Content awareness, but the result is
  * deliberately smaller: target position, depth-one tree, agent context, and
- * skills. Every returned awareness item belongs in prompt history. A selected
- * Agreement still loads in full; it is read as reference, never composed.
+ * skills. Every returned awareness item belongs in prompt history. Selected
+ * Agreements load at summary unless the caller asks for the nearest one in
+ * full; they are read as reference, never composed.
  */
 export async function assembleContentFocus(
   opts: AssembleContentFocusOpts,
 ): Promise<ContentFocusResult | null> {
+  const agreementRepresentation = opts.agreement ?? "summary";
+  if (!CONTENT_REPRESENTATIONS.includes(agreementRepresentation)) {
+    throw new RangeError(
+      `Reference Agreement representation must be one of: ${CONTENT_REPRESENTATIONS.join(", ")}`,
+    );
+  }
   const selected = await selectContentFrame(opts.position, opts.contractSource, true);
   if (!selected) return null;
   if ("status" in selected) return { ...selected, kind: "content-focus" };
@@ -544,7 +560,10 @@ export async function assembleContentFocus(
           stack: foundation.stack,
         })
       : contractSource === "agreement"
-        ? readAgreementAwarenessSections({ ...common, agreement })
+        ? readAgreementAwarenessSections({
+            ...common,
+            agreement: referenceAgreement(agreement, agreementRepresentation),
+          })
         : readFloorAwarenessSections(common),
   ]);
 
@@ -567,6 +586,63 @@ export async function assembleContentFocus(
     tree: sections.tree ? toFocusTree(sections.tree) : null,
     contract: sections.contract.map((entry) => ({ ...entry, placement: "history" })),
     skills: sections.skills.map((skill) => ({ ...skill, placement: "history" })),
+  };
+}
+
+export interface AssembleContentReferenceOpts {
+  /** Explicit target frame. Required when both entrypoints resolve. */
+  contractSource?: ContractSource;
+  /** Cap on per-summary length for target contract and skill entries. Default: 200 characters. */
+  summaryExcerptLength?: number;
+  /** Reference Agreement representation; see `AssembleContentFocusOpts.agreement`. */
+  agreement?: ContentRepresentation;
+}
+
+/**
+ * The tree-less reference frame of one position: the same frame a Content
+ * look carries, for a caller that attaches it to its own read (a Thread open,
+ * a post read) rather than to a look target.
+ */
+export async function assembleContentReference(
+  position: string,
+  opts: AssembleContentReferenceOpts = {},
+): Promise<ContentFocusResult | null> {
+  const focused = await assembleContentFocus({
+    position,
+    ...(opts.contractSource ? { contractSource: opts.contractSource } : {}),
+    ...(opts.summaryExcerptLength !== undefined
+      ? { summaryExcerptLength: opts.summaryExcerptLength }
+      : {}),
+    ...(opts.agreement ? { agreement: opts.agreement } : {}),
+    treeMaxEntries: 0,
+  });
+  if (!focused || focused.status !== "ok") return focused;
+  return { ...focused, tree: null };
+}
+
+/**
+ * Apply the reference representation to a composed Agreement stack. Summary
+ * collapses every file to summary. Full keeps the nearest Agreement level as
+ * composed (its Agreement and declared full loads in full) and collapses every
+ * ancestor level to summary.
+ */
+function referenceAgreement(
+  agreement: ComposedAgreement,
+  representation: ContentRepresentation,
+): ComposedAgreement {
+  const nearest = [...agreement.stack].reverse().find((level) => level.agreementPath !== null);
+  const stack = agreement.stack.map((level) =>
+    representation === "full" && level === nearest
+      ? level
+      : {
+          ...level,
+          files: level.files.map((file) => ({ ...file, representation: "summary" as const })),
+        },
+  );
+  return {
+    ...agreement,
+    stack,
+    agreements: stack.flatMap((level) => level.files.filter((file) => file.name === "agreement")),
   };
 }
 
@@ -1484,6 +1560,11 @@ function renderContract(
       for (const line of entry.content.trimEnd().split("\n")) lines.push(`    ${line}`);
     } else {
       lines.push(entry.summary ? `  ${name} — ${entry.summary}` : `  ${name}`);
+      // Only a reference read collapses an Agreement; say where its full text is.
+      if (entry.name === "agreement") {
+        const source = levelBase ? relative(levelBase, entry.path) : entry.path;
+        lines.push(`    summary only — read ${source.split(sep).join("/")} in full before writing here`);
+      }
     }
   }
   return lines.join("\n");

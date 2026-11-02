@@ -60,13 +60,20 @@ interface Vector extends VectorFiles {
 }
 
 interface FocusVector extends VectorFiles {
+  /** Focus target relative to the vector root; default the root. */
+  target?: string;
+  /** Reference Agreement representation requested; default summary. */
+  agreement?: "summary" | "full";
   expected: {
     status: string;
     kind?: "content-focus";
     contract_source?: "foundation" | "agreement" | null;
     contract_role?: "reference";
     representations?: string[];
-    excluded?: string;
+    /** Ambient awareness of the same position: the own Agreement is unaffected. */
+    ambient_representations?: string[];
+    excluded?: string | string[];
+    included?: string[];
     issue_codes?: string[];
     contract_count?: number;
     skill_count?: number;
@@ -248,10 +255,12 @@ describe("Content awareness conformance manifest", () => {
   for (const vector of kit.focus_vectors) {
     it(`focus: ${vector.id}`, async () => {
       const { root } = await materialize(vector);
-      const result = await assembleContentFocus({
-        position: root,
+      const focusOpts = {
+        position: vector.target ? join(root, vector.target) : root,
         ...(vector.contract_source ? { contractSource: vector.contract_source } : {}),
-      });
+        ...(vector.agreement ? { agreement: vector.agreement } : {}),
+      };
+      const result = await assembleContentFocus(focusOpts);
       expect(result?.status).toBe(vector.expected.status);
       expect(result?.kind).toBe(vector.expected.kind);
       if (!result || result.status !== "ok") {
@@ -270,8 +279,25 @@ describe("Content awareness conformance manifest", () => {
           vector.expected.representations,
         );
       }
-      if (vector.expected.excluded) {
-        expect(JSON.stringify(result)).not.toContain(vector.expected.excluded);
+      const serialized = JSON.stringify(result);
+      for (const marker of [vector.expected.excluded ?? []].flat()) {
+        expect(serialized).not.toContain(marker);
+      }
+      for (const marker of vector.expected.included ?? []) {
+        expect(serialized).toContain(marker);
+      }
+      if (vector.expected.ambient_representations) {
+        const ambient = await assembleContentAwareness({
+          position: focusOpts.position,
+          lastSha: null,
+          ...(vector.contract_source ? { contractSource: vector.contract_source } : {}),
+        });
+        expect(ambient?.status).toBe("ok");
+        if (ambient?.status === "ok") {
+          expect(ambient.contract.map((entry) => entry.representation)).toEqual(
+            vector.expected.ambient_representations,
+          );
+        }
       }
       if (vector.expected.contract_count !== undefined) {
         expect(result.contract).toHaveLength(vector.expected.contract_count);
@@ -286,7 +312,7 @@ describe("Content awareness conformance manifest", () => {
           root,
         );
         expect(renderContentFocus(result)).toBe(expected);
-        const repeated = await assembleContentFocus({ position: root });
+        const repeated = await assembleContentFocus(focusOpts);
         expect(repeated?.status).toBe("ok");
         expect(renderContentFocus(repeated!)).toBe(expected);
       }
