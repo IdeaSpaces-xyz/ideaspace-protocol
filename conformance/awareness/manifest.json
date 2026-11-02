@@ -37,7 +37,10 @@
     "focus_reference",
     "focus_history",
     "focus_depth_one",
-    "focus_agreement_full",
+    "focus_agreement_summary_default",
+    "focus_agreement_full_on_request",
+    "focus_agreement_full_nearest_only",
+    "focus_ambient_agreement_full",
     "focus_agent_summary",
     "focus_deterministic",
     "focus_foundation",
@@ -320,7 +323,7 @@
     {
       "id": "agreement-reference-depth-one",
       "files": {
-        "_agent/agreement.md": "AGREEMENT_BODY",
+        "_agent/agreement.md": "---\nsummary: Reference terms.\ncontext:\n  full: [purpose.md]\n---\nAGREEMENT_BODY",
         "_agent/purpose.md": "---\nsummary: Purpose summary.\n---\nPURPOSE_BODY",
         "_agent/skills/inspect.md": "---\nname: inspect\ndescription: Read the target carefully.\n---\n# Inspect",
         "docs/README.md": "---\nsummary: Focus docs.\n---\n# Docs",
@@ -331,7 +334,8 @@
         "focus_reference",
         "focus_history",
         "focus_depth_one",
-        "focus_agreement_full",
+        "focus_agreement_summary_default",
+        "focus_ambient_agreement_full",
         "focus_agent_summary",
         "focus_deterministic"
       ],
@@ -340,9 +344,38 @@
         "kind": "content-focus",
         "contract_source": "agreement",
         "contract_role": "reference",
-        "representations": ["full", "summary"],
-        "excluded": "PURPOSE_BODY",
+        "representations": ["summary", "summary"],
+        "excluded": ["AGREEMENT_BODY", "PURPOSE_BODY"],
+        "ambient_representations": ["full", "full"],
         "render_fixture": "focus-render.txt"
+      }
+    },
+    {
+      "id": "agreement-reference-full-on-request",
+      "target": "inner",
+      "agreement": "full",
+      "files": {
+        "_agent/agreement.md": "---\nsummary: Outer terms.\ncontext:\n  full: [purpose.md]\n---\nOUTER_BODY",
+        "_agent/purpose.md": "---\nsummary: Outer purpose.\n---\nOUTER_PURPOSE_BODY",
+        "inner/_agent/agreement.md": "---\nsummary: Inner terms.\ncontext:\n  full: [purpose.md]\n---\nINNER_BODY",
+        "inner/_agent/purpose.md": "---\nsummary: Inner purpose.\n---\nINNER_PURPOSE_BODY",
+        "inner/README.md": "---\nsummary: Inner root.\n---\n# Inner"
+      },
+      "covers": [
+        "focus_reference",
+        "focus_history",
+        "focus_agreement_full_on_request",
+        "focus_agreement_full_nearest_only"
+      ],
+      "expected": {
+        "status": "ok",
+        "kind": "content-focus",
+        "contract_source": "agreement",
+        "contract_role": "reference",
+        "representations": ["summary", "summary", "full", "full"],
+        "excluded": ["OUTER_BODY", "OUTER_PURPOSE_BODY"],
+        "included": ["INNER_BODY", "INNER_PURPOSE_BODY"],
+        "render_fixture": "focus-full-render.txt"
       }
     },
     {

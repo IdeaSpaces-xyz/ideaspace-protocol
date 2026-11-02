@@ -56,10 +56,11 @@
   ],
   "cap": { "target": "_threads/decision", "max_children": 1, "child_names": ["Opening"], "omitted_children": 1 },
   "focus": [
-    { "target": "_threads/decision", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"], "tree_post": "2026-10-02T10-00-00Z-direction.md" },
-    { "target": "_threads/decision/README.md", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] },
-    { "target": "_threads/decision/2026-10-02T10-00-00Z-direction.md", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] },
-    { "target": "_threads/decision/_agent/agreement.md", "contract_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] }
+    { "target": "_threads/decision", "contract_markers": ["Root reader terms.", "Thread reference terms.", "read _threads/decision/_agent/agreement.md in full before writing here"], "absent_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"], "tree_post": "2026-10-02T10-00-00Z-direction.md" },
+    { "target": "_threads/decision/README.md", "contract_markers": ["Root reader terms.", "Thread reference terms.", "read _threads/decision/_agent/agreement.md in full before writing here"], "absent_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] },
+    { "target": "_threads/decision/2026-10-02T10-00-00Z-direction.md", "contract_markers": ["Root reader terms.", "Thread reference terms.", "read _threads/decision/_agent/agreement.md in full before writing here"], "absent_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] },
+    { "target": "_threads/decision/_agent/agreement.md", "contract_markers": ["Root reader terms.", "Thread reference terms.", "read _threads/decision/_agent/agreement.md in full before writing here"], "absent_markers": ["ROOT_READER_TERMS", "THREAD_READER_TERMS"] },
+    { "target": "_threads/decision/2026-10-02T10-00-00Z-direction.md", "agreement": "full", "contract_markers": ["Root reader terms.", "THREAD_READER_TERMS"], "absent_markers": ["ROOT_READER_TERMS", "read _threads/decision/_agent/agreement.md"] }
   ],
   "warnings": {
     "folder": "_threads/warning-fixture",

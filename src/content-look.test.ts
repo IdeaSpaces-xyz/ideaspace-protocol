@@ -27,7 +27,7 @@ async function write(path: string, content: string): Promise<void> {
 
 async function agreementRoot(): Promise<string> {
   const root = join(tmp, "space");
-  await write(join(root, "_agent", "agreement.md"), "# Agreement\n\nREFERENCE TERMS");
+  await write(join(root, "_agent", "agreement.md"), "---\nsummary: Reference agreement.\n---\n# Agreement\n\nREFERENCE TERMS");
   return root;
 }
 
@@ -63,9 +63,10 @@ describe("Content look", () => {
     expect(name.reference.tree).toBeNull();
     expect(name.reference.contract[0]).toMatchObject({
       name: "agreement",
-      representation: "full",
+      representation: "summary",
       placement: "history",
     });
+    expect(name.reference.contract[0]).not.toHaveProperty("content");
     expect(name.target).toMatchObject({
       placement: "history",
       position: "notes/decision.md",
@@ -109,10 +110,16 @@ describe("Content look", () => {
 
     const rendered = renderContentLook(full);
     expect(rendered).toContain("contract role: reference — read, never composed");
-    expect(rendered).toContain("REFERENCE TERMS");
+    expect(rendered).not.toContain("REFERENCE TERMS");
+    expect(rendered).toContain("summary only — read _agent/agreement.md in full before writing here");
     expect(rendered).toContain("Look:\n  position: notes/decision.md");
     expect(rendered).toContain("Surface:\n  # Decision");
     expect(renderContentLook(ok(await assembleContentLook({ position: note, depth: "full" })))).toBe(rendered);
+
+    const withTerms = ok(await assembleContentLook({ position: note, depth: "full", agreement: "full" }));
+    expect(withTerms.reference.contract[0]).toMatchObject({ name: "agreement", representation: "full" });
+    expect(renderContentLook(withTerms)).toContain("REFERENCE TERMS");
+    expect(withTerms.target.revision).toBe(full.target.revision);
   });
 
   it("reads directory surface and children without treating README as a child", async () => {
@@ -223,7 +230,7 @@ describe("Content look", () => {
       kind: "markdown",
       position: "_agent/agreement.md",
       name: "agreement",
-      summary: "REFERENCE TERMS",
+      summary: "Reference agreement.",
     });
 
     const lookedAgentDir = ok(await assembleContentLook({ position: join(root, "_agent"), depth: "children" }));

@@ -30,7 +30,7 @@ During the Agreement migration, `_agent/` has two alternative entrypoints:
 | File | Meaning | Loading |
 |---|---|---|
 | `foundation.md` | frozen five-file compatibility handshake | current five-file behavior |
-| `agreement.md` | standing meaning and terms sufficient for the next move | every applicable Agreement in full |
+| `agreement.md` | standing meaning and terms sufficient for the next move | every applicable Agreement in full; at summary when read as reference |
 
 A caller MAY request `foundation` or `agreement`. Exactly one available source selects
 automatically. If both resolve and no source is supplied, assembly returns
@@ -69,6 +69,10 @@ Agreement mode stops assigning protocol meaning to `guide`, `purpose`, `now`, or
   its ancestor;
 - the unselected `foundation.md` is omitted;
 - deeper content loads only on demand or by an Agreement declaration.
+
+These rules compose the caller's own frame. A reference read of another position (Content focus,
+Content look) loads its Agreements at summary unless the caller asks for the nearest one in full; see
+[`content-awareness.md`](content-awareness.md#focus-result).
 
 An Agreement MAY declare direct sibling Markdown files for full loading:
 

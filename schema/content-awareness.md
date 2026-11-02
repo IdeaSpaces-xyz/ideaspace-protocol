@@ -65,7 +65,26 @@ The result contains only:
 | `contract` | Target agent context at its selected representations, all at history placement. |
 | `skills` | Target skill handles at summary representation and history placement. |
 
-Agreement targets preserve full Agreement loading and safe `context.full` declarations. Foundation
+A focus request MAY carry `agreement: summary | full`; the default is `summary`.
+
+- `summary`: every selected Agreement in the target stack loads at summary representation, and no
+  `context.full` declaration expands. Other agent-context files stay at summary.
+- `full`: the nearest Agreement (the deepest selected level that declares one, normally the
+  target's own) and that level's `context.full` declarations load in full. Ancestor Agreements and
+  their declared loads stay at summary.
+
+Selection, validation and diagnostics are unchanged: an invalid `context.full` declaration still
+returns `contract_invalid` at either representation. Revisions hash the exact file bytes at either
+representation. The canonical render of a summary Agreement entry is its usual summary line
+followed by one line, `    summary only — read <path> in full before writing here`, where `<path>`
+is the Agreement path relative to the target's space root with `/` separators. Ambient
+`assembleContentAwareness` is unaffected: the caller's own Agreements always load in full.
+
+`assembleContentReference(position, { contractSource?, summaryExcerptLength?, agreement? })` returns
+the same focus result with its tree removed (`tree: null`). It is the frame a Content look carries,
+for a caller that attaches it to its own read (a Thread open, one post read) instead of a look.
+
+Foundation
 targets preserve the frozen summary representation; floor targets carry no contract or skills. The
 focus result never includes activity, Git state, stale-document signals, direction warnings, or a
 caller contract stack. `renderContentFocus` emits the canonical block beginning with `Focus:` and the
@@ -82,7 +101,7 @@ This arm is frozen for reproducible comparison while Agreement is proved.
 
 ## Agreement frame
 
-Agreement loading is generic:
+Agreement loading is generic. For the caller's own position (ambient awareness):
 
 - every selected `_agent/agreement.md` from root to position loads in full, root-first;
 - other direct `_agent/*.md` files load at summary;
@@ -90,6 +109,9 @@ Agreement loading is generic:
 - `foundation.md` is absent;
 - skills load as name plus description, with deeper same-named skills shadowing ancestors;
 - Agreement mode does not assign special semantics to Purpose, Now, Guide, or Next.
+
+A reference read of another position (Content focus, Content look) applies the representation rule
+in "Focus result" on top of this stack.
 
 A full-load declaration is:
 
@@ -220,4 +242,6 @@ Implementations claiming Content-awareness conformance execute every required co
 both single-source arms, explicit selection, choice and unavailable diagnostics, floor orientation,
 declared full loading, unselected-source absence, exact revisions, prompt placement, deterministic
 head/tail rendering, disjoint membership, activity confined to tail, and Content-tail composition with
-State superseding the compact Git line and the Change line last.
+State superseding the compact Git line and the Change line last. Its focus vectors cover reference
+Agreements at summary by default, full on request for the nearest Agreement only, and the ambient
+frame of the same position still loading its Agreement and declared loads in full.

@@ -1,0 +1,25 @@
+Focus:
+  target: inner
+  space root: .
+  contract source: agreement
+  contract role: reference — read, never composed
+
+Tree (1 files):
+  README.md — Inner root.
+
+Agent context:
+  agreement — Outer terms.
+    summary only — read _agent/agreement.md in full before writing here
+  purpose — Outer purpose.
+  agreement (inner/) [full]:
+    ---
+    summary: Inner terms.
+    context:
+      full: [purpose.md]
+    ---
+    INNER_BODY
+  purpose (inner/) [full]:
+    ---
+    summary: Inner purpose.
+    ---
+    INNER_PURPOSE_BODY

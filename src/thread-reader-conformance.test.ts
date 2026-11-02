@@ -25,7 +25,13 @@ interface Manifest {
   depths: MapDepth[];
   targets: Target[];
   cap: { target: string; max_children: number; child_names: string[]; omitted_children: number };
-  focus: Array<{ target: string; contract_markers: string[]; tree_post?: string }>;
+  focus: Array<{
+    target: string;
+    agreement?: "summary" | "full";
+    contract_markers: string[];
+    absent_markers?: string[];
+    tree_post?: string;
+  }>;
   warnings: {
     folder: string;
     posts: Array<{ file: string; content: string }>;
@@ -133,8 +139,11 @@ describe("Thread and agent-context reader conformance", () => {
   });
 
   for (const vector of manifest.focus) {
-    it(`focus / ${vector.target}`, async () => {
-      const result = await assembleContentFocus({ position: join(root, vector.target) });
+    it(`focus / ${vector.target}${vector.agreement ? ` / agreement ${vector.agreement}` : ""}`, async () => {
+      const result = await assembleContentFocus({
+        position: join(root, vector.target),
+        ...(vector.agreement ? { agreement: vector.agreement } : {}),
+      });
       expect(result?.status).toBe("ok");
       if (!result || result.status !== "ok") return;
       expect(result.contractRole).toBe("reference");
@@ -143,6 +152,7 @@ describe("Thread and agent-context reader conformance", () => {
       expect(result.contract.every((entry) => entry.placement === "history")).toBe(true);
       const rendered = renderContentFocus(result);
       for (const marker of vector.contract_markers) expect(rendered).toContain(marker);
+      for (const marker of vector.absent_markers ?? []) expect(rendered).not.toContain(marker);
       expect(rendered).toContain("contract role: reference — read, never composed");
       if (vector.tree_post) {
         expect(result.tree?.entries.some((entry) => entry.name === vector.tree_post)).toBe(true);
