@@ -80,11 +80,32 @@
       "expected": { "linearized_ids": ["msg_root", "msg_on_mark"], "markTarget": "msg_root", "markValues": ["claimed"], "markIds": ["msg_mark"], "childOf": "msg_mark", "childIds": ["msg_on_mark"], "warningPost": "msg_on_mark", "warning": { "field": "in_reply_to", "warning": "mark_target_missing" } }
     },
     {
-      "id": "opening-attachment-wins-over-legacy",
+      "id": "agreement-attachment-wins-over-opening",
       "operation": "inspect_posts",
-      "covers": ["opening_attachment"],
-      "input": { "agreement": "---\nattached_to: msg_legacy\n---\n", "sources": [{ "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: note:@home//notes/topic.md\n---\nNew topic" }] },
-      "expected": { "parent": "note:@home//notes/topic.md", "closed": false, "writable": true }
+      "covers": ["agreement_attachment_precedence", "origin_kept"],
+      "input": { "agreement": "---\nattached_to: post:msg_current\n---\n", "sources": [{ "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: note:@home//notes/topic.md\n---\nNew topic" }] },
+      "expected": { "parent": "post:msg_current", "origin": "note:@home//notes/topic.md", "closed": false, "writable": true }
+    },
+    {
+      "id": "opening-attachment-fallback",
+      "operation": "inspect_posts",
+      "covers": ["opening_attachment_fallback", "origin_kept"],
+      "input": { "agreement": "---\nname: Child\n---\n", "sources": [{ "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: post:msg_origin\n---\nNew topic" }] },
+      "expected": { "parent": "post:msg_origin", "origin": "post:msg_origin", "closed": false, "writable": true }
+    },
+    {
+      "id": "malformed-agreement-falls-back-to-opening",
+      "operation": "inspect_posts",
+      "covers": ["opening_attachment_fallback"],
+      "input": { "agreement": "---\nattached_to: note:@home//notes/topic.md\n---\n", "sources": [{ "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: post:msg_origin\n---\nNew topic" }] },
+      "expected": { "parent": "post:msg_origin", "origin": "post:msg_origin", "closed": false, "writable": true, "warnings": [{ "post": "_agent/agreement.md", "field": "attached_to", "warning": "invalid_attached_to" }] }
+    },
+    {
+      "id": "agreement-parent-with-unreadable-opening",
+      "operation": "inspect_posts",
+      "covers": ["agreement_attachment_precedence", "unreadable_opening"],
+      "input": { "agreement": "---\nattached_to: post:msg_current\n---\n", "sources": [{ "path": "_threads/child/01.md", "content": "---\nid: [\n---\nBroken" }] },
+      "expected": { "parent": "post:msg_current", "origin": "unknown", "closed": "unknown", "writable": false, "writeRefusal": "Opening post _threads/child/01.md is unreadable; writes refused. Any Thread writer may repair it with a commit explaining why." }
     },
     {
       "id": "empty-thread-can-create-opening",
