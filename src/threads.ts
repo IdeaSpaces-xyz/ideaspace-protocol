@@ -451,7 +451,14 @@ export interface ThreadPostInspection {
   posts: ThreadPost[];
   unreadable: Array<{ path: string; issues: string[] }>;
   warnings: Array<ThreadPostFieldWarning & { post: string }>;
+  /**
+   * Current parent: the Thread Agreement's valid `attached_to`, else the
+   * opening post's (`origin`). `unknown` only when no Agreement parent exists
+   * and the opening post is unreadable.
+   */
   parent: ThreadAttachment | "unknown" | null;
+  /** Where the Thread started: the opening post's `attached_to`, immutable. */
+  origin: ThreadAttachment | "unknown" | null;
   closed: boolean | "unknown";
   writable: boolean;
   /** Actionable message, only when the opening post cannot be read. */
@@ -464,10 +471,13 @@ export interface ThreadPostInspection {
  * A later unreadable post may have been a closure, so closed is unknown unless
  * a readable closure settles it. Only an unreadable opening prevents writes:
  * without its id, a reply with no target cannot branch from the Thread.
+ *
+ * The Thread Agreement's attachment decides the current parent; the opening
+ * post's attachment is the immutable origin and the fallback parent.
  */
 export function inspectThreadPosts(
   sources: ThreadPostSource[],
-  legacyAgreement?: ThreadAttachmentParseResult,
+  agreementAttachment?: ThreadAttachmentParseResult,
 ): ThreadPostInspection {
   // A caller supplies direct canonical post files, not a README or nested payload.
   const sorted = sources.filter((source) => parseThreadAttachment(source.path)?.kind === "path")
@@ -485,8 +495,8 @@ export function inspectThreadPosts(
       warnings.push(...(result.post.warnings ?? []).map((warning) => ({ post: source.path, ...warning })));
     }
   }
-  if (legacyAgreement?.status === "absent" && legacyAgreement.warning) {
-    warnings.push({ post: "_agent/agreement.md", field: "attached_to", warning: legacyAgreement.warning });
+  if (agreementAttachment?.status === "absent" && agreementAttachment.warning) {
+    warnings.push({ post: "_agent/agreement.md", field: "attached_to", warning: agreementAttachment.warning });
   }
   const byId = new Map(posts.map((post) => [post.id, post]));
   for (const post of posts) {
@@ -498,15 +508,15 @@ export function inspectThreadPosts(
   // An empty Thread may still be starting: there is no broken opening to repair.
   const openingUnreadable = Boolean(opening && unreadable.some((entry) => entry.path === opening.path));
   const firstPost = posts.find((post) => post.path === opening?.path);
-  const parent = !opening ? null : openingUnreadable ? "unknown" :
-    firstPost?.attachedTo ?? (legacyAgreement?.status === "valid" ? legacyAgreement.attachment : null);
+  const origin = !opening ? null : openingUnreadable ? "unknown" : firstPost?.attachedTo ?? null;
+  const parent = agreementAttachment?.status === "valid" ? agreementAttachment.attachment : origin;
   const closed = posts.some((post) => post.kind === "closure") ? true :
     unreadable.length ? "unknown" : false;
   const writeRefusal = openingUnreadable
     ? `Opening post ${opening?.path ?? "(missing)"} is unreadable; writes refused. Any Thread writer may repair it with a commit explaining why.`
     : undefined;
   return {
-    posts, unreadable, warnings, parent, closed,
+    posts, unreadable, warnings, parent, origin, closed,
     writable: !openingUnreadable,
     ...(writeRefusal ? { writeRefusal } : {}),
   };

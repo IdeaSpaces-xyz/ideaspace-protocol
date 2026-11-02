@@ -249,11 +249,13 @@ describe("metalayer conformance vectors", () => {
         expect(resolved).toEqual({ status: vector.expected.status, attachment });
       }
     } else if (vector.operation === "inspect_posts") {
-      const legacy = vector.input.agreement
+      const agreement = vector.input.agreement
         ? parseThreadAgreementAttachment(vector.input.agreement, "_threads/child/_agent/agreement.md") : undefined;
-      const inspection = inspectThreadPosts(vector.input.sources, legacy);
-      expect(inspection.parent === "unknown" || inspection.parent === null ? inspection.parent : inspection.parent.raw)
-        .toBe(vector.expected.parent);
+      const inspection = inspectThreadPosts(vector.input.sources, agreement);
+      const raw = (value: typeof inspection.parent) =>
+        value === "unknown" || value === null ? value : value.raw;
+      expect(raw(inspection.parent)).toBe(vector.expected.parent);
+      if (vector.expected.origin !== undefined) expect(raw(inspection.origin)).toBe(vector.expected.origin);
       expect(inspection.closed).toBe(vector.expected.closed);
       expect(inspection.writable).toBe(vector.expected.writable);
       expect(inspection.writeRefusal).toBe(vector.expected.writeRefusal);
