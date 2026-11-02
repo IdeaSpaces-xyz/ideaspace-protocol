@@ -104,7 +104,9 @@ does. Foundation keeps its legacy scoping and layering unchanged.
 disclosure ceiling, and actual context-window residency remains private Process state. Prompt
 placement is not Map data and is named `placement`; legacy `level` already names a filesystem
 composition position. Loaded agent-context entries carry source, representation, exact-byte
-revision, and placement.
+revision, and placement. The revision always hashes the exact file bytes, so a summary entry and a
+full entry of the same file share it. An Agreement loads in full as the caller's own frame and at
+summary by default as a reference read (see Content focus).
 
 A successful ambient Content-awareness manifest MAY render in full, by explicit canonical section,
 or by `head | tail` placement. Placement selection MUST derive section membership from the
@@ -130,8 +132,13 @@ under the same explicit Foundation/Agreement selection rules, but it MUST NOT ac
 or extend the caller's composed contract stack. Its `contractRole` is always `reference`: target
 agent context is read, never composed as caller authority. It returns only the target position, a
 Content tree at depth one, the selected target agent context, and skills; every returned awareness
-item has `placement: history`. Agreement keeps its full entrypoint and declared representations;
-Foundation keeps its compatibility representations; floor remains valid. Activity, Git state, drift,
+item has `placement: history`. A reference read loads every selected Agreement at `summary` and
+does not expand `context.full` declarations, unless the caller requests `agreement: full`; then the
+nearest Agreement (the target's own) and its declared full loads load in full and ancestor
+Agreements stay at `summary`. A summary Agreement renders with its portable path and a fixed line to
+read it in full before writing at the target. Ambient awareness of the caller's own position is
+unaffected: its Agreements always load in full. Foundation keeps its compatibility
+representations; floor remains valid. Activity, Git state, drift,
 and direction warnings do not enter a focus. A conforming renderer emits one deterministic focus
 block so a caller can retain its head once and append one reference block per explicit focus read.
 

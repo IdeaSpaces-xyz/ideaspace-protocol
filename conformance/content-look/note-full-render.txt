@@ -5,14 +5,8 @@ Focus:
   contract role: reference — read, never composed
 
 Agent context:
-  agreement [full]:
-    ---
-    name: Look agreement
-    summary: Reference terms for the Content look fixture.
-    ---
-    # Look agreement
-    
-    LOOK_AGREEMENT_SENTINEL
+  agreement — Reference terms for the Content look fixture.
+    summary only — read _agent/agreement.md in full before writing here
 
 Look:
   position: notes/decision.md

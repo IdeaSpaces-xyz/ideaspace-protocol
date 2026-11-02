@@ -16,7 +16,9 @@
     "choice_required",
     "unselected_absent",
     "deterministic_render",
-    "non_content_absent"
+    "non_content_absent",
+    "reference_agreement_summary",
+    "reference_agreement_full"
   ],
   "vectors": [
     {
@@ -102,7 +104,7 @@
       "target": "notes/decision.md",
       "depth": "full",
       "contract_source": "agreement",
-      "covers": ["five_depths", "note_full_equals_surface", "unselected_absent", "deterministic_render", "exact_revision"],
+      "covers": ["five_depths", "note_full_equals_surface", "unselected_absent", "deterministic_render", "exact_revision", "reference_agreement_summary"],
       "expected": {
         "status": "ok",
         "kind": "markdown",
@@ -112,7 +114,27 @@
         "surface": "# Decision\n\nThe target deepens without changing caller authority.\n\n## Evidence\n\nOne exact fixture.\n",
         "revision": "sha256:e3745d5fa8cfe4844adf90b4b9854037f57b18af03a7a61e8807394e6c7fdef7",
         "absent": ["children"],
+        "reference_representations": ["summary"],
+        "reference_excluded": ["LOOK_AGREEMENT_SENTINEL"],
         "render_fixture": "note-full-render.txt"
+      }
+    },
+    {
+      "id": "note-summary-agreement-full",
+      "target": "notes/decision.md",
+      "depth": "summary",
+      "contract_source": "agreement",
+      "agreement": "full",
+      "covers": ["reference_agreement_full", "reference_only"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/decision.md",
+        "name": "Decision",
+        "summary": "Why the selected frame stays reference-only.",
+        "absent": ["surface", "children"],
+        "reference_representations": ["full"],
+        "reference_included": ["LOOK_AGREEMENT_SENTINEL"]
       }
     },
     {

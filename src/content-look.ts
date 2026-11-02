@@ -22,7 +22,7 @@ import {
   type MapDisclosure,
 } from "./maps.js";
 import { classifyRepositoryPath } from "./repository-path.js";
-import type { ContractSource } from "./agreement.js";
+import type { ContentRepresentation, ContractSource } from "./agreement.js";
 
 export interface AssembleContentLookOpts {
   /** Absolute or cwd-relative local Markdown file or Content directory. */
@@ -31,6 +31,8 @@ export interface AssembleContentLookOpts {
   depth?: MapDepth;
   /** Explicit reference frame when both Foundation and Agreement resolve. */
   contractSource?: ContractSource;
+  /** Reference Agreement representation. Default summary; full loads the nearest Agreement in full. */
+  agreement?: ContentRepresentation;
   /** Cap on contract, skill, and directory-child summaries. Default: 200 characters. */
   summaryExcerptLength?: number;
   /** Legacy soft cap on direct directory children. Default: 50. */
@@ -158,6 +160,7 @@ export async function assembleContentLook(
   const focusOpts: AssembleContentFocusOpts = {
     position: framePosition,
     ...(opts.contractSource ? { contractSource: opts.contractSource } : {}),
+    ...(opts.agreement ? { agreement: opts.agreement } : {}),
     ...(opts.summaryExcerptLength !== undefined
       ? { summaryExcerptLength: opts.summaryExcerptLength }
       : {}),
@@ -181,6 +184,7 @@ export async function assembleContentLook(
     }
     return assembleContentLook({ position: selected.path, depth,
       ...(opts.contractSource ? { contractSource: opts.contractSource } : {}),
+      ...(opts.agreement ? { agreement: opts.agreement } : {}),
       ...(opts.summaryExcerptLength !== undefined ? { summaryExcerptLength: opts.summaryExcerptLength } : {}) });
   }
   if ((cursor !== undefined || opts.order !== undefined || opts.limit !== undefined) &&

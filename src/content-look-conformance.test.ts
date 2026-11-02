@@ -10,7 +10,7 @@ import {
   renderContentLook,
   type ContentLookManifest,
 } from "./content-look.js";
-import type { ContractSource } from "./agreement.js";
+import type { ContentRepresentation, ContractSource } from "./agreement.js";
 import type { MapDepth } from "./maps.js";
 
 interface LookVector {
@@ -18,6 +18,8 @@ interface LookVector {
   target: string;
   depth: MapDepth;
   contract_source?: ContractSource;
+  /** Reference Agreement representation requested; default summary. */
+  agreement?: ContentRepresentation;
   max_children?: number;
   git?: boolean;
   covers: string[];
@@ -32,6 +34,9 @@ interface LookVector {
     child_names?: string[];
     omitted_children?: number;
     absent?: string[];
+    reference_representations?: string[];
+    reference_included?: string[];
+    reference_excluded?: string[];
     render_fixture?: string;
   };
 }
@@ -82,6 +87,7 @@ describe("Content look conformance vectors", () => {
         position: join(vectorRoot, vector.target),
         depth: vector.depth,
         ...(vector.contract_source ? { contractSource: vector.contract_source } : {}),
+        ...(vector.agreement ? { agreement: vector.agreement } : {}),
         ...(vector.max_children !== undefined ? { maxChildren: vector.max_children } : {}),
       });
 
@@ -129,6 +135,14 @@ describe("Content look conformance vectors", () => {
       for (const absent of vector.expected.absent ?? []) {
         expect(result.target).not.toHaveProperty(absent);
       }
+      if (vector.expected.reference_representations) {
+        expect(result.reference.contract.map((entry) => entry.representation)).toEqual(
+          vector.expected.reference_representations,
+        );
+      }
+      const reference = JSON.stringify(result.reference);
+      for (const marker of vector.expected.reference_included ?? []) expect(reference).toContain(marker);
+      for (const marker of vector.expected.reference_excluded ?? []) expect(reference).not.toContain(marker);
       if (vector.expected.render_fixture) {
         const expected = await fs.readFile(
           join(conformanceRoot, vector.expected.render_fixture),
@@ -137,7 +151,7 @@ describe("Content look conformance vectors", () => {
         const rendered = renderContentLook(result);
         expect(rendered).toBe(expected.trimEnd());
         expect(renderContentLook(result)).toBe(rendered);
-        expect(rendered).toContain("LOOK_AGREEMENT_SENTINEL");
+        expect(rendered).toContain("Reference terms for the Content look fixture.");
         expect(rendered).not.toContain("LOOK_FOUNDATION_SENTINEL");
       }
     });
