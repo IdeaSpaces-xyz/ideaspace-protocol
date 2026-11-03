@@ -22,6 +22,12 @@ export const THREAD_KINDS = [
   "correction",
   "closure",
   "mark",
+  "decision",
+  "dispatch",
+  "claim",
+  "delivery",
+  "verification",
+  "question",
 ] as const;
 
 export type KnownThreadKind = (typeof THREAD_KINDS)[number];
