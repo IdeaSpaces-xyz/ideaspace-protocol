@@ -2,6 +2,8 @@
 
 Makes "conforms to the protocol" testable rather than aspirational.
 
+- **`access/manifest.json`** — canonical levels on all seven targets, independent switches, org and Space grants, legacy names, bounded sharing, agent intersection and owner-only Conversation exclusions. Expressibility and pure set semantics, not a deployed authorization test.
+
 - **`extensions/manifest.json`** — language-neutral vectors for the base repository-path classifier: explicit file/directory target kind, exact core naming, first-owner precedence, reserved Git state, invalid portable input, and quiet opacity for unknown extensions. No vector requires the semantics of `_assets` or another named extension.
 
 - **`assets/manifest.json`** — language-neutral vectors for exact `_assets/` recognition, pure relative resolution from the containing Markdown file, explicit authored selection when root and nested folders coexist, normalization and root escape, and repository-validator skipping. No vector depends on Markdown parsing, filesystem discovery, rendering, or platform storage.

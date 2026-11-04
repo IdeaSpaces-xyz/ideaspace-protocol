@@ -266,16 +266,22 @@ not. Missing identity, unborn HEAD, dirt, remote unavailability, or an unresolve
 cause identity minting, fetch, upload, publication, or repinning; the producer omits the portable
 `map` block and may retain a useful local rendering.
 
-The shared access vocabulary defines standard subject kinds (`person`, `team`, `organisation`, `agent`,
-`public`), the ordered capability ladder (`view`, `read`, `history`, `comment`, `write`, `push`, `manage`), and
-the capability options held beside it (`copy`, `reshare`). A higher rung holds every rung below it. An option
-has no rank, and a subject at any rung may hold one; `write` and above imply `copy`.
-**A Map's disclosure ceiling is the view rung.** Observing or sharing Map members at progressive depth
-ceilings operates within the `view` capability without implying `read` (full note content retrieval),
-`history` (commit history or post transcripts), `comment` (taking part), `write` (content edits),
-`push` (git push transport), `manage` (access management), or either option: `copy` (space fork or repo clone)
-and `reshare` (giving access onward). The protocol defines the words and relation
-names; access evaluation and enforcement remain host concerns.
+The canonical access vocabulary is defined in [schema/access.md](schema/access.md):
+`discover`, `view` (content and history), `comment`, `edit` (including push), `copy`, and
+`reshare`. Viewer, Commenter and Editor expand to capability sets; Owner is an ownership
+relationship, not a grant. Rights form a partial order, not a single privilege rank.
+Grants name Vault, Space, Repo, folder, Note or Thread targets and person, team, organisation,
+agent or public subjects. An organisation grant reaches its members. Conversations are owner-only
+and are never grant targets. Space grants govern its Map (adding items or people), never the
+referenced content; a Space membership audience is not a content grantee. Sharing passes only
+rights already held. Agent access is person access intersected with the agent ceiling.
+
+Map depth is a representation ceiling, not a separate access level. A reader needs `view` on
+each referenced target, not merely on the Map; `view` includes full content and history but does
+not imply copying, commenting, editing or sharing. The earlier protocol-only split between
+Map `view`, body `read` and `history` is superseded. The migration table, Open policy questions,
+portable grant statement, and conformance vectors live in the access contract. Enforcement,
+identity resolution, persistence, audit and transport remain host concerns.
 
 Hosted versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer
 concerns. Import never fetches an unknown repository merely because a map-note names it. A repo URL

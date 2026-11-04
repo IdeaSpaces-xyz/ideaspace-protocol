@@ -4,6 +4,8 @@ The reference TypeScript implementation of the shape — what TS surfaces embed 
 
 Present:
 
+- `access.ts` — canonical access capabilities and levels, portable grant statements, explicit alias migration and pure rights-set operations; no policy store or authorization engine
+
 - `repository-path.ts` — pure lexical classification of Markdown knowledge, exact core `_agent`, ordinary paths, reserved Git state, and the first opaque extension owner
 - `assets.ts` — exact `_assets/` recognition and pure lexical relative-reference resolution with no filesystem lookup, search, fallback, or mutation
 - `frontmatter.ts` — parse / compose / extract (Layer 1: `name`, `summary`, `attached_to`, `tags`)

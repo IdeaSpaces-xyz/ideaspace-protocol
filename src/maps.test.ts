@@ -422,41 +422,17 @@ describe("Access vocabulary and capability ladder", () => {
     expect(SUBJECT_KINDS).toEqual(["person", "team", "organisation", "agent", "public"]);
   });
 
-  it("defines the capability ladder in privilege order", () => {
-    expect(CAPABILITY_LADDER).toEqual([
-      "view",
-      "read",
-      "history",
-      "comment",
-      "write",
-      "push",
-      "manage",
-    ]);
-  });
-
-  it("ranks comment above history and below write", () => {
-    expect(isValidCapability("comment")).toBe(true);
-    expect(capabilityRank("comment")).toBe(3);
-  });
-
-  it("implies copy at write, and reshare at no rung", () => {
-    expect(CAPABILITY_OPTION_IMPLIED_AT).toEqual({ copy: "write" });
-  });
-
-  it("holds options beside the ladder, with no rank", () => {
+  it("re-exports the canonical access spine and options", () => {
+    expect(CAPABILITY_LADDER).toEqual(["discover", "view", "comment", "edit"]);
     expect(CAPABILITY_OPTIONS).toEqual(["copy", "reshare"]);
+    expect(CAPABILITY_OPTION_IMPLIED_AT).toEqual({ copy: "edit" });
     for (const option of CAPABILITY_OPTIONS) {
       expect(isValidCapabilityOption(option)).toBe(true);
-      expect(isValidCapability(option)).toBe(false);
+      expect(isValidCapability(option)).toBe(true);
       expect(capabilityRank(option)).toBe(-1);
     }
-    expect(isValidCapabilityOption("write")).toBe(false);
-    expect(isValidCapabilityOption(42)).toBe(false);
-  });
-
-  it("anchors Map disclosure to the view capability rung", () => {
     expect(MAP_DISCLOSURE_CAPABILITY).toBe("view");
-    expect(capabilityRank(MAP_DISCLOSURE_CAPABILITY)).toBe(0);
+    expect(capabilityRank("read")).toBe(-1);
   });
 
   it("normalizes subject kinds including organization alias", () => {
