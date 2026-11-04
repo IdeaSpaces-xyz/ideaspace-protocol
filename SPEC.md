@@ -12,7 +12,11 @@ summary: >
 
 > **A simple, shareable, traceable piece of brain** — and the shape that makes it so. An agent that knows this shape can inhabit any conformant space: orient, navigate, work, with no bespoke instructions.
 
-An ideaspace is a folder of markdown under git. Knowledge accumulates as `.md` files; how-to-work lives in `_agent/`; optional payload lives in opaque extension containers; git makes it shareable and carries who-did-what. The shape is fixed so it is *predictable*: drop a conformant agent into a conformant space and it already knows where to look. This document names no platform — a Claude Code agent, a Pi agent, or a third-party tool all read the same shape.
+A Repo is a folder of Markdown under git. Knowledge accumulates as `.md` files; how-to-work lives in `_agent/`; optional payload lives in opaque extension containers; git makes it shareable and carries who-did-what. The shape is fixed so it is *predictable*: drop a conformant agent into a conformant space and it already knows where to look. This document names no platform — a Claude Code agent, a Pi agent, or a third-party tool all read the same shape.
+
+A **Space** is a lens: a view and a boundary around references to Repos, Notes, Threads, and agents. It holds no content and grants no access to that content. A **Vault** is the larger coordination layer. Grants on a Space govern what someone may do with the Space, such as add items or people; each content owner grants access separately. A reader without access can ask for it through a knock. Local and remote Spaces are separate and update independently. Import and export make copies; they do not sync Spaces.
+
+The repository shape below is distinct from a Space. Existing API names that use `Space` for repository context remain compatibility names; this clarification changes no format or loading rule.
 
 Three properties, three pillars:
 
@@ -284,13 +288,13 @@ language-neutral vectors are in [`schema/maps.md`](schema/maps.md),
 
 ## Identity
 
-### Space identity
+### Repository root identity
 
-A Space MAY declare one `root_node_id` in its selected root `_agent/foundation.md` or `_agent/agreement.md`. It names the Space across checkouts without exposing a private storage key, granting access, or assigning IDs to every Note. A nested Foundation starts another Space; an Agreement carrying identity does the same. If both entrypoints at one boundary declare identity, they MUST agree.
+A repository context MAY declare one `root_node_id` in its selected root `_agent/foundation.md` or `_agent/agreement.md`. It names that root across checkouts without exposing a private storage key, granting access, or assigning IDs to every Note. A nested Foundation starts another repository context; an Agreement carrying identity does the same. This is a loading boundary, not a Space lens or a requirement to create a nested Git repository. If both entrypoints at one boundary declare identity, they MUST agree.
 
-One side mints per lifecycle. A local-first creator mints the current 96-bit form and a Keeper adopts it; a Keeper-first Space retains the Keeper's existing ID and may declare it locally later. Clone retains identity; fork remints. Missing identity remains valid indefinitely. Declaration drift never silently rebinds hosted authority.
+One side mints per lifecycle. A local-first creator mints the current 96-bit form and a Keeper adopts it; a Keeper-first Repo retains the Keeper's existing ID and may declare it locally later. Clone retains identity; fork remints. Missing identity remains valid indefinitely. Declaration drift never silently rebinds hosted authority.
 
-Legacy convergence is lazy and reviewable: trusted canonical-origin or local-registry evidence may identify an existing hosted Space, but a tool only proposes adding that exact ID to the existing selected root entrypoint. It never creates an agent contract, writes, stages, commits, or rekeys merely because the field is absent. The complete grammar and evidence-state table are in [`schema/root-identity.md`](schema/root-identity.md).
+Legacy convergence is lazy and reviewable: trusted canonical-origin or local-registry evidence may identify an existing hosted Repo, but a tool only proposes adding that exact ID to the existing selected root entrypoint. It never creates an agent contract, writes, stages, commits, or rekeys merely because the field is absent. The complete grammar and evidence-state table are in [`schema/root-identity.md`](schema/root-identity.md).
 
 ### Commit identity and provenance
 

@@ -7,15 +7,17 @@
 
 > An agent is a folder. This is the shape of that folder.
 
-An ideaspace is a folder of Markdown under git that holds two things: **your knowledge**, and **how to work with it**. Open an agent inside it and that's who you're talking to. The instructions live in the folder, not in the model or the tool that runs it, so any agent that knows the shape can work in any folder that has it, and the folder outlives both.
+A Repo is a folder of Markdown under git that holds two things: **your knowledge**, and **how to work with it**. Open an agent inside it and that's who you're talking to. The instructions live in the folder, not in the model or the tool that runs it, so any agent that knows the shape can work in any folder that has it, and the folder outlives both.
 
 Instruction files such as `CLAUDE.md` and `AGENTS.md` proved that agents read guidance kept in the repo, and found the ceiling: one file, holding everything, followed worse the longer it grows. So the file grows up into a folder. `_agent/` sits beside the knowledge and holds how to work here in a few small files, and the agent picks up only the piece the task needs.
 
-This repository is the standard: the spec, a machine-readable schema, a reference TypeScript library, and a conformance kit, kept together so they cannot drift apart. It is an ideaspace itself.
+This repository is the standard: the spec, a machine-readable schema, a reference TypeScript library, and a conformance kit, kept together so they cannot drift apart. It follows that shape itself.
 
 [How it works](https://ideaspaces.xyz/how-it-works) · [Use with Claude Code, Codex, or Cowork](https://github.com/IdeaSpaces-xyz/claude-code-plugin) · [Use with Pi](https://github.com/IdeaSpaces-xyz/pi-is-space) · [CLI](https://github.com/IdeaSpaces-xyz/cli) · [Read the spec](SPEC.md)
 
-Hosting at [ideaspaces.xyz](https://ideaspaces.xyz) is optional: sharing, access control, and public spaces. Nothing above needs it.
+A **Space** is a lens: a view and a boundary around references to Repos, Notes, Threads, and agents. It holds no content and grants no access to that content. A **Vault** is the larger coordination layer. Grants on a Space govern what someone may do with the Space, such as add items or people; each content owner grants access separately. A reader without access can ask for it through a knock (not yet offered from every reference view). Local and remote Spaces are separate and update independently. Import and export make copies; they do not sync Spaces.
+
+Hosting at [ideaspaces.xyz](https://ideaspaces.xyz) is optional: sharing and access control. Nothing above needs it.
 
 ## The shape
 

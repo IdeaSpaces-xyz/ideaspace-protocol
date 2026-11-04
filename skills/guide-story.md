@@ -17,15 +17,25 @@ understanding doesn't.
 
 ## The idea
 
-A **space** is a folder on your computer that holds two things: your stuff, and a short note
-explaining what this place is about.
+A **Repo** is a folder on your computer that holds your notes and instructions for working with
+them. A **Vault** is the larger place that coordinates your work. A **Space** is a lens on that
+work: a view and a boundary, made of references to the things you want to work with together.
+It holds no content of its own.
 
 Think of a well-run workshop. There's the work itself — the projects on the bench. And there's a
 whiteboard by the door: what we're building, why, what's in progress right now, what's next.
 Anyone who walks in reads the whiteboard and can be useful in five minutes, without you stopping
 to brief them.
 
-The folder is the workshop. The whiteboard is the part that makes it a space.
+The Repo is the workshop. Its instructions are the whiteboard. A Space is your view of the
+benches you are working with, even when they are in different workshops.
+
+Inviting someone to a Space does not give them access to its content. Grants on the Space say
+what they can do there, such as add items or people. Each owner gives access to their own
+content separately. Seeing a reference is not permission to open it; asking for access is a knock.
+
+Local and remote Spaces are separate and can change independently. Import and export make
+copies, not a sync connection.
 
 ## Why it matters
 
@@ -49,8 +59,8 @@ the person who has to remember and re-explain everything.
 
 ## How to start
 
-You don't design a space up front. You capture one real thing, then another, and the structure
-appears from what's actually there. The instinct to plan the folders first is the wrong one.
+You don't have to design your folders up front. You capture one real thing, then another, and
+the structure appears from what's actually there. The instinct to plan the folders first is the wrong one.
 
 ---
 

@@ -13,9 +13,9 @@ description: >
 
 ## Knowledge is a process, not a pile
 
-Most knowledge tools store documents. The pile grows; the understanding doesn't. What a space
-holds instead is an **agreement** — the current state of what you and your collaborators hold to
-be true, continuously revised as the work moves. The whiteboard is the visible edge of it: not a
+Most knowledge tools store documents. The pile grows; the understanding doesn't. Beside the
+notes in a Repo is an **agreement** — the current state of what you and your collaborators hold
+to be true, continuously revised as the work moves. The whiteboard is the visible edge of it: not a
 description written once, but a position that gets renegotiated whenever reality drifts.
 
 That turns knowledge work into something an assistant can genuinely help with — not fetching
@@ -26,9 +26,10 @@ map stays current under you.
 
 ## Many hands, one understanding
 
-Because a space is a folder with an explicit agreement in it, it isn't tied to one assistant, one
-tool, or one session. Any agent that understands the shape can arrive, read the whiteboard, and
-work — today's session, tomorrow's, a different assistant entirely, several at once in different
+Because a Repo keeps its agreement alongside ordinary files, it isn't tied to one assistant,
+one tool, or one session. A Vault coordinates the wider work; a Space is a lens across it,
+a view and a boundary that references content without holding it. Any agent that understands
+the shape can arrive, read the whiteboard, and work — today's session, tomorrow's, a different assistant entirely, several at once in different
 rooms. Each one leaves the understanding better-organized than it found it, because keeping the
 agreement current is part of the work, not an afterthought.
 
@@ -36,10 +37,14 @@ Sessions stop being islands. What one conversation learns, every later one stand
 
 ## Shared between people and agents
 
-The same notes serve your colleague and your colleague's assistant. Share a space and you haven't
-sent someone a document to read top to bottom — you've handed them a body of understanding their
-own assistant can answer questions from. They ask what they need, take home what helps, and leave
-what they learned if you're working together.
+The same notes serve your colleague and your colleague's assistant. Share a Space and you share
+a view of the work, not access to the content it references. Grants on the Space govern adding
+items or people. Each owner grants access to their own content separately; someone without it
+can ask through a knock. With access, they can ask what they need, take home what helps, and
+leave what they learned if you're working together.
+
+Local and remote Spaces are separate and update independently. Import and export make copies;
+they do not keep two Spaces in sync.
 
 That's the destination: not better note-taking, but understanding that compounds — across
 sessions, across tools, across the people and agents who share it. The re-explaining that eats
@@ -47,7 +52,7 @@ every collaboration is what this removes.
 
 ## Going deeper
 
-The precise shape that makes all of this portable — what a conformant space contains, how
+The precise shape that makes all of this portable — what a conformant Repo contains, how
 agreements compose, how identity survives sharing — is the protocol specification itself:
 `SPEC.md` in this repository, with the working protocols (`capture`, `writing`, `awareness`)
 covering the day-to-day mechanics.
