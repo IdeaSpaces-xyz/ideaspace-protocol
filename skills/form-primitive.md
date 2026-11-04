@@ -105,20 +105,20 @@ Primitives go in `_agent/` at the level where they apply. Everything in `_agent/
 
 ## Creating Agents
 
-A full agent definition is not a special file — it is a **space that is the agent's point of view**: an ideaspace whose `_agent/agreement.md` contract *is* the character. When the user wants a specialized agent (not just an instruction), create a dedicated space (its own folder or repo) adopting the agent kind (`agreement: agent:repo:n_0935a5df1f883eeb60bcdfbb`) and write its Agreement:
+A full agent definition is not a special file — it is a **folder or Repo that is the agent's point of view**: its `_agent/agreement.md` contract *is* the character. A Space can reference that agent; it does not hold the agent's files. When the user wants a specialized agent (not just an instruction), create a dedicated folder or Repo adopting the agent kind (`agreement: agent:repo:n_0935a5df1f883eeb60bcdfbb`) and write its Agreement:
 
-- `_agent/agreement.md` — what this agent is, its character, its boundaries, and how work goes when inhabiting it. State plainly that the space is the agent's point of view, not a subject to study: an agent launched here inhabits it.
+- `_agent/agreement.md` — what this agent is, its character, its boundaries, and how work goes when inhabiting it. State plainly that the folder or Repo is the agent's point of view, not a subject to study: an agent launched here inhabits it.
 - `_agent/skills/` — the procedures this agent can repeat.
 - `_agent/purpose.md` and `_agent/now.md` — the agent's direction and active focus, declared or loaded as needed.
 
-The same loader that reads any space reads this one; no new file type, no separate agent format. Identity (`root_node_id`) is a platform concern declared in root frontmatter, not a separate agent file.
+The same loader that reads any repository context reads this one; no new file type, no separate agent format. Identity (`root_node_id`) is a platform concern declared in root frontmatter, not a separate agent file.
 
-Do **not** create `soul.md` or `agent.md` — nothing loads them; character belongs in the Agreement files above. (`_agent/<agent-id>/` folders are per-agent working records inside a shared space, not agent definitions.)
+Do **not** create `soul.md` or `agent.md` — nothing loads them; character belongs in the Agreement files above. (`_agent/<agent-id>/` folders are per-agent working records inside a shared Repo, not agent definitions.)
 
 ## What It Is NOT
 
 - **Not a Perspective.** Perspectives have Object Definition, Thinking Structure, Expected Outcome. They're applied as a structured transformation. If the user wants to evaluate/analyze things consistently, use the **form-perspective** skill instead.
-- **Not a Note.** Notes are knowledge — content that accumulates in the Space. Primitives are instructions — they shape how the agent works, not what the agent knows.
+- **Not a Note.** Notes are knowledge — content that accumulates in a Repo. Primitives are instructions — they shape how the agent works, not what the agent knows.
 - **Not guide.md.** The guide is general behavioral guidance for a branch. A primitive is a specific, named, reusable pattern with a trigger condition. Both live in `_agent/` — both are part of the shared understanding about how we work here.
 
 ## Validation

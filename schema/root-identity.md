@@ -1,15 +1,15 @@
 # Root identity
 
-> Language-neutral contract for a Space's optional portable identity. **Provisional, v0.9.0.**
+> Language-neutral contract for a repository root's optional portable identity. **Provisional, v0.9.0.**
 
 ## Declaration
 
-A contract-bearing Space MAY declare `root_node_id` in the YAML frontmatter of its selected root
+A contract-bearing repository context MAY declare `root_node_id` in the YAML frontmatter of its selected root
 entrypoint, `_agent/foundation.md` or `_agent/agreement.md`:
 
 ```yaml
 ---
-name: Example Space
+name: Example Repo
 summary: Example knowledge.
 root_node_id: n_0123456789abcdef01234567
 ---
@@ -17,9 +17,10 @@ root_node_id: n_0123456789abcdef01234567
 
 The field belongs only to a root contract entrypoint. It is not knowledge-Note frontmatter, a
 per-Note identity, a storage primary key, or proof of access. A nested Foundation starts another
-Space. Under Agreement loading, the nearest Agreement carrying identity starts another Space while
-an Agreement without identity refines the current one. If both entrypoints at one boundary declare
-identity, they MUST agree.
+repository context. Under Agreement loading, the nearest Agreement carrying identity starts another
+context while an Agreement without identity refines the current one. These are loading boundaries,
+not Space lenses or new Git repositories. A Space points at content; this field identifies a root
+that it may point at. If both entrypoints at one boundary declare identity, they MUST agree.
 
 The field is optional. Its absence is valid for legacy repositories, imported plain Markdown, and
 contract-free folders. A reader MUST NOT fail conformance, create a contract entrypoint, or require a
@@ -28,7 +29,7 @@ migration merely because identity is absent.
 ## Agreement reference declaration
 
 Beside `root_node_id`, a root `_agent/agreement.md` entrypoint MAY declare an `agreement` reference
-stating the convention or kind of Space it adopts:
+stating the convention or kind of repository context it adopts:
 
 ```yaml
 ---
@@ -67,7 +68,7 @@ a cryptographically secure random source.
 
 - **Local first:** a protocol-aware local creator mints before publication; the Keeper atomically
   adopts that exact ID.
-- **Hosted first:** the Keeper mints when it creates the hosted Space; a local checkout later preserves
+- **Hosted first:** the Keeper mints when it creates the hosted Repo; a local checkout later preserves
   and may declare that same ID.
 - **Clone:** retains the identity.
 - **Fork:** mints a new current ID and rewrites only the fork's root foundation declaration.
@@ -78,7 +79,7 @@ No lifecycle permits both sides to mint independently and then choose a winner.
 
 ## Selectable-entrypoint conflict
 
-Foundation and Agreement are two candidate declarations for one Space identity, not two evidence
+Foundation and Agreement are two candidate declarations for one repository root identity, not two evidence
 sources for the pure evaluator below. Before evaluating trusted declaration/origin/registry evidence,
 a selectable awareness reader compares valid identities declared by both entrypoints at the same
 boundary. Different values return `contract_invalid` with runtime issue
@@ -118,7 +119,7 @@ Missing identity does not interrupt ordinary reads or Git operations. When a leg
 trusted established ID and no declaration, a tool MAY report `legacy_unstamped` and propose adding
 that exact ID to the existing selected root entrypoint. The proposal is one reviewable file change.
 A tool MUST NOT silently write, stage, commit, create an agent contract solely for identity, mint a
-replacement, or request that Keeper rebind the hosted Space.
+replacement, or request that Keeper rebind the hosted Repo.
 
 The exact proposal surface is a harness decision. A status read may report the state but remains
 read-only. Absence remains supported until a person accepts and captures the declaration.
