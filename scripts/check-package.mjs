@@ -18,6 +18,7 @@ const expected = [
   "conformance/assets/manifest.json",
   "conformance/threads/manifest.json",
   "conformance/threads/attachments.json",
+  "conformance/threads/hosted-ids.json",
   "conformance/threads/agreement-schema.json",
   "conformance/threads/metalayer.json",
   "conformance/threads/post-selection.json",

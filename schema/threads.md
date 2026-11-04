@@ -75,14 +75,14 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | `date` | Calendar-valid ISO instant: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or `YYYY-MM-DDTHH:mm:ss[.sss]±HH:mm` (fraction 1–3 digits); legacy `YYYY-MM-DD` | Optional for old posts; new writers record the instant used in the filename stamp. Readers prefer the authored date: an instant normalizes to UTC `Z`, a date-only value stays a day with no instant. Treat a YAML-coerced timestamp as that same ISO instant; implementations read the scalar without rejecting the post due to YAML timestamp typing. With no field, a valid filename stamp supplies UTC instant; an unstamped name supplies no time. Malformed authored date yields diagnostic `dateWarning: invalid_date`, never invalidates the post and never falls back silently. |
 | `in_reply_to` | String or string array | Optional parent post id(s). Absent for the initial thread post; a string for a single parent reply; an array of 2+ ids for a multi-parent join (merge). |
 | `references` | Array of strings | Optional ancestor chain of post ids, ordered from oldest ancestor to immediate parent. |
-| `kind` | String | Role of the post: standard `post` (default), `snapshot`, `reframe`, `correction`, `closure`, `mark`, `decision`, `dispatch`, `claim`, `delivery`, `verification`, `question`, or any open custom kind. The standard kinds are a shared vocabulary so writers can use them without a custom-kind confirmation; readers enforce no extra structure for them. Unknown kinds are valid and preserved in the DAG. The raw nonempty string is kept; `"mark "` is an unknown kind, not normalized to `mark`. |
+| `kind` | String | What a reader acts on: standard `post` (default), `snapshot`, `reframe`, `correction`, `closure`, `mark`. A writer uses only these; a label for a post goes in `tags`. A reader keeps tolerating any other value: unknown kinds are valid and preserved in the DAG. The raw nonempty string is kept; `"mark "` is an unknown kind, not normalized to `mark`. |
 | `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). The authored string is kept; whitespace-only or YAML-coerced non-string values warn and are not folded. |
 | `attached_to` | String (`<type>:<id>`) | Optional open typed link on the opening post; only `post:` (or a bare post alias) has tree-edge semantics. |
 | `supersedes` | String | Optional post id being superseded when `kind` is `correction` or when retracting a mark. |
 | `map` | Object | Optional Map block (`roots`, `members`) capturing cited coordinates and selections. |
 | `name` | String | Optional title or subject line. |
 | `summary` | String | Optional dense summary for search and orientation. |
-| `tags` | Array of strings | Optional retrieval tags. |
+| `tags` | Array of strings | Optional retrieval tags, and where a post's label goes (`delivery`, `decision`). A label changes no reader's behaviour. |
 | `actor_ref` / `author` | String | Optional author identity or human-readable author attribution. |
 
 #### Field tolerance rule
@@ -166,7 +166,15 @@ map:
 ```
 
 `_threads/` names the extension directly; no new local URI scheme is introduced. Hosted twin
-conversations continue to use the open address `thread:x_<24hex>`.
+conversations continue to use the open address `thread:x_<id>`.
+
+### Hosted Thread ids
+
+A hosted Thread id is `x_` followed by one or more of `A-Z a-z 0-9 _ -`, as a pattern
+`^x_[A-Za-z0-9_-]+$`. The id is opaque in length: consumers check the prefix and the characters,
+which keep it safe in a URL and an argument, and MUST NOT test its length or read anything from its
+form. A host MAY bound the ids it mints; that bound is the host's, not part of this grammar. Vectors
+are in [`../conformance/threads/hosted-ids.json`](../conformance/threads/hosted-ids.json).
 
 ### Map position validation
 
@@ -226,7 +234,7 @@ Independent implementations share these portable operations:
    - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical local contract after the authored tree is selected; Map membership is not filesystem authorization.
    - A Thread folder's `full` is one README surface plus a capped list of direct post handles, not the post bodies or a timeline. See [`content-look.md`](content-look.md) for the five rung and cap rules.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 

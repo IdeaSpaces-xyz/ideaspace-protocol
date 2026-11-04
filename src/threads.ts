@@ -14,7 +14,13 @@ import { parseMap, type MapBuildInput, type MapParseResult } from "./maps.js";
 /** Exact, case-sensitive threads directory name. */
 export const THREADS_DIRECTORY = "_threads";
 
-/** Valid post kinds in a collaboration thread. */
+/**
+ * A hosted Thread id: `x_`, then the host's characters. Opaque in length: check this pattern and
+ * never a length, so a change in how a host mints ids needs no client release.
+ */
+export const HOSTED_THREAD_ID = /^x_[A-Za-z0-9_-]+$/;
+
+/** The kinds a reader acts on. A writer uses only these; a label goes in `tags`. Other values stay readable. */
 export const THREAD_KINDS = [
   "post",
   "snapshot",
@@ -22,12 +28,6 @@ export const THREAD_KINDS = [
   "correction",
   "closure",
   "mark",
-  "decision",
-  "dispatch",
-  "claim",
-  "delivery",
-  "verification",
-  "question",
 ] as const;
 
 export type KnownThreadKind = (typeof THREAD_KINDS)[number];

@@ -255,6 +255,7 @@ export type { AssetReferenceResolution } from "./assets.js";
 // and worktree path resolution.
 export {
   THREADS_DIRECTORY,
+  HOSTED_THREAD_ID,
   THREAD_KINDS,
   parseThreadPost,
   inspectThreadPosts,

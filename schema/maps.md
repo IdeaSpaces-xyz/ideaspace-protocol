@@ -184,7 +184,7 @@ membership declares what a curator included. URLs naturally use their scheme (`h
 no provider registry or member type.
 
 Standard open address types include:
-- `thread:x_<24hex>`: A collaboration Thread or exchange container (e.g. `thread:x_0123456789abcdef01234567`).
+- `thread:x_<id>`: A collaboration Thread or exchange container (e.g. `thread:x_0123456789abcdef01234567`). The id is opaque in length; see [hosted Thread ids](threads.md#hosted-thread-ids).
 - `hostname:<domain>`: An organization or network domain (e.g. `hostname:example.org`).
 - `repo:n_<24hex>`: A repository reference outside the Map's pinned `roots`.
 - `https://...`: An external web resource.
