@@ -20,7 +20,7 @@ export const THREADS_DIRECTORY = "_threads";
  */
 export const HOSTED_THREAD_ID = /^x_[A-Za-z0-9_-]+$/;
 
-/** Valid post kinds in a collaboration thread. */
+/** The kinds a reader acts on. A writer uses only these; a label goes in `tags`. Other values stay readable. */
 export const THREAD_KINDS = [
   "post",
   "snapshot",
