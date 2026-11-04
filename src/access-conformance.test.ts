@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CAPABILITIES, ACCESS_LEVELS, ACCESS_TARGET_KINDS, accessLevelProfile,
   expandCapabilities, intersectAccessCapabilities, canPassAccess, parseAccessGrant,
-  mapLegacyCapability, isValidCapability,
+  mapLegacyCapability, isValidCapability, parseAccessOwnership, isActingSubjectKind,
   type AccessTargetKind, type AccessLevel, type Capability,
 } from "./access.js";
 import * as maps from "./maps.js";
@@ -15,7 +15,7 @@ type Vector = { id: string; expected: unknown } & (
   | { operation: "pass"; input: { held: Capability[]; requested: Capability[] } }
   | { operation: "intersect"; input: { person: Capability[]; ceiling: Capability[] } }
   | { operation: "legacy"; input: { target: AccessTargetKind; name: string } }
-  | { operation: "grant"; input: unknown }
+  | { operation: "grant" | "ownership" | "acting_kind"; input: unknown }
 );
 const manifest = JSON.parse(readFileSync(new URL("../conformance/access/manifest.json", import.meta.url), "utf8")) as {
   capabilities: string[]; levels: string[]; target_kinds: string[]; required_coverage: string[]; vectors: Vector[];
@@ -29,7 +29,7 @@ describe("portable access conformance", () => {
     expect(maps.CAPABILITIES).toBe(CAPABILITIES);
     expect(protocol.CAPABILITIES).toBe(CAPABILITIES);
     expect(maps.isValidCapability).toBe(isValidCapability);
-    for (const old of ["read", "history", "write", "push", "manage", "owner"]) {
+    for (const old of ["read", "history", "write", "push", "manage", "owner", "copy"]) {
       expect(isValidCapability(old)).toBe(false);
     }
     for (const cap of CAPABILITIES) expect(isValidCapability(cap)).toBe(true);
@@ -53,6 +53,8 @@ describe("portable access conformance", () => {
       case "intersect": actual = intersectAccessCapabilities(vector.input.person, vector.input.ceiling); break;
       case "legacy": actual = mapLegacyCapability(vector.input.target, vector.input.name); break;
       case "grant": actual = parseAccessGrant(vector.input); break;
+      case "ownership": actual = parseAccessOwnership(vector.input); break;
+      case "acting_kind": actual = isActingSubjectKind(vector.input); break;
       default: throw new Error("Unknown conformance operation");
     }
     expect(actual).toEqual(vector.expected);

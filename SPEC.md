@@ -267,12 +267,14 @@ cause identity minting, fetch, upload, publication, or repinning; the producer o
 `map` block and may retain a useful local rendering.
 
 The canonical access vocabulary is defined in [schema/access.md](schema/access.md):
-`discover`, `view` (content and history), `comment`, `edit` (including push), `copy`, and
-`reshare`. Viewer, Commenter and Editor expand to capability sets; Owner is an ownership
+`discover`, `view` (content and history), `comment`, `edit` (including push), `fork`
+(state-only copy), `pull` (whole Git history), and `reshare`. Viewer and Commenter expand to
+capability sets; the copying part of Editor is Open after the fork/pull split. Owner is an ownership
 relationship, not a grant. Rights form a partial order, not a single privilege rank.
 Grants name Vault, Space, Repo, folder, Note or Thread targets and person, team, organisation,
-agent or public subjects. An organisation grant reaches its members. Conversations are owner-only
-and are never grant targets. Space grants govern its Map (adding items or people), never the
+agent or public subjects. An organisation owns and receives grants but never acts; people
+and agents act. Agents own nothing; their person is responsible. An organisation grant reaches
+its members. Conversations are owner-only and are never grant targets. Space grants govern its Map (adding items or people), never the
 referenced content; a Space membership audience is not a content grantee. Sharing passes only
 rights already held. Agent access is person access intersected with the agent ceiling.
 

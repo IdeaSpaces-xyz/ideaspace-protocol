@@ -301,7 +301,7 @@ try {
     const access = require("@ideaspaces/protocol/conformance/access");
     require.resolve("@ideaspaces/protocol/schema/access");
     deepStrictEqual(accessRuntime.CAPABILITIES, protocol.CAPABILITIES);
-    deepStrictEqual(accessRuntime.expandCapabilities(["edit"]), ["discover", "view", "comment", "edit", "copy"]);
+    deepStrictEqual(accessRuntime.expandCapabilities(["edit"]), ["discover", "view", "comment", "edit"]);
     if (access.format !== "ideaspaces-access/v1") throw new Error("Access vectors did not load");
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
     const threadAgreementSchema = require("@ideaspaces/protocol/schema/thread-agreement");

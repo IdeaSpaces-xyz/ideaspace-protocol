@@ -3,8 +3,8 @@
   "depths": ["name", "summary", "surface", "children", "full"],
   "subject_kinds": ["person", "team", "organisation", "agent", "public"],
   "capability_ladder": ["discover", "view", "comment", "edit"],
-  "capability_options": ["copy", "reshare"],
-  "capability_option_implied_at": { "copy": "edit" },
+  "capability_options": ["fork", "pull", "reshare"],
+  "capability_option_implied_at": {},
   "map_disclosure_capability": "view",
   "required_coverage": [
     "missing_allowed",

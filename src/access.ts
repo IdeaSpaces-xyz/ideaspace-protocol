@@ -1,14 +1,21 @@
 /** Portable access words and set operations. No identity lookup, policy store or enforcement. */
 export const SUBJECT_KINDS = ["person", "team", "organisation", "agent", "public"] as const;
 export type SubjectKind = (typeof SUBJECT_KINDS)[number];
+/** Organisations own and receive grants, but never act. Agents act, but never own. */
+export const ACTING_SUBJECT_KINDS = ["person", "agent"] as const;
+export const OWNING_SUBJECT_KINDS = ["person", "organisation"] as const;
+export type ActingSubjectKind = (typeof ACTING_SUBJECT_KINDS)[number];
+export function isActingSubjectKind(input: unknown): input is ActingSubjectKind {
+  return (ACTING_SUBJECT_KINDS as readonly unknown[]).includes(input);
+}
 
-export const CAPABILITIES = ["discover", "view", "comment", "edit", "copy", "reshare"] as const;
+export const CAPABILITIES = ["discover", "view", "comment", "edit", "fork", "pull", "reshare"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 /** The ordered spine only, not a total order over rights. Never authorize by rank. */
 export const CAPABILITY_LADDER = ["discover", "view", "comment", "edit"] as const;
-export const CAPABILITY_OPTIONS = ["copy", "reshare"] as const;
+export const CAPABILITY_OPTIONS = ["fork", "pull", "reshare"] as const;
 export type CapabilityOption = (typeof CAPABILITY_OPTIONS)[number];
-export const CAPABILITY_OPTION_IMPLIED_AT: Partial<Record<CapabilityOption, Capability>> = { copy: "edit" };
+export const CAPABILITY_OPTION_IMPLIED_AT: Partial<Record<CapabilityOption, Capability>> = {};
 export const MAP_DISCLOSURE_CAPABILITY: Capability = "view";
 export const ACCESS_LEVELS = ["viewer", "commenter", "editor", "owner"] as const;
 export type AccessLevel = (typeof ACCESS_LEVELS)[number];
@@ -34,11 +41,11 @@ export function capabilityRank(capability: string): number {
   return (CAPABILITY_LADDER as readonly string[]).indexOf(capability);
 }
 
-/** Implication closure, in CAPABILITIES order. Does not decide who holds these rights. */
+/** Settled implication closure only, in CAPABILITIES order. Missing Open rights are not denials. */
 export function expandCapabilities(input: readonly Capability[]): Capability[] {
   const rights = new Set(input);
-  if (rights.has("edit")) { rights.add("comment"); rights.add("copy"); }
-  if (rights.has("comment") || rights.has("copy") || rights.has("reshare")) rights.add("view");
+  if (rights.has("edit")) rights.add("comment");
+  if (rights.has("comment") || rights.has("fork") || rights.has("pull") || rights.has("reshare")) rights.add("view");
   if (rights.has("view")) rights.add("discover");
   return CAPABILITIES.filter((right) => rights.has(right));
 }
@@ -46,7 +53,7 @@ export function expandCapabilities(input: readonly Capability[]): Capability[] {
 export type AccessLevelProfile =
   | { status: "grantable"; capabilities: Capability[] }
   | { status: "owner" }
-  | { status: "open" }
+  | { status: "open"; capabilities?: Capability[] }
   | { status: "not_applicable" };
 
 /** Owner is a relationship, never a stronger grant that a resharer can pass on. */
@@ -55,8 +62,10 @@ export function accessLevelProfile(target: AccessTargetKind, level: AccessLevel)
   if (target === "conversation") return { status: "not_applicable" };
   if (target === "space") return { status: "open" };
   if (target === "thread" && level === "editor") return { status: "not_applicable" };
+  // Editing is settled; which split copying rights Editor implies is not.
+  if (level === "editor") return { status: "open", capabilities: expandCapabilities(["edit"]) };
   return { status: "grantable", capabilities: expandCapabilities([{
-    viewer: "view", commenter: "comment", editor: "edit",
+    viewer: "view", commenter: "comment",
   }[level] as Capability]) };
 }
 
@@ -107,10 +116,31 @@ export function parseAccessGrant(input: unknown): AccessGrantParseResult {
   return issues.length ? { status: "invalid", issues } : { status: "valid", grant: input as unknown as AccessGrant };
 }
 
+/** Ownership is separate from grants: agents never own, and Conversations have a human owner. */
+export interface AccessOwnership extends Record<string, unknown> {
+  target: { kind: AccessTargetKind; id: string; [key: string]: unknown };
+  owner: { kind: "person" | "organisation"; id: string; [key: string]: unknown };
+}
+export type AccessOwnershipParseResult =
+  | { status: "valid"; ownership: AccessOwnership }
+  | { status: "invalid"; issues: string[] };
+export function parseAccessOwnership(input: unknown): AccessOwnershipParseResult {
+  if (!record(input)) return { status: "invalid", issues: ["invalid_ownership"] };
+  const { target, owner } = input;
+  const issues: string[] = [];
+  if (!record(target) || !identity(target.id) || !(ACCESS_TARGET_KINDS as readonly unknown[]).includes(target.kind))
+    issues.push("invalid_target");
+  if (!record(owner) || !identity(owner.id) || !(OWNING_SUBJECT_KINDS as readonly unknown[]).includes(owner.kind))
+    issues.push("invalid_owner");
+  if (record(target) && target.kind === "conversation" && record(owner) && owner.kind !== "person")
+    issues.push("conversation_requires_human_owner");
+  return issues.length ? { status: "invalid", issues } : { status: "valid", ownership: input as unknown as AccessOwnership };
+}
+
 export type LegacyCapabilityMapping =
   | { status: "mapped"; capabilities: Capability[] }
   | { status: "ignored" }
-  | { status: "open" };
+  | { status: "open"; capabilities?: Capability[] };
 
 /** Explicit migration of stored capability names, not of ownership or roles. */
 export function mapLegacyCapability(target: AccessTargetKind, name: string): LegacyCapabilityMapping {
@@ -118,14 +148,18 @@ export function mapLegacyCapability(target: AccessTargetKind, name: string): Leg
   // Content aliases retain their target scope; they do not authorize whole-repo transport.
   if (["git_fetch", "space_copy", "git_push", "push"].includes(name)) {
     if (!["repo", "folder", "note"].includes(target)) return { status: "ignored" };
-    return { status: "mapped", capabilities: expandCapabilities([name === "git_push" || name === "push" ? "edit" : "copy"]) };
+    if (name === "git_push" || name === "push")
+      return { status: "open", capabilities: expandCapabilities(["edit"]) };
+    return { status: "mapped", capabilities: expandCapabilities([name === "git_fetch" ? "pull" : "fork"]) };
   }
   // This action is a host governance check, not the stored manage capability.
-  if (name === "manage_access") return { status: "open" };
+  if (name === "manage_access" || name === "copy") return { status: "open" };
   const mapped = name === "read" || name === "history" ? "view"
     : name === "find" ? "discover"
     : name === "write" ? (target === "thread" ? "comment" : "edit")
     : name === "manage" ? "reshare" : name;
+  if (name === "write" && target !== "thread")
+    return { status: "open", capabilities: expandCapabilities(["edit"]) };
   if (!isValidCapability(mapped) || (target === "thread" && mapped === "edit")) return { status: "ignored" };
   return { status: "mapped", capabilities: expandCapabilities([mapped]) };
 }

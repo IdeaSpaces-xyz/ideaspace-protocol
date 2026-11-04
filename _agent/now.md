@@ -10,7 +10,9 @@ The 0.31.0 candidate replaces the split access ladder with one capability set an
 See [`schema/access.md`](../schema/access.md) for meanings, migration, and Open policy, and
 `conformance/access/manifest.json` for language-neutral proofs of expressibility. No server,
 client, audit writer or enforcement change is included. Company membership defaults and Space
-level bundles remain Open; consumers must not choose them from these shapes.
+level bundles remain Open, as do Editor/Allow copying bundles after the state-only fork vs
+whole-history pull split. Agents own nothing. Consumers must not choose the Open rules from
+these shapes.
 
 ## Earlier state
 
