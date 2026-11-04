@@ -267,11 +267,14 @@ cause identity minting, fetch, upload, publication, or repinning; the producer o
 `map` block and may retain a useful local rendering.
 
 The shared access vocabulary defines standard subject kinds (`person`, `team`, `organisation`, `agent`,
-`public`) and the ordered capability ladder (`view`, `read`, `history`, `copy`, `write`, `push`, `manage`).
+`public`), the ordered capability ladder (`view`, `read`, `history`, `comment`, `write`, `push`, `manage`), and
+the capability options held beside it (`copy`, `reshare`). A higher rung holds every rung below it. An option
+has no rank, and a subject at any rung may hold one; `write` and above imply `copy`.
 **A Map's disclosure ceiling is the view rung.** Observing or sharing Map members at progressive depth
 ceilings operates within the `view` capability without implying `read` (full note content retrieval),
-`history` (commit history or post transcripts), `copy` (space fork or repo clone), `write` (content edits),
-`push` (git push transport), or `manage` (access management). The protocol defines the words and relation
+`history` (commit history or post transcripts), `comment` (taking part), `write` (content edits),
+`push` (git push transport), `manage` (access management), or either option: `copy` (space fork or repo clone)
+and `reshare` (giving access onward). The protocol defines the words and relation
 names; access evaluation and enforcement remain host concerns.
 
 Hosted versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer

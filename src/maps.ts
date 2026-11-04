@@ -31,21 +31,36 @@ export type SubjectKind = (typeof SUBJECT_KINDS)[number];
  *   view     — observe Map members at declared disclosure ceilings (name, summary, surface, children, full)
  *   read     — open and read full Note/document content bodies
  *   history  — inspect commit graphs, timelines, and post transcripts
- *   copy     — fork spaces or clone repositories
+ *   comment  — take part: post in a Thread, comment on content
  *   write    — create and update content
  *   push     — transport commits to a repository remote
  *   manage   — administer access grants and participants
+ *
+ * A higher rung holds every rung below it. An option is not a rung: see CAPABILITY_OPTIONS.
  */
 export const CAPABILITY_LADDER = [
   "view",
   "read",
   "history",
-  "copy",
+  "comment",
   "write",
   "push",
   "manage",
 ] as const;
 export type Capability = (typeof CAPABILITY_LADDER)[number];
+
+/**
+ * Capability options, held beside the ladder and independent of a subject's rung.
+ * A subject at any rung may hold an option. `write` and above imply `copy`.
+ *
+ *   copy     — fork spaces or clone repositories
+ *   reshare  — give access onward
+ */
+export const CAPABILITY_OPTIONS = ["copy", "reshare"] as const;
+export type CapabilityOption = (typeof CAPABILITY_OPTIONS)[number];
+
+/** The lowest rung that implies an option, for the options a rung implies. */
+export const CAPABILITY_OPTION_IMPLIED_AT: Partial<Record<CapabilityOption, Capability>> = { copy: "write" };
 
 /**
  * The capability rung required for Map disclosure.
@@ -176,6 +191,7 @@ export type CanonicalRepoUrlParseResult =
 const DEPTHS = new Set<string>(MAP_DEPTHS);
 const SUBJECT_KIND_SET = new Set<string>(SUBJECT_KINDS);
 const CAPABILITY_SET = new Set<string>(CAPABILITY_LADDER);
+const CAPABILITY_OPTION_SET = new Set<string>(CAPABILITY_OPTIONS);
 export const REVISION_PATTERN = /^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$/;
 const ADDRESS_PATTERN = /^[a-z][a-z0-9_]*:.+$/;
 const PIN_PATTERN = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
@@ -203,9 +219,14 @@ export function isValidCapability(input: unknown): input is Capability {
   return typeof input === "string" && CAPABILITY_SET.has(input);
 }
 
+/** Check whether a value is a capability option, held beside the ladder. */
+export function isValidCapabilityOption(input: unknown): input is CapabilityOption {
+  return typeof input === "string" && CAPABILITY_OPTION_SET.has(input);
+}
+
 /**
  * Return the rank of a capability on the ladder (0 for "view" up to 6 for "manage").
- * Returns -1 for unrecognized capabilities.
+ * Returns -1 for an option, which has no rank, and for unrecognized capabilities.
  */
 export function capabilityRank(capability: string): number {
   return CAPABILITY_LADDER.indexOf(capability as Capability);

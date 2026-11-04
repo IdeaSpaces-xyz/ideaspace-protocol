@@ -4,6 +4,8 @@ import {
   MAP_DEPTHS,
   SUBJECT_KINDS,
   CAPABILITY_LADDER,
+  CAPABILITY_OPTIONS,
+  CAPABILITY_OPTION_IMPLIED_AT,
   MAP_DISCLOSURE_CAPABILITY,
   parseCoreThreadReference,
   REVISION_PATTERN,
@@ -11,6 +13,7 @@ import {
   isValidSubjectKind,
   isValidCapability,
   capabilityRank,
+  isValidCapabilityOption,
   buildMap,
   parseCanonicalRepoUrl,
   parseMapPositionAddress,
@@ -321,6 +324,8 @@ describe("Map conformance manifest", () => {
     expect(manifest.depths).toEqual(MAP_DEPTHS);
     expect((manifest as any).subject_kinds).toEqual(SUBJECT_KINDS);
     expect((manifest as any).capability_ladder).toEqual(CAPABILITY_LADDER);
+    expect((manifest as any).capability_options).toEqual(CAPABILITY_OPTIONS);
+    expect((manifest as any).capability_option_implied_at).toEqual(CAPABILITY_OPTION_IMPLIED_AT);
     expect((manifest as any).map_disclosure_capability).toBe(MAP_DISCLOSURE_CAPABILITY);
     const covered = new Set(manifest.vectors.flatMap((vector) => vector.covers));
     for (const requirement of manifest.required_coverage) {
@@ -422,11 +427,31 @@ describe("Access vocabulary and capability ladder", () => {
       "view",
       "read",
       "history",
-      "copy",
+      "comment",
       "write",
       "push",
       "manage",
     ]);
+  });
+
+  it("ranks comment above history and below write", () => {
+    expect(isValidCapability("comment")).toBe(true);
+    expect(capabilityRank("comment")).toBe(3);
+  });
+
+  it("implies copy at write, and reshare at no rung", () => {
+    expect(CAPABILITY_OPTION_IMPLIED_AT).toEqual({ copy: "write" });
+  });
+
+  it("holds options beside the ladder, with no rank", () => {
+    expect(CAPABILITY_OPTIONS).toEqual(["copy", "reshare"]);
+    for (const option of CAPABILITY_OPTIONS) {
+      expect(isValidCapabilityOption(option)).toBe(true);
+      expect(isValidCapability(option)).toBe(false);
+      expect(capabilityRank(option)).toBe(-1);
+    }
+    expect(isValidCapabilityOption("write")).toBe(false);
+    expect(isValidCapabilityOption(42)).toBe(false);
   });
 
   it("anchors Map disclosure to the view capability rung", () => {
