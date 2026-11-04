@@ -417,11 +417,11 @@ export type { PersistedChange, ArmingDecision } from "./surface-state.js";
 // Canonical access shape (the historical maps import path re-exports the same words).
 export {
   CAPABILITIES, ACCESS_LEVELS, ACCESS_TARGET_KINDS, ACTING_SUBJECT_KINDS, OWNING_SUBJECT_KINDS,
-  isActingSubjectKind, expandCapabilities,
+  isActingSubjectKind, expandCapabilities, COMPANY_MEMBER_CAPABILITIES, copyOperationRequirements,
   accessLevelProfile, intersectAccessCapabilities, canPassAccess, parseAccessGrant,
   mapLegacyCapability, parseAccessOwnership,
 } from "./access.js";
 export type {
   AccessLevel, AccessTargetKind, AccessLevelProfile, AccessSubject, AccessGrant, ActingSubjectKind,
-  AccessGrantParseResult, LegacyCapabilityMapping, AccessOwnership, AccessOwnershipParseResult,
+  AccessGrantParseResult, LegacyCapabilityMapping, AccessOwnership, AccessOwnershipParseResult, CopyOperationRequirements,
 } from "./access.js";

@@ -269,7 +269,7 @@ cause identity minting, fetch, upload, publication, or repinning; the producer o
 The canonical access vocabulary is defined in [schema/access.md](schema/access.md):
 `discover`, `view` (content and history), `comment`, `edit` (including push), `fork`
 (state-only copy), `pull` (whole Git history), and `reshare`. Viewer and Commenter expand to
-capability sets; the copying part of Editor is Open after the fork/pull split. Owner is an ownership
+capability sets. Editor includes fork and pull, plus sharing in a company Vault. Owner is an ownership
 relationship, not a grant. Rights form a partial order, not a single privilege rank.
 Grants name Vault, Space, Repo, folder, Note or Thread targets and person, team, organisation,
 agent or public subjects. An organisation owns and receives grants but never acts; people
@@ -283,7 +283,11 @@ each referenced target, not merely on the Map; `view` includes full content and 
 not imply copying, commenting, editing or sharing. The earlier protocol-only split between
 Map `view`, body `read` and `history` is superseded. The migration table, Open policy questions,
 portable grant statement, and conformance vectors live in the access contract. Enforcement,
-identity resolution, persistence, audit and transport remain host concerns.
+identity resolution, persistence, audit and transport remain host concerns. Fork is available on
+Repo, folder and Note, omitting closed material. Pull is whole-Repo-only and refused if any
+branch is closed to that person. Public grants choose reading, state copying or also full
+history explicitly. Threads have no copying; Conversations have no export. Company membership
+grants discover; other company defaults and additional Space level bundles remain Open.
 
 Hosted versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer
 concerns. Import never fetches an unknown repository merely because a map-note names it. A repo URL

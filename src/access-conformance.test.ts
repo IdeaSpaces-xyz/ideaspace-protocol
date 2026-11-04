@@ -4,26 +4,29 @@ import {
   CAPABILITIES, ACCESS_LEVELS, ACCESS_TARGET_KINDS, accessLevelProfile,
   expandCapabilities, intersectAccessCapabilities, canPassAccess, parseAccessGrant,
   mapLegacyCapability, isValidCapability, parseAccessOwnership, isActingSubjectKind,
+  COMPANY_MEMBER_CAPABILITIES, copyOperationRequirements,
   type AccessTargetKind, type AccessLevel, type Capability,
 } from "./access.js";
 import * as maps from "./maps.js";
 import * as protocol from "./index.js";
 
 type Vector = { id: string; expected: unknown } & (
-  | { operation: "level"; input: { target: AccessTargetKind; level: AccessLevel } }
+  | { operation: "level"; input: { target: AccessTargetKind; level: AccessLevel; context?: {companyVault?: boolean} } }
   | { operation: "expand"; input: Capability[] }
   | { operation: "pass"; input: { held: Capability[]; requested: Capability[] } }
   | { operation: "intersect"; input: { person: Capability[]; ceiling: Capability[] } }
   | { operation: "legacy"; input: { target: AccessTargetKind; name: string } }
   | { operation: "grant" | "ownership" | "acting_kind"; input: unknown }
+  | { operation: "copy_requirements"; input: {target: AccessTargetKind; operation: "fork" | "pull"; hasClosedBranch?: boolean} }
 );
 const manifest = JSON.parse(readFileSync(new URL("../conformance/access/manifest.json", import.meta.url), "utf8")) as {
-  capabilities: string[]; levels: string[]; target_kinds: string[]; required_coverage: string[]; vectors: Vector[];
+  company_member_capabilities: string[]; capabilities: string[]; levels: string[]; target_kinds: string[]; required_coverage: string[]; vectors: Vector[];
 };
 
 describe("portable access conformance", () => {
   it("has one vocabulary at the root and historical Maps entrypoint", () => {
     expect(manifest.capabilities).toEqual(CAPABILITIES);
+    expect(manifest.company_member_capabilities).toEqual(COMPANY_MEMBER_CAPABILITIES);
     expect(manifest.levels).toEqual(ACCESS_LEVELS);
     expect(manifest.target_kinds).toEqual(ACCESS_TARGET_KINDS);
     expect(maps.CAPABILITIES).toBe(CAPABILITIES);
@@ -47,7 +50,7 @@ describe("portable access conformance", () => {
     const before = JSON.stringify(vector.input);
     let actual: unknown;
     switch (vector.operation) {
-      case "level": actual = accessLevelProfile(vector.input.target, vector.input.level); break;
+      case "level": actual = accessLevelProfile(vector.input.target, vector.input.level, vector.input.context); break;
       case "expand": actual = expandCapabilities(vector.input); break;
       case "pass": actual = canPassAccess(vector.input.held, vector.input.requested); break;
       case "intersect": actual = intersectAccessCapabilities(vector.input.person, vector.input.ceiling); break;
@@ -55,10 +58,16 @@ describe("portable access conformance", () => {
       case "grant": actual = parseAccessGrant(vector.input); break;
       case "ownership": actual = parseAccessOwnership(vector.input); break;
       case "acting_kind": actual = isActingSubjectKind(vector.input); break;
+      case "copy_requirements": actual = copyOperationRequirements(vector.input.target, vector.input.operation, vector.input.hasClosedBranch); break;
       default: throw new Error("Unknown conformance operation");
     }
     expect(actual).toEqual(vector.expected);
     expect(JSON.stringify(vector.input)).toBe(before);
+  });
+
+  it("requires an explicit branch fact for pull, even for untyped callers", () => {
+    expect(copyOperationRequirements("repo", "pull", null as unknown as boolean))
+      .toEqual({ status: "requires_branch_check" });
   });
 
   it("obeys set laws for every possible canonical capability set", () => {

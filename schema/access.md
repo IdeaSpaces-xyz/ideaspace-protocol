@@ -1,90 +1,115 @@
 # Canonical access
 
 This is a portable vocabulary and statement shape, not an authorization service. It does not
-resolve identities, store grants, check a database, issue credentials, or implement a server's
-inheritance, audit or revocation. The reference functions operate only on supplied names and sets.
-Absence of a grant statement says nothing about an unresolved policy question.
+resolve identities, store grants, check a database, export Git objects, filter content, issue
+credentials, or implement a server's inheritance, audit or revocation. The reference functions
+operate only on supplied names, sets and facts. Hosts must enforce the requirements below.
 
 ## One meaning per capability
 
 | Name | Meaning |
 |---|---|
 | `discover` | Find that a target exists; not permission to read its content. |
-| `view` | Read content **and its history**, including a Thread's posts. Also discover. |
+| `view` | Read content **and its history**, including a Thread's posts. Also discover. This is not Git transport. |
 | `comment` | Take part: comment on content or post in a Thread. Also view. |
-| `edit` | Create and change content, including pushing Repo commits. Also comment. On a Space's Map, this includes adding references. Which split copying rights Editor includes is Open. |
-| `fork` | Take an independent copy of the current state, **without history**. Also view. |
-| `pull` | Take the whole Git history, not just a copy of the current state. Also view. |
+| `edit` | Create and change content, including pushing Repo commits. Also comment, fork and pull, within the grant's scope and the operation restrictions below. On a Space's Map this includes adding references, never editing referenced content. |
+| `fork` | Take an independent copy of the current state, **without history**. Also view. Works on Repo, folder or Note; leaves closed parts out. |
+| `pull` | Take the whole Git history. Also view. Works only on a whole Repo, and is refused when any branch is closed to that person. |
 | `reshare` | Allow sharing: give access onward, bounded by the rights already held. Also view. On a Space, adding people gives them rights on the Map only. |
 
-The implication edges are `edit → comment`; `comment, fork, pull, reshare → view`;
-`view → discover`. `expandCapabilities` takes their closure, without duplicates, in the
-order `discover, view, comment, edit, fork, pull, reshare`. Inputs are canonical capability
-names. This is the closure of **settled implications only**: a missing Open copying right is
-not a ruling that the person lacks it. Hosts must settle policy before enforcing these sets.
-Fork and pull are separate rights: neither implies the other here. Do not infer
-pull from permission to read history in the web, or whole-Repo Git access from a Note grant.
-No implication gives `reshare` from `edit`.
+The implication edges are `edit → comment, fork, pull`; `comment, fork, pull, reshare → view`;
+`view → discover`. `expandCapabilities` takes their closure, without duplicates, in the order
+`discover, view, comment, edit, fork, pull, reshare`. Inputs are canonical capability names.
+Fork and pull are separate rights: neither alone implies the other. Viewing history in the web
+never implies pull. No capability implication gives `reshare` from `edit` globally; the company
+Editor rule below is context-specific.
+
+**Scope never grows through an implication.** A Note Editor does not gain access to its Repo
+root or the whole Repo's history. A Vault grant can flow down to compatible content targets;
+pull is still checked on each whole Repo, never on the Vault. A Space's Map does not supply
+content inheritance. An inapplicable right is not permission for a different target.
 
 `CAPABILITY_LADDER` is only the ordered spine `discover, view, comment, edit`.
-`CAPABILITY_OPTIONS` is `fork, pull, reshare`; these are also capabilities. `capabilityRank`
-is retained as a deprecated display helper: spine index or -1, **never authorization**.
-`CAPABILITY_OPTION_IMPLIED_AT` is empty pending the copying ruling below.
-`isValidCapability` accepts all seven names. Rights are a partial order, not a total rank.
+`CAPABILITY_OPTIONS` is `fork, pull, reshare`; these are also capabilities. Rights are a partial
+order, not a total rank. `capabilityRank` is retained as a deprecated compatibility/display
+helper: spine index or -1, **never authorization**. `CAPABILITY_OPTION_IMPLIED_AT` is
+`{fork: edit, pull: edit}` and is the reference implementation's source for those implications.
+`isValidCapability` accepts all seven names.
 
-## Levels and switches
-
-The user-facing words stay **Viewer, Commenter, Editor, Owner, Allow copying, Allow sharing**.
-Fork and pull name underlying rights here, not new user-facing labels.
-Machine names are lowercase. Human labels belong in a shared consumer label map, not duplicated
-in each surface. This contract defines their meanings, not translated labels.
+## Levels and human words
 
 | Level | Rights |
 |---|---|
 | `viewer` | view (content, history, discover) |
 | `commenter` | comment, including Viewer |
-| `editor` | edit, including Commenter. Earlier it included Allow copying; which of fork/pull it includes after the split is **Open**. |
-| `owner` | Ownership, with every applicable right on what is owned, copying included; not a transferable grant. |
+| `editor` | edit, including Commenter, fork and pull, subject to target scope and closed-branch restrictions |
+| `owner` | Ownership, with every applicable right on what is owned; not a transferable grant and never a bypass for forbidden exports |
 
-Allow sharing adds `reshare`. **Open:** how the existing Allow copying switch selects fork,
-pull or both, and which of them Editor implies. The earlier copying bundle combined state
-copy and Git history; it cannot be carried across the new split by guesswork. An Editor's
-known editing rights are expressible as `edit`, and either copying right can be stated
-explicitly, without pretending its default bundle has been decided.
+The shared consumer label map uses **Viewer, Commenter, Editor, Owner, Allow copying,
+Include full history, Allow sharing**. The protocol names remain `fork` and `pull`; people see
+**Allow copying** for state copying and **Include full history** for the whole history, not Git
+jargon. These are the agreed human terms, not new access levels. The protocol defines meanings;
+the shared consumer label map owns display text and translations, not this module.
 
-Ownership is not conferred by a grant of every capability. A resharer cannot transfer it.
-An agent owns nothing; its person is responsible. An organisation may share an agent and
-limit its access. Only people and organisations own; a Conversation has a human owner.
+Allow copying adds `fork`; Include full history adds `pull`. Editor includes both. In a company
+Vault, Editor **also includes sharing**, not merely when a separate sharing switch is selected.
+This applies to content in that Vault without making every Editor everywhere a resharer.
 
-An organisation owns and receives grants but **never acts**. People and agents act,
-including when sharing an organisation's Thread. An organisation can receive a grant on a
-Space's Map. `ACTING_SUBJECT_KINDS` is `person, agent`; `OWNING_SUBJECT_KINDS` is
-`person, organisation`. `isActingSubjectKind` classifies these names without authenticating
-an actor or resolving who may act for an organisation.
+`accessLevelProfile(target, level, {companyVault?})` returns `grantable` with the expanded
+capability set, `owner` for ownership, `open` for an undecided Space profile, or
+`not_applicable`. `companyVault: true` adds `reshare` for Editor. The caller supplies the actual
+Vault context; the function does not authenticate or discover it. Without that context it
+returns the general, non-company profile. It returns no transferable capability set for Owner.
 
-`accessLevelProfile(target, level)` returns `grantable` with the expanded capability set,
-`owner` for the ownership relationship, `open` when the named profile is not decided, or
-`not_applicable`. For content Editor, `open` also carries its **known** editing capabilities,
-not a complete grant bundle. It deliberately returns no grantable capability set for Owner.
-
-| Target | Agreed profiles / boundary |
+| Target | Profiles / boundary |
 |---|---|
-| Vault | Viewer, Commenter, Editor (copying bundle Open), Owner express a grant's scope over the owner's world; this does not invent a Vault-specific comment, push or clone operation. |
-| Repo, folder, Note | Viewer, Commenter, Editor (copying bundle Open), Owner. Grants and ownership flow down the content tree. |
-| Space | Owner. **Open:** which other named levels to offer and their precise bundles. Express the agreed acts directly on the Map: `edit` for adding items, `reshare` for adding people. |
-| Thread | Viewer, Commenter, Owner, plus Allow sharing. No Editor profile. Owner edits the Agreement, renames and closes; Commenter posts, not manages. A closed Thread is read-only. |
-| Conversation | Owner only: the canonical human owner. No grants, public access, org access, Space inheritance or cross-person sharing. |
+| Vault | Viewer, Commenter, Editor, Owner express a grant's scope over the owner's world; not a Vault-specific comment, push or clone operation. |
+| Repo, folder, Note | Viewer, Commenter, Editor, Owner. Grants and ownership flow down the content tree, never up. |
+| Space | Owner. The primitive acts are view, add items (`edit` on the Map), add people (`reshare` on the Map). **Open:** other named level bundles. |
+| Thread | Viewer, Commenter, Owner, plus Allow sharing. No Editor, fork or pull. Owner edits the Agreement, renames and closes. A closed Thread is read-only. |
+| Conversation | Canonical human owner only. No grants or export, even for the owner; taking something out is a deliberate post, not transcript export. |
 
-Closing a content branch closes it and its descendants (`blocked`); a root grant covers
-its descendants otherwise. Owner inherits down to folders and Notes. These are rules for
-host evaluators, not permission to inherit through a Map pointer, a Space reference, a
-Thread attachment, or into a Conversation. Blocking is not another level or an empty grant.
-No per-child filtering scheme, tuple encoding, or block precedence algorithm is introduced here.
+Organisations own and receive grants but **never act**. People and agents act, including when
+sharing an organisation's Thread. An organisation can receive a grant on a Space's Map. Agents
+own nothing; their person is responsible. An organisation can limit agents it shares.
+`ACTING_SUBJECT_KINDS` is `person, agent`; `OWNING_SUBJECT_KINDS` is `person, organisation`.
+`isActingSubjectKind` classifies names without authenticating or authorizing an actor.
+
+Company membership grants **discover**, not an implicit read of all content.
+`COMPANY_MEMBER_CAPABILITIES` is `[discover]`. Any company default beyond discovery is Open;
+in particular, do not assume Viewer-to-org on new Repos.
+
+## Copy operation requirements
+
+Closing a content branch closes it and its descendants (`blocked`); a root grant covers its
+descendants otherwise. Owner inherits down to folders and Notes. These rules do not inherit
+through a Map pointer, a Space reference, a Thread attachment, or into a Conversation.
+
+`copyOperationRequirements(target, operation, hasClosedBranch?)` states requirements over
+supplied facts. It is **not** a grant check or an exporter:
+
+- Non-content targets (Vault, Space, Thread, Conversation) refuse fork and pull with
+  `{status: refused, reason: copy_not_supported}`. Vault-scoped rights must first apply to
+  the actual content target; this function never widens or resolves a scope.
+- Fork on Repo, folder or Note returns
+  `{status: applicable, history: none, closedBranches: omit}`. The host must omit closed
+  material, check the person's current access and create a history-free state projection.
+  This is an obligation, not evidence that a supplied tree is safe to export.
+- Pull on folder or Note refuses with `pull_requires_whole_repo`.
+- Pull on Repo with no branch fact returns `{status: requires_branch_check}`, never permission.
+  With `hasClosedBranch: true` it refuses with `closed_branch`; with false it returns
+  `{status: applicable, history: whole}`. The host must determine this fact across the whole
+  Repo for that person, not merely the current folder or a cached starting set.
+
+`applicable` is not `authorized`. Both sufficient rights **and** the operation requirements
+must hold. The filtering algorithm, safe Git object serving, block storage and checks belong
+to the host. An Editor's pull right cannot bypass a closed branch. Ownership never makes
+Thread copying or Conversation export applicable.
 
 ## Portable grant statement
 
-A complete statement has these fields. This is not Note frontmatter and not a persistence
-or API format. Unknown fields are preserved; no target is fetched or created.
+A complete statement has these fields. This is not Note frontmatter, a hosted API or a storage
+schema. Unknown fields are preserved; no target is fetched or created.
 
 ```json
 {
@@ -95,137 +120,107 @@ or API format. Unknown fields are preserved; no target is fetched or created.
 ```
 
 - `target.kind`: `vault | space | repo | folder | note | thread`. `id` is an opaque,
-  nonempty string, not a new identity system. A Space target names its Map. A folder or Note target expresses the grant's depth scope;
-  this is distinct from Map representation depth and from fork/pull rights. A Conversation
-  cannot appear here.
+  nonempty string. A Space target names its Map. A folder or Note target expresses the
+  grant's depth scope, distinct from Map representation depth. Conversation is excluded.
 - `subject.kind`: `person | team | organisation | agent | public`. `id` is nonempty;
-  public uses `*`. `organisation` means the members of that organisation. A team is a group
-  of people, not a Space's membership. There is **no Space audience** grantee. The normalizer
-  accepts US `organization` as a spelling alias; canonical statements use `organisation`.
+  public uses `*`. Organisation means its members. A team is a group of people, never a
+  Space's membership. There is **no Space audience** grantee. The subject-kind normalizer
+  accepts US `organization` as an alias; canonical statements use `organisation`.
 - `capabilities`: a nonempty array of canonical names. Stored aliases, labels and `owner`
-  are not capability names. A Thread grant cannot contain `edit`. Public can discover, view
-  but cannot comment, edit or reshare. A primitive fork/pull statement is representable;
-  **behaviour for public Repos is Open**, including the old copying switch's new bundle.
-  Shape acceptance must not turn that into an access decision.
+  are not capability names. A Thread grant cannot contain `edit`, `fork` or `pull`.
+  Public cannot comment, edit or reshare.
+
+The sharer chooses public access explicitly. Public statements can express read only (`view`),
+state copying (`view, fork`), or also full history (`view, fork, pull`). Public Viewer alone
+implies neither copying nor pull; neither is an automatic consequence of publishing. Pull's
+whole-Repo/closed-branch rule and fork's closed-material omission apply to public access too.
 
 `parseAccessGrant` returns `valid` with the unchanged statement or `invalid` with ordered
 issue codes: `invalid_grant`, or `invalid_target`, `invalid_subject`, `invalid_capabilities`,
-`thread_has_no_editor`, `invalid_public_capabilities` as applicable. This is a shape check, **not approval to issue the grant**.
-Other target/act restrictions and undecided policy still need the host's check. In particular,
-accepting a primitive does not settle an Open level profile or create a new product operation.
+`thread_has_no_editor`, `thread_has_no_copy`, `invalid_public_capabilities` as applicable.
+These names and order are normative for non-TypeScript implementations too. This is a shape
+check, **not approval to issue or use a grant**: all target/act restrictions still apply.
 
-Sharing with everyone in an org is this **subject**, not a fifth privilege level. The grant
-still names the rights being given. People brought into a company are there by default, and
-Editors can share there, but **Open:** whether company Vault membership alone reads anything
-without an org grant. Suggested discover-for-members and Viewer-on-new-Repos defaults are
-not settled here. Do not encode either answer as a default permission. Do not silently add
-Allow sharing to every Editor everywhere to resolve this question.
-
-A Space grant affects only the Map. Adding a Repo, Note, Thread, agent or another Space to it
-never issues a content grant. Inviting people never grants the referenced content. A person
-without access to a reference can request it; the request's API shape is outside this contract.
+An org-wide grant names the organisation as subject, not a fifth privilege level or a content
+container. Space grants govern only the Map. Adding a reference or inviting people never
+issues content grants. A person without access can request it; the request API is out of scope.
 Local and remote Spaces and Vaults are separate; a Map is not a container inheritance edge.
 
 ### Ownership statement
 
-`AccessOwnership` keeps ownership separate: `{target: {kind, id}, owner: {kind, id}}`.
-The target can be any of the seven kinds, including Conversation. The owner's kind is
-`person | organisation`, never agent, team or public. A Conversation requires `person`.
-IDs are nonempty; unknown fields are preserved. `parseAccessOwnership` checks only this
-shape and returns `valid` with `ownership`, or `invalid` with ordered codes
+`AccessOwnership` is `{target: {kind, id}, owner: {kind, id}}`. The target can be any of the
+seven kinds. The owner's kind is `person | organisation`, never agent, team or public;
+Conversation requires `person`. IDs are nonempty and unknown fields are preserved.
+`parseAccessOwnership` returns `valid` with `ownership`, or `invalid` with ordered codes
 `invalid_ownership`, or `invalid_target`, `invalid_owner`,
-`conversation_requires_human_owner` as applicable. It neither creates nor transfers ownership.
-The host must resolve a person identity to the canonical human owner; a spelling is not proof.
+`conversation_requires_human_owner` as applicable. The host resolves the canonical human
+identity. The parser neither creates nor transfers ownership. Ownership is not conferred by
+a grant of every capability, and a resharer cannot transfer it.
 
 ## Sharing and agents
 
-`canPassAccess(held, requested)` requires `reshare` in the closure of held rights, and every
-requested right (including its implications) already held. It tests the rights bound only.
-The host must still check the target, caller, recipient, blocks, closure state and current
-rights when issuing a grant. It never turns Allow sharing into ownership or an unrestricted
-management capability. Adding people to a Space passes Map rights only.
+`canPassAccess(held, requested)` requires `reshare` in held rights' closure and every requested
+right (including implications) already held. It tests the rights bound only. The host must
+still check scope, target, actor, recipient, blocks and current rights when granting. Adding
+people to a Space passes Map rights only. Company Editor's sharing profile uses the same bound.
 
 An agent acts with **person access ∩ agent ceiling**, not their union. The ceiling consists of
-grants to the agent, set by its owner; its default scope is the person's or organisation's
-Vault. `intersectAccessCapabilities` closes each supplied set, then intersects in canonical
-order. It resolves no identity and creates no default grants. The host determines the session's
-starting set from the Space's Map, fixes that set at session start, and checks the person's
-access again on each open. Map members open directly if allowed; following a link out is checked
-then. A Space is a starting lens, not a grant or an absolute prohibition on following references.
-Agent ceilings cannot unlock another person's Conversation. Credential exchange, expiry,
-allowed acts, session attribution and revocation remain host responsibilities.
+grants to the agent, set by its responsible person or organisation; its default scope is that
+person's or organisation's Vault. `intersectAccessCapabilities` closes each supplied set and
+intersects in canonical order. It resolves no identity or default grants. The host determines
+the session's starting set from the Space Map and fixes it at session start, but checks the
+person's access again on each open. Following a link out is checked then. Agent ceilings cannot
+unlock another person's Conversation. Session credentials and revocation remain host concerns.
 
 ## Mapping today's words
 
-This table replaces the older split vocabulary; it is not permission to preserve contradictory
-legacy behavior. `mapLegacyCapability` returns `mapped` with a closed capability set, `ignored`
-for unsupported names/families, or `open` for unresolved governance or copying bundles below. An Open legacy Editor mapping
-carries its known editing capabilities, not a complete replacement grant. Do not migrate a
-legacy write/push grant to that subset and silently drop its old copying entitlement.
+`mapLegacyCapability` returns `mapped` with a closed capability set, or `ignored` for unsupported
+names/families. It translates names without widening scope or overriding operation requirements.
 
 | Existing word | Canonical meaning |
 |---|---|
 | `view`, `read`, `history` | view, including content and history |
 | `discover`, find-only `find` | discover only |
 | `comment` | comment |
-| `write` on content | known edit rights; full copying bundle Open |
-| `write` on a Space | known edit rights on its Map, never referenced content; full profile Open |
-| `write` on a Thread | comment |
-| `git_push`, old protocol `push`, on content | known edit rights, bounded to that target; full copying bundle Open |
-| `space_copy` on content | fork: state only, bounded to that target |
-| `git_fetch` on content | pull: whole Git history; target applicability below Repo is Open |
-| `manage` (stored grant), `reshare` | Allow sharing, not Owner and not Editor |
-| `copy` / Allow copying | **Open mapping:** old combined right; do not silently choose fork, pull or both |
-| Viewer, Commenter, Editor | named profiles above, not stored capability aliases |
-| Owner, owner relation | ownership, not a `manage` grant |
-| Thread owner labelled Editor | correct the label to Owner using owner evidence; never promote every writer |
-| Public | Viewer granted to `{kind: public, id: '*'}` |
-| `manage_access` (derived governance action) | **Open mapping:** it is not the stored `manage` capability; its human/root-role checks cannot be faithfully renamed to Allow sharing. |
+| `write` on content | edit, including fork and pull at compatible targets |
+| `write` on Space | edit its Map, never referenced content; named Space bundles stay Open |
+| `write` on Thread | comment |
+| `git_push`, old protocol `push` on content | edit, within that target scope |
+| `space_copy` on content | fork: state only |
+| `git_fetch` on content | pull: whole Repo only; a non-root grant never widens to its Repo |
+| `copy`, `allow_copying` | fork **and** pull, preserving the old combined entitlement |
+| `manage`, `manage_access`, `reshare` | Allow sharing, not Owner or Editor |
+| Viewer, Commenter, Editor | profiles above, not stored capability aliases |
+| Owner / owner relation | ownership, not a manage grant |
+| Thread owner labelled Editor | use owner evidence to correct the label; never promote every writer |
+| Public | the explicit public grant selected by the sharer, not automatic export rights |
 
-Legacy transport aliases are ignored on Vault, Space and Thread targets by this mapping.
-On folders and Notes, preserving the alias's meaning does not authorize whole-Repo transport;
-the host still checks scope. Whether pull is restricted to the whole Repo is Open. `use` is not a capability
-in these seven target kinds. Agent use implies view/discover of the agent, but invocation is
-not defined here. Invalid-on-family grants must not be promoted into a different family.
-Legacy actor, exchange and standalone Map families need their own explicit target migration;
-this table does not guess that every exchange is a Thread or every Map is a Space.
+Review old `allow_copying` grant migration against production counts **before running it**.
+No migration runs here. Changing the meaning of the `manage_access` governance action requires
+host route/writer changes; a vocabulary mapping is not proof the old human/root-role checks
+already implement Allow sharing.
 
-**Protocol migration from 0.30.0:** `view` is no longer a Map-only right distinct from `read`
-and `history`. Those names map to one `view`. `write`/`push` become `edit`; `manage` becomes
-`reshare`, which **does not imply edit**. `copy` is no longer canonical: the two names are `fork` and `pull`; the old combined right
-maps to Open. `fork`, `pull` and `reshare` pass `isValidCapability`.
-Rank numbers have changed; persist names, never ranks. Re-check consumers that used rank
-comparisons, treated `manage` as Owner, or treated a Map's disclosure depth as authorization.
-Map parsers and representation depths themselves do not change. The historical Maps entrypoint
-re-exports this one vocabulary; it does not retain the old meanings as a second system.
+Legacy Git aliases are ignored on Vault, Space and Thread by this mapping; Thread copying
+aliases are ignored too. `use` is not a capability in these seven target kinds. Agent use gives
+view/discover of that agent, but invocation is outside this contract. Legacy actor, exchange
+and standalone Map targets need explicit migration, not guessed family conversion.
+
+**Protocol migration from 0.30.0:** the old Map-only `view` / body `read` / `history` split is
+replaced by one view. `write`/`push` become edit, `copy` becomes fork+pull, and `manage` becomes
+reshare **without edit**. Rank numbers have changed; persist names, never ranks. Re-check any
+consumer authorizing by rank, treating manage as Owner, or using Map depth as authorization.
+Map parsers and representation depths do not change. Maps imports re-export this one vocabulary.
 
 ## Open — do not fill in defaults
 
-1. Whether company Vault membership reads anything without an org grant, and the proposed
-   discover-for-members / Viewer-to-org-on-new-Repos defaults. Membership defaults are not
-   derived from the org grant shape.
-2. Space level profiles: which levels are offered and which acts each bundles. The individual
-   Map acts above are expressible without answering this.
-3. How the company rule that Editors can share there interacts with the general Allow sharing
-   switch; do not generalize it into Editor always implies sharing.
-4. How the derived `manage_access` governance boundary migrates to these rights and ownership.
-5. Which split copying rights Editor and Allow copying imply, and migration of old `copy`
-   grants. Fork and pull have distinct meanings, but the default bundles are not yet decided.
-6. Whether pull exists only on a whole Repo and only with no closed branch for that person;
-   whether fork applies to Repo/folder/Note and leaves out closed material. These are proposals,
-   not rules supplied by this contract. Neither `parseAccessGrant` nor the set helpers decide
-   Git blob/history filtering or authorize bypassing a closed branch.
-7. Behaviour for public Repos: which fork/pull rights are available and how they interact
-   with public Viewer and the existing Allow copying control. Public does not silently get
-   either right from Viewer.
-8. Thread copying has no agreed user-facing switch/profile here. Conversation export/copy
-   operations are not defined by owner-only access.
+1. Space level bundles beyond the agreed acts: view, add items, add people.
+2. Company default access beyond discover, including any Viewer-to-org default for new Repos.
 
 ## Conformance
 
 [conformance/access/manifest.json](../conformance/access/manifest.json) is language-neutral.
-Its operations name the pure functions above, with complete inputs and expected outputs.
-Cases cover every agreed named profile, every target, both switches and their independent
-combinations, org and Space statements, alias migration and invalid families, bounded sharing,
-agent intersection, and Conversation exclusions, plus separate fork/pull and Open Editor bundles. These prove **expressibility and set semantics**,
-not a database evaluator, audited writer, revocation path or privacy of a deployed service.
+Operations name the pure functions above, with complete inputs and outputs. Cases cover every
+profile/target, company context, public choices, org/Space grants, alias migration, ownership,
+sharing bounds, agent intersections, fork/pull requirements, no Thread copying and no Conversation
+export. These prove **expressibility and supplied-fact/set semantics**, not a deployed evaluator,
+filtered exporter, audited writer, revocation path or production privacy claim.

@@ -1,6 +1,6 @@
 ---
 name: Now
-summary: "Candidate 0.31.0: canonical access capabilities, levels and grant statements; no release or enforcement change. Company membership defaults and Space level bundles remain Open. Earlier delivery state follows."
+summary: "Candidate 0.31.0: canonical access capabilities, levels and grant statements; no release or enforcement change. Only company defaults beyond discover and Space level bundles remain Open. Earlier delivery state follows."
 ---
 # Now
 
@@ -9,10 +9,10 @@ summary: "Candidate 0.31.0: canonical access capabilities, levels and grant stat
 The 0.31.0 candidate replaces the split access ladder with one capability set and named levels.
 See [`schema/access.md`](../schema/access.md) for meanings, migration, and Open policy, and
 `conformance/access/manifest.json` for language-neutral proofs of expressibility. No server,
-client, audit writer or enforcement change is included. Company membership defaults and Space
-level bundles remain Open, as do Editor/Allow copying bundles after the state-only fork vs
-whole-history pull split. Agents own nothing. Consumers must not choose the Open rules from
-these shapes.
+client, audit writer or enforcement change is included. Editor includes fork and pull; company
+Vault Editor includes sharing. Fork omits closed material; whole-Repo pull refuses a closed
+branch. Threads have no copy and Conversations no export. Only company defaults beyond
+discover and Space level bundles remain Open. Agents own nothing.
 
 ## Earlier state
 
