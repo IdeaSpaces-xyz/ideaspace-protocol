@@ -1,6 +1,6 @@
 # Collaboration threads and `_threads/`
 
-> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, and root-relative Map pointers. **Provisional, v0.29.0.**
+> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, and root-relative Map pointers. **Provisional, v0.30.0.**
 
 ## Role, name, and placement
 
@@ -265,6 +265,15 @@ infer the next page from a filename or silently restart after a stale cursor. A 
 returns the selected post's normal target (or an explicit `unresolved`/`ambiguous` diagnostic),
 not the folder body. The Map address ending in `msg_…` is a read-time selector at its selected
 commit and does not add a real `.md` file.
+
+## Consumer migration: 0.29.0 → 0.30.0
+
+The parent change above ships in this version. Also in it:
+
+- **Hosted Thread ids are opaque.** Use `HOSTED_THREAD_ID` (`^x_[A-Za-z0-9_-]+$`). Remove any check of `x_` and 24 or 32 hex: a closed length refuses the next id a host mints.
+- **`kind` and `tags`.** A writer uses the standard kinds, and a label goes in `tags`. A reader still keeps every existing kind, known or not.
+
+The ladder's change, `copy` leaving it for an option, is in [`maps.md`](maps.md#capability-options).
 
 ## Format evolution
 
