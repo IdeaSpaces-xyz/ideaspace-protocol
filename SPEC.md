@@ -288,6 +288,8 @@ language-neutral vectors are in [`schema/maps.md`](schema/maps.md),
 
 ## Identity
 
+<a id="space-identity"></a>
+
 ### Repository root identity
 
 A repository context MAY declare one `root_node_id` in its selected root `_agent/foundation.md` or `_agent/agreement.md`. It names that root across checkouts without exposing a private storage key, granting access, or assigning IDs to every Note. A nested Foundation starts another repository context; an Agreement carrying identity does the same. This is a loading boundary, not a Space lens or a requirement to create a nested Git repository. If both entrypoints at one boundary declare identity, they MUST agree.
