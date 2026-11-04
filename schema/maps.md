@@ -327,15 +327,29 @@ Subjects participating in access relations are classified into five standard kin
 
 ### Capability ladder
 
-The capability ladder defines the canonical ordered relations from lowest privilege to highest:
+The capability ladder defines the canonical ordered relations from lowest privilege to highest. A higher
+rung holds every rung below it:
 
 1. **`view`**: Observe Map members and progressive disclosure at declared depth ceilings (`name`, `summary`, `surface`, `children`, `full`).
 2. **`read`**: Retrieve and read complete Note and document content bodies.
 3. **`history`**: Inspect Git commit graphs, version logs, timelines, and post transcripts.
-4. **`copy`**: Clone repositories and take independent forks of spaces.
+4. **`comment`**: Take part: post in a Thread, comment on content.
 5. **`write`**: Create, edit, and stage content and metadata.
 6. **`push`**: Transport and push commits to remote repositories.
 7. **`manage`**: Grant, revoke, and administer access relationships and participants.
+
+### Capability options
+
+An option sits beside the ladder. A subject at any rung may hold one, and it has no rank:
+
+- **`copy`**: Clone repositories and take independent forks of spaces.
+- **`reshare`**: Give access onward.
+
+`write` and above imply `copy`.
+
+`copy` was a rung before this version. A consumer that ranked it, or compared against
+`capabilityRank("copy")`, must read it as an option: that rank is now -1, and
+`isValidCapability("copy")` is false. Use `isValidCapabilityOption`.
 
 ### Map disclosure and the view rung
 

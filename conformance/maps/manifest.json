@@ -2,7 +2,8 @@
   "format": "ideaspaces-maps/v3",
   "depths": ["name", "summary", "surface", "children", "full"],
   "subject_kinds": ["person", "team", "organisation", "agent", "public"],
-  "capability_ladder": ["view", "read", "history", "copy", "write", "push", "manage"],
+  "capability_ladder": ["view", "read", "history", "comment", "write", "push", "manage"],
+  "capability_options": ["copy", "reshare"],
   "map_disclosure_capability": "view",
   "required_coverage": [
     "missing_allowed",
