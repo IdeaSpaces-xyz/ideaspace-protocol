@@ -319,7 +319,7 @@ describe("hosted Thread ids", () => {
 describe("threads primitives", () => {
   it("exports expected constants and kind definitions", () => {
     expect(THREADS_DIRECTORY).toBe("_threads");
-    expect(THREAD_KINDS).toEqual(["post", "snapshot", "reframe", "correction", "closure", "mark", "decision", "dispatch", "claim", "delivery", "verification", "question"]);
+    expect(THREAD_KINDS).toEqual(["post", "snapshot", "reframe", "correction", "closure", "mark"]);
   });
 
   it("identifies thread positions", () => {
