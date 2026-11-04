@@ -36,6 +36,7 @@ const manifest = JSON.parse(
   vectors: any[];
   attachment_vectors: string;
   post_selection_vectors: string;
+  hosted_id_vectors: string;
 };
 
 const attachments = JSON.parse(readFileSync(
@@ -303,6 +304,7 @@ describe("bounded post-id selection", () => {
 describe("hosted Thread ids", () => {
   it("checks the prefix and characters, never a length", () => {
     expect(hostedIds.format).toBe("ideaspaces-hosted-thread-ids/v1");
+    expect(manifest.hosted_id_vectors).toBe("hosted-ids.json");
     for (const vector of hostedIds.vectors) {
       expect(HOSTED_THREAD_ID.test(vector.id), vector.why).toBe(vector.valid);
     }
