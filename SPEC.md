@@ -4,15 +4,15 @@ summary: >
   A simple, shareable, traceable piece of brain — and the fixed, platform-neutral
   shape that makes it so. Knowledge in `.md` files, how-to-work in `_agent/`,
   opaque extension containers, and git carries identity and history. Any
-  conformant space. The base layer gives awareness and safe local effects; skills
+  conformant Repo. The base layer gives awareness and safe local effects; skills
   carry intent and judgment.
 ---
 
 # The Ideaspace Spec
 
-> **A simple, shareable, traceable piece of brain** — and the shape that makes it so. An agent that knows this shape can inhabit any conformant space: orient, navigate, work, with no bespoke instructions.
+> **A simple, shareable, traceable piece of brain** — and the shape that makes it so. An agent that knows this shape can inhabit any conformant Repo: orient, navigate, work, with no bespoke instructions.
 
-A Repo is a folder of Markdown under git. Knowledge accumulates as `.md` files; how-to-work lives in `_agent/`; optional payload lives in opaque extension containers; git makes it shareable and carries who-did-what. The shape is fixed so it is *predictable*: drop a conformant agent into a conformant space and it already knows where to look. This document names no platform — a Claude Code agent, a Pi agent, or a third-party tool all read the same shape.
+A Repo is a folder of Markdown under git. Knowledge accumulates as `.md` files; how-to-work lives in `_agent/`; optional payload lives in opaque extension containers; git makes it shareable and carries who-did-what. The shape is fixed so it is *predictable*: drop a conformant agent into a conformant Repo and it already knows where to look. This document names no platform — a Claude Code agent, a Pi agent, or a third-party tool all read the same shape.
 
 A **Space** is a lens: a view and a boundary around references to Repos, Notes, Threads, and agents. It holds no content and grants no access to that content. A **Vault** is the larger coordination layer. Grants on a Space govern what someone may do with the Space, such as add items or people; each content owner grants access separately. A reader without access can ask for it through a knock. Local and remote Spaces are separate and update independently. Import and export make copies; they do not sync Spaces.
 
