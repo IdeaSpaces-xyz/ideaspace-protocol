@@ -140,6 +140,10 @@ issue codes: `invalid_grant`, or `invalid_target`, `invalid_subject`, `invalid_c
 `thread_has_no_editor`, `thread_has_no_copy`, `invalid_public_capabilities` as applicable.
 These names and order are normative for non-TypeScript implementations too. This is a shape
 check, **not approval to issue or use a grant**: all target/act restrictions still apply.
+For clarity, fork/pull names on a Space statement can pass this structural parser, but
+`copyOperationRequirements` refuses both on a Space. They never authorize copying the Map
+or its references. The host must apply that operation check; accepting a name does not
+settle an Open Space level bundle.
 
 An org-wide grant names the organisation as subject, not a fifth privilege level or a content
 container. Space grants govern only the Map. Adding a reference or inviting people never

@@ -23,6 +23,7 @@ export const ACCESS_LEVELS = ["viewer", "commenter", "editor", "owner"] as const
 export type AccessLevel = (typeof ACCESS_LEVELS)[number];
 export const ACCESS_TARGET_KINDS = ["vault", "space", "repo", "folder", "note", "thread", "conversation"] as const;
 export type AccessTargetKind = (typeof ACCESS_TARGET_KINDS)[number];
+const CONTENT_COPY_TARGETS: readonly string[] = ["repo", "folder", "note"];
 
 export function normalizeSubjectKind(input: string): SubjectKind | null {
   const value = input.trim().toLowerCase();
@@ -89,7 +90,7 @@ export function copyOperationRequirements(
   operation: "fork" | "pull",
   hasClosedBranch?: boolean,
 ): CopyOperationRequirements {
-  if (!["repo", "folder", "note"].includes(target))
+  if (!CONTENT_COPY_TARGETS.includes(target))
     return { status: "refused", reason: "copy_not_supported" };
   if (operation === "fork") return { status: "applicable", history: "none", closedBranches: "omit" };
   if (target !== "repo") return { status: "refused", reason: "pull_requires_whole_repo" };
@@ -177,7 +178,7 @@ export type LegacyCapabilityMapping =
 export function mapLegacyCapability(target: AccessTargetKind, name: string): LegacyCapabilityMapping {
   if (target === "conversation") return { status: "ignored" };
   if (["git_fetch", "space_copy", "git_push", "push"].includes(name) &&
-      !["repo", "folder", "note"].includes(target)) return { status: "ignored" };
+      !CONTENT_COPY_TARGETS.includes(target)) return { status: "ignored" };
   const aliases: Record<string, Capability> = {
     read: "view", history: "view", find: "discover",
     write: target === "thread" ? "comment" : "edit",
