@@ -1,0 +1,19 @@
+{
+  "format": "ideaspaces-hosted-thread-ids/v1",
+  "rule": "A hosted Thread id is x_ followed by one or more of A-Z a-z 0-9 _ -. The id is opaque in length: a consumer checks the prefix and the characters and never a length. Vectors carry the id alone, without the thread: address type.",
+  "vectors": [
+    { "id": "x_0123456789abcdef01234567", "valid": true, "why": "24 hex, the older form" },
+    { "id": "x_0123456789abcdef0123456789abcdef", "valid": true, "why": "32 hex, the newer form" },
+    { "id": "x_a", "valid": true, "why": "one character: no minimum length beyond it" },
+    { "id": "x_Ab-9_Z", "valid": true, "why": "not hex: every character class in the grammar" },
+    { "id": "x_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "valid": true, "why": "longer than any host mints today: a host's bound is not a consumer's check" },
+    { "id": "x_", "valid": false, "why": "no id after the prefix" },
+    { "id": "X_0123456789abcdef01234567", "valid": false, "why": "the prefix is lower case" },
+    { "id": "n_0123456789abcdef01234567", "valid": false, "why": "another identifier's prefix" },
+    { "id": "thread:x_0123456789abcdef01234567", "valid": false, "why": "an address, not an id" },
+    { "id": "x_a/b", "valid": false, "why": "a slash is not safe in a URL path" },
+    { "id": "x_a b", "valid": false, "why": "a space is not in the grammar" },
+    { "id": "x_a.b", "valid": false, "why": "a dot is not in the grammar" },
+    { "id": "x_abc\n", "valid": false, "why": "a trailing newline is not part of the id" }
+  ]
+}

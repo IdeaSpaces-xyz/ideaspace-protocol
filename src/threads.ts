@@ -14,6 +14,12 @@ import { parseMap, type MapBuildInput, type MapParseResult } from "./maps.js";
 /** Exact, case-sensitive threads directory name. */
 export const THREADS_DIRECTORY = "_threads";
 
+/**
+ * A hosted Thread id: `x_`, then the host's characters. Opaque in length: check this pattern and
+ * never a length, so a change in how a host mints ids needs no client release.
+ */
+export const HOSTED_THREAD_ID = /^x_[A-Za-z0-9_-]+$/;
+
 /** Valid post kinds in a collaboration thread. */
 export const THREAD_KINDS = [
   "post",

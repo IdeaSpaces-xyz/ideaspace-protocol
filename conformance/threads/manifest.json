@@ -5,6 +5,7 @@
   "agreement_schema_vectors": "agreement-schema.json",
   "metalayer_vectors": "metalayer.json",
   "post_selection_vectors": "post-selection.json",
+  "hosted_id_vectors": "hosted-ids.json",
   "required_coverage": [
     "post_frontmatter",
     "post_date_authored",

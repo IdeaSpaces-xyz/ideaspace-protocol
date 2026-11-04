@@ -18,6 +18,7 @@ import {
   childThreadsOfPost,
   type ThreadPost,
   type ThreadKind,
+  HOSTED_THREAD_ID,
 } from "./threads.js";
 import { parseMap, buildMap, type MapBuildInput } from "./maps.js";
 import { validateSpace } from "./conformance.js";
@@ -35,6 +36,7 @@ const manifest = JSON.parse(
   vectors: any[];
   attachment_vectors: string;
   post_selection_vectors: string;
+  hosted_id_vectors: string;
 };
 
 const attachments = JSON.parse(readFileSync(
@@ -42,6 +44,9 @@ const attachments = JSON.parse(readFileSync(
 ));
 const postSelection = JSON.parse(readFileSync(
   new URL("../conformance/threads/post-selection.json", import.meta.url), "utf-8",
+));
+const hostedIds = JSON.parse(readFileSync(
+  new URL("../conformance/threads/hosted-ids.json", import.meta.url), "utf-8",
 ));
 const metalayer = JSON.parse(readFileSync(
   new URL("../conformance/threads/metalayer.json", import.meta.url), "utf-8",
@@ -293,6 +298,21 @@ describe("bounded post-id selection", () => {
     expect(resolveThreadPostById("msg_75cc2f37", [...posts,
       { path: "_threads/another/04.md", id: "msg_75cc2f37-aaaaaaaa-bbbb-cccc-dddddddddddd" }])).toEqual({ status: "ambiguous" });
     expect(resolveThreadPostById("msg_other", [{ path: "notes/other.md", id: "msg_other" }])).toEqual({ status: "unresolved" });
+  });
+});
+
+describe("hosted Thread ids", () => {
+  it("checks the prefix and characters, never a length", () => {
+    expect(hostedIds.format).toBe("ideaspaces-hosted-thread-ids/v1");
+    expect(manifest.hosted_id_vectors).toBe("hosted-ids.json");
+    for (const vector of hostedIds.vectors) {
+      expect(HOSTED_THREAD_ID.test(vector.id), vector.why).toBe(vector.valid);
+    }
+    expect(hostedIds.vectors.some((vector: { valid: boolean }) => !vector.valid)).toBe(true);
+  });
+
+  it("carries no state between checks", () => {
+    expect(HOSTED_THREAD_ID.global || HOSTED_THREAD_ID.sticky).toBe(false);
   });
 });
 
