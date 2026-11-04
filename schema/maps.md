@@ -348,9 +348,11 @@ An option sits beside the ladder. A subject at any rung may hold one, and it has
 `write` and above imply `copy`; no rung implies `reshare`. `conformance/maps/manifest.json` carries this as
 `capability_option_implied_at`.
 
-`copy` was a rung before this version. A consumer that ranked it, or compared against
-`capabilityRank("copy")`, must read it as an option: that rank is now -1, and
-`isValidCapability("copy")` is false. Use `isValidCapabilityOption`.
+**Consumer migration: 0.29.0 → 0.30.0.** `copy` was a rung through 0.29.0, between `history` and `write`.
+A consumer that ranked it, or compared against `capabilityRank("copy")`, must now read it as an option:
+that rank is -1, and `isValidCapability("copy")` is false. Use `isValidCapabilityOption`. A stored grant of
+`copy` means the option. Rung numbers from `comment` upward keep their positions, because `comment` takes
+`copy`'s; a stored rank of 3 meant `copy` and now means `comment`, so store names, not ranks.
 
 ### Map disclosure and the view rung
 
