@@ -59,6 +59,9 @@ export type Capability = (typeof CAPABILITY_LADDER)[number];
 export const CAPABILITY_OPTIONS = ["copy", "reshare"] as const;
 export type CapabilityOption = (typeof CAPABILITY_OPTIONS)[number];
 
+/** The lowest rung that implies an option, for the options a rung implies. */
+export const CAPABILITY_OPTION_IMPLIED_AT: Partial<Record<CapabilityOption, Capability>> = { copy: "write" };
+
 /**
  * The capability rung required for Map disclosure.
  * A Map's disclosure ceiling is the view rung.

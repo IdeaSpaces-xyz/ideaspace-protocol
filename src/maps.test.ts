@@ -5,6 +5,7 @@ import {
   SUBJECT_KINDS,
   CAPABILITY_LADDER,
   CAPABILITY_OPTIONS,
+  CAPABILITY_OPTION_IMPLIED_AT,
   MAP_DISCLOSURE_CAPABILITY,
   parseCoreThreadReference,
   REVISION_PATTERN,
@@ -324,6 +325,7 @@ describe("Map conformance manifest", () => {
     expect((manifest as any).subject_kinds).toEqual(SUBJECT_KINDS);
     expect((manifest as any).capability_ladder).toEqual(CAPABILITY_LADDER);
     expect((manifest as any).capability_options).toEqual(CAPABILITY_OPTIONS);
+    expect((manifest as any).capability_option_implied_at).toEqual(CAPABILITY_OPTION_IMPLIED_AT);
     expect((manifest as any).map_disclosure_capability).toBe(MAP_DISCLOSURE_CAPABILITY);
     const covered = new Set(manifest.vectors.flatMap((vector) => vector.covers));
     for (const requirement of manifest.required_coverage) {
@@ -430,6 +432,15 @@ describe("Access vocabulary and capability ladder", () => {
       "push",
       "manage",
     ]);
+  });
+
+  it("ranks comment above history and below write", () => {
+    expect(isValidCapability("comment")).toBe(true);
+    expect(capabilityRank("comment")).toBe(3);
+  });
+
+  it("implies copy at write, and reshare at no rung", () => {
+    expect(CAPABILITY_OPTION_IMPLIED_AT).toEqual({ copy: "write" });
   });
 
   it("holds options beside the ladder, with no rank", () => {

@@ -345,7 +345,8 @@ An option sits beside the ladder. A subject at any rung may hold one, and it has
 - **`copy`**: Clone repositories and take independent forks of spaces.
 - **`reshare`**: Give access onward.
 
-`write` and above imply `copy`.
+`write` and above imply `copy`; no rung implies `reshare`. `conformance/maps/manifest.json` carries this as
+`capability_option_implied_at`.
 
 `copy` was a rung before this version. A consumer that ranked it, or compared against
 `capabilityRank("copy")`, must read it as an option: that rank is now -1, and
