@@ -166,7 +166,15 @@ map:
 ```
 
 `_threads/` names the extension directly; no new local URI scheme is introduced. Hosted twin
-conversations continue to use the open address `thread:x_<24hex>`.
+conversations continue to use the open address `thread:x_<id>`.
+
+### Hosted Thread ids
+
+A hosted Thread id is `x_` followed by one or more of `A-Z a-z 0-9 _ -`, as a pattern
+`^x_[A-Za-z0-9_-]+$`. The id is opaque in length: consumers check the prefix and the characters,
+which keep it safe in a URL and an argument, and MUST NOT test its length or read anything from its
+form. A host MAY bound the ids it mints; that bound is the host's, not part of this grammar. Vectors
+are in [`../conformance/threads/hosted-ids.json`](../conformance/threads/hosted-ids.json).
 
 ### Map position validation
 
@@ -226,7 +234,7 @@ Independent implementations share these portable operations:
    - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical local contract after the authored tree is selected; Map membership is not filesystem authorization.
    - A Thread folder's `full` is one README surface plus a capped list of direct post handles, not the post bodies or a timeline. See [`content-look.md`](content-look.md) for the five rung and cap rules.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 
