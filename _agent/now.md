@@ -1,8 +1,20 @@
 ---
 name: Now
-summary: Current candidate — v0.21.0 gives the volatile Content tail one composition (State, handles, manifest tail, Change line) so every local harness renders the same bytes for the same inputs.
+summary: "Candidate 0.31.0: canonical access capabilities, levels and grant statements; no release or enforcement change. Only company defaults beyond discover and Space level bundles remain Open. Earlier delivery state follows."
 ---
 # Now
+
+## Candidate: canonical access (not released)
+
+The 0.31.0 candidate replaces the split access ladder with one capability set and named levels.
+See [`schema/access.md`](../schema/access.md) for meanings, migration, and Open policy, and
+`conformance/access/manifest.json` for language-neutral proofs of expressibility. No server,
+client, audit writer or enforcement change is included. Editor includes fork and pull; company
+Vault Editor includes sharing. Fork omits closed material; whole-Repo pull refuses a closed
+branch. Threads have no copy and Conversations no export. Only company defaults beyond
+discover and Space level bundles remain Open. Agents own nothing.
+
+## Earlier state
 
 **v0.21.0 candidate, early and provisional — one public standard for repository shape, selectable Agreement awareness, placement-driven ambient rendering and one Content-tail composition, bounded reference focus and Content look, optional Maps and local projection, named extensions and repository identity, the agent operating loop, and safe local repository effects.**
 

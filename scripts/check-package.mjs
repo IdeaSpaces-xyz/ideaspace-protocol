@@ -15,6 +15,7 @@ const expected = [
   "SKILLS.md",
   "SPEC.md",
   "VERSION",
+  "conformance/access/manifest.json",
   "conformance/assets/manifest.json",
   "conformance/threads/manifest.json",
   "conformance/threads/attachments.json",
@@ -52,6 +53,10 @@ const expected = [
   "conformance/reference-look/docs/alpha.md",
   "conformance/reference-look/docs/sub/beta.md",
   "conformance/reference-look/notes/decision.md",
+  "dist/access.d.ts",
+  "dist/access.d.ts.map",
+  "dist/access.js",
+  "dist/access.js.map",
   "dist/agreement.d.ts",
   "dist/agreement.d.ts.map",
   "dist/agreement.js",
@@ -166,6 +171,7 @@ const expected = [
   "dist/workspace.js.map",
   "package.json",
   "schema/README.md",
+  "schema/access.md",
   "schema/agent-contract.md",
   "schema/assets.md",
   "schema/threads.md",
@@ -242,6 +248,9 @@ try {
     "./SPEC.md",
     "./SKILLS.md",
     "./templates/foundation-core.md",
+    "./access",
+    "./schema/access",
+    "./conformance/access",
   ];
   if (JSON.stringify(exportKeys) !== JSON.stringify(expectedExports)) {
     throw new Error(`Unexpected package exports: ${exportKeys.join(", ")}`);
@@ -282,12 +291,19 @@ try {
     import { deepStrictEqual } from "node:assert";
     import { dirname, resolve } from "node:path";
     import * as protocol from "@ideaspaces/protocol";
+    import * as accessRuntime from "@ideaspaces/protocol/access";
     import * as assetsRuntime from "@ideaspaces/protocol/assets";
     import * as frontmatterRuntime from "@ideaspaces/protocol/frontmatter";
     import * as localEffects from "@ideaspaces/protocol/local-effects";
     import * as mapsRuntime from "@ideaspaces/protocol/maps";
     import * as threadsRuntime from "@ideaspaces/protocol/threads";
     const require = createRequire(import.meta.url);
+    const access = require("@ideaspaces/protocol/conformance/access");
+    require.resolve("@ideaspaces/protocol/schema/access");
+    deepStrictEqual(accessRuntime.CAPABILITIES, protocol.CAPABILITIES);
+    deepStrictEqual(accessRuntime.expandCapabilities(["edit"]), ["discover", "view", "comment", "edit", "fork", "pull"]);
+    deepStrictEqual(accessRuntime.copyOperationRequirements("repo", "pull", true), {status: "refused", reason: "closed_branch"});
+    if (access.format !== "ideaspaces-access/v1") throw new Error("Access vectors did not load");
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
     const threadAgreementSchema = require("@ideaspaces/protocol/schema/thread-agreement");
     const extensions = require("@ideaspaces/protocol/conformance/extensions");
@@ -565,10 +581,11 @@ try {
   writeFileSync(
     browserEntry,
     `
+      import { parseAccessGrant, accessLevelProfile } from "@ideaspaces/protocol/access";
       import { parseMap, buildMap } from "@ideaspaces/protocol/maps";
       import { parseFrontmatter, stripFrontmatter, composeFrontmatter } from "@ideaspaces/protocol/frontmatter";
       import { parseThreadPost, reconstructThreadTimeline, resolveThreadGitPath, isThreadPosition } from "@ideaspaces/protocol/threads";
-      export { parseMap, buildMap, parseFrontmatter, stripFrontmatter, composeFrontmatter, parseThreadPost, reconstructThreadTimeline, resolveThreadGitPath, isThreadPosition };
+      export { parseAccessGrant, accessLevelProfile, parseMap, buildMap, parseFrontmatter, stripFrontmatter, composeFrontmatter, parseThreadPost, reconstructThreadTimeline, resolveThreadGitPath, isThreadPosition };
     `,
   );
 

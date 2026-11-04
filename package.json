@@ -1,6 +1,6 @@
 {
   "name": "@ideaspaces/protocol",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "description": "The open standard for how agents turn useful work into durable, portable knowledge",
   "keywords": [
     "ideaspaces",
@@ -64,10 +64,17 @@
     "./conformance/map-projection": "./conformance/map-projection/manifest.json",
     "./SPEC.md": "./SPEC.md",
     "./SKILLS.md": "./SKILLS.md",
-    "./templates/foundation-core.md": "./templates/foundation-core.md"
+    "./templates/foundation-core.md": "./templates/foundation-core.md",
+    "./access": {
+      "types": "./dist/access.d.ts",
+      "import": "./dist/access.js"
+    },
+    "./schema/access": "./schema/access.md",
+    "./conformance/access": "./conformance/access/manifest.json"
   },
   "files": [
     "dist",
+    "conformance/access",
     "conformance/extensions",
     "conformance/assets",
     "conformance/threads",
