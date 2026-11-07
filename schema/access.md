@@ -20,6 +20,7 @@ versions in IdeaSpaces, separately from view; `comment` posts; `edit` changes co
 Implications: `edit → comment, fork, pull`; `history, comment, fork, pull, reshare → view`;
 `view → discover`. `expandCapabilities` returns this closure without duplicates in the order
 `discover, view, history, comment, edit, fork, pull, reshare`. Neither fork nor pull implies the other.
+Inapplicable source capabilities are discarded before closure; they do not manufacture view.
 No implication widens scope: a Note Editor gains nothing on the Repo root. Applicability always
 filters the closure: Space edit does not give comment, fork or pull on the Map or its references.
 

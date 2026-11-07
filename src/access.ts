@@ -307,7 +307,8 @@ function relationPaths(facts: AccessFacts, object: AccessObject, relation: Acces
   for (const grant of facts.grants) {
     if (parseAccessGrant(grant).status !== "valid" || !subjectMatches(facts, grant.subject, person, agent)) continue;
     const index = chain.findIndex((t) => sameTarget(t, grant.target));
-    if (index < 0 || !expandCapabilities(grant.capabilities).includes(relation)) continue;
+    const applicable = grant.capabilities.filter((r) => applicableRelations(grant.target.kind).includes(r));
+    if (index < 0 || !expandCapabilities(applicable).includes(relation)) continue;
     paths.push({ source: "grant", target: grant.target, subject: grant.subject, via: chain.slice(index) });
   }
   if (!agent && person) {
