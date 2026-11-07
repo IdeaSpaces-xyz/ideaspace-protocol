@@ -16,6 +16,7 @@ const expected = [
   "SPEC.md",
   "VERSION",
   "conformance/access/manifest.json",
+  "conformance/access/evaluation.json",
   "conformance/assets/manifest.json",
   "conformance/threads/manifest.json",
   "conformance/threads/attachments.json",
@@ -304,6 +305,13 @@ try {
     deepStrictEqual(accessRuntime.expandCapabilities(["edit"]), ["discover", "view", "comment", "edit", "fork", "pull"]);
     deepStrictEqual(accessRuntime.copyOperationRequirements("repo", "pull", true), {status: "refused", reason: "closed_branch"});
     if (access.format !== "ideaspaces-access/v1") throw new Error("Access vectors did not load");
+    const evaluation = require(resolve(dirname(require.resolve("@ideaspaces/protocol/conformance/access")), access.evaluation_vectors));
+    const sample = evaluation.vectors.find((v) => v.id === "snapshot-reader-cannot-browse-history");
+    const { facts, actor, target, relation, now } = sample.input;
+    deepStrictEqual(accessRuntime.check(facts, actor, target, relation, now), sample.expected);
+    deepStrictEqual(protocol.check, accessRuntime.check);
+    deepStrictEqual(accessRuntime.expandCapabilities(["history"]), ["discover", "view", "history"]);
+
     const schema = require("@ideaspaces/protocol/schema/frontmatter");
     const threadAgreementSchema = require("@ideaspaces/protocol/schema/thread-agreement");
     const extensions = require("@ideaspaces/protocol/conformance/extensions");

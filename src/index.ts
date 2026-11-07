@@ -425,3 +425,6 @@ export type {
   AccessLevel, AccessTargetKind, AccessLevelProfile, AccessSubject, AccessGrant, ActingSubjectKind,
   AccessGrantParseResult, LegacyCapabilityMapping, AccessOwnership, AccessOwnershipParseResult, CopyOperationRequirements,
 } from "./access.js";
+
+export { check, list, who, companyRepoViewerGrant } from "./access.js";
+export type { AccessTarget, AccessRelation, AccessObject, AccessActor, AccessFacts, AccessAnswer, AccessPath } from "./access.js";
