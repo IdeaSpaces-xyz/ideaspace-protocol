@@ -266,28 +266,31 @@ not. Missing identity, unborn HEAD, dirt, remote unavailability, or an unresolve
 cause identity minting, fetch, upload, publication, or repinning; the producer omits the portable
 `map` block and may retain a useful local rendering.
 
-The canonical access vocabulary is defined in [schema/access.md](schema/access.md):
-`discover`, `view` (content and history), `comment`, `edit` (including push), `fork`
-(state-only copy), `pull` (whole Git history), and `reshare`. Viewer and Commenter expand to
-capability sets. Editor includes fork and pull, plus sharing in a company Vault. Owner is an ownership
-relationship, not a grant. Rights form a partial order, not a single privilege rank.
-Grants name Vault, Space, Repo, folder, Note or Thread targets and person, team, organisation,
-agent or public subjects. An organisation owns and receives grants but never acts; people
-and agents act. Agents own nothing; their person is responsible. An organisation grant reaches
-its members. Conversations are owner-only and are never grant targets. Space grants govern its Map (adding items or people), never the
-referenced content; a Space membership audience is not a content grantee. Sharing passes only
-rights already held. Agent access is person access intersected with the agent ceiling.
+The version-one access contract is [schema/access.md](schema/access.md). Its vocabulary reference
+is **The access pattern across surfaces**, version one (2026-11-07), **The words of access**;
+this spec does not maintain a second display vocabulary. Machine relations are discover, view,
+history (separate past-version browsing), comment, edit, fork, pull and reshare, plus ownership.
+Editor implies comment, fork and pull only where applicable; scope never grows. Company content Editor includes sharing.
 
-Map depth is a representation ceiling, not a separate access level. A reader needs `view` on
-each referenced target, not merely on the Map; `view` includes full content and history but does
-not imply copying, commenting, editing or sharing. The earlier protocol-only split between
-Map `view`, body `read` and `history` is superseded. The migration table, Open policy questions,
-portable grant statement, and conformance vectors live in the access contract. Enforcement,
-identity resolution, persistence, audit and transport remain host concerns. Fork is available on
-Repo, folder and Note, omitting closed material. Pull is whole-Repo-only and refused if any
-branch is closed to that person. Public grants choose reading, state copying or also full
-history explicitly. Threads have no copying; Conversations have no export. Company membership
-grants discover; other company defaults and additional Space level bundles remain Open.
+Space Viewer views its Map, Editor adds items, Allow sharing adds people; no Space grants access
+to referenced content. Vault access is access to its Home Space. Company membership gives discover
+only; a removable org Viewer grant is written when a company Repo is created. Repo ownership
+defaults to the Vault owner unless transferred, and the Repo owner owns everything below it,
+without Note-level overrides. Agents own nothing. Conversations remain human-owner-only, with
+no grants or export. Hosted Threads have no Editor, copying or export. Local Threads inherit as content.
+
+The pure check takes supplied facts and complete derived ancestors. For an agent session it
+intersects person rights, agent grants and consented allowed acts inside the evaluator. Relations
+are positive only; branch closing is reserved for 1.1. The answer is allowed, missing relation and
+whether a knock is allowed; without discover it is indistinguishable from a missing object.
+List agrees with check; who returns paths under a sharing/owner gate. The access contract and
+language-neutral vectors define their complete inputs and outputs. No evaluator engine is chosen.
+
+Map depth is a representation ceiling, never access. Pull is one whole-Repo check; fork takes
+current state without history. A Home Space shows every item in its Vault the person can discover.
+View is current state only; it never includes history. The contract keeps five named product
+questions open. Identity lookup, persistence, timing equalization, audit, export completeness
+and Git transport enforcement remain host concerns.
 
 Hosted versions, cursors, deltas, Grants, ingestion, transport, and lifecycle remain consumer
 concerns. Import never fetches an unknown repository merely because a map-note names it. A repo URL

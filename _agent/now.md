@@ -1,18 +1,19 @@
 ---
 name: Now
-summary: "Candidate 0.31.0: canonical access capabilities, levels and grant statements; no release or enforcement change. Only company defaults beyond discover and Space level bundles remain Open. Earlier delivery state follows."
+summary: "Access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Five product questions remain named in schema/access.md."
 ---
 # Now
 
-## Candidate: canonical access (not released)
+## Access version one (not released)
 
-The 0.31.0 candidate replaces the split access ladder with one capability set and named levels.
-See [`schema/access.md`](../schema/access.md) for meanings, migration, and Open policy, and
-`conformance/access/manifest.json` for language-neutral proofs of expressibility. No server,
-client, audit writer or enforcement change is included. Editor includes fork and pull; company
-Vault Editor includes sharing. Fork omits closed material; whole-Repo pull refuses a closed
-branch. Threads have no copy and Conversations no export. Only company defaults beyond
-discover and Space level bundles remain Open. Agents own nothing.
+See [`schema/access.md`](../schema/access.md) and `conformance/access/manifest.json`. The pure
+check intersects person, agent grants and session acts; ancestors are derived by the host.
+Space grants never reach content; Vault access is Home Space access; a company Repo starts
+with a removable org Viewer grant. The Repo owner owns everything below; agents own nothing.
+Closing is reserved for 1.1. List and guarded who-with-path share the check. No engine, server
+migration, consumer pin change, tag or release is part of this change. Five product questions
+remain explicitly Open. View is current state only; history is separate.
+Home Space lists discoverable Vault items; hosted Threads have no export.
 
 ## Earlier state
 

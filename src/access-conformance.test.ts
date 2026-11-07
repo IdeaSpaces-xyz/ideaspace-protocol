@@ -32,7 +32,7 @@ describe("portable access conformance", () => {
     expect(maps.CAPABILITIES).toBe(CAPABILITIES);
     expect(protocol.CAPABILITIES).toBe(CAPABILITIES);
     expect(maps.isValidCapability).toBe(isValidCapability);
-    for (const old of ["read", "history", "write", "push", "manage", "owner", "copy"]) {
+    for (const old of ["read", "write", "push", "manage", "owner", "copy"]) {
       expect(isValidCapability(old)).toBe(false);
     }
     for (const cap of CAPABILITIES) expect(isValidCapability(cap)).toBe(true);
@@ -65,9 +65,9 @@ describe("portable access conformance", () => {
     expect(JSON.stringify(vector.input)).toBe(before);
   });
 
-  it("requires an explicit branch fact for pull, even for untyped callers", () => {
+  it("version one needs no closed-branch walk", () => {
     expect(copyOperationRequirements("repo", "pull", null as unknown as boolean))
-      .toEqual({ status: "requires_branch_check" });
+      .toEqual({ status: "applicable", history: "whole" });
   });
 
   it("obeys set laws for every possible canonical capability set", () => {
