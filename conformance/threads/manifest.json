@@ -7,6 +7,7 @@
   "post_selection_vectors": "post-selection.json",
   "hosted_id_vectors": "hosted-ids.json",
   "current_map_vectors": "current-map.json",
+  "addressee_vectors": "addressees.json",
   "required_coverage": [
     "post_frontmatter",
     "post_date_authored",
@@ -63,7 +64,15 @@
     "current_map_unreadable_named",
     "current_map_none",
     "current_map_filename_order",
-    "current_map_direct_posts_only"
+    "current_map_direct_posts_only",
+    "to_single",
+    "to_list",
+    "to_typed_address",
+    "to_normalized",
+    "to_any_kind",
+    "to_absent",
+    "to_invalid_kept_post",
+    "to_limits"
   ],
   "vectors": [
     {

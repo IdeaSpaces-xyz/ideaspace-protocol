@@ -1,6 +1,6 @@
 # Collaboration threads and `_threads/`
 
-> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, root-relative Map pointers, and the current Thread Map. **Provisional, v0.32.0.**
+> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, root-relative Map pointers, the current Thread Map, and who a post asks. **Provisional, v0.32.0.**
 
 ## Role, name, and placement
 
@@ -79,6 +79,7 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). The authored string is kept; whitespace-only or YAML-coerced non-string values warn and are not folded. |
 | `attached_to` | String (`<type>:<id>`) | Optional open typed link on the opening post; only `post:` (or a bare post alias) has tree-edge semantics. |
 | `supersedes` | String | Optional post id being superseded when `kind` is `correction` or when retracting a mark. |
+| `to` | String or string array | Optional: who the post asks. Each entry is a name as an `author` would write it (`Security`, `UI/UX`) or a typed `<type>:<id>` address (`agent:…`, `person:…`). See [Who a post asks](#who-a-post-asks-to). |
 | `map` | Object | Optional Map block (`roots`, `members`) capturing cited coordinates and selections. |
 | `name` | String | Optional title or subject line. |
 | `summary` | String | Optional dense summary for search and orientation. |
@@ -87,7 +88,26 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 
 #### Field tolerance rule
 
-A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one member, `references`, `supersedes`, `attached_to`, `in_reply_to`, `date`, `kind`, or `mark`) is dropped with a diagnostic warning naming the post and field; the post itself remains valid and readable. A numeric-looking mark such as `+1` MUST be quoted as a string in YAML (`mark: '+1'`); otherwise YAML may coerce it to a number and the parser warns `invalid_mark`.
+A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one member, `references`, `supersedes`, `attached_to`, `in_reply_to`, `date`, `kind`, `mark`, or `to`) is dropped with a diagnostic warning naming the post and field; the post itself remains valid and readable. A numeric-looking mark such as `+1` MUST be quoted as a string in YAML (`mark: '+1'`); otherwise YAML may coerce it to a number and the parser warns `invalid_mark`.
+
+#### Who a post asks (`to`)
+
+Any post may name who it asks, in an optional `to` field. An ask is not a kind of post: a decision,
+a snapshot or a reply can each ask someone, and the post keeps its own kind.
+
+- **Shape.** One string or a list of strings. A reader trims each entry. An entry must be nonempty,
+  one line, and at most 200 UTF-16 code units long. A reader drops repeats and keeps the authored
+  order; at most 20 distinct entries. An absent field, an empty key (`to:`) or an empty list names
+  no one.
+- **Tolerance.** Any other value (a number, a map, a nested list, a blank or multi-line entry, too
+  long or too many) drops the whole field with warning `invalid_to`, and the post stays valid.
+  Readers never keep part of a malformed `to`.
+- **What an entry means.** A name as an `author` would write it, or a typed `<type>:<id>` address.
+  Like `author`, it is the writer's claim: readers compare entries exactly and never resolve them to
+  accounts. A host may map names to its own identities. That is host policy, outside this format.
+- **What it does not do.** `to` grants no access, sends no notification, and does not restrict who
+  may read or reply. Whether an ask is still open, and what wakes its addressee, are reader and host
+  rules built over this field, not part of the post format.
 
 #### Unreadable posts and repair
 
@@ -270,7 +290,12 @@ Independent implementations share these portable operations:
    - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical local contract after the authored tree is selected; Map membership is not filesystem authorization.
    - A Thread folder's `full` is one README surface plus a capped list of direct post handles, not the post bodies or a timeline. See [`content-look.md`](content-look.md) for the five rung and cap rules.
 
-6. **`current_thread_map` (`currentThreadMap`)**:
+6. **`parse_addressees` (`parseAddressees`)**:
+   - Reads a `to` value as `parseThreadPost` does: the trimmed addressees in authored order without
+     repeats, an empty list when no one is named, or null for a value of any other shape.
+     `parseThreadPost` returns them as `post.to`, absent when no one is named.
+
+7. **`current_thread_map` (`currentThreadMap`)**:
    - Takes caller-supplied canonical direct post files, in any order, and optionally `complete: false`
      with the separately read `opening` post and a positive `lookback` cap. Returns `status`
      (`post`, `opening` or `none`), the chosen post's `id`, `path` and `kind`, the Map, the chosen
@@ -278,7 +303,7 @@ Independent implementations share these portable operations:
      `lookback` (`examined`, `limit`, `stopped`). `none` carries `reason`: `empty`, `no_map` or
      `opening_unknown`. Pure: no filesystem, Git or network read.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, addressee cases in `addressees.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 
@@ -330,6 +355,10 @@ Additive. No file on disk changes meaning.
   and named, where a client may have used it or stopped.
 - **Show `stopped` and `skipped`.** A capped or partial read that falls back to the opening post's
   Map should say so, and a passed-over post should be named where the Map is shown.
+
+- **`to` names who a post asks.** `ThreadPost` gains optional `to`, and a malformed value warns
+  `invalid_to`. A reader that ignores the field still reads every post. A writer that has no way to
+  name an addressee keeps writing valid posts.
 
 ## Format evolution
 

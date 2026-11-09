@@ -9,6 +9,7 @@ import {
   parseThreadPost,
   inspectThreadPosts,
   currentThreadMap,
+  parseAddressees,
   reconstructThreadTimeline,
   resolveThreadGitPath,
   isThreadPosition,
@@ -51,6 +52,9 @@ const hostedIds = JSON.parse(readFileSync(
 ));
 const currentMap = JSON.parse(readFileSync(
   new URL("../conformance/threads/current-map.json", import.meta.url), "utf-8",
+));
+const addressees = JSON.parse(readFileSync(
+  new URL("../conformance/threads/addressees.json", import.meta.url), "utf-8",
 ));
 const metalayer = JSON.parse(readFileSync(
   new URL("../conformance/threads/metalayer.json", import.meta.url), "utf-8",
@@ -115,7 +119,7 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...addressees.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
@@ -277,6 +281,28 @@ describe("metalayer conformance vectors", () => {
       }
       if (vector.expected.warnings) expect(inspection.warnings).toEqual(vector.expected.warnings);
     } else throw new Error(`Unknown operation ${vector.operation}`);
+  });
+});
+
+describe("who a post asks", () => {
+  it("publishes independently executable vectors", () => {
+    expect((manifest as any).addressee_vectors).toBe("addressees.json");
+    expect(addressees.format).toBe("ideaspaces-thread-addressees/v1");
+  });
+
+  it.each(addressees.vectors)("parses $id", (vector: any) => {
+    const parsed = parseThreadPost(vector.input.content, vector.input.path);
+    expect(parsed.status).toBe(vector.expected.status);
+    if (parsed.status !== "valid") return;
+    expect(parsed.post.to).toEqual(vector.expected.to);
+    expect(parsed.post.warnings ?? []).toEqual(vector.expected.warnings);
+    if (vector.expected.kind) expect(parsed.post.kind).toBe(vector.expected.kind);
+  });
+
+  it("reads a value the same way outside a post", () => {
+    expect(parseAddressees(["Scout", " Scout "])).toEqual(["Scout"]);
+    expect(parseAddressees([])).toEqual([]);
+    expect(parseAddressees({ name: "Scout" })).toBeNull();
   });
 });
 
@@ -672,7 +698,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...addressees.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }

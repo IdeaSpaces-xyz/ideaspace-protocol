@@ -1,6 +1,6 @@
 ---
 name: Now
-summary: "v0.32.0, not released: the current Thread Map, specified with a pure reader and vectors. Before it, access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
+summary: "v0.32.0, not released: the current Thread Map, specified with a pure reader and vectors, and who a post asks (`to`). Before it, access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
 ---
 # Now
 
@@ -11,7 +11,12 @@ belongs to the post it was posted with, and a Thread has many over time. `curren
 it from caller-supplied posts: a post without a Map never replaces it, a malformed Map is skipped
 and named, and a capped or partial read reports `stopped`. See
 [`schema/threads.md`](../schema/threads.md#the-current-thread-map) and
-`conformance/threads/current-map.json`. No tag or release is part of this change.
+`conformance/threads/current-map.json`.
+
+Also in v0.32.0: any post may name who it asks in an optional `to` field, one name or a list,
+claimed like `author`. It grants, notifies and restricts nothing; open asks and waking are reader
+and host rules over it. See `conformance/threads/addressees.json`. No tag or release is part of
+these changes.
 
 ## Access version one (not released)
 
