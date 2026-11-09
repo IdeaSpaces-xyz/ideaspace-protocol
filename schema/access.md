@@ -7,8 +7,8 @@ credentials, store grants, filter exports or implement transport. No engine is c
 ## Vocabulary reference
 
 For the words people see, the reference is **The access pattern across surfaces**, version one,
-2026-11-07, section **The words of access**. Refer to that section rather than creating another
-label map here. This contract defines machine relations, not display text or translations.
+2026-11-07 (Git decision updated 2026-11-09), section **The words of access**. Refer to that
+section rather than creating another label map here. This contract defines machine relations, not display text or translations.
 
 ## Relations
 
@@ -17,7 +17,8 @@ versions in IdeaSpaces, separately from view; `comment` posts; `edit` changes co
 `fork` takes an independent current-state copy without history; `pull` takes whole Git history;
 `reshare` passes on rights already held. `owner` is ownership, never a grant.
 
-Implications: `edit → comment, fork, pull`; `history, comment, fork, pull, reshare → view`;
+Implications: `pull → history`; `edit → comment, fork`;
+`history, comment, fork, reshare → view`;
 `view → discover`. `expandCapabilities` returns this closure without duplicates in the order
 `discover, view, history, comment, edit, fork, pull, reshare`. Neither fork nor pull implies the other.
 Inapplicable source capabilities are discarded before closure; they do not manufacture view.
@@ -26,11 +27,15 @@ filters the closure: Space edit does not give comment, fork or pull on the Map o
 
 `CAPABILITY_LADDER` is the display spine `discover, view, comment, edit`, not a privilege rank.
 `CAPABILITY_OPTIONS` is `history, fork, pull, reshare`. `capabilityRank` is deprecated and never authority.
-`CAPABILITY_OPTION_IMPLIED_AT` is `{fork: edit, pull: edit}`. `isValidCapability` accepts the eight
-names, not owner or stored aliases. History implies view, never Git pull; view never implies
-history. Pending the two named implication questions below, this v1 evaluator retains #92
-edit → pull and does not add the proposed pull → history edge. A downloaded
-Git history cannot be revoked. The human settled this separation on 2026-11-07.
+`CAPABILITY_OPTION_IMPLIED_AT` is `{history: pull, fork: edit}`. `isValidCapability` accepts the eight
+names, not owner or stored aliases. History implies view, never Git access; view never implies history.
+
+**Settled 2026-11-09:** Collaborate changes the current state in IdeaSpaces (`edit`); it does not
+include hosted history or Git access. Git access is full Collaborate: both fetch and push
+require edit **and** pull on the whole Repo; pull implies history. Editor alone therefore
+includes neither pull nor history. Push is not a ninth capability. An explicit
+history grant allows browsing the past, not Git transport. A downloaded Git history cannot be
+revoked. This replaces #92's edit → pull edge; it does not change the person/agent intersection.
 
 ## Objects and profiles
 
@@ -156,7 +161,12 @@ filtering or a version-one negative relation. Unknown/absent branch facts need n
 
 Fork remains gated on view (fork implies it); there is no engine or exporter here. Thread copying
 and Conversation export never become applicable through ownership. Git transport uses the same
-root check: pull to fetch, edit to push (edit implies pull). No descendant grant widens to root.
+root target: both fetch and push require `check(..., edit)` **and** `check(..., pull)` on
+one fresh supplied snapshot. No caller rebuilds person/agent intersection: each check does that
+inside the evaluator. This is full Collaborate, not a read-only clone offering; a pull relation
+alone describes history entitlement, not approval of a Git operation. No descendant grant widens
+to root. The portable `git_access` vectors express this conjunction. History alone supplies
+neither edit nor pull; Git access supplies history through pull.
 Public read, state copying and full-history grants are explicit, separate choices. The served
 public Git gate's human-only restriction is a host transport constraint, not a new relation.
 
@@ -166,13 +176,14 @@ pass Map rights only. `intersectAccessCapabilities` is a set helper, not a secon
 
 ## Compatibility, not authority
 
-`mapLegacyCapability` translates read→view, find→discover, content write/git_push/push→edit,
-Thread write→comment, Space write→Map edit, space_copy→fork, git_fetch→pull,
+`mapLegacyCapability` translates read→view, find→discover, content write→edit, git_push/push→edit+pull,
+Thread write→comment, Space write→Map edit, space_copy→fork, git_fetch→pull (including history),
 copy/allow_copying→fork+pull, manage/manage_access→reshare. Canonical names map to themselves.
 It ignores unsupported names/families and Conversation/Vault grant aliases. Stored `history`
 maps to the separate history relation, never to view alone.
-It never grants owner, widens scope or makes copying applicable on a Space or Thread. Review
-old combined-copy counts before any migration. No migration runs here. Repo catalog roles,
+The Git push aliases preserve both halves of full Collaborate instead of becoming hosted edit
+alone. This mapping never grants owner, widens scope or makes copying applicable on a Space or Thread.
+Review old combined-copy counts before any migration. No migration runs here. Repo catalog roles,
 token creator and cached org roles are not content authority.
 
 ## Reserved for 1.1
@@ -185,16 +196,13 @@ mechanism is still in development. A same-user process can read local files; rem
 
 ## Open — named, not filled with defaults
 
-These are the reference Note's questions after its 2026-11-07 history update:
+The two history/Editor implication questions were settled above on 2026-11-09. Remaining:
 
-1. Does Editor include history? Snapshot-only hosted editing versus Git collaboration.
-2. Does pull imply history? Proposed in the Note, not an agreed implication here. The current
-   compatibility model keeps hosted browsing separate from Git possession, as served today.
-3. Whose person half does an agent's act take on a hosted Thread: responsible person, the owner
+1. Whose person half does an agent's act take on a hosted Thread: responsible person, the owner
    who added it, or the person whose post woke it? The host must supply an authenticated person;
    this check does not select one. Removed-person agent membership is not inferred either.
-4. Public full history has no shipped choice; public Git transport is not offered today.
-5. Local agent mechanism: how a Space limits sight/tools; not designed here.
+2. Public full history has no shipped choice; public Git transport is not offered today.
+3. Local agent mechanism: how a Space limits sight/tools; not designed here.
 
 Copy at any content depth is settled; the Share sheet's Repo-only offering catches up later.
 

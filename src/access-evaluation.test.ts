@@ -9,11 +9,13 @@ interface Input {
   kind: AccessTargetKind; requireComplete?: boolean; requester: AccessActor; candidates: AccessActor[];
   repo: string; organisation: string;
 }
-const { vectors } = JSON.parse(readFileSync(new URL(manifest.evaluation_vectors, manifestUrl), "utf8")) as {
+const { vectors, git_access } = JSON.parse(readFileSync(new URL(manifest.evaluation_vectors, manifestUrl), "utf8")) as {
+  git_access: { target_kind: AccessTargetKind; checks: AccessRelation[]; combine: string; same_snapshot: boolean };
   vectors: { id: string; coverage: string[]; operation: string; input: Input; expected: unknown }[];
 };
 describe("version-one evaluator vectors (language-neutral)", () => {
   it("publishes every query at the package root and keeps all nine quirks named", () => {
+    expect(git_access).toMatchObject({ target_kind: "repo", checks: ["edit", "pull"], combine: "all", same_snapshot: true });
     expect(protocol.check).toBe(check);
     expect(protocol.list).toBe(list);
     expect(protocol.who).toBe(who);
@@ -26,6 +28,8 @@ describe("version-one evaluator vectors (language-neutral)", () => {
     const i = input;
     let actual: unknown;
     switch (v.operation) {
+      case "git_access": actual = i.target.kind === git_access.target_kind && git_access.checks.every((r) =>
+        check(i.facts, i.actor, i.target, r, i.now).allowed); break;
       case "check": actual = check(i.facts, i.actor, i.target, i.relation, i.now); break;
       case "list": actual = list(i.facts, i.actor, i.kind, i.relation, i.now, i.requireComplete); break;
       case "who": actual = who(i.facts, i.requester, i.candidates, i.target, i.relation, i.now); break;

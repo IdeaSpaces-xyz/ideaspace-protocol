@@ -15,7 +15,7 @@ export type Capability = (typeof CAPABILITIES)[number];
 export const CAPABILITY_LADDER = ["discover", "view", "comment", "edit"] as const;
 export const CAPABILITY_OPTIONS = ["history", "fork", "pull", "reshare"] as const;
 export type CapabilityOption = (typeof CAPABILITY_OPTIONS)[number];
-export const CAPABILITY_OPTION_IMPLIED_AT: Partial<Record<CapabilityOption, Capability>> = { fork: "edit", pull: "edit" };
+export const CAPABILITY_OPTION_IMPLIED_AT: Partial<Record<CapabilityOption, Capability>> = { history: "pull", fork: "edit" };
 /** Company membership grants discovery, never an implicit content-reading default. */
 export const COMPANY_MEMBER_CAPABILITIES = ["discover"] as const;
 export const MAP_DISCLOSURE_CAPABILITY: Capability = "view";
@@ -183,9 +183,11 @@ export function mapLegacyCapability(target: AccessTargetKind, name: string): Leg
     read: "view", find: "discover",
     write: target === "thread" ? "comment" : "edit",
     manage: "reshare", manage_access: "reshare",
-    git_push: "edit", push: "edit", git_fetch: "pull", space_copy: "fork",
+    git_fetch: "pull", space_copy: "fork",
   };
-  const rights = name === "copy" || name === "allow_copying"
+  const rights = ["git_push", "push"].includes(name)
+    ? ["edit", "pull"] as Capability[]
+    : name === "copy" || name === "allow_copying"
     ? ["fork", "pull"] as Capability[]
     : [Object.hasOwn(aliases, name) ? aliases[name] : name];
   if (!rights.every(isValidCapability) ||

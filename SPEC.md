@@ -270,7 +270,9 @@ The version-one access contract is [schema/access.md](schema/access.md). Its voc
 is **The access pattern across surfaces**, version one (2026-11-07), **The words of access**;
 this spec does not maintain a second display vocabulary. Machine relations are discover, view,
 history (separate past-version browsing), comment, edit, fork, pull and reshare, plus ownership.
-Editor implies comment, fork and pull only where applicable; scope never grows. Company content Editor includes sharing.
+Editor changes the current state, implying comment and fork but neither Git access nor history.
+Git fetch and push require edit plus pull on the Repo root; pull implies history. Scope never grows.
+Company content Editor includes sharing.
 
 Space Viewer views its Map, Editor adds items, Allow sharing adds people; no Space grants access
 to referenced content. Vault access is access to its Home Space. Company membership gives discover
@@ -286,9 +288,9 @@ whether a knock is allowed; without discover it is indistinguishable from a miss
 List agrees with check; who returns paths under a sharing/owner gate. The access contract and
 language-neutral vectors define their complete inputs and outputs. No evaluator engine is chosen.
 
-Map depth is a representation ceiling, never access. Pull is one whole-Repo check; fork takes
+Map depth is a representation ceiling, never access. Pull targets only a whole Repo; fork takes
 current state without history. A Home Space shows every item in its Vault the person can discover.
-View is current state only; it never includes history. The contract keeps five named product
+View is current state only; it never includes history. The contract keeps three named product
 questions open. Identity lookup, persistence, timing equalization, audit, export completeness
 and Git transport enforcement remain host concerns.
 

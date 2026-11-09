@@ -1,6 +1,6 @@
 ---
 name: Now
-summary: "Access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Five product questions remain named in schema/access.md."
+summary: "Access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
 ---
 # Now
 
@@ -11,8 +11,10 @@ check intersects person, agent grants and session acts; ancestors are derived by
 Space grants never reach content; Vault access is Home Space access; a company Repo starts
 with a removable org Viewer grant. The Repo owner owns everything below; agents own nothing.
 Closing is reserved for 1.1. List and guarded who-with-path share the check. No engine, server
-migration, consumer pin change, tag or release is part of this change. Five product questions
+migration, consumer pin change, tag or release is part of this change. Three product questions
 remain explicitly Open. View is current state only; history is separate.
+The 2026-11-09 decision separates hosted edit from Git:
+edit has no Git/history; Git fetch/push require edit plus pull on the Repo root; pull implies history.
 Home Space lists discoverable Vault items; hosted Threads have no export.
 
 ## Earlier state

@@ -302,7 +302,9 @@ try {
     const access = require("@ideaspaces/protocol/conformance/access");
     require.resolve("@ideaspaces/protocol/schema/access");
     deepStrictEqual(accessRuntime.CAPABILITIES, protocol.CAPABILITIES);
-    deepStrictEqual(accessRuntime.expandCapabilities(["edit"]), ["discover", "view", "comment", "edit", "fork", "pull"]);
+    deepStrictEqual(accessRuntime.expandCapabilities(["edit"]), ["discover", "view", "comment", "edit", "fork"]);
+    deepStrictEqual(accessRuntime.expandCapabilities(["pull"]), ["discover", "view", "history", "pull"]);
+    deepStrictEqual(accessRuntime.mapLegacyCapability("repo", "git_push"), {status: "mapped", capabilities: ["discover", "view", "history", "comment", "edit", "fork", "pull"]});
     deepStrictEqual(accessRuntime.copyOperationRequirements("repo", "pull", true), {status: "refused", reason: "closed_branch"});
     if (access.format !== "ideaspaces-access/v1") throw new Error("Access vectors did not load");
     const evaluation = require(resolve(dirname(require.resolve("@ideaspaces/protocol/conformance/access")), access.evaluation_vectors));
