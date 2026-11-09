@@ -1,11 +1,11 @@
 {
   "format": "ideaspaces-thread-current-map/v1",
-  "rule": "The current Thread Map is the opening post's Map, replaced by the newest kind: snapshot post that carries one. Newest is code-unit filename order. A snapshot without a Map, an empty map: key and every other kind never replace it. A Map that fails to parse is skipped and named; a Map with dropped members still counts. A lookback cap or a partial read that stops before a snapshot falls back to the opening post's Map and reports stopped. Only canonical direct post files are read.",
+  "rule": "The current Thread Map is the Map of the newest post that carries one, whatever its kind. Newest is code-unit filename order. A post without a Map, or with an empty map: key, never replaces it. A Map that fails to parse is skipped and named; a Map with dropped members still counts. A lookback cap or a partial read that stops before a Map falls back to the opening post's Map and reports stopped. Only canonical direct post files are read.",
   "operation": "current_thread_map",
-  "expected_fields": "status, post (id and path) or absent, members (positions of the chosen Map, in order), reason when status is none, skipped, warnings (field and warning of the chosen post's Map), lookback",
+  "expected_fields": "status, post (id, path and kind) or absent, members (positions of the chosen Map, in order), reason when status is none, skipped, warnings (field and warning of the chosen post's Map), lookback",
   "vectors": [
     {
-      "id": "opening-map-when-no-snapshot",
+      "id": "opening-map-when-no-later-post-carries-one",
       "covers": [
         "current_map_opening"
       ],
@@ -25,7 +25,8 @@
         "status": "opening",
         "post": {
           "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
         },
         "members": [
           "notes/a.md"
@@ -37,10 +38,9 @@
       }
     },
     {
-      "id": "snapshot-replaces-opening",
+      "id": "newest-post-with-a-map-replaces-whatever-its-kind",
       "covers": [
-        "current_map_snapshot_replaces",
-        "current_map_other_kinds_ignored"
+        "current_map_any_kind_replaces"
       ],
       "posts": [
         {
@@ -63,47 +63,11 @@
       "expected": {
         "skipped": [],
         "warnings": [],
-        "status": "snapshot",
+        "status": "post",
         "post": {
-          "id": "msg_snap",
-          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md"
-        },
-        "members": [
-          "notes/b.md",
-          "notes/c.md"
-        ],
-        "lookback": {
-          "examined": 2,
-          "stopped": false
-        }
-      }
-    },
-    {
-      "id": "newest-snapshot-wins",
-      "covers": [
-        "current_map_snapshot_replaces"
-      ],
-      "posts": [
-        {
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
-          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
-        },
-        {
-          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
-          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
-        },
-        {
-          "path": "_threads/t/2026-11-01T14-00-00-000Z-msg_snap2.md",
-          "content": "---\nid: msg_snap2\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/d.md\n      depth: summary\n---\nBody\n"
-        }
-      ],
-      "expected": {
-        "skipped": [],
-        "warnings": [],
-        "status": "snapshot",
-        "post": {
-          "id": "msg_snap2",
-          "path": "_threads/t/2026-11-01T14-00-00-000Z-msg_snap2.md"
+          "id": "msg_later",
+          "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_later.md",
+          "kind": "post"
         },
         "members": [
           "notes/d.md"
@@ -115,9 +79,9 @@
       }
     },
     {
-      "id": "snapshot-without-map-does-not-replace",
+      "id": "snapshot-replaces-opening",
       "covers": [
-        "current_map_snapshot_without_map"
+        "current_map_any_kind_replaces"
       ],
       "posts": [
         {
@@ -125,20 +89,26 @@
           "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
         },
         {
-          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_bare.md",
-          "content": "---\nid: msg_bare\nkind: snapshot\nin_reply_to: msg_open\n---\nBody\n"
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_reply.md",
+          "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nBody\n"
         }
       ],
       "expected": {
         "skipped": [],
         "warnings": [],
-        "status": "opening",
+        "status": "post",
         "post": {
-          "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
+          "id": "msg_snap",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
         },
         "members": [
-          "notes/a.md"
+          "notes/b.md",
+          "notes/c.md"
         ],
         "lookback": {
           "examined": 1,
@@ -147,41 +117,9 @@
       }
     },
     {
-      "id": "empty-map-key-is-no-map",
+      "id": "an-unknown-kind-counts-too",
       "covers": [
-        "current_map_snapshot_without_map"
-      ],
-      "posts": [
-        {
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
-          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
-        },
-        {
-          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_nullmap.md",
-          "content": "---\nid: msg_nullmap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n---\nBody\n"
-        }
-      ],
-      "expected": {
-        "skipped": [],
-        "warnings": [],
-        "status": "opening",
-        "post": {
-          "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
-        },
-        "members": [
-          "notes/a.md"
-        ],
-        "lookback": {
-          "examined": 1,
-          "stopped": false
-        }
-      }
-    },
-    {
-      "id": "other-kinds-never-replace",
-      "covers": [
-        "current_map_other_kinds_ignored"
+        "current_map_any_kind_replaces"
       ],
       "posts": [
         {
@@ -201,12 +139,121 @@
           "content": "---\nid: msg_corr\nkind: correction\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
         },
         {
-          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_plain.md",
-          "content": "---\nid: msg_plain\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_custom.md",
+          "content": "---\nid: msg_custom\nkind: \"snapshot \"\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/d.md\n      depth: summary\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_custom",
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_custom.md",
+          "kind": "snapshot "
+        },
+        "members": [
+          "notes/d.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "closure-map-is-current",
+      "covers": [
+        "current_map_any_kind_replaces"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
         },
         {
-          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_custom.md",
-          "content": "---\nid: msg_custom\nkind: \"snapshot \"\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_reframe.md",
+          "content": "---\nid: msg_reframe\nkind: reframe\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_closure.md",
+          "content": "---\nid: msg_closure\nkind: closure\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_closure",
+          "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_closure.md",
+          "kind": "closure"
+        },
+        "members": [
+          "notes/b.md",
+          "notes/c.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "a-post-without-a-map-does-not-replace",
+      "covers": [
+        "current_map_without_map"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T14-00-00-000Z-msg_bare.md",
+          "content": "---\nid: msg_bare\nkind: snapshot\nin_reply_to: msg_open\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_plain.md",
+          "content": "---\nid: msg_plain\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_snap",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
+        },
+        "members": [
+          "notes/b.md",
+          "notes/c.md"
+        ],
+        "lookback": {
+          "examined": 3,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "empty-map-key-is-no-map",
+      "covers": [
+        "current_map_without_map"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_nullmap.md",
+          "content": "---\nid: msg_nullmap\nin_reply_to: msg_open\nmap:\n---\nBody\n"
         }
       ],
       "expected": {
@@ -215,13 +262,14 @@
         "status": "opening",
         "post": {
           "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
         },
         "members": [
           "notes/a.md"
         ],
         "lookback": {
-          "examined": 5,
+          "examined": 1,
           "stopped": false
         }
       }
@@ -242,7 +290,7 @@
         },
         {
           "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_bad.md",
-          "content": "---\nid: msg_bad\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots: invalid\n  members: []\n---\nBody\n"
+          "content": "---\nid: msg_bad\nin_reply_to: msg_open\nmap:\n  roots: invalid\n  members: []\n---\nBody\n"
         }
       ],
       "expected": {
@@ -254,10 +302,11 @@
           }
         ],
         "warnings": [],
-        "status": "snapshot",
+        "status": "post",
         "post": {
           "id": "msg_snap",
-          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md"
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
         },
         "members": [
           "notes/b.md",
@@ -281,7 +330,7 @@
         },
         {
           "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_part.md",
-          "content": "---\nid: msg_part\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/good.md\n      depth: summary\n    - root: 0\n      position: _assets/invalid.md\n      depth: summary\n---\nBody\n"
+          "content": "---\nid: msg_part\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/good.md\n      depth: summary\n    - root: 0\n      position: _assets/invalid.md\n      depth: summary\n---\nBody\n"
         }
       ],
       "expected": {
@@ -292,10 +341,11 @@
             "warning": "invalid_position"
           }
         ],
-        "status": "snapshot",
+        "status": "post",
         "post": {
           "id": "msg_part",
-          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_part.md"
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_part.md",
+          "kind": "post"
         },
         "members": [
           "notes/good.md"
@@ -328,10 +378,11 @@
       "expected": {
         "skipped": [],
         "warnings": [],
-        "status": "snapshot",
+        "status": "post",
         "post": {
           "id": "msg_empty",
-          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_empty.md"
+          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_empty.md",
+          "kind": "snapshot"
         },
         "members": [],
         "lookback": {
@@ -372,7 +423,8 @@
         "status": "opening",
         "post": {
           "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
         },
         "members": [
           "notes/a.md"
@@ -385,7 +437,7 @@
       }
     },
     {
-      "id": "lookback-cap-reaches-snapshot",
+      "id": "lookback-cap-reaches-the-map",
       "covers": [
         "current_map_lookback_cap"
       ],
@@ -413,10 +465,11 @@
       "expected": {
         "skipped": [],
         "warnings": [],
-        "status": "snapshot",
+        "status": "post",
         "post": {
           "id": "msg_snap",
-          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md"
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
         },
         "members": [
           "notes/b.md",
@@ -457,7 +510,8 @@
         "status": "opening",
         "post": {
           "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
         },
         "members": [
           "notes/a.md"
@@ -496,7 +550,8 @@
         "status": "opening",
         "post": {
           "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
         },
         "members": [
           "notes/a.md"
@@ -564,10 +619,11 @@
           }
         ],
         "warnings": [],
-        "status": "snapshot",
+        "status": "post",
         "post": {
           "id": "msg_snap",
-          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md"
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
         },
         "members": [
           "notes/b.md",
@@ -580,9 +636,10 @@
       }
     },
     {
-      "id": "opening-unreadable",
+      "id": "opening-unreadable-is-named",
       "covers": [
-        "current_map_none"
+        "current_map_none",
+        "current_map_unreadable_named"
       ],
       "posts": [
         {
@@ -603,7 +660,7 @@
         ],
         "warnings": [],
         "status": "none",
-        "reason": "opening_unreadable",
+        "reason": "no_map",
         "lookback": {
           "examined": 1,
           "stopped": false
@@ -611,7 +668,7 @@
       }
     },
     {
-      "id": "opening-map-malformed",
+      "id": "opening-map-malformed-is-named",
       "covers": [
         "current_map_none",
         "current_map_malformed_skipped"
@@ -636,7 +693,7 @@
         ],
         "warnings": [],
         "status": "none",
-        "reason": "opening_invalid_map",
+        "reason": "no_map",
         "lookback": {
           "examined": 1,
           "stopped": false
@@ -694,7 +751,7 @@
       "posts": [
         {
           "path": "_threads/t/2026-11-01T18-00-00-000Z-msg_late_file.md",
-          "content": "---\nid: msg_late_file\nkind: snapshot\nin_reply_to: msg_open\ndate: 2026-10-01T00:00:00Z\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/d.md\n      depth: summary\n---\nBody\n"
+          "content": "---\nid: msg_late_file\nin_reply_to: msg_open\ndate: 2026-10-01T00:00:00Z\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/d.md\n      depth: summary\n---\nBody\n"
         },
         {
           "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
@@ -708,10 +765,11 @@
       "expected": {
         "skipped": [],
         "warnings": [],
-        "status": "snapshot",
+        "status": "post",
         "post": {
           "id": "msg_late_file",
-          "path": "_threads/t/2026-11-01T18-00-00-000Z-msg_late_file.md"
+          "path": "_threads/t/2026-11-01T18-00-00-000Z-msg_late_file.md",
+          "kind": "post"
         },
         "members": [
           "notes/d.md"
@@ -723,7 +781,7 @@
       }
     },
     {
-      "id": "opening-snapshot-is-the-opening",
+      "id": "opening-of-any-kind-is-the-opening",
       "covers": [
         "current_map_opening"
       ],
@@ -743,7 +801,8 @@
         "status": "opening",
         "post": {
           "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "snapshot"
         },
         "members": [
           "notes/a.md"
@@ -766,11 +825,11 @@
         },
         {
           "path": "_threads/t/README.md",
-          "content": "---\nid: msg_readme\nkind: snapshot\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\n"
+          "content": "---\nid: msg_readme\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\n"
         },
         {
           "path": "_threads/t/_agent/agreement.md",
-          "content": "---\nid: msg_ag\nkind: snapshot\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\n"
+          "content": "---\nid: msg_ag\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\n"
         }
       ],
       "expected": {
@@ -779,7 +838,8 @@
         "status": "opening",
         "post": {
           "id": "msg_open",
-          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md"
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
         },
         "members": [
           "notes/a.md"

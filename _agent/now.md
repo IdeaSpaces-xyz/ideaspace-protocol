@@ -6,11 +6,11 @@ summary: "v0.32.0, not released: the current Thread Map, specified with a pure r
 
 ## The current Thread Map, v0.32.0 (not released)
 
-A Thread's current Map is its opening post's `map`, replaced by the newest `kind: snapshot` post
-that carries one. `currentThreadMap` reads it from caller-supplied posts: a snapshot without a Map
-and every other kind never replace it, a malformed Map is skipped and named, and a capped or
-partial read reports `stopped`. Two clients already chose the Map this way in their own code; the
-reader makes it one rule. See [`schema/threads.md`](../schema/threads.md#the-current-thread-map) and
+A Thread's current Map is the Map of its newest post that carries one, whatever its kind: a Map
+belongs to the post it was posted with, and a Thread has many over time. `currentThreadMap` reads
+it from caller-supplied posts: a post without a Map never replaces it, a malformed Map is skipped
+and named, and a capped or partial read reports `stopped`. See
+[`schema/threads.md`](../schema/threads.md#the-current-thread-map) and
 `conformance/threads/current-map.json`. No tag or release is part of this change.
 
 ## Access version one (not released)
