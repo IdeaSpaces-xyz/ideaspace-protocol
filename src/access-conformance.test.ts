@@ -39,7 +39,7 @@ describe("portable access conformance", () => {
     expect(isValidCapability(null)).toBe(false);
   });
 
-  it("covers every level on every target, including Open and inapplicable profiles", () => {
+  it("covers every level on every target, including inapplicable profiles", () => {
     for (const target of ACCESS_TARGET_KINDS) for (const level of ACCESS_LEVELS) {
       expect(manifest.vectors.some((v) => v.operation === "level" && v.input.target === target && v.input.level === level)).toBe(true);
     }

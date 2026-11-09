@@ -425,7 +425,7 @@ describe("Access vocabulary and capability ladder", () => {
   it("re-exports the canonical access spine and options", () => {
     expect(CAPABILITY_LADDER).toEqual(["discover", "view", "comment", "edit"]);
     expect(CAPABILITY_OPTIONS).toEqual(["history", "fork", "pull", "reshare"]);
-    expect(CAPABILITY_OPTION_IMPLIED_AT).toEqual({ fork: "edit", pull: "edit" });
+    expect(CAPABILITY_OPTION_IMPLIED_AT).toEqual({ history: "pull", fork: "edit" });
     for (const option of CAPABILITY_OPTIONS) {
       expect(isValidCapabilityOption(option)).toBe(true);
       expect(isValidCapability(option)).toBe(true);
