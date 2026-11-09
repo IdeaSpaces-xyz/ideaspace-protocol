@@ -136,6 +136,44 @@
       }
     },
     {
+      "id": "blank-string-drops-the-field",
+      "covers": [
+        "to_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto: \"\"\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "to",
+            "warning": "invalid_to"
+          }
+        ]
+      }
+    },
+    {
+      "id": "whitespace-string-drops-the-field",
+      "covers": [
+        "to_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto: \"   \"\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "to",
+            "warning": "invalid_to"
+          }
+        ]
+      }
+    },
+    {
       "id": "number-is-dropped-with-a-warning",
       "covers": [
         "to_invalid_kept_post"
