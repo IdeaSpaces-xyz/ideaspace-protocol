@@ -1,0 +1,854 @@
+{
+  "format": "ideaspaces-thread-current-map/v1",
+  "rule": "The current Thread Map is the Map of the newest post that carries one, whatever its kind. Newest is code-unit filename order. A post without a Map, or with an empty map: key, never replaces it. A Map that fails to parse is skipped and named; a Map with dropped members still counts. A lookback cap or a partial read that stops before a Map falls back to the opening post's Map and reports stopped. Only canonical direct post files are read.",
+  "operation": "current_thread_map",
+  "expected_fields": "status, post (id, path and kind) or absent, members (positions of the chosen Map, in order), reason when status is none, skipped, warnings (field and warning of the chosen post's Map), lookback",
+  "vectors": [
+    {
+      "id": "opening-map-when-no-later-post-carries-one",
+      "covers": [
+        "current_map_opening"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_reply.md",
+          "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "opening",
+        "post": {
+          "id": "msg_open",
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/a.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "newest-post-with-a-map-replaces-whatever-its-kind",
+      "covers": [
+        "current_map_any_kind_replaces"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_later.md",
+          "content": "---\nid: msg_later\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/d.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_reply.md",
+          "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_later",
+          "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_later.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/d.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "snapshot-replaces-opening",
+      "covers": [
+        "current_map_any_kind_replaces"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_reply.md",
+          "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_snap",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
+        },
+        "members": [
+          "notes/b.md",
+          "notes/c.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "an-unknown-kind-counts-too",
+      "covers": [
+        "current_map_any_kind_replaces"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_reframe.md",
+          "content": "---\nid: msg_reframe\nkind: reframe\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_closure.md",
+          "content": "---\nid: msg_closure\nkind: closure\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T14-00-00-000Z-msg_corr.md",
+          "content": "---\nid: msg_corr\nkind: correction\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_custom.md",
+          "content": "---\nid: msg_custom\nkind: \"snapshot \"\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/d.md\n      depth: summary\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_custom",
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_custom.md",
+          "kind": "snapshot "
+        },
+        "members": [
+          "notes/d.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "closure-map-is-current",
+      "covers": [
+        "current_map_any_kind_replaces"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_reframe.md",
+          "content": "---\nid: msg_reframe\nkind: reframe\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_closure.md",
+          "content": "---\nid: msg_closure\nkind: closure\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_closure",
+          "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_closure.md",
+          "kind": "closure"
+        },
+        "members": [
+          "notes/b.md",
+          "notes/c.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "a-post-without-a-map-does-not-replace",
+      "covers": [
+        "current_map_without_map"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T14-00-00-000Z-msg_bare.md",
+          "content": "---\nid: msg_bare\nkind: snapshot\nin_reply_to: msg_open\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_plain.md",
+          "content": "---\nid: msg_plain\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_snap",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
+        },
+        "members": [
+          "notes/b.md",
+          "notes/c.md"
+        ],
+        "lookback": {
+          "examined": 3,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "empty-map-key-is-no-map",
+      "covers": [
+        "current_map_without_map"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_nullmap.md",
+          "content": "---\nid: msg_nullmap\nin_reply_to: msg_open\nmap:\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "opening",
+        "post": {
+          "id": "msg_open",
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/a.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "malformed-map-skipped-and-named",
+      "covers": [
+        "current_map_malformed_skipped"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_bad.md",
+          "content": "---\nid: msg_bad\nin_reply_to: msg_open\nmap:\n  roots: invalid\n  members: []\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [
+          {
+            "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_bad.md",
+            "id": "msg_bad",
+            "reason": "invalid_map"
+          }
+        ],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_snap",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
+        },
+        "members": [
+          "notes/b.md",
+          "notes/c.md"
+        ],
+        "lookback": {
+          "examined": 2,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "partly-dropped-map-still-counts",
+      "covers": [
+        "current_map_partial_members"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_part.md",
+          "content": "---\nid: msg_part\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/good.md\n      depth: summary\n    - root: 0\n      position: _assets/invalid.md\n      depth: summary\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [
+          {
+            "field": "map.members[1].position",
+            "warning": "invalid_position"
+          }
+        ],
+        "status": "post",
+        "post": {
+          "id": "msg_part",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_part.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/good.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "empty-map-replaces",
+      "covers": [
+        "current_map_empty_map_replaces"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_empty.md",
+          "content": "---\nid: msg_empty\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots: []\n  members: []\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_empty",
+          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_empty.md",
+          "kind": "snapshot"
+        },
+        "members": [],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "lookback-cap-stops-and-says-so",
+      "covers": [
+        "current_map_lookback_cap"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_t1.md",
+          "content": "---\nid: msg_t1\nin_reply_to: msg_open\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_t2.md",
+          "content": "---\nid: msg_t2\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "options": {
+        "lookback": 2
+      },
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "opening",
+        "post": {
+          "id": "msg_open",
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/a.md"
+        ],
+        "lookback": {
+          "examined": 2,
+          "stopped": true,
+          "limit": 2
+        }
+      }
+    },
+    {
+      "id": "lookback-cap-reaches-the-map",
+      "covers": [
+        "current_map_lookback_cap"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_t1.md",
+          "content": "---\nid: msg_t1\nin_reply_to: msg_open\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_t2.md",
+          "content": "---\nid: msg_t2\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "options": {
+        "lookback": 3
+      },
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_snap",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
+        },
+        "members": [
+          "notes/b.md",
+          "notes/c.md"
+        ],
+        "lookback": {
+          "examined": 3,
+          "stopped": false,
+          "limit": 3
+        }
+      }
+    },
+    {
+      "id": "partial-read-with-opening",
+      "covers": [
+        "current_map_partial_read"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_t1.md",
+          "content": "---\nid: msg_t1\nin_reply_to: msg_open\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_t2.md",
+          "content": "---\nid: msg_t2\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "options": {
+        "complete": false,
+        "opening": {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        }
+      },
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "opening",
+        "post": {
+          "id": "msg_open",
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/a.md"
+        ],
+        "lookback": {
+          "examined": 2,
+          "stopped": true
+        }
+      }
+    },
+    {
+      "id": "partial-read-that-reaches-opening",
+      "covers": [
+        "current_map_partial_read"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_t1.md",
+          "content": "---\nid: msg_t1\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "options": {
+        "complete": false,
+        "opening": {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        }
+      },
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "opening",
+        "post": {
+          "id": "msg_open",
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/a.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "partial-read-without-opening",
+      "covers": [
+        "current_map_partial_read",
+        "current_map_none"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T15-00-00-000Z-msg_t1.md",
+          "content": "---\nid: msg_t1\nin_reply_to: msg_open\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T16-00-00-000Z-msg_t2.md",
+          "content": "---\nid: msg_t2\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "options": {
+        "complete": false
+      },
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "none",
+        "reason": "opening_unknown",
+        "lookback": {
+          "examined": 2,
+          "stopped": true
+        }
+      }
+    },
+    {
+      "id": "unreadable-newer-post-named",
+      "covers": [
+        "current_map_unreadable_named"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T17-00-00-000Z-msg_broken.md",
+          "content": "no frontmatter\n"
+        }
+      ],
+      "expected": {
+        "skipped": [
+          {
+            "path": "_threads/t/2026-11-01T17-00-00-000Z-msg_broken.md",
+            "reason": "unreadable"
+          }
+        ],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_snap",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "kind": "snapshot"
+        },
+        "members": [
+          "notes/b.md",
+          "notes/c.md"
+        ],
+        "lookback": {
+          "examined": 2,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "opening-unreadable-is-named",
+      "covers": [
+        "current_map_none",
+        "current_map_unreadable_named"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: \n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_reply.md",
+          "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [
+          {
+            "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+            "reason": "unreadable"
+          }
+        ],
+        "warnings": [],
+        "status": "none",
+        "reason": "no_map",
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "opening-map-malformed-is-named",
+      "covers": [
+        "current_map_none",
+        "current_map_malformed_skipped"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots: invalid\n  members: []\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_reply.md",
+          "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [
+          {
+            "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+            "id": "msg_open",
+            "reason": "invalid_map"
+          }
+        ],
+        "warnings": [],
+        "status": "none",
+        "reason": "no_map",
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "no-map-anywhere",
+      "covers": [
+        "current_map_none"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_reply.md",
+          "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "none",
+        "reason": "no_map",
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "empty-thread",
+      "covers": [
+        "current_map_none"
+      ],
+      "posts": [],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "none",
+        "reason": "empty",
+        "lookback": {
+          "examined": 0,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "filename-order-decides-newest",
+      "covers": [
+        "current_map_filename_order"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T18-00-00-000Z-msg_late_file.md",
+          "content": "---\nid: msg_late_file\nin_reply_to: msg_open\ndate: 2026-10-01T00:00:00Z\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/d.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_snap.md",
+          "content": "---\nid: msg_snap\nkind: snapshot\nin_reply_to: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "post",
+        "post": {
+          "id": "msg_late_file",
+          "path": "_threads/t/2026-11-01T18-00-00-000Z-msg_late_file.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/d.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "opening-of-any-kind-is-the-opening",
+      "covers": [
+        "current_map_opening"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nkind: snapshot\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_reply.md",
+          "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "opening",
+        "post": {
+          "id": "msg_open",
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "snapshot"
+        },
+        "members": [
+          "notes/a.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "only-direct-posts-count",
+      "covers": [
+        "current_map_direct_posts_only"
+      ],
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/README.md",
+          "content": "---\nid: msg_readme\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\n"
+        },
+        {
+          "path": "_threads/t/_agent/agreement.md",
+          "content": "---\nid: msg_ag\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/b.md\n      depth: summary\n    - root: 0\n      position: notes/c.md\n      depth: summary\n---\n"
+        }
+      ],
+      "expected": {
+        "skipped": [],
+        "warnings": [],
+        "status": "opening",
+        "post": {
+          "id": "msg_open",
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/a.md"
+        ],
+        "lookback": {
+          "examined": 0,
+          "stopped": false
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Collaboration threads and `_threads/`
 
-> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, and root-relative Map pointers. **Provisional, v0.30.0.**
+> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, root-relative Map pointers, and the current Thread Map. **Provisional, v0.32.0.**
 
 ## Role, name, and placement
 
@@ -144,6 +144,42 @@ The Markdown body follows the frontmatter and contains the message text. The rea
 
 Only two files change over time: `_agent/agreement.md` and `README.md`, tracked by Git history. Posts remain strictly immutable.
 
+### The current Thread Map
+
+A Thread has many Maps over time: each post may carry one, and that Map belongs to the post it was
+posted with. The post is its context. The **current Thread Map** is the newest of them: the Map of
+the newest post that carries one, whatever its kind. Posts are immutable, so the current Map moves
+only by appending a post with a Map, and every earlier Map stays where it was posted. A reader can
+step back through them to see what the Thread was looking at as of any post. A reader derives the
+current Map from the posts and never stores it.
+
+- **Newest** is the last post in code-unit filename order, whose stamp is the instant of writing.
+  An authored `date` does not reorder it. The opening is the earliest filename, as for the timeline.
+- **Any kind counts.** `post`, `snapshot`, `reframe`, `correction`, `closure`, `mark` and unknown
+  kinds are all read the same way. Whether a post carries a Map is the writer's choice when it posts.
+- **A post without a Map doesn't replace it.** An absent `map` field or an empty `map:` (YAML null)
+  means no Map. A Map with no roots and no members is a Map: a post can clear the Thread's Map that
+  way.
+- **A malformed Map is skipped and named.** If a post's Map block fails to parse as a whole, the
+  reader passes over that post to the next older one and reports it as `invalid_map`. A Map that
+  kept its valid members after the parser dropped bad ones still counts, and the dropped members
+  are reported with it, as the field tolerance rule says. A newer post that is unreadable may have
+  carried a Map, so it is reported as `unreadable`, never silently ignored.
+- **The lookback cap is visible.** A reader may examine only the newest posts, by a cap or because
+  it read only part of the Thread. If it finds no Map before it stops, it falls back to the opening
+  post's Map and reports `stopped` with how many posts it examined. Without the opening post, a
+  partial read reports that the opening is unknown, and never treats the earliest post it happened
+  to read as the opening.
+- **No Map is a state, not an error.** An empty Thread, a Thread whose posts carry no readable Map,
+  and a partial read without its opening each report no Map, with their reason.
+
+The current Thread Map is the Thread's frame: what a session started on the Thread is given, and
+what the Thread view shows as "what's here". It carries no access. Like every Map, it points; each
+referenced item keeps its own grants. The `README.md` lens may carry a `map` of its own. That Map is
+the curator's lens, not the current Thread Map. A post's Map captures a moment, so it follows the
+moment rule in [`maps.md`](maps.md): a consumer that writes one pins every root and gives every
+position member a depth.
+
 ## Authored references and Map pointers
 
 ### Root-relative Map positions
@@ -234,7 +270,15 @@ Independent implementations share these portable operations:
    - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical local contract after the authored tree is selected; Map membership is not filesystem authorization.
    - A Thread folder's `full` is one README surface plus a capped list of direct post handles, not the post bodies or a timeline. See [`content-look.md`](content-look.md) for the five rung and cap rules.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+6. **`current_thread_map` (`currentThreadMap`)**:
+   - Takes caller-supplied canonical direct post files, in any order, and optionally `complete: false`
+     with the separately read `opening` post and a positive `lookback` cap. Returns `status`
+     (`post`, `opening` or `none`), the chosen post's `id`, `path` and `kind`, the Map, the chosen
+     Map's field warnings, `skipped` posts newest first (`invalid_map` or `unreadable`), and
+     `lookback` (`examined`, `limit`, `stopped`). `none` carries `reason`: `empty`, `no_map` or
+     `opening_unknown`. Pure: no filesystem, Git or network read.
+
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 
@@ -274,6 +318,18 @@ The parent change above ships in this version. Also in it:
 - **`kind` and `tags`.** A writer uses the standard kinds, and a label goes in `tags`. A reader still keeps every existing kind, known or not.
 
 The ladder's change, `copy` leaving it for an option, is in [`maps.md`](maps.md#capability-options).
+
+## Consumer migration: 0.31.0 → 0.32.0
+
+Additive. No file on disk changes meaning.
+
+- **`currentThreadMap` names the rule.** A client that picked "the newest snapshot that carries a
+  Map, else the opening post's" in its own code should switch to the reader. Its answer changes in
+  Threads where a later post of another kind carries a Map: that Map is now the current one. Newest
+  is filename order, not timeline order or `date`. A post whose Map fails to parse is passed over
+  and named, where a client may have used it or stopped.
+- **Show `stopped` and `skipped`.** A capped or partial read that falls back to the opening post's
+  Map should say so, and a passed-over post should be named where the Map is shown.
 
 ## Format evolution
 

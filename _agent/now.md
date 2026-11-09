@@ -1,8 +1,17 @@
 ---
 name: Now
-summary: "Access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
+summary: "v0.32.0, not released: the current Thread Map, specified with a pure reader and vectors. Before it, access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
 ---
 # Now
+
+## The current Thread Map, v0.32.0 (not released)
+
+A Thread's current Map is the Map of its newest post that carries one, whatever its kind: a Map
+belongs to the post it was posted with, and a Thread has many over time. `currentThreadMap` reads
+it from caller-supplied posts: a post without a Map never replaces it, a malformed Map is skipped
+and named, and a capped or partial read reports `stopped`. See
+[`schema/threads.md`](../schema/threads.md#the-current-thread-map) and
+`conformance/threads/current-map.json`. No tag or release is part of this change.
 
 ## Access version one (not released)
 
