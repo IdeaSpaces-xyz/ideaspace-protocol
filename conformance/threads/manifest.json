@@ -6,6 +6,7 @@
   "metalayer_vectors": "metalayer.json",
   "post_selection_vectors": "post-selection.json",
   "hosted_id_vectors": "hosted-ids.json",
+  "current_map_vectors": "current-map.json",
   "required_coverage": [
     "post_frontmatter",
     "post_date_authored",
@@ -50,7 +51,20 @@
     "mark_superseded_target",
     "mark_of_mark_visible",
     "mark_unreadable_target",
-    "post_id_selection"
+    "post_id_selection",
+    "current_map_opening",
+    "current_map_snapshot_replaces",
+    "current_map_snapshot_without_map",
+    "current_map_other_kinds_ignored",
+    "current_map_malformed_skipped",
+    "current_map_partial_members",
+    "current_map_empty_map_replaces",
+    "current_map_lookback_cap",
+    "current_map_partial_read",
+    "current_map_unreadable_named",
+    "current_map_none",
+    "current_map_filename_order",
+    "current_map_direct_posts_only"
   ],
   "vectors": [
     {

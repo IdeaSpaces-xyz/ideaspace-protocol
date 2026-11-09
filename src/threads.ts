@@ -9,7 +9,7 @@
  */
 
 import { parseFrontmatter, stripFrontmatter } from "./frontmatter.js";
-import { parseMap, type MapBuildInput, type MapParseResult } from "./maps.js";
+import { parseMap, type MapBlock, type MapBuildInput, type MapParseResult } from "./maps.js";
 
 /** Exact, case-sensitive threads directory name. */
 export const THREADS_DIRECTORY = "_threads";
@@ -536,6 +536,136 @@ function compareOrdinal(a: string, b: string): number {
 function foldableMark(post: ThreadPost): boolean {
   return post.kind === "mark" && post.inReplyTo.length === 1 &&
     typeof post.mark === "string" && post.mark.trim().length > 0;
+}
+
+/** How a caller read the Thread for {@link currentThreadMap}. */
+export interface CurrentThreadMapOptions {
+  /**
+   * False when `posts` holds only the newest posts rather than every direct post. Default true:
+   * then the earliest filename is the opening post.
+   */
+  complete?: boolean;
+  /** The opening post, read separately when the newest posts do not reach it. */
+  opening?: ThreadPostSource;
+  /** Examine at most this many posts, newest first, for a snapshot. A positive integer; default all. */
+  lookback?: number;
+}
+
+/** A post newer than the chosen one that might have carried the current Map but cannot be read as one. */
+export interface CurrentThreadMapSkip {
+  path: string;
+  id?: string;
+  /** `invalid_map`: a snapshot whose Map block failed to parse. `unreadable`: the post itself did not parse. */
+  reason: "invalid_map" | "unreadable";
+}
+
+/** The Map a Thread stands on now, and the post it came from. */
+export interface CurrentThreadMap {
+  /**
+   * `snapshot`: the newest `kind: snapshot` post carrying a valid Map. `opening`: no examined
+   * snapshot carries one, so the opening post's. `none`: neither has one; see `reason`.
+   */
+  status: "snapshot" | "opening" | "none";
+  /** The post the Map came from. */
+  post?: { id: string; path: string };
+  map?: MapBlock;
+  /** Members dropped from the chosen post's Map, with the post's field warnings. */
+  warnings: ThreadPostFieldWarning[];
+  /** Newer candidates that were passed over, newest first. Never silently ignored. */
+  skipped: CurrentThreadMapSkip[];
+  /**
+   * How far the search went. `stopped` is true when no snapshot with a Map was found and older
+   * posts than the last one examined were not examined, by the cap or by a partial read.
+   */
+  lookback: { examined: number; limit?: number; stopped: boolean };
+  /** Why there is no Map, when `status` is `none`. */
+  reason?: "empty" | "no_map" | "opening_unknown" | "opening_unreadable" | "opening_invalid_map";
+}
+
+/**
+ * The current Thread Map: the opening post's Map, replaced by the newest `kind: snapshot` post
+ * that carries one. A snapshot without a Map, and every other kind, never replaces it. A Map
+ * that fails to parse is skipped and named. Newest is code-unit filename order, whose stamp is
+ * the instant of writing. Pure: the caller supplies canonical direct post files.
+ */
+export function currentThreadMap(
+  posts: ThreadPostSource[],
+  options: CurrentThreadMapOptions = {},
+): CurrentThreadMap {
+  const limit = options.lookback;
+  if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) {
+    throw new RangeError(`lookback must be a positive integer, got ${String(limit)}`);
+  }
+  const canonical = (source: ThreadPostSource) => parseThreadAttachment(source.path)?.kind === "path";
+  const byPath = new Map<string, ThreadPostSource>();
+  for (const source of [...(options.opening ? [options.opening] : []), ...posts]) {
+    if (canonical(source) && !byPath.has(source.path)) byPath.set(source.path, source);
+  }
+  const sorted = [...byPath.values()].sort((a, b) => compareOrdinal(a.path, b.path));
+  const complete = options.complete !== false;
+  const openingSource = options.opening && canonical(options.opening)
+    ? options.opening
+    : complete ? sorted[0] : undefined;
+  const candidates = sorted.filter((source) => source.path !== openingSource?.path).reverse();
+  // A partial read reaches the opening only when the opening is among the posts it read.
+  const reachedOpening = complete ||
+    (openingSource !== undefined && posts.some((source) => source.path === openingSource.path));
+
+  const skipped: CurrentThreadMapSkip[] = [];
+  let examined = 0;
+  for (const source of candidates) {
+    if (limit !== undefined && examined >= limit) break;
+    examined++;
+    const parsed = parseThreadPost(source.content, source.path);
+    if (parsed.status === "invalid") {
+      skipped.push({ path: source.path, reason: "unreadable" });
+      continue;
+    }
+    const post = parsed.post;
+    if (post.kind !== "snapshot") continue;
+    const read = mapOf(post);
+    if (read === "absent") continue;
+    if (read === "invalid") {
+      skipped.push({ path: post.path, id: post.id, reason: "invalid_map" });
+      continue;
+    }
+    return {
+      status: "snapshot", post: { id: post.id, path: post.path }, map: read, warnings: mapWarnings(post), skipped,
+      lookback: { examined, ...(limit !== undefined ? { limit } : {}), stopped: false },
+    };
+  }
+  // Older posts than those examined were left: by the cap, or because the read never reached them.
+  const stopped = examined < candidates.length || !reachedOpening;
+  const lookback = { examined, ...(limit !== undefined ? { limit } : {}), stopped };
+  const none = (reason: NonNullable<CurrentThreadMap["reason"]>): CurrentThreadMap =>
+    ({ status: "none", warnings: [], skipped, lookback, reason });
+  if (!openingSource) return none(complete ? "empty" : "opening_unknown");
+  const opening = parseThreadPost(openingSource.content, openingSource.path);
+  if (opening.status === "invalid") {
+    skipped.push({ path: openingSource.path, reason: "unreadable" });
+    return none("opening_unreadable");
+  }
+  const read = mapOf(opening.post);
+  if (read === "absent") return none("no_map");
+  if (read === "invalid") {
+    skipped.push({ path: opening.post.path, id: opening.post.id, reason: "invalid_map" });
+    return none("opening_invalid_map");
+  }
+  return {
+    status: "opening", post: { id: opening.post.id, path: opening.post.path }, map: read,
+    warnings: mapWarnings(opening.post), skipped, lookback,
+  };
+}
+
+/** A post's Map: valid (members a parser dropped stay dropped), absent (no block, or an empty `map:`), or invalid. */
+function mapOf(post: ThreadPost): MapBlock | "absent" | "invalid" {
+  if (post.mapResult?.status === "valid") return post.mapResult.map;
+  const authored = post.frontmatter.map;
+  return authored === undefined || authored === null ? "absent" : "invalid";
+}
+
+function mapWarnings(post: ThreadPost): ThreadPostFieldWarning[] {
+  return (post.warnings ?? []).filter((warning) => warning.field === "map" || warning.field.startsWith("map."));
 }
 
 /** Reconstructed thread DAG node. */

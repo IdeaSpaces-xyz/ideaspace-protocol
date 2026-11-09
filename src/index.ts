@@ -259,6 +259,7 @@ export {
   THREAD_KINDS,
   parseThreadPost,
   inspectThreadPosts,
+  currentThreadMap,
   reconstructThreadTimeline,
   isThreadPosition,
   resolveThreadGitPath,
@@ -283,6 +284,9 @@ export type {
   ThreadPostParseResult,
   ThreadPostSource,
   ThreadPostInspection,
+  CurrentThreadMap,
+  CurrentThreadMapOptions,
+  CurrentThreadMapSkip,
   ThreadNode,
   ThreadTimeline,
 } from "./threads.js";

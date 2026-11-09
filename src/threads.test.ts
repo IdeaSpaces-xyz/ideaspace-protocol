@@ -8,6 +8,7 @@ import {
   THREAD_KINDS,
   parseThreadPost,
   inspectThreadPosts,
+  currentThreadMap,
   reconstructThreadTimeline,
   resolveThreadGitPath,
   isThreadPosition,
@@ -47,6 +48,9 @@ const postSelection = JSON.parse(readFileSync(
 ));
 const hostedIds = JSON.parse(readFileSync(
   new URL("../conformance/threads/hosted-ids.json", import.meta.url), "utf-8",
+));
+const currentMap = JSON.parse(readFileSync(
+  new URL("../conformance/threads/current-map.json", import.meta.url), "utf-8",
 ));
 const metalayer = JSON.parse(readFileSync(
   new URL("../conformance/threads/metalayer.json", import.meta.url), "utf-8",
@@ -111,7 +115,7 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
@@ -273,6 +277,40 @@ describe("metalayer conformance vectors", () => {
       }
       if (vector.expected.warnings) expect(inspection.warnings).toEqual(vector.expected.warnings);
     } else throw new Error(`Unknown operation ${vector.operation}`);
+  });
+});
+
+describe("the current Thread Map", () => {
+  it("publishes independently executable vectors", () => {
+    expect((manifest as any).current_map_vectors).toBe("current-map.json");
+    expect(currentMap.format).toBe("ideaspaces-thread-current-map/v1");
+    expect(currentMap.operation).toBe("current_thread_map");
+  });
+
+  it.each(currentMap.vectors)("reads $id", (vector: any) => {
+    const result = currentThreadMap(vector.posts, vector.options);
+    const expected = vector.expected;
+    expect(result.status).toBe(expected.status);
+    expect(result.post).toEqual(expected.post);
+    expect(result.reason).toBe(expected.reason);
+    expect(result.skipped).toEqual(expected.skipped);
+    expect(result.warnings).toEqual(expected.warnings);
+    expect(result.lookback).toEqual(expected.lookback);
+    if (expected.members === undefined) expect(result.map).toBeUndefined();
+    else expect(result.map?.members.map((member: any) => member.position)).toEqual(expected.members);
+  });
+
+  it("refuses a lookback that is not a positive integer", () => {
+    for (const lookback of [0, -1, 1.5, Number.NaN]) {
+      expect(() => currentThreadMap([], { lookback })).toThrow(RangeError);
+    }
+  });
+
+  it("does not depend on the order posts are supplied in", () => {
+    const vector = currentMap.vectors.find((entry: any) => entry.id === "snapshot-replaces-opening");
+    const forward = currentThreadMap(vector.posts);
+    const backward = currentThreadMap([...vector.posts].reverse());
+    expect(backward).toEqual(forward);
   });
 });
 
@@ -634,7 +672,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }

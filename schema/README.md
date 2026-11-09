@@ -2,7 +2,7 @@
 
 The machine-readable, language-neutral contract — so non-TypeScript runtimes can conform without importing the reference library.
 
-Present (v0.30.0, provisional; capability options sit beside the ladder; hosted Thread ids are opaque in length; Content look pages directory handles and resolves a Thread post by id at a selected root/pin; Thread posts retain the field-tolerant metalayer, open kinds, marks and opening attachments; Map v3 keeps live Space Maps without mandatory pins/depths):
+Present (v0.32.0, provisional; a Thread's current Map is its opening post's, replaced by the newest snapshot that carries one; capability options sit beside the ladder; hosted Thread ids are opaque in length; Content look pages directory handles and resolves a Thread post by id at a selected root/pin; Thread posts retain the field-tolerant metalayer, open kinds, marks and opening attachments; Map v3 keeps live Space Maps without mandatory pins/depths):
 
 - [`frontmatter.schema.json`](frontmatter.schema.json) — the ordinary Note Layer 1 leaf. Fields: `name`, `summary`, `attached_to` (single typed `<type>:<id>` subject link), `tags`. Nothing strictly required (absent = drift, not error); `additionalProperties` allowed (extensible). Do not apply this schema to Thread Agreements.
 - [`thread-agreement.schema.json`](thread-agreement.schema.json) — separate optional Thread Agreement frontmatter; new writers validate its post-target grammar, while readers tolerate a malformed existing `attached_to` with a warning. Its `attached_to` is the current parent and wins over the opening post attachment, which records the origin; only a post target is a tree edge. See [`threads.md`](threads.md).
