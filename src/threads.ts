@@ -52,6 +52,11 @@ export interface ThreadPostFrontmatter {
   attached_to?: string;
   /** Superseded post id when kind is "correction" or retracting a mark. */
   supersedes?: string;
+  /**
+   * Who the post asks: one addressee or a list. Each is a name as an author would write it or a
+   * typed `<type>:<id>` address, as claimed as `author`. It grants, notifies and restricts nothing.
+   */
+  to?: string | string[];
   /** Optional Map block capturing citations and coordinates. */
   map?: MapBuildInput;
   /** Human-readable title or subject. */
@@ -101,6 +106,8 @@ export interface ThreadPost {
   mark?: string;
   attachedTo?: ThreadAttachment;
   supersedes?: string;
+  /** Addressees from `to`, trimmed, in authored order without repeats. Absent when none are named. */
+  to?: string[];
   mapResult?: MapParseResult;
   marks?: ThreadMark[];
 }
@@ -391,6 +398,16 @@ export function parseThreadPost(
     }
   }
 
+  let to: string[] | undefined;
+  if ("to" in fm && fm.to !== null && fm.to !== undefined) {
+    const named = parseAddressees(fm.to);
+    if (named) {
+      if (named.length) to = named;
+    } else {
+      warnings.push({ field: "to", warning: "invalid_to" });
+    }
+  }
+
   let attachedTo: ThreadAttachment | undefined;
   if ("attached_to" in fm) {
     const parsed = parseThreadAttachment(fm.attached_to);
@@ -441,10 +458,34 @@ export function parseThreadPost(
     ...(mark ? { mark } : {}),
     ...(attachedTo ? { attachedTo } : {}),
     ...(supersedes ? { supersedes } : {}),
+    ...(to ? { to } : {}),
     ...(mapResult ? { mapResult } : {}),
   };
 
   return { status: "valid", post };
+}
+
+/** The longest addressee a reader keeps, in UTF-16 code units, and the most addressees on one post. */
+export const THREAD_ADDRESSEE_MAX_LENGTH = 200;
+export const THREAD_ADDRESSEES_MAX = 20;
+
+/**
+ * Parse a post's `to`: a string or a list of strings, each nonempty after trimming, one line, at
+ * most {@link THREAD_ADDRESSEE_MAX_LENGTH} long; at most {@link THREAD_ADDRESSEES_MAX} distinct.
+ * Returns the trimmed addressees in authored order without repeats (an empty list names no one),
+ * or null when the value is not that shape.
+ */
+export function parseAddressees(value: unknown): string[] | null {
+  const list = typeof value === "string" ? [value] : Array.isArray(value) ? value : null;
+  if (!list) return null;
+  const named: string[] = [];
+  for (const entry of list) {
+    if (typeof entry !== "string") return null;
+    const trimmed = entry.trim();
+    if (!trimmed || /[\r\n]/.test(trimmed) || trimmed.length > THREAD_ADDRESSEE_MAX_LENGTH) return null;
+    if (!named.includes(trimmed)) named.push(trimmed);
+  }
+  return named.length > THREAD_ADDRESSEES_MAX ? null : named;
 }
 
 /** One caller-supplied post file. The protocol never reads the filesystem for this operation. */

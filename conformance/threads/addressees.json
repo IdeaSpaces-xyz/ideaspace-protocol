@@ -1,0 +1,306 @@
+{
+  "format": "ideaspaces-thread-addressees/v1",
+  "operation": "parse_post",
+  "rule": "A post's optional to names who it asks: a string or a list of strings. Each entry is trimmed and must be nonempty, one line and at most 200 UTF-16 code units; repeats are dropped, authored order kept; at most 20 distinct. An absent field, an empty key or an empty list names no one. Any other value drops the field with warning invalid_to and the post stays valid. Addressees are claims compared exactly, never resolved, and grant, notify or restrict nothing.",
+  "expected_fields": "status, to (absent when no one is named), kind when given, warnings (field and warning)",
+  "vectors": [
+    {
+      "id": "one-addressee",
+      "covers": [
+        "to_single"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto: Integrator\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "to": [
+          "Integrator"
+        ]
+      }
+    },
+    {
+      "id": "a-list-in-authored-order",
+      "covers": [
+        "to_list"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto:\n  - Security\n  - UI/UX\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "to": [
+          "Security",
+          "UI/UX"
+        ]
+      }
+    },
+    {
+      "id": "typed-addresses-are-kept-as-written",
+      "covers": [
+        "to_typed_address"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto:\n  - agent:repo:n_0935a5df1f883eeb60bcdfbb\n  - \"person:ernests\"\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "to": [
+          "agent:repo:n_0935a5df1f883eeb60bcdfbb",
+          "person:ernests"
+        ]
+      }
+    },
+    {
+      "id": "trimmed-and-repeats-dropped",
+      "covers": [
+        "to_normalized"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto:\n  - \" Scout \"\n  - Scout\n  - Backend\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "to": [
+          "Scout",
+          "Backend"
+        ]
+      }
+    },
+    {
+      "id": "any-kind-may-ask",
+      "covers": [
+        "to_any_kind"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nkind: snapshot\nto: d-pm\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "to": [
+          "d-pm"
+        ],
+        "kind": "snapshot"
+      }
+    },
+    {
+      "id": "empty-list-names-no-one",
+      "covers": [
+        "to_absent"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto: []\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": []
+      }
+    },
+    {
+      "id": "empty-key-names-no-one",
+      "covers": [
+        "to_absent"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto:\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": []
+      }
+    },
+    {
+      "id": "absent-names-no-one",
+      "covers": [
+        "to_absent"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": []
+      }
+    },
+    {
+      "id": "number-is-dropped-with-a-warning",
+      "covers": [
+        "to_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto: 42\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "to",
+            "warning": "invalid_to"
+          }
+        ]
+      }
+    },
+    {
+      "id": "blank-entry-drops-the-field",
+      "covers": [
+        "to_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto:\n  - Scout\n  - \"  \"\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "to",
+            "warning": "invalid_to"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nested-list-drops-the-field",
+      "covers": [
+        "to_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto:\n  - [Scout]\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "to",
+            "warning": "invalid_to"
+          }
+        ]
+      }
+    },
+    {
+      "id": "multi-line-name-drops-the-field",
+      "covers": [
+        "to_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto: \"Scout\\nBackend\"\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "to",
+            "warning": "invalid_to"
+          }
+        ]
+      }
+    },
+    {
+      "id": "too-long-name-drops-the-field",
+      "covers": [
+        "to_limits"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "to",
+            "warning": "invalid_to"
+          }
+        ]
+      }
+    },
+    {
+      "id": "longest-name-is-kept",
+      "covers": [
+        "to_limits"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "to": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      }
+    },
+    {
+      "id": "too-many-addressees-drops-the-field",
+      "covers": [
+        "to_limits"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto:\n  - n0\n  - n1\n  - n2\n  - n3\n  - n4\n  - n5\n  - n6\n  - n7\n  - n8\n  - n9\n  - n10\n  - n11\n  - n12\n  - n13\n  - n14\n  - n15\n  - n16\n  - n17\n  - n18\n  - n19\n  - n20\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "to",
+            "warning": "invalid_to"
+          }
+        ]
+      }
+    },
+    {
+      "id": "twenty-addressees-are-kept",
+      "covers": [
+        "to_limits"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_ask.md",
+        "content": "---\nid: msg_ask\nto:\n  - n0\n  - n1\n  - n2\n  - n3\n  - n4\n  - n5\n  - n6\n  - n7\n  - n8\n  - n9\n  - n10\n  - n11\n  - n12\n  - n13\n  - n14\n  - n15\n  - n16\n  - n17\n  - n18\n  - n19\n---\nCan you look?\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "to": [
+          "n0",
+          "n1",
+          "n2",
+          "n3",
+          "n4",
+          "n5",
+          "n6",
+          "n7",
+          "n8",
+          "n9",
+          "n10",
+          "n11",
+          "n12",
+          "n13",
+          "n14",
+          "n15",
+          "n16",
+          "n17",
+          "n18",
+          "n19"
+        ]
+      }
+    }
+  ]
+}

@@ -25,6 +25,7 @@ const expected = [
   "conformance/threads/metalayer.json",
   "conformance/threads/post-selection.json",
   "conformance/threads/current-map.json",
+  "conformance/threads/addressees.json",
   "conformance/awareness/focus-full-render.txt",
   "conformance/awareness/focus-render.txt",
   "conformance/awareness/foundation-render.txt",
