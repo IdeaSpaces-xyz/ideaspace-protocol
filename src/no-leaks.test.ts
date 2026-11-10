@@ -48,6 +48,9 @@ describe("no implementation leaks (repo-wide)", () => {
     const nonRootHits = hits
       .split("\n")
       .filter(Boolean)
+      // GitHub's own PR GraphQL id in the queue's enqueue example is not a protocol handle.
+      // Allow exactly that comment, not the workflow file or arbitrary node_id occurrences.
+      .filter((line) => !/^\.github\/workflows\/slc-queue\.yml:\d+:#     -f id=\$\(gh api repos\/IdeaSpaces-xyz\/ideaspace-protocol\/pulls\/N --jq \.node_id\) -f h=<head sha>$/.test(line))
       .filter((line) => line.replace(/root_node_id(?=$|[^a-z])/gi, "").match(/node_id/i));
     expect(nonRootHits, `per-Note node_id leaked:\n${nonRootHits.join("\n")}`).toEqual([]);
   });
