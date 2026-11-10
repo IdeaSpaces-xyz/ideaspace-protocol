@@ -2,6 +2,41 @@
   "format": "ideaspaces-thread-metalayer/v1",
   "vectors": [
     {
+      "id": "legacy-snapshot-without-map-is-readable-and-named",
+      "operation": "inspect_posts",
+      "covers": ["snapshot_requires_map", "legacy_snapshot_tolerance"],
+      "input": { "sources": [{ "path": "_threads/a/01.md", "content": "---\nid: msg_snapshot\nkind: snapshot\n---\nOld state" }] },
+      "expected": { "parent": null, "closed": false, "writable": true, "readableIds": ["msg_snapshot"], "warnings": [{ "post": "_threads/a/01.md", "field": "map", "warning": "snapshot_requires_map" }] }
+    },
+    {
+      "id": "snapshot-null-map-warns",
+      "operation": "parse_post",
+      "covers": ["snapshot_requires_map"],
+      "input": { "path": "_threads/a/01.md", "content": "---\nid: msg_null\nkind: snapshot\nmap: null\n---\nState" },
+      "expected": { "status": "valid", "id": "msg_null", "mapDropped": true, "warnings": [{ "field": "map", "warning": "invalid_map_type" }, { "field": "map", "warning": "snapshot_requires_map" }] }
+    },
+    {
+      "id": "snapshot-invalid-map-keeps-diagnostics",
+      "operation": "parse_post",
+      "covers": ["snapshot_requires_map"],
+      "input": { "path": "_threads/a/01.md", "content": "---\nid: msg_bad_map\nkind: snapshot\nmap:\n  roots: invalid\n  members: []\n---\nState" },
+      "expected": { "status": "valid", "id": "msg_bad_map", "mapDropped": true, "warnings": [{ "field": "map.roots", "warning": "invalid_roots_type" }, { "field": "map", "warning": "snapshot_requires_map" }] }
+    },
+    {
+      "id": "snapshot-empty-map-counts",
+      "operation": "parse_post",
+      "covers": ["snapshot_requires_map"],
+      "input": { "path": "_threads/a/01.md", "content": "---\nid: msg_empty_map\nkind: snapshot\nmap:\n  roots: []\n  members: []\n---\nClear state" },
+      "expected": { "status": "valid", "id": "msg_empty_map", "mapMemberPositions": [] }
+    },
+    {
+      "id": "snapshot-spaced-kind-is-still-unknown",
+      "operation": "parse_post",
+      "covers": ["unknown_kind", "snapshot_requires_map"],
+      "input": { "path": "_threads/a/01.md", "content": "---\nid: msg_unknown_snapshot\nkind: 'snapshot '\n---\nState" },
+      "expected": { "status": "valid", "id": "msg_unknown_snapshot" }
+    },
+    {
       "id": "drop-bad-map-member-keep-good",
       "operation": "parse_post",
       "covers": ["field_tolerance", "map_member_tolerance"],

@@ -79,7 +79,7 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). The authored string is kept; whitespace-only or YAML-coerced non-string values warn and are not folded. |
 | `attached_to` | String (`<type>:<id>`) | Optional open typed link on the opening post; only `post:` (or a bare post alias) has tree-edge semantics. |
 | `supersedes` | String | Optional post id being superseded when `kind` is `correction` or when retracting a mark. |
-| `map` | Object | Optional Map block (`roots`, `members`) capturing cited coordinates and selections. |
+| `map` | Object | Map block (`roots`, `members`) capturing cited coordinates and selections. REQUIRED on new `kind: snapshot` posts; optional on other kinds. |
 | `name` | String | Optional title or subject line. |
 | `summary` | String | Optional dense summary for search and orientation. |
 | `tags` | Array of strings | Optional retrieval tags, and where a post's label goes (`delivery`, `decision`). A label changes no reader's behaviour. |
@@ -88,6 +88,19 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 #### Field tolerance rule
 
 A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one member, `references`, `supersedes`, `attached_to`, `in_reply_to`, `date`, `kind`, or `mark`) is dropped with a diagnostic warning naming the post and field; the post itself remains valid and readable. A numeric-looking mark such as `+1` MUST be quoted as a string in YAML (`mark: '+1'`); otherwise YAML may coerce it to a number and the parser warns `invalid_mark`.
+
+#### `kind: snapshot` carries a Map
+
+A writer MUST refuse a new `kind: snapshot` post without a valid `map` block, before writing any
+post file. The refusal MUST explain how to add one (for a CLI, `--map <note>`). Other kinds MAY
+carry a Map; labels remain in `tags`, not new kinds. A valid empty Map (`roots: []`, `members: []`)
+counts, as it deliberately clears the Thread's Map.
+
+A reader MUST keep reading an older snapshot without a Map and warn `snapshot_requires_map` on
+field `map`, naming the post. A null or wholly invalid Map also warns; ordinary Map diagnostics
+still apply. Member-level tolerance still keeps a Map whose valid members survived. No warning
+rewrites the post, hides it, blocks later writes, or makes a Map-less snapshot replace the current
+Thread Map. A string such as `"snapshot "` stays an unknown kind, not a snapshot.
 
 #### Unreadable posts and repair
 
@@ -156,7 +169,8 @@ current Map from the posts and never stores it.
 - **Newest** is the last post in code-unit filename order, whose stamp is the instant of writing.
   An authored `date` does not reorder it. The opening is the earliest filename, as for the timeline.
 - **Any kind counts.** `post`, `snapshot`, `reframe`, `correction`, `closure`, `mark` and unknown
-  kinds are all read the same way. Whether a post carries a Map is the writer's choice when it posts.
+  kinds are all read the same way. New snapshots MUST carry a Map; for other kinds it is the
+  writer's choice. Readers retain legacy Map-less snapshots with a named warning.
 - **A post without a Map doesn't replace it.** An absent `map` field or an empty `map:` (YAML null)
   means no Map. A Map with no roots and no members is a Map: a post can clear the Thread's Map that
   way.

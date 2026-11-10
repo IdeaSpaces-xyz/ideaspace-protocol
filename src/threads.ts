@@ -425,6 +425,11 @@ export function parseThreadPost(
     }
   }
 
+  // Snapshot is a writer requirement, not a reason to hide authored history.
+  if (kind === "snapshot" && !mapResult) {
+    warnings.push({ field: "map", warning: "snapshot_requires_map" });
+  }
+
   const body = stripFrontmatter(content);
   const post: ThreadPost = {
     id: fm.id,
