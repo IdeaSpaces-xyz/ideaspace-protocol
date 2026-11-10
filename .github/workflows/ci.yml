@@ -1,6 +1,8 @@
 name: CI
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
     branches: [main]
   push:
@@ -31,6 +33,9 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Test merge queue verdict gate
+        run: node --test .github/scripts/slc-queue-gate.node.mjs
 
       - name: Test fail-closed SLC verdict gate
         run: node --test .github/scripts/slc-review-gate.node.mjs

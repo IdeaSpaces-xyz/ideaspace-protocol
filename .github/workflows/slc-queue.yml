@@ -1,0 +1,52 @@
+name: SLC Queue Gate
+
+# This job reports the required slc-review check inside the merge queue, so its name must stay
+# exactly that. It lives apart from claude-code-review.yml because the review action refuses to run
+# when its own workflow differs from main, so that file can't be changed through its own gate.
+# The script is pinned to the queue's base, this file is not: a merge_group run takes the workflow
+# from the group commit, so a PR that edits this file judges itself. Read any diff to it by hand.
+#
+# The ruleset this assumes, on the default branch: merge queue with merge method MERGE, one PR per
+# group, ALLGREEN, and no bypass actors. The classic rule keeps the two required checks and does not
+# require branches to be up to date. Auto-merge is off, so `gh pr merge` cannot queue a PR here:
+#   gh api graphql -f query='mutation($id:ID!,$h:GitObjectID!){enqueuePullRequest(input:{pullRequestId:$id,expectedHeadOid:$h}){mergeQueueEntry{state position}}}' \
+#     -f id=$(gh api repos/IdeaSpaces-xyz/ideaspace-protocol/pulls/N --jq .node_id) -f h=<head sha>
+# Merging never publishes: publish.yml runs only when a GitHub release is published.
+on:
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+  checks: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  slc-review:
+    name: slc-review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The gate comes from the queue's base, so a PR can't edit the script that judges it.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.merge_group.base_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Require SLC's Approve on the head in this group
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GROUP_REF: ${{ github.event.merge_group.head_ref }}
+          GROUP_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          set -euo pipefail
+          gate=.github/scripts/slc-queue-gate.mjs
+          number=$(node "$gate" number "$GROUP_REF")
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$number" > "$RUNNER_TEMP/pr.json"
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GROUP_SHA" > "$RUNNER_TEMP/group.json"
+          head=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).head.sha)' "$RUNNER_TEMP/pr.json")
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/commits/$head/check-runs?per_page=100" > "$RUNNER_TEMP/runs.json"
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/issues/$number/comments?per_page=100" > "$RUNNER_TEMP/comments.json"
+          node "$gate" decide "$GROUP_REF" "$RUNNER_TEMP/pr.json" "$RUNNER_TEMP/group.json" "$RUNNER_TEMP/runs.json" "$RUNNER_TEMP/comments.json"
