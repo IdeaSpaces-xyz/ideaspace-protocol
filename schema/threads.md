@@ -177,7 +177,8 @@ current Map from the posts and never stores it.
 - **A malformed Map is skipped and named.** If a post's Map block fails to parse as a whole, the
   reader passes over that post to the next older one and reports it as `invalid_map`. A Map that
   kept its valid members after the parser dropped bad ones still counts, and the dropped members
-  are reported with it, as the field tolerance rule says. A newer post that is unreadable may have
+  are reported with it, as the field tolerance rule says. A legacy Map-less snapshot is named as
+  `snapshot_requires_map` in the skipped diagnostics. A newer post that is unreadable may have
   carried a Map, so it is reported as `unreadable`, never silently ignored.
 - **The lookback cap is visible.** A reader may examine only the newest posts, by a cap or because
   it read only part of the Thread. If it finds no Map before it stops, it falls back to the opening
@@ -288,7 +289,8 @@ Independent implementations share these portable operations:
    - Takes caller-supplied canonical direct post files, in any order, and optionally `complete: false`
      with the separately read `opening` post and a positive `lookback` cap. Returns `status`
      (`post`, `opening` or `none`), the chosen post's `id`, `path` and `kind`, the Map, the chosen
-     Map's field warnings, `skipped` posts newest first (`invalid_map` or `unreadable`), and
+     Map's field warnings, `skipped` posts newest first (`invalid_map`, `unreadable`, or
+     `snapshot_requires_map` for a legacy Map-less snapshot), and
      `lookback` (`examined`, `limit`, `stopped`). `none` carries `reason`: `empty`, `no_map` or
      `opening_unknown`. Pure: no filesystem, Git or network read.
 

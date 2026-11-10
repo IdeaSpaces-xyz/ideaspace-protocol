@@ -561,7 +561,7 @@ export interface CurrentThreadMapSkip {
   path: string;
   id?: string;
   /** `invalid_map`: a post whose Map block failed to parse. `unreadable`: the post itself did not parse. */
-  reason: "invalid_map" | "unreadable";
+  reason: "invalid_map" | "unreadable" | "snapshot_requires_map";
 }
 
 /** The Map a Thread stands on now, and the post it came from. */
@@ -626,7 +626,12 @@ export function currentThreadMap(
       return undefined;
     }
     const map = mapOf(parsed.post);
-    if (map === "absent") return undefined;
+    if (map === "absent") {
+      if (parsed.post.kind === "snapshot") {
+        skipped.push({ path: parsed.post.path, id: parsed.post.id, reason: "snapshot_requires_map" });
+      }
+      return undefined;
+    }
     if (map === "invalid") {
       skipped.push({ path: parsed.post.path, id: parsed.post.id, reason: "invalid_map" });
       return undefined;

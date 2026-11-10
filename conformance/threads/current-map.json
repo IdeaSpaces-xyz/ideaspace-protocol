@@ -223,7 +223,7 @@
         }
       ],
       "expected": {
-        "skipped": [],
+        "skipped": [{ "path": "_threads/t/2026-11-01T14-00-00-000Z-msg_bare.md", "id": "msg_bare", "reason": "snapshot_requires_map" }],
         "warnings": [],
         "status": "post",
         "post": {
