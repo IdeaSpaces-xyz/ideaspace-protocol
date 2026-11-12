@@ -145,6 +145,11 @@ lexical, case-insensitive, and refuses what it does not recognize:
 - `@import`, the text `javascript:`, or an animation whose `attributeName` is an `href`;
 - any backslash, since a CSS escape could spell the rest.
 
+The test runs on the decoded text, with ASCII case folding only. An implementation MAY refuse more
+than this list, never less: every `svg-refused` vector in
+[`repository-image.json`](../conformance/assets/repository-image.json) is refused by every reader, and
+a reader that refuses an `svg-accepted` vector shows its default, which is safe.
+
 **A reader MUST draw an accepted SVG only as an image** (an `<img>` element, a CSS background, or an
 image decoder) and MUST NOT inline it into a page's DOM, open it as a document, or serve it as a
 page. The rule is a filter in front of image-only rendering, not a sanitizer, and a reader MUST NOT
