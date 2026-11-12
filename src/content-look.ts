@@ -10,7 +10,7 @@ import {
   type ContentFocusManifest,
 } from "./awareness.js";
 import { parseFrontmatter, stripFrontmatter } from "./frontmatter.js";
-import { parseThreadPost, resolveThreadPostById, type ThreadPostFieldWarning } from "./threads.js";
+import { parseThreadPost, resolveThreadPostById, type ThreadPost, type ThreadPostFieldWarning } from "./threads.js";
 import {
   inspectMarkdown,
   summarizeMarkdown,
@@ -47,6 +47,17 @@ export interface AssembleContentLookOpts {
   postId?: string;
 }
 
+/**
+ * A Thread post's own identity, as its frontmatter declares it: the id a reply, a supersedes or a
+ * `--post` names, the post's kind (default `post`) and its author when it claims one. Present only for
+ * a post that parses; a filename is never turned into an id.
+ */
+export interface ContentLookPostHandle {
+  id: string;
+  kind: string;
+  author?: string;
+}
+
 export interface ContentLookDirectoryChild {
   kind: "directory" | "markdown";
   name: string;
@@ -54,6 +65,8 @@ export interface ContentLookDirectoryChild {
   position: string;
   summary?: string;
   markdownFiles?: number;
+  /** A Thread folder's post child: its id, kind and author. */
+  post?: ContentLookPostHandle;
 }
 
 export interface ContentLookSectionChild extends MarkdownHeading {
@@ -93,6 +106,8 @@ export interface ContentLookTarget {
   page?: { total: number; shown: number; order: "older" | "newer"; nextCursor?: string };
   /** Post diagnostics, with authored position, even when the post cannot be parsed. */
   warnings?: Array<ThreadPostFieldWarning & { post: string }>;
+  /** A Thread post target's id, kind and author, at every rung. */
+  post?: ContentLookPostHandle;
   /** The target in Map member vocabulary, without fabricating a root ordinal. */
   member: ContentLookProjectedMember;
 }
@@ -283,6 +298,7 @@ async function readMarkdownTarget(
   let name: string;
   let summary: string | null;
   let warnings: ContentLookTarget["warnings"];
+  let post: ContentLookPostHandle | undefined;
 
   if (isPost) {
     const postResult = parseThreadPost(source, position);
@@ -293,6 +309,7 @@ async function readMarkdownTarget(
       summary = nonEmptyString(postResult.post.frontmatter.summary) ??
         summarizeMarkdown(source);
       warnings = postResult.post.warnings?.map((warning) => ({ post: position, ...warning }));
+      post = postHandle(postResult.post);
     } else {
       name = nonEmptyString(frontmatter?.name) ?? basename(path, extname(path));
       summary = summarizeMarkdown(source);
@@ -305,6 +322,7 @@ async function readMarkdownTarget(
 
   const target = baseTarget(path, position, "markdown", depth, name, summary);
   if (warnings?.length) target.warnings = warnings;
+  if (post) target.post = post;
 
   if (depth === "surface" || depth === "full") {
     target.surface = stripFrontmatter(source);
@@ -381,6 +399,7 @@ async function readDirectoryTarget(
           const postResult = parseThreadPost(content, joinPortable(position, fileName));
           let postName: string;
           let postSummary: string | undefined;
+          let post: ContentLookPostHandle | undefined;
           if (postResult.status === "valid") {
             warnings.push(...(postResult.post.warnings ?? []).map((warning) => ({ post: joinPortable(position, fileName), ...warning })));
             postName = nonEmptyString(postResult.post.frontmatter.name) ??
@@ -388,6 +407,7 @@ async function readDirectoryTarget(
               basename(fileName, ".md");
             postSummary = nonEmptyString(postResult.post.frontmatter.summary) ??
               (summarizeMarkdown(content) || undefined);
+            post = postHandle(postResult.post);
           } else {
             warnings.push(...postResult.issues.map((warning) => ({ post: joinPortable(position, fileName), field: "frontmatter", warning })));
             const fm = parseFrontmatter(content);
@@ -399,6 +419,7 @@ async function readDirectoryTarget(
             name: postName,
             position: joinPortable(position, fileName),
             ...(postSummary ? { summary: postSummary } : {}),
+            ...(post ? { post } : {}),
           });
         } catch {
           children.push({
@@ -547,6 +568,7 @@ function finishTarget(target: ContentLookTarget): ContentLookTarget {
     ...(target.omittedChildren !== undefined ? { omittedChildren: target.omittedChildren } : {}),
     ...(target.page !== undefined ? { page: target.page } : {}),
     ...(target.warnings !== undefined ? { warnings: target.warnings } : {}),
+    ...(target.post !== undefined ? { post: target.post } : {}),
   };
   target.revision = contentRevision(JSON.stringify(represented));
   return target;
@@ -568,6 +590,16 @@ async function readDirectoryReadme(
   }
 }
 
+function postHandle(post: ThreadPost): ContentLookPostHandle {
+  const author = nonEmptyString(post.frontmatter.author);
+  return { id: post.id, kind: post.kind, ...(author ? { author } : {}) };
+}
+
+/** `msg_… · kind · author`: what a reader needs to cite the post. */
+function renderPostHandle(post: ContentLookPostHandle): string {
+  return [post.id, post.kind, ...(post.author ? [post.author] : [])].join(" · ");
+}
+
 function renderTarget(target: ContentLookTarget): string {
   const lines = [
     "Look:",
@@ -578,6 +610,7 @@ function renderTarget(target: ContentLookTarget): string {
     "  placement: history",
     `  name: ${target.name}`,
   ];
+  if (target.post) lines.push(`  post: ${renderPostHandle(target.post)}`);
   if ("summary" in target) lines.push(`  summary: ${target.summary ?? "(none)"}`);
   if (target.warnings?.length) {
     lines.push("", "Warnings:");
@@ -599,7 +632,8 @@ function renderTarget(target: ContentLookTarget): string {
       } else {
         const suffix = child.kind === "directory" ? "/" : "";
         const summary = child.summary ? ` — ${child.summary}` : "";
-        lines.push(`  ${child.position}${suffix}${summary}`);
+        const post = child.post ? ` [${renderPostHandle(child.post)}]` : "";
+        lines.push(`  ${child.position}${suffix}${post}${summary}`);
       }
     }
     if (target.omittedChildren) lines.push(`  … and ${target.omittedChildren} more`);

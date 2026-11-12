@@ -286,12 +286,14 @@ describe("Content look", () => {
         name: "Initial Spine",
         position: "_threads/2026-09-30-spine/2026-09-30T10-00-00Z-init.md",
         summary: "Initial kick-off post.",
+        post: { id: "msg_001", kind: "post" },
       },
       {
         kind: "markdown",
         name: "Direction Update",
         position: "_threads/2026-09-30-spine/2026-10-16T12-00-00Z-direction.md",
         summary: "Latest direction for desktop.",
+        post: { id: "msg_002", kind: "post" },
       },
     ]);
 
@@ -321,6 +323,8 @@ describe("Content look", () => {
     // 3. Thread post: 5 rungs
     const postName = ok(await assembleContentLook({ position: post2, depth: "name" }));
     expect(postName.target.name).toBe("Direction Update");
+    // Its id is how a reply names it, so every rung carries it.
+    expect(postName.target.post).toEqual({ id: "msg_002", kind: "post" });
 
     const postSummary = ok(await assembleContentLook({ position: post2, depth: "summary" }));
     expect(postSummary.target.summary).toBe("Latest direction for desktop.");
