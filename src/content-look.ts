@@ -111,7 +111,7 @@ export interface ContentLookTarget {
   /** A Thread post target's id, kind and author, at every rung. */
   post?: ContentLookPostHandle;
   /**
-   * The Space root's identity image (README.md `image:`), from summary upward.
+   * The repository root's identity image (README.md `image:`), from summary upward.
    * Absent when none is declared; a declared image that can't be shown is a
    * `problem`, never a failed look.
    */
@@ -518,7 +518,7 @@ async function readDirectoryTarget(
   const summary = readme.content === null ? null : summarizeMarkdown(readme.content);
   const target = baseTarget(path, position, "directory", depth, name, summary);
 
-  // Only the Space root's README names the Space's image.
+  // Only the root README names the repository's image.
   if (position === "." && depth !== "name") {
     const image = await readRepositoryImage(path);
     if (image.status === "ok") target.image = { status: "ok", path: image.image.path, mediaType: image.image.mediaType };

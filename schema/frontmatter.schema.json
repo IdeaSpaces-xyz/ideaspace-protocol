@@ -30,7 +30,7 @@
     },
     "image": {
       "type": "string",
-      "description": "Optional identity image of the Space, declared only in the Space root's README.md: a knowledge or code repo's icon, an agent repo's avatar, a person repo's portrait. A relative path that resolves into `_assets/` from README.md, such as `_assets/avatar.png`; PNG, JPEG, WebP or SVG, at most 256 KiB. Resolution and checks are in schema/assets.md. An image that fails a check is reported and readers show their default; it never invalidates the Note or the Space.",
+      "description": "Optional identity image of the repository, declared only in the repository root's README.md: a knowledge or code repo's icon, an agent repo's avatar, a person repo's portrait. A relative path that resolves into `_assets/` from README.md, such as `_assets/avatar.png`; PNG, JPEG, WebP or SVG, at most 256 KiB. Resolution and checks are in schema/assets.md. An image that fails a check is reported and readers show their default; it never invalidates the Note or the repository. Readers draw an SVG only as an image, never inlined.",
       "x-examples": ["_assets/avatar.png", "_assets/icon.svg"]
     },
     "agreement": {

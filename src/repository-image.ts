@@ -1,10 +1,10 @@
 /**
- * Read a Space's identity image: the optional `image:` field in its root
+ * Read a repository's identity image: the optional `image:` field in its root
  * `README.md`, resolved by the `_assets/` rules and checked on disk.
  *
- * A problem is a result, never a throw: a reader shows its default (an icon,
- * an avatar glyph, initials) and may say why. Nothing is fetched, written or
- * followed outside the root.
+ * A problem is a result, never a throw, an I/O error included: a reader
+ * shows its default (an icon, an avatar glyph, initials) and may say why.
+ * Nothing is fetched, written or followed outside the root.
  */
 
 import { promises as fs } from "node:fs";
@@ -44,9 +44,18 @@ const KIB = REPOSITORY_IMAGE_MAX_BYTES / 1024;
 
 /**
  * Read `<root>/README.md` front matter and check its `image` field.
- * `root` is the Space root (a repository root, or a folder Space's folder).
+ * `root` is the repository root.
  */
 export async function readRepositoryImage(root: string): Promise<RepositoryImageRead> {
+  try {
+    return await readChecked(root);
+  } catch {
+    // Any I/O error (a README or file it may not read, a root that went away) is a result too.
+    return { status: "problem", code: "unreadable", message: problemMessage("unreadable") };
+  }
+}
+
+async function readChecked(root: string): Promise<RepositoryImageRead> {
   const rootReal = await fs.realpath(resolve(root));
   let readme: string;
   try {
@@ -69,26 +78,30 @@ export async function readRepositoryImage(root: string): Promise<RepositoryImage
   });
   if (declaration.status === "invalid") return problem(declaration.code);
 
-  const target = join(rootReal, ...declaration.path.split("/"));
-  let real: string;
   try {
-    real = await fs.realpath(target);
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
-    if (code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP") return problem("missing");
-    throw error;
+    const target = join(rootReal, ...declaration.path.split("/"));
+    let real: string;
+    try {
+      real = await fs.realpath(target);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP") return problem("missing");
+      throw error;
+    }
+    if (!within(rootReal, real)) return problem("outside_root");
+    const stat = await fs.stat(real);
+    if (!stat.isFile()) return problem("missing");
+    if (stat.size > REPOSITORY_IMAGE_MAX_BYTES) return problem("too_large");
+    const bytes = await fs.readFile(real);
+    const checked = checkRepositoryImageBytes(declaration.mediaType, bytes);
+    if (!checked.ok) return problem(checked.code);
+    return {
+      status: "ok",
+      image: { path: declaration.path, absolutePath: real, mediaType: declaration.mediaType, bytes: bytes.length },
+    };
+  } catch {
+    return problem("unreadable");
   }
-  if (!within(rootReal, real)) return problem("outside_root");
-  const stat = await fs.stat(real);
-  if (!stat.isFile()) return problem("missing");
-  if (stat.size > REPOSITORY_IMAGE_MAX_BYTES) return problem("too_large");
-  const bytes = await fs.readFile(real);
-  const checked = checkRepositoryImageBytes(declaration.mediaType, bytes);
-  if (!checked.ok) return problem(checked.code);
-  return {
-    status: "ok",
-    image: { path: declaration.path, absolutePath: real, mediaType: declaration.mediaType, bytes: bytes.length },
-  };
 }
 
 /** One sentence: what happened and what to do. The reader still shows its default. */
@@ -113,6 +126,10 @@ export function problemMessage(code: RepositoryImageProblemCode, declared?: stri
       return `${named} doesn't contain what its extension says; save it again as that type, or rename it.`;
     case "unsafe_svg":
       return `${named} is an SVG with a script, an event handler or a link outside itself; remove them, or use a PNG.`;
+    case "unreadable":
+      return declared !== undefined
+        ? `${named} couldn't be read; check the file's permissions.`
+        : "README.md or its image couldn't be read; check the files' permissions.";
   }
 }
 

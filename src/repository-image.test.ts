@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -18,7 +18,7 @@ import { assembleContentLook, renderContentLook, type ContentLookManifest } from
 import type { MapDepth } from "./maps.js";
 import * as root from "./index.js";
 
-type Entry = { text: string } | { base64: string } | { fill: { prefix_base64: string; size: number } } | { symlink: string };
+type Entry = ({ text: string } | { base64: string } | { fill: { prefix_base64: string; size: number } } | { symlink: string }) & { mode?: string };
 type Expected =
   | { status: "none" }
   | { status: "declared"; path: string; media_type: string }
@@ -30,6 +30,7 @@ interface Vector {
   id: string;
   operation: "declaration" | "read" | "svg" | "look";
   covers: string[];
+  unprivileged?: boolean;
   cases?: Array<{ value?: unknown; absent?: boolean; text?: string; expected: Expected | string }>;
   tree?: Record<string, Entry>;
   beside?: Record<string, Entry>;
@@ -71,6 +72,7 @@ async function materialize(base: string, entries: Record<string, Entry>): Promis
       Buffer.from(entry.fill.prefix_base64, "base64").copy(bytes);
       await writeFile(destination, bytes);
     } else await symlink(entry.symlink, destination);
+    if (entry.mode !== undefined) await chmod(destination, parseInt(entry.mode, 8));
   }
 }
 
@@ -120,6 +122,8 @@ describe("repository image conformance manifest", () => {
         }
         break;
       case "read": {
+        // Permissions don't apply to root, so an unreadable file reads fine there.
+        if (vector.unprivileged && process.getuid?.() === 0) return;
         const space = await sandbox(vector);
         const result = await readRepositoryImage(space);
         expect(asWire(result)).toEqual(vector.expected);
@@ -157,6 +161,13 @@ describe("repository image reference behaviour", () => {
     expect(root.checkSvgImageText).toBe(checkSvgImageText);
   });
 
+  it("answers a root that isn't there with a result, never a throw", async () => {
+    await expect(readRepositoryImage(join(tmpdir(), "is-repository-image-gone", "nowhere"))).resolves.toMatchObject({
+      status: "problem",
+      code: "unreadable",
+    });
+  });
+
   it("checks size before the signature", () => {
     const png = new Uint8Array(REPOSITORY_IMAGE_MAX_BYTES + 1);
     png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -166,7 +177,7 @@ describe("repository image reference behaviour", () => {
 
   it("gives every problem a sentence that names the declared value", () => {
     for (const code of ["not_a_string", "invalid_reference", "outside_root", "not_in_assets", "unsupported_type",
-      "missing", "too_large", "type_mismatch", "unsafe_svg"] as const) {
+      "missing", "too_large", "type_mismatch", "unsafe_svg", "unreadable"] as const) {
       const message = problemMessage(code, "_assets/x.png");
       expect(message).toMatch(/\.$/);
       if (code !== "not_a_string") expect(message).toContain("_assets/x.png");

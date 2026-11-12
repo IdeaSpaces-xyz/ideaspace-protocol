@@ -8,7 +8,7 @@ Present:
 
 - `repository-path.ts` — pure lexical classification of Markdown knowledge, exact core `_agent`, ordinary paths, reserved Git state, and the first opaque extension owner
 - `assets.ts` — exact `_assets/` recognition and pure lexical relative-reference resolution with no filesystem lookup, search, fallback, or mutation; the identity image's lexical declaration check, byte checks and SVG rule
-- `repository-image.ts` — reads a Space root's `README.md` `image:` and checks the file on disk (exists, inside the root after symlinks, size, type); every problem is a result, never a throw
+- `repository-image.ts` — reads a repository root's `README.md` `image:` and checks the file on disk (exists, inside the root after symlinks, size, type); every problem is a result, never a throw
 - `frontmatter.ts` — parse / compose / extract (Layer 1: `name`, `summary`, `attached_to`, `tags`)
 - `root-identity.ts` — optional Space root ID parsing, deterministic current-form generation, and pure lazy-alignment evaluation over caller-supplied evidence
 - `markdown-inspection.ts` — portable progressive-disclosure reads (`summary`, ATX `outline`, exact `section`) over a string or local file

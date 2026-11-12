@@ -92,13 +92,13 @@ function isPortablePathText(value: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Identity image: one optional `image:` field in a Space root's README.md.
+// Identity image: one optional `image:` field in a repository root's README.md.
 // Pure and browser-safe, like the rest of this module: the lexical declaration
 // check and the byte checks take values, never paths to open. The filesystem
 // reader is `readRepositoryImage` in `repository-image.ts`.
 // ---------------------------------------------------------------------------
 
-/** The README front-matter field that names a Space's identity image. */
+/** The README front-matter field that names a repository's identity image. */
 export const REPOSITORY_IMAGE_FIELD = "image";
 
 /** The Markdown file the field is read from, relative to the Space root. */
@@ -118,7 +118,7 @@ export const REPOSITORY_IMAGE_TYPES: Readonly<Record<string, RepositoryImageMedi
   svg: "image/svg+xml",
 });
 
-/** Why a declared image is not shown. Each is reported; none fails the Space. */
+/** Why a declared image is not shown. Each is reported; none fails the repository. */
 export type RepositoryImageProblemCode =
   | "not_a_string"
   | "invalid_reference"
@@ -128,7 +128,8 @@ export type RepositoryImageProblemCode =
   | "missing"
   | "too_large"
   | "type_mismatch"
-  | "unsafe_svg";
+  | "unsafe_svg"
+  | "unreadable";
 
 export type RepositoryImageDeclaration =
   | { status: "none" }
@@ -139,8 +140,8 @@ export type RepositoryImageDeclaration =
     };
 
 /**
- * Check one `image` front-matter value lexically, as written in the Space
- * root's `README.md`. It resolves by `resolveAssetReference` from `README.md`:
+ * Check one `image` front-matter value lexically, as written in the
+ * repository root's `README.md`. It resolves by `resolveAssetReference` from `README.md`:
  * relative, no fallback, never above the root, and it must land in `_assets/`.
  * The extension names the type. No file is read.
  */
