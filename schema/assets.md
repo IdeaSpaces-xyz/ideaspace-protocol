@@ -109,7 +109,7 @@ checks the file. It stops at the first check that fails and reports that code:
 | 3 | Resolution does not escape above the repository root (`outside`). | `outside_root` |
 | 4 | Resolution returns `asset`: the target is in an `_assets/` folder. | `not_in_assets` |
 | 5 | The file name's extension, compared case-insensitively, is `png`, `jpg`, `jpeg`, `webp` or `svg`. | `unsupported_type` |
-| 6 | The target exists, after symlinks. | `missing` |
+| 6 | The target exists, after symlinks; a symlink loop is `missing` too. | `missing` |
 | 7 | The target's real path, after every symlink, is inside the repository root's real path. | `outside_root` |
 | 8 | The target is a regular file. | `missing` |
 | 9 | The file is at most **262,144 bytes (256 KiB)**. A reader checks the size before reading the bytes. | `too_large` |

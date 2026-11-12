@@ -24,6 +24,7 @@
     "read_no_field",
     "read_root_readme_only",
     "read_missing",
+    "read_symlink_loop",
     "read_not_a_file",
     "read_symlink_outside_root",
     "read_symlink_inside_root",
@@ -558,6 +559,25 @@
       "tree": {
         "README.md": {
           "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "missing"
+      }
+    },
+    {
+      "id": "read-symlink-loop",
+      "operation": "read",
+      "covers": [
+        "read_symlink_loop"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "symlink": "avatar.png"
         }
       },
       "expected": {
