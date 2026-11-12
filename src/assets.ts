@@ -101,7 +101,7 @@ function isPortablePathText(value: string): boolean {
 /** The README front-matter field that names a repository's identity image. */
 export const REPOSITORY_IMAGE_FIELD = "image";
 
-/** The Markdown file the field is read from, relative to the Space root. */
+/** The Markdown file the field is read from, relative to the repository root. */
 export const REPOSITORY_IMAGE_SOURCE = "README.md";
 
 /** The largest identity image a reader accepts: 256 KiB. */
