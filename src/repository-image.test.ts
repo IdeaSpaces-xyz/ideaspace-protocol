@@ -10,7 +10,6 @@ import {
   REPOSITORY_IMAGE_SOURCE,
   REPOSITORY_IMAGE_TYPES,
   checkRepositoryImageBytes,
-  checkSvgImageText,
   resolveRepositoryImageDeclaration,
 } from "./assets.js";
 import { problemMessage, readRepositoryImage } from "./repository-image.js";
@@ -28,10 +27,10 @@ type Expected =
 
 interface Vector {
   id: string;
-  operation: "declaration" | "read" | "svg" | "look";
+  operation: "declaration" | "read" | "look";
   covers: string[];
   unprivileged?: boolean;
-  cases?: Array<{ value?: unknown; absent?: boolean; text?: string; expected: Expected | string }>;
+  cases?: Array<{ value?: unknown; absent?: boolean; expected: Expected }>;
   tree?: Record<string, Entry>;
   beside?: Record<string, Entry>;
   expected?: Expected;
@@ -116,11 +115,6 @@ describe("repository image conformance manifest", () => {
           expect(wire, JSON.stringify(testCase.value)).toEqual(testCase.expected);
         }
         break;
-      case "svg":
-        for (const testCase of vector.cases!) {
-          expect(checkSvgImageText(testCase.text!), JSON.stringify(testCase.text)).toBe(testCase.expected);
-        }
-        break;
       case "read": {
         // Permissions don't apply to root, so an unreadable file reads fine there.
         if (vector.unprivileged && process.getuid?.() === 0) return;
@@ -158,7 +152,8 @@ describe("repository image reference behaviour", () => {
   it("is exported from the package root", () => {
     expect(root.readRepositoryImage).toBe(readRepositoryImage);
     expect(root.resolveRepositoryImageDeclaration).toBe(resolveRepositoryImageDeclaration);
-    expect(root.checkSvgImageText).toBe(checkSvgImageText);
+    expect(root.checkRepositoryImageBytes).toBe(checkRepositoryImageBytes);
+    expect("checkSvgImageText" in root).toBe(false);
   });
 
   it("answers a root that isn't there with a result, never a throw", async () => {
@@ -177,7 +172,7 @@ describe("repository image reference behaviour", () => {
 
   it("gives every problem a sentence that names the declared value", () => {
     for (const code of ["not_a_string", "invalid_reference", "outside_root", "not_in_assets", "unsupported_type",
-      "missing", "too_large", "type_mismatch", "unsafe_svg", "unreadable"] as const) {
+      "missing", "too_large", "type_mismatch", "unreadable"] as const) {
       const message = problemMessage(code, "_assets/x.png");
       expect(message).toMatch(/\.$/);
       if (code !== "not_a_string") expect(message).toContain("_assets/x.png");

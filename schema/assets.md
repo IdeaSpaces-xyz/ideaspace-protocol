@@ -108,52 +108,31 @@ checks the file. It stops at the first check that fails and reports that code:
 | 2 | The value is a portable relative reference path: no URL or scheme, no leading `/`, no backslash, no empty segment. A remote picture is never fetched. | `invalid_reference` |
 | 3 | Resolution does not escape above the repository root (`outside`). | `outside_root` |
 | 4 | Resolution returns `asset`: the target is in an `_assets/` folder. | `not_in_assets` |
-| 5 | The file name's extension, compared case-insensitively, is `png`, `jpg`, `jpeg`, `webp` or `svg`. | `unsupported_type` |
+| 5 | The file name's extension, compared case-insensitively, is `png`, `jpg`, `jpeg` or `webp`. Anything else, `svg` included, is unsupported (see [SVG](#svg)). | `unsupported_type` |
 | 6 | The target exists, after symlinks; a symlink loop is `missing` too. | `missing` |
 | 7 | The target's real path, after every symlink, is inside the repository root's real path. | `outside_root` |
 | 8 | The target is a regular file. | `missing` |
 | 9 | The file is at most **262,144 bytes (256 KiB)**. A reader checks the size before reading the bytes. | `too_large` |
-| 10 | The bytes are the extension's type: PNG starts `89 50 4E 47 0D 0A 1A 0A`; JPEG `FF D8 FF`; WebP `RIFF`, any four bytes, then `WEBP`; SVG is UTF-8 text whose first element, after an optional XML declaration, comments and whitespace, is `<svg`. | `type_mismatch` |
-| 11 | An SVG passes the SVG rule below. | `unsafe_svg` |
+| 10 | The bytes are the extension's type: PNG starts `89 50 4E 47 0D 0A 1A 0A`; JPEG `FF D8 FF`; WebP `RIFF`, any four bytes, then `WEBP`. | `type_mismatch` |
 
 An I/O error at any step (a `README.md` or file the reader may not read, a root that went away) is
 the code `unreadable`, never an exception that fails the reader or the repository.
 
-Checks 1–5 are lexical and need no filesystem. A reader that cannot perform checks 6–11, such as a
+Checks 1–5 are lexical and need no filesystem. A reader that cannot perform checks 6–10, such as a
 renderer that only has the path, reports nothing it has not checked and MUST NOT show the image
 until they pass.
 
 A result is either the image, as `{ path, media_type }` with `path` the normalized
-repository-relative target and `media_type` one of `image/png`, `image/jpeg`, `image/webp`,
-`image/svg+xml`, or a problem, as one of the codes above or `unreadable`, with a sentence for a
+repository-relative target and `media_type` one of `image/png`, `image/jpeg` or `image/webp`, or a problem, as one of the codes above or `unreadable`, with a sentence for a
 person. **A problem is never fatal:** the repository, the README and every other field stay valid, the reader shows its
 default, and it MAY show the problem's sentence to the person who can fix it. Nothing is fetched,
 written, or followed outside the root.
 
-### The SVG rule
+### SVG
 
-An SVG identity image is accepted only when its text has none of the following. The test is
-lexical, case-insensitive, and refuses what it does not recognize:
-
-- a `<!DOCTYPE` or `<!ENTITY` declaration;
-- a `script`, `foreignObject`, `iframe`, `embed`, `object`, `handler` or `listener` element, with
-  or without a namespace prefix;
-- an attribute whose name, after any namespace prefix, starts with `on`;
-- an `href` or `src` attribute, with or without a prefix such as `xlink:`, whose value is not a
-  same-document `#fragment`;
-- a `url(…)` whose value is not a `#fragment`;
-- `@import`, the text `javascript:`, or an animation whose `attributeName` is an `href`;
-- any backslash, since a CSS escape could spell the rest.
-
-The test runs on the decoded text, with ASCII case folding only. An implementation MAY refuse more
-than this list, never less: every `svg-refused` vector in
-[`repository-image.json`](../conformance/assets/repository-image.json) is refused by every reader, and
-a reader that refuses an `svg-accepted` vector shows its default, which is safe.
-
-**A reader MUST draw an accepted SVG only as an image** (an `<img>` element, a CSS background, or an
-image decoder) and MUST NOT inline it into a page's DOM, open it as a document, or serve it as a
-page. The rule is a filter in front of image-only rendering, not a sanitizer, and a reader MUST NOT
-rely on it alone.
+SVG is not an identity image type in this version. An `image` naming an `.svg` file is
+`unsupported_type`, and the reader shows its default. A later version may accept SVG under a rule of
+its own, drawn only as an image; until then a reader MUST NOT show an SVG as an identity image.
 
 ### Where readers use it
 

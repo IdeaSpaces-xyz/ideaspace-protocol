@@ -7,8 +7,7 @@
     "png": "image/png",
     "jpg": "image/jpeg",
     "jpeg": "image/jpeg",
-    "webp": "image/webp",
-    "svg": "image/svg+xml"
+    "webp": "image/webp"
   },
   "notes": "Tree entries: {text} is UTF-8, {base64} is bytes, {fill:{prefix_base64,size}} is the prefix padded with zero bytes to size, {symlink} is a relative symlink; an entry's optional `mode` (octal) is applied after writing. A vector marked `unprivileged` needs a reader that permissions apply to: a runner as root skips it. `tree` is the repository root; `beside` is the folder that holds the repository root, for targets outside it. A problem's `message` is implementation text and is not compared.",
   "required_coverage": [
@@ -31,11 +30,8 @@
     "read_too_large",
     "read_size_boundary",
     "read_type_mismatch",
-    "read_unsafe_svg",
+    "read_svg_unsupported",
     "read_unreadable",
-    "svg_accepted",
-    "svg_not_svg",
-    "svg_refused",
     "look_root_image",
     "look_problem_not_fatal"
   ],
@@ -56,11 +52,11 @@
           }
         },
         {
-          "value": "./_assets/icon.SVG",
+          "value": "./_assets/Icon.PNG",
           "expected": {
             "status": "declared",
-            "path": "_assets/icon.SVG",
-            "media_type": "image/svg+xml"
+            "path": "_assets/Icon.PNG",
+            "media_type": "image/png"
           }
         },
         {
@@ -341,6 +337,20 @@
       ],
       "cases": [
         {
+          "value": "_assets/icon.svg",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "./_assets/icon.SVG",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
           "value": "_assets/a.gif",
           "expected": {
             "status": "invalid",
@@ -470,27 +480,6 @@
         "status": "ok",
         "path": "_assets/icon.webp",
         "media_type": "image/webp"
-      }
-    },
-    {
-      "id": "read-valid-svg",
-      "operation": "read",
-      "covers": [
-        "read_valid",
-        "svg_accepted"
-      ],
-      "tree": {
-        "README.md": {
-          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/mark.svg\n---\n\n# Example\n"
-        },
-        "_assets/mark.svg": {
-          "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"#e8c35a\"/></svg>\n"
-        }
-      },
-      "expected": {
-        "status": "ok",
-        "path": "_assets/mark.svg",
-        "media_type": "image/svg+xml"
       }
     },
     {
@@ -740,61 +729,22 @@
       }
     },
     {
-      "id": "read-svg-not-svg",
+      "id": "read-svg-unsupported",
       "operation": "read",
       "covers": [
-        "read_type_mismatch",
-        "svg_not_svg"
+        "read_svg_unsupported"
       ],
       "tree": {
         "README.md": {
-          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/icon.svg\n---\n\n# Example\n"
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/mark.svg\n---\n\n# Example\n"
         },
-        "_assets/icon.svg": {
-          "text": "<html><body>not an svg</body></html>\n"
+        "_assets/mark.svg": {
+          "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"#e8c35a\"/></svg>\n"
         }
       },
       "expected": {
         "status": "problem",
-        "code": "type_mismatch"
-      }
-    },
-    {
-      "id": "read-svg-not-utf8",
-      "operation": "read",
-      "covers": [
-        "read_type_mismatch"
-      ],
-      "tree": {
-        "README.md": {
-          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/icon.svg\n---\n\n# Example\n"
-        },
-        "_assets/icon.svg": {
-          "base64": "PHN2Zz7/Pg=="
-        }
-      },
-      "expected": {
-        "status": "problem",
-        "code": "type_mismatch"
-      }
-    },
-    {
-      "id": "read-unsafe-svg",
-      "operation": "read",
-      "covers": [
-        "read_unsafe_svg"
-      ],
-      "tree": {
-        "README.md": {
-          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/icon.svg\n---\n\n# Example\n"
-        },
-        "_assets/icon.svg": {
-          "text": "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>\n"
-        }
-      },
-      "expected": {
-        "status": "problem",
-        "code": "unsafe_svg"
+        "code": "unsupported_type"
       }
     },
     {
@@ -875,181 +825,6 @@
         "status": "problem",
         "code": "unreadable"
       }
-    },
-    {
-      "id": "svg-accepted",
-      "operation": "svg",
-      "covers": [
-        "svg_accepted"
-      ],
-      "cases": [
-        {
-          "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"#e8c35a\"/></svg>\n",
-          "expected": "ok"
-        },
-        {
-          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- a mark -->\n<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 8 8\"><defs><radialGradient id=\"g\"><stop offset=\"0\" stop-color=\"#fff\"/></radialGradient></defs><circle r=\"4\" cx=\"4\" cy=\"4\" fill=\"url(#g)\"/><use xlink:href=\"#g\"/><use href=\"#g\"/></svg>",
-          "expected": "ok"
-        },
-        {
-          "text": "\ufeff<svg viewBox=\"0 0 1 1\"><style>.a{fill:url(\"#g\")}</style><rect class=\"a\" width=\"1\" height=\"1\"/></svg>",
-          "expected": "ok"
-        },
-        {
-          "text": "<svg><text x=\"0\" y=\"10\">Reason one</text></svg>",
-          "expected": "ok"
-        }
-      ]
-    },
-    {
-      "id": "svg-not-svg",
-      "operation": "svg",
-      "covers": [
-        "svg_not_svg"
-      ],
-      "cases": [
-        {
-          "text": "",
-          "expected": "not_svg"
-        },
-        {
-          "text": "<html></html>",
-          "expected": "not_svg"
-        },
-        {
-          "text": "hello <svg></svg>",
-          "expected": "not_svg"
-        },
-        {
-          "text": "<SVG></SVG>",
-          "expected": "not_svg"
-        },
-        {
-          "text": "<svgx></svgx>",
-          "expected": "not_svg"
-        }
-      ]
-    },
-    {
-      "id": "svg-refused",
-      "operation": "svg",
-      "covers": [
-        "svg_refused"
-      ],
-      "cases": [
-        {
-          "text": "<!DOCTYPE svg [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><svg>&x;</svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><!ENTITY x \"y\"></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><script>alert(1)</script></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><svg:script>alert(1)</svg:script></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><SCRIPT>alert(1)</SCRIPT></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><foreignObject><div>x</div></foreignObject></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><iframe src=\"#x\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><embed/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><object/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><handler>x</handler></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><listener event=\"click\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg onload=\"alert(1)\"></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><rect ONCLICK=\"alert(1)\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><rect\nonmouseover=\"x\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><rect xlink:onclick=\"x\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><image href=\"https://example.com/track.png\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><image xlink:href=\"data:image/png;base64,iVBORw0KGgo=\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><use href=\"other.svg#a\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><use href='//cdn.example.com/a.svg#a'/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><use href=other.svg#a /></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><a href=\"javascript:alert(1)\"><text>x</text></a></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><rect fill=\"url(https://example.com/a.svg#g)\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><rect style=\"fill:url('other.svg#g')\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><style>@import url(#x);</style></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><style>.a{fill:u\\72l(https://example.com/x)}</style></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><a><animate attributeName=\"href\" to=\"#x\"/></a></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><set attributeName=\"xlink:href\" to=\"#x\"/></svg>",
-          "expected": "unsafe"
-        },
-        {
-          "text": "<svg><text>javascript:void(0)</text></svg>",
-          "expected": "unsafe"
-        }
-      ]
     },
     {
       "id": "look-root-image",

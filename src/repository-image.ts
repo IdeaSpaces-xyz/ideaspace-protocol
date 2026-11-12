@@ -117,15 +117,13 @@ export function problemMessage(code: RepositoryImageProblemCode, declared?: stri
     case "not_in_assets":
       return `${named} isn't in an _assets/ folder; move the file into _assets/ and point at it there.`;
     case "unsupported_type":
-      return `${named} isn't a PNG, JPEG, WebP or SVG file; use one of those (.png, .jpg, .jpeg, .webp, .svg).`;
+      return `${named} isn't a PNG, JPEG or WebP file (SVG isn't accepted yet); use one of those (.png, .jpg, .jpeg, .webp).`;
     case "missing":
       return `${named} names a file that isn't there; add it, or fix the path.`;
     case "too_large":
       return `${named} is larger than ${KIB} KiB; save a smaller one (512 pixels across is plenty).`;
     case "type_mismatch":
       return `${named} doesn't contain what its extension says; save it again as that type, or rename it.`;
-    case "unsafe_svg":
-      return `${named} is an SVG with a script, an event handler or a link outside itself; remove them, or use a PNG.`;
     case "unreadable":
       return declared !== undefined
         ? `${named} couldn't be read; check the file's permissions.`

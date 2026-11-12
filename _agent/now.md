@@ -8,8 +8,9 @@ summary: "v0.32.0, not released: a repository's identity image (README.md image:
 
 A repository MAY name one picture of itself (a repo's icon, an agent's avatar, a person's portrait) with
 `image: _assets/<file>` in its root `README.md` front matter, and nowhere else. It resolves by the
-`_assets/` rules from `README.md`; PNG, JPEG, WebP or SVG; at most 256 KiB; inside the root after
-symlinks; bytes match the extension; an SVG passes a lexical rule and is drawn only as an image.
+`_assets/` rules from `README.md`; PNG, JPEG or WebP; at most 256 KiB; inside the root after
+symlinks; bytes match the extension. SVG is `unsupported_type` in this version; a rule for it is a
+later change, with Security's items as its vectors.
 Every failed check, an I/O error included (`unreadable`), is a coded, reported result, never fatal;
 readers show their default. Remote
 pictures are never fetched. `resolveRepositoryImageDeclaration` and `checkRepositoryImageBytes` are

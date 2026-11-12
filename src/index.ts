@@ -255,7 +255,6 @@ export {
   REPOSITORY_IMAGE_SOURCE,
   REPOSITORY_IMAGE_TYPES,
   checkRepositoryImageBytes,
-  checkSvgImageText,
   resolveAssetReference,
   resolveRepositoryImageDeclaration,
 } from "./assets.js";
@@ -267,7 +266,7 @@ export type {
   RepositoryImageProblemCode,
 } from "./assets.js";
 
-// A Space's identity image: README.md's `image:` field, checked on disk.
+// A repository's identity image: README.md's `image:` field, checked on disk.
 // A problem is a result, never fatal.
 export { readRepositoryImage } from "./repository-image.js";
 export type { RepositoryImage, RepositoryImageRead } from "./repository-image.js";

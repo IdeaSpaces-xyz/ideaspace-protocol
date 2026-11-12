@@ -107,15 +107,17 @@ export const REPOSITORY_IMAGE_SOURCE = "README.md";
 /** The largest identity image a reader accepts: 256 KiB. */
 export const REPOSITORY_IMAGE_MAX_BYTES = 262_144;
 
-export type RepositoryImageMediaType = "image/png" | "image/jpeg" | "image/webp" | "image/svg+xml";
+export type RepositoryImageMediaType = "image/png" | "image/jpeg" | "image/webp";
 
-/** Lower-case file extension → media type. Nothing else is an identity image. */
+/**
+ * Lower-case file extension → media type. Nothing else is an identity image.
+ * SVG is not one yet: an `.svg` is `unsupported_type` (see schema/assets.md).
+ */
 export const REPOSITORY_IMAGE_TYPES: Readonly<Record<string, RepositoryImageMediaType>> = Object.freeze({
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   webp: "image/webp",
-  svg: "image/svg+xml",
 });
 
 /** Why a declared image is not shown. Each is reported; none fails the repository. */
@@ -128,7 +130,6 @@ export type RepositoryImageProblemCode =
   | "missing"
   | "too_large"
   | "type_mismatch"
-  | "unsafe_svg"
   | "unreadable";
 
 export type RepositoryImageDeclaration =
@@ -163,12 +164,11 @@ export function resolveRepositoryImageDeclaration(value: unknown): RepositoryIma
 
 export type RepositoryImageBytesCheck =
   | { ok: true }
-  | { ok: false; code: "too_large" | "type_mismatch" | "unsafe_svg" };
+  | { ok: false; code: "too_large" | "type_mismatch" };
 
 /**
  * Check an identity image's bytes against its declared type: at most
- * `REPOSITORY_IMAGE_MAX_BYTES`, the type's signature for PNG, JPEG and WebP,
- * and for SVG the rule in `checkSvgImageText`.
+ * `REPOSITORY_IMAGE_MAX_BYTES` and the type's signature for PNG, JPEG and WebP.
  */
 export function checkRepositoryImageBytes(
   mediaType: RepositoryImageMediaType,
@@ -184,49 +184,7 @@ export function checkRepositoryImageBytes(
       return startsWith(bytes, [0x52, 0x49, 0x46, 0x46]) && startsWith(bytes.subarray(8), [0x57, 0x45, 0x42, 0x50])
         ? { ok: true }
         : { ok: false, code: "type_mismatch" };
-    case "image/svg+xml": {
-      let text: string;
-      try {
-        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-      } catch {
-        return { ok: false, code: "type_mismatch" };
-      }
-      const svg = checkSvgImageText(text);
-      return svg === "ok" ? { ok: true } : { ok: false, code: svg === "not_svg" ? "type_mismatch" : "unsafe_svg" };
-    }
   }
-}
-
-/**
- * The SVG rule, lexical and refusing what it does not recognise. It is a
- * filter in front of image-only rendering, not a sanitizer: an accepted SVG is
- * still drawn only as an image, never inlined into a page's DOM.
- *
- * `not_svg` when the first element is not `<svg>`; `unsafe` when the text has
- * a DOCTYPE or entity declaration, a script-capable element, an event
- * attribute, a reference that is not a `#fragment`, an `@import`, a
- * `javascript:` string, an animated `href`, or any backslash (a CSS escape
- * could spell the rest).
- */
-export function checkSvgImageText(text: string): "ok" | "not_svg" | "unsafe" {
-  const source = text.startsWith("\uFEFF") ? text.slice(1) : text;
-  // A declaration is refused before anything else: it isn't an element, so it can't decide the type.
-  if (/<!(?:DOCTYPE|ENTITY)/i.test(source)) return "unsafe";
-  const prolog = source.replace(/^(?:\s+|<\?xml[^>]*\?>|<!--[\s\S]*?-->)*/, "");
-  if (!/^<svg[\s>/]/.test(prolog)) return "not_svg";
-  if (/<\s*\/?\s*(?:[\w.-]+:)?(?:script|foreignObject|iframe|embed|object|handler|listener)\b/i.test(source)) return "unsafe";
-  if (/[\s"'/](?:[\w.-]+:)?on[\w.-]*\s*=/i.test(source)) return "unsafe";
-  if (/\\/.test(source) || /@import/i.test(source) || /javascript:/i.test(source)) return "unsafe";
-  if (/attributeName\s*=\s*["']?\s*(?:[\w.-]+:)?href\b/i.test(source)) return "unsafe";
-  for (const match of source.matchAll(/[\s"'/](?:[\w.-]+:)?(?:href|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]*))/gi)) {
-    const value = (match[1] ?? match[2] ?? match[3] ?? "").trim();
-    if (!value.startsWith("#")) return "unsafe";
-  }
-  for (const match of source.matchAll(/url\s*\(\s*(["']?)([^)]*)\)/gi)) {
-    const value = match[2].replace(/["']\s*$/, "").trim();
-    if (!value.startsWith("#")) return "unsafe";
-  }
-  return "ok";
 }
 
 function startsWith(bytes: Uint8Array, prefix: readonly number[]): boolean {
