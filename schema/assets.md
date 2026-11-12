@@ -79,6 +79,70 @@ named `_assets` therefore remains `other`; `_assets/x` is `asset`.
 The operation never reads the filesystem, checks existence, follows symlinks, searches ancestors,
 falls back to another directory, or mutates state.
 
+## Identity image
+
+A repository MAY name one picture of itself, its identity image: a knowledge or code repo's icon, an
+agent repo's avatar, a person repo's portrait. It is the single optional field `image` in the front
+matter of the repository root's `README.md`, and nowhere else:
+
+```yaml
+---
+name: Field notes
+summary: What we learned on the survey.
+image: _assets/icon.png
+---
+```
+
+A `README.md` below the root, a Thread README, an Agreement or a Foundation carrying `image` names
+nothing; readers ignore it there. Without the field a reader shows its own default (an icon for the
+repo's kind, an avatar glyph, initials). Absence is valid and is not drift.
+
+### Resolution and checks
+
+A reader resolves the value with `resolve_asset_reference`, `source_path` `README.md`, and then
+checks the file. It stops at the first check that fails and reports that code:
+
+| Order | Check | Code when it fails |
+|---|---|---|
+| 1 | The value is a string. An absent or null value is no image, not a problem. | `not_a_string` |
+| 2 | The value is a portable relative reference path: no URL or scheme, no leading `/`, no backslash, no empty segment. A remote picture is never fetched. | `invalid_reference` |
+| 3 | Resolution does not escape above the repository root (`outside`). | `outside_root` |
+| 4 | Resolution returns `asset`: the target is in an `_assets/` folder. | `not_in_assets` |
+| 5 | The file name's extension, compared case-insensitively, is `png`, `jpg`, `jpeg` or `webp`. Anything else, `svg` included, is unsupported (see [SVG](#svg)). | `unsupported_type` |
+| 6 | The target exists, after symlinks; a symlink loop is `missing` too. | `missing` |
+| 7 | The target's real path, after every symlink, is inside the repository root's real path. | `outside_root` |
+| 8 | The target is a regular file. | `missing` |
+| 9 | The file is at most **262,144 bytes (256 KiB)**. A reader checks the size before reading the bytes. | `too_large` |
+| 10 | The bytes are the extension's type: PNG starts `89 50 4E 47 0D 0A 1A 0A`; JPEG `FF D8 FF`; WebP `RIFF`, any four bytes, then `WEBP`. | `type_mismatch` |
+
+An I/O error at any step (a `README.md` or file the reader may not read, a root that went away) is
+the code `unreadable`, never an exception that fails the reader or the repository.
+
+Checks 1–5 are lexical and need no filesystem. A reader that cannot perform checks 6–10, such as a
+renderer that only has the path, reports nothing it has not checked and MUST NOT show the image
+until they pass.
+
+A result is either the image, as `{ path, media_type }` with `path` the normalized
+repository-relative target and `media_type` one of `image/png`, `image/jpeg` or `image/webp`, or a problem, as one of the codes above or `unreadable`, with a sentence for a
+person. **A problem is never fatal:** the repository, the README and every other field stay valid, the reader shows its
+default, and it MAY show the problem's sentence to the person who can fix it. Nothing is fetched,
+written, or followed outside the root.
+
+### SVG
+
+SVG is not an identity image type in this version. An `image` naming an `.svg` file is
+`unsupported_type`, and the reader shows its default. A later version may accept SVG under a rule of
+its own, drawn only as an image; until then a reader MUST NOT show an SVG as an identity image.
+
+### Where readers use it
+
+A reader that lists or looks at a repository root (a content look at `.`, a list of a Vault's repos or
+agents, a Map's roots) MAY carry the result beside the root's name and summary. A content look at
+the repository root carries it from the `summary` rung upward (see [`content-look.md`](content-look.md)).
+A changed file or field is a changed image: a reader that keeps a copy keys it on the file's
+revision, not the path alone. An identity image is presentation. It proves nothing about who
+controls the repo, grants nothing, and is never a reason to publish an otherwise private file.
+
 ## Conformance
 
 An assets-aware implementation executes every required coverage vector in
@@ -87,6 +151,9 @@ also recognize `_assets/` as known supporting material: they skip it without an 
 warning and never validate Markdown payload beneath it as knowledge. Unknown extensions remain
 quietly opaque according to the base protocol: their name alone causes no error or warning.
 
-Binary I/O, upload UX, filename collision policy, MIME/type and size limits, rendering, CSP/filesystem
-capabilities, serving, access control, object storage, rename rewriting, and cross-Space references
-are outside this contract.
+An implementation that reads identity images additionally executes every required coverage vector
+in [`../conformance/assets/repository-image.json`](../conformance/assets/repository-image.json).
+
+Apart from the identity image's own checks above, binary I/O, upload UX, filename collision policy,
+MIME/type and size limits, rendering, CSP/filesystem capabilities, serving, access control, object
+storage, rename rewriting, and cross-Space references are outside this contract.

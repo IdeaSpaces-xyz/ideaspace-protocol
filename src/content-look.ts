@@ -22,6 +22,8 @@ import {
   type MapDisclosure,
 } from "./maps.js";
 import { classifyRepositoryPath } from "./repository-path.js";
+import { readRepositoryImage } from "./repository-image.js";
+import type { RepositoryImageMediaType, RepositoryImageProblemCode } from "./assets.js";
 import type { ContentRepresentation, ContractSource } from "./agreement.js";
 
 export interface AssembleContentLookOpts {
@@ -108,9 +110,19 @@ export interface ContentLookTarget {
   warnings?: Array<ThreadPostFieldWarning & { post: string }>;
   /** A Thread post target's id, kind and author, at every rung. */
   post?: ContentLookPostHandle;
+  /**
+   * The repository root's identity image (README.md `image:`), from summary upward.
+   * Absent when none is declared; a declared image that can't be shown is a
+   * `problem`, never a failed look.
+   */
+  image?: ContentLookImage;
   /** The target in Map member vocabulary, without fabricating a root ordinal. */
   member: ContentLookProjectedMember;
 }
+
+export type ContentLookImage =
+  | { status: "ok"; path: string; mediaType: RepositoryImageMediaType }
+  | { status: "problem"; code: RepositoryImageProblemCode; declared?: string; message: string };
 
 export interface ContentLookManifest {
   status: "ok";
@@ -506,6 +518,15 @@ async function readDirectoryTarget(
   const summary = readme.content === null ? null : summarizeMarkdown(readme.content);
   const target = baseTarget(path, position, "directory", depth, name, summary);
 
+  // Only the root README names the repository's image.
+  if (position === "." && depth !== "name") {
+    const image = await readRepositoryImage(path);
+    if (image.status === "ok") target.image = { status: "ok", path: image.image.path, mediaType: image.image.mediaType };
+    else if (image.status === "problem") {
+      target.image = { status: "problem", code: image.code, ...(image.declared !== undefined ? { declared: image.declared } : {}), message: image.message };
+    }
+  }
+
   if (depth === "surface" || depth === "full") {
     target.surface = readme.content === null ? null : stripFrontmatter(readme.content);
   }
@@ -569,6 +590,7 @@ function finishTarget(target: ContentLookTarget): ContentLookTarget {
     ...(target.page !== undefined ? { page: target.page } : {}),
     ...(target.warnings !== undefined ? { warnings: target.warnings } : {}),
     ...(target.post !== undefined ? { post: target.post } : {}),
+    ...(target.image !== undefined ? { image: target.image } : {}),
   };
   target.revision = contentRevision(JSON.stringify(represented));
   return target;
@@ -612,6 +634,8 @@ function renderTarget(target: ContentLookTarget): string {
   ];
   if (target.post) lines.push(`  post: ${renderPostHandle(target.post)}`);
   if ("summary" in target) lines.push(`  summary: ${target.summary ?? "(none)"}`);
+  if (target.image?.status === "ok") lines.push(`  image: ${target.image.path} (${target.image.mediaType})`);
+  else if (target.image) lines.push(`  image: not shown (${target.image.code}): ${target.image.message}`);
   if (target.warnings?.length) {
     lines.push("", "Warnings:");
     for (const warning of target.warnings) lines.push(`  ${warning.post}: ${warning.field}: ${warning.warning}`);

@@ -1,0 +1,906 @@
+{
+  "format": "ideaspaces-repository-image/v1",
+  "field": "image",
+  "source": "README.md",
+  "max_bytes": 262144,
+  "media_types": {
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "webp": "image/webp"
+  },
+  "notes": "Tree entries: {text} is UTF-8, {base64} is bytes, {fill:{prefix_base64,size}} is the prefix padded with zero bytes to size, {symlink} is a relative symlink; an entry's optional `mode` (octal) is applied after writing. A vector marked `unprivileged` needs a reader that permissions apply to: a runner as root skips it. `tree` is the repository root; `beside` is the folder that holds the repository root, for targets outside it. A problem's `message` is implementation text and is not compared.",
+  "required_coverage": [
+    "declaration_valid",
+    "declaration_absent",
+    "declaration_not_a_string",
+    "declaration_invalid_reference",
+    "declaration_outside_root",
+    "declaration_not_in_assets",
+    "declaration_unsupported_type",
+    "read_valid",
+    "read_no_readme",
+    "read_no_field",
+    "read_root_readme_only",
+    "read_missing",
+    "read_symlink_loop",
+    "read_not_a_file",
+    "read_symlink_outside_root",
+    "read_symlink_inside_root",
+    "read_too_large",
+    "read_size_boundary",
+    "read_type_mismatch",
+    "read_svg_unsupported",
+    "read_unreadable",
+    "look_root_image",
+    "look_problem_not_fatal"
+  ],
+  "vectors": [
+    {
+      "id": "declaration-valid",
+      "operation": "declaration",
+      "covers": [
+        "declaration_valid"
+      ],
+      "cases": [
+        {
+          "value": "_assets/avatar.png",
+          "expected": {
+            "status": "declared",
+            "path": "_assets/avatar.png",
+            "media_type": "image/png"
+          }
+        },
+        {
+          "value": "./_assets/Icon.PNG",
+          "expected": {
+            "status": "declared",
+            "path": "_assets/Icon.PNG",
+            "media_type": "image/png"
+          }
+        },
+        {
+          "value": "_assets/people/portrait.jpeg",
+          "expected": {
+            "status": "declared",
+            "path": "_assets/people/portrait.jpeg",
+            "media_type": "image/jpeg"
+          }
+        },
+        {
+          "value": "_assets/a.jpg",
+          "expected": {
+            "status": "declared",
+            "path": "_assets/a.jpg",
+            "media_type": "image/jpeg"
+          }
+        },
+        {
+          "value": "_assets/a.webp",
+          "expected": {
+            "status": "declared",
+            "path": "_assets/a.webp",
+            "media_type": "image/webp"
+          }
+        },
+        {
+          "value": "notes/_assets/a.png",
+          "expected": {
+            "status": "declared",
+            "path": "notes/_assets/a.png",
+            "media_type": "image/png"
+          }
+        }
+      ]
+    },
+    {
+      "id": "declaration-absent",
+      "operation": "declaration",
+      "covers": [
+        "declaration_absent"
+      ],
+      "cases": [
+        {
+          "value": null,
+          "expected": {
+            "status": "none"
+          }
+        },
+        {
+          "absent": true,
+          "expected": {
+            "status": "none"
+          }
+        }
+      ]
+    },
+    {
+      "id": "declaration-not-a-string",
+      "operation": "declaration",
+      "covers": [
+        "declaration_not_a_string"
+      ],
+      "cases": [
+        {
+          "value": 42,
+          "expected": {
+            "status": "invalid",
+            "code": "not_a_string"
+          }
+        },
+        {
+          "value": [
+            "_assets/a.png"
+          ],
+          "expected": {
+            "status": "invalid",
+            "code": "not_a_string"
+          }
+        },
+        {
+          "value": {
+            "path": "_assets/a.png"
+          },
+          "expected": {
+            "status": "invalid",
+            "code": "not_a_string"
+          }
+        },
+        {
+          "value": true,
+          "expected": {
+            "status": "invalid",
+            "code": "not_a_string"
+          }
+        }
+      ]
+    },
+    {
+      "id": "declaration-invalid-reference",
+      "operation": "declaration",
+      "covers": [
+        "declaration_invalid_reference"
+      ],
+      "cases": [
+        {
+          "value": "https://example.com/avatar.png",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "http://example.com/a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "data:image/png;base64,iVBORw0KGgo=",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "file:///etc/a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "//cdn.example.com/a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "/_assets/a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "_assets\\a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "_assets//a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "_assets/",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        },
+        {
+          "value": "C:/x/_assets/a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "invalid_reference"
+          }
+        }
+      ]
+    },
+    {
+      "id": "declaration-outside-root",
+      "operation": "declaration",
+      "covers": [
+        "declaration_outside_root"
+      ],
+      "cases": [
+        {
+          "value": "../_assets/a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "outside_root"
+          }
+        },
+        {
+          "value": "_assets/../../a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "outside_root"
+          }
+        },
+        {
+          "value": "../../other/_assets/a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "outside_root"
+          }
+        }
+      ]
+    },
+    {
+      "id": "declaration-not-in-assets",
+      "operation": "declaration",
+      "covers": [
+        "declaration_not_in_assets"
+      ],
+      "cases": [
+        {
+          "value": "avatar.png",
+          "expected": {
+            "status": "invalid",
+            "code": "not_in_assets"
+          }
+        },
+        {
+          "value": "images/avatar.png",
+          "expected": {
+            "status": "invalid",
+            "code": "not_in_assets"
+          }
+        },
+        {
+          "value": "_agent/avatar.png",
+          "expected": {
+            "status": "invalid",
+            "code": "not_in_assets"
+          }
+        },
+        {
+          "value": "_Assets/avatar.png",
+          "expected": {
+            "status": "invalid",
+            "code": "not_in_assets"
+          }
+        },
+        {
+          "value": "assets/avatar.png",
+          "expected": {
+            "status": "invalid",
+            "code": "not_in_assets"
+          }
+        },
+        {
+          "value": "_assets/../avatar.png",
+          "expected": {
+            "status": "invalid",
+            "code": "not_in_assets"
+          }
+        },
+        {
+          "value": "_threads/_assets/a.png",
+          "expected": {
+            "status": "invalid",
+            "code": "not_in_assets"
+          }
+        }
+      ]
+    },
+    {
+      "id": "declaration-unsupported-type",
+      "operation": "declaration",
+      "covers": [
+        "declaration_unsupported_type"
+      ],
+      "cases": [
+        {
+          "value": "_assets/icon.svg",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "./_assets/icon.SVG",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/a.gif",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/a.avif",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/a.bmp",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/a.ico",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/a.html",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/a.svgz",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/png",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/.png",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/a.png.txt",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        },
+        {
+          "value": "_assets/constructor",
+          "expected": {
+            "status": "invalid",
+            "code": "unsupported_type"
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-valid-each-type",
+      "operation": "read",
+      "covers": [
+        "read_valid"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      },
+      "expected": {
+        "status": "ok",
+        "path": "_assets/avatar.png",
+        "media_type": "image/png"
+      }
+    },
+    {
+      "id": "read-valid-jpeg",
+      "operation": "read",
+      "covers": [
+        "read_valid"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/portrait.jpg\n---\n\n# Example\n"
+        },
+        "_assets/portrait.jpg": {
+          "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AL+AD//Z"
+        }
+      },
+      "expected": {
+        "status": "ok",
+        "path": "_assets/portrait.jpg",
+        "media_type": "image/jpeg"
+      }
+    },
+    {
+      "id": "read-valid-webp",
+      "operation": "read",
+      "covers": [
+        "read_valid"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/icon.webp\n---\n\n# Example\n"
+        },
+        "_assets/icon.webp": {
+          "base64": "UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA=="
+        }
+      },
+      "expected": {
+        "status": "ok",
+        "path": "_assets/icon.webp",
+        "media_type": "image/webp"
+      }
+    },
+    {
+      "id": "read-no-readme",
+      "operation": "read",
+      "covers": [
+        "read_no_readme"
+      ],
+      "tree": {
+        "_assets/avatar.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      },
+      "expected": {
+        "status": "none"
+      }
+    },
+    {
+      "id": "read-no-field",
+      "operation": "read",
+      "covers": [
+        "read_no_field"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      },
+      "expected": {
+        "status": "none"
+      }
+    },
+    {
+      "id": "read-only-root-readme-names-it",
+      "operation": "read",
+      "covers": [
+        "read_root_readme_only"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\n---\n\n# Example\n"
+        },
+        "notes/README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/a.png\n---\n\n# Example\n"
+        },
+        "notes/_assets/a.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        },
+        "_agent/agreement.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: ../_assets/a.png\n---\n\n# Example\n"
+        }
+      },
+      "expected": {
+        "status": "none"
+      }
+    },
+    {
+      "id": "read-missing",
+      "operation": "read",
+      "covers": [
+        "read_missing"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "missing"
+      }
+    },
+    {
+      "id": "read-symlink-loop",
+      "operation": "read",
+      "covers": [
+        "read_symlink_loop"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "symlink": "avatar.png"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "missing"
+      }
+    },
+    {
+      "id": "read-not-a-file",
+      "operation": "read",
+      "covers": [
+        "read_not_a_file"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png/inner.txt": {
+          "text": "a folder, not a file\n"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "missing"
+      }
+    },
+    {
+      "id": "read-symlink-outside-root",
+      "operation": "read",
+      "covers": [
+        "read_symlink_outside_root"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "symlink": "../../outside.png"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "outside_root"
+      },
+      "beside": {
+        "outside.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      }
+    },
+    {
+      "id": "read-symlinked-folder-outside-root",
+      "operation": "read",
+      "covers": [
+        "read_symlink_outside_root"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/shared/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/shared": {
+          "symlink": "../../shared"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "outside_root"
+      },
+      "beside": {
+        "shared/avatar.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      }
+    },
+    {
+      "id": "read-symlink-inside-root",
+      "operation": "read",
+      "covers": [
+        "read_symlink_inside_root"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "symlink": "current.png"
+        },
+        "_assets/current.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      },
+      "expected": {
+        "status": "ok",
+        "path": "_assets/avatar.png",
+        "media_type": "image/png"
+      }
+    },
+    {
+      "id": "read-too-large",
+      "operation": "read",
+      "covers": [
+        "read_too_large"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "fill": {
+            "prefix_base64": "iVBORw0KGgo=",
+            "size": 262145
+          }
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "too_large"
+      }
+    },
+    {
+      "id": "read-size-boundary",
+      "operation": "read",
+      "covers": [
+        "read_size_boundary"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "fill": {
+            "prefix_base64": "iVBORw0KGgo=",
+            "size": 262144
+          }
+        }
+      },
+      "expected": {
+        "status": "ok",
+        "path": "_assets/avatar.png",
+        "media_type": "image/png"
+      }
+    },
+    {
+      "id": "read-type-mismatch",
+      "operation": "read",
+      "covers": [
+        "read_type_mismatch"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "base64": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AL+AD//Z"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "type_mismatch"
+      }
+    },
+    {
+      "id": "read-svg-unsupported",
+      "operation": "read",
+      "covers": [
+        "read_svg_unsupported"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/mark.svg\n---\n\n# Example\n"
+        },
+        "_assets/mark.svg": {
+          "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"#e8c35a\"/></svg>\n"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "unsupported_type"
+      }
+    },
+    {
+      "id": "read-declaration-problem-reported",
+      "operation": "read",
+      "covers": [
+        "declaration_outside_root"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: ../avatar.png\n---\n\n# Example\n"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "outside_root"
+      },
+      "beside": {
+        "avatar.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      }
+    },
+    {
+      "id": "read-not-a-string-reported",
+      "operation": "read",
+      "covers": [
+        "declaration_not_a_string"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nimage:\n  - _assets/a.png\n---\n"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "not_a_string"
+      }
+    },
+    {
+      "id": "read-readme-unreadable",
+      "operation": "read",
+      "covers": [
+        "read_unreadable"
+      ],
+      "unprivileged": true,
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n",
+          "mode": "000"
+        },
+        "_assets/avatar.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "unreadable"
+      }
+    },
+    {
+      "id": "read-image-unreadable",
+      "operation": "read",
+      "covers": [
+        "read_unreadable"
+      ],
+      "unprivileged": true,
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+          "mode": "000"
+        }
+      },
+      "expected": {
+        "status": "problem",
+        "code": "unreadable"
+      }
+    },
+    {
+      "id": "look-root-image",
+      "operation": "look",
+      "covers": [
+        "look_root_image"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: _assets/avatar.png\n---\n\n# Example\n"
+        },
+        "_assets/avatar.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        },
+        "notes/README.md": {
+          "text": "---\nname: Notes\nimage: _assets/a.png\n---\n"
+        },
+        "notes/_assets/a.png": {
+          "base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+        }
+      },
+      "looks": [
+        {
+          "position": ".",
+          "depth": "name",
+          "expected_image": null
+        },
+        {
+          "position": ".",
+          "depth": "summary",
+          "expected_image": {
+            "status": "ok",
+            "path": "_assets/avatar.png",
+            "media_type": "image/png"
+          },
+          "expected_render_line": "  image: _assets/avatar.png (image/png)"
+        },
+        {
+          "position": ".",
+          "depth": "full",
+          "expected_image": {
+            "status": "ok",
+            "path": "_assets/avatar.png",
+            "media_type": "image/png"
+          }
+        },
+        {
+          "position": "notes",
+          "depth": "summary",
+          "expected_image": null
+        }
+      ]
+    },
+    {
+      "id": "look-problem-not-fatal",
+      "operation": "look",
+      "covers": [
+        "look_problem_not_fatal"
+      ],
+      "tree": {
+        "README.md": {
+          "text": "---\nname: Example\nsummary: An example repo.\nimage: https://example.com/a.png\n---\n\n# Example\n"
+        }
+      },
+      "looks": [
+        {
+          "position": ".",
+          "depth": "summary",
+          "expected_image": {
+            "status": "problem",
+            "code": "invalid_reference",
+            "declared": "https://example.com/a.png"
+          },
+          "expected_render_prefix": "  image: not shown (invalid_reference): "
+        }
+      ]
+    }
+  ]
+}
