@@ -153,8 +153,10 @@ depth uses the five Map rungs: `name` returns the Layer-1 or filename label (a T
 back to its id); `summary` returns Layer 1 or the first meaningful body line; `surface` returns the
 Markdown or README body; `children` returns Markdown ATX headings or direct directory child handles;
 and `full` is equivalent to surface for a Markdown file or returns surface plus direct children for
-a directory. Thread folder children are direct posts in deterministic filename order with names and
-available summaries, **not** post bodies or an unbounded timeline. Thread post looks surface warnings naming malformed fields; a folder's `children`/`full` look reports warnings found while enumerating direct posts. Warnings belong to the returned representation and its revision. Surface and children are sibling
+a directory. Thread folder children are direct posts in deterministic filename order with names,
+available summaries and each post's own `post: { id, kind, author? }`, **not** post bodies or an
+unbounded timeline. A Thread post target carries the same `post` at every rung, so a reader can cite
+the id a reply or a correction names, whatever the filename. Thread post looks surface warnings naming malformed fields; a folder's `children`/`full` look reports warnings found while enumerating direct posts. Warnings belong to the returned representation and its revision. Surface and children are sibling
 facets: requesting children does not load the surface. `README.md` is a directory's surface, not
 one of its children. Directory `children` and `full` requests default to 50 handles (or an explicit non-negative limit),
 report the total eligible direct handles, and return a cursor for the next page when capped. A

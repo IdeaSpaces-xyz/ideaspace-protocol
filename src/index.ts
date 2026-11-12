@@ -62,6 +62,7 @@ export type { ContentState, RenderContentTailOpts } from "./content-state.js";
 export type {
   AssembleContentLookOpts,
   ContentLookDirectoryChild,
+  ContentLookPostHandle,
   ContentLookSectionChild,
   ContentLookChild,
   ContentLookProjectedMember,

@@ -4,7 +4,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
-import { assembleContentLook } from "./content-look.js";
+import { assembleContentLook, renderContentLook } from "./content-look.js";
 
 const vectors = JSON.parse(readFileSync(new URL("../conformance/content-look/paging.json", import.meta.url), "utf8"));
 let root: string;
@@ -16,9 +16,12 @@ beforeAll(async () => {
   const thread = join(root, vectors.fixture.thread);
   await fs.mkdir(thread, { recursive: true });
   for (let i = 0; i < vectors.fixture.post_count; i++) {
-    const id = i === vectors.fixture.fix_index ? vectors.fixture.fix_id : `msg_${String(i).padStart(8, "0")}-fixture`;
+    const fix = i === vectors.fixture.fix_index;
+    const id = fix ? vectors.fixture.fix_id : `msg_${String(i).padStart(8, "0")}-fixture`;
+    // The fixed post declares a kind and an author; the others leave both to their defaults.
+    const declared = fix ? `kind: ${vectors.fixture.fix_kind}\nsupersedes: msg_00000054-fixture\nauthor: ${vectors.fixture.fix_author}\n` : "";
     await fs.writeFile(join(thread, `${String(i).padStart(2, "0")}-post.md`),
-      `---\nid: ${id}\nname: Post ${i}\n---\n${i === vectors.fixture.fix_index ? "Fixed dev run" : `Post ${i}`}\n`);
+      `---\nid: ${id}\n${declared}name: Post ${i}\n---\n${fix ? "Fixed dev run" : `Post ${i}`}\n`);
   }
   const docs = join(root, vectors.fixture.ordinary_directory);
   await fs.mkdir(join(docs, "sub"), { recursive: true });
@@ -53,5 +56,13 @@ describe("language-neutral Content look page vectors", () => {
     if (vector.expected.first) expect(names?.[0]).toBe(vector.expected.first);
     if (vector.expected.last) expect(names?.at(-1)).toBe(vector.expected.last);
     if (vector.expected.contains) expect(names).toContain(vector.expected.contains);
+    // A post's own id, kind and author, on its handle in a children list and on the post itself.
+    for (const [file, post] of Object.entries(vector.expected.post_handles ?? {})) {
+      const child = result.target.children?.find((item) => item.kind !== "section" && item.position.endsWith(`/${file}`));
+      expect(child && child.kind !== "section" ? child.post : undefined).toEqual(post);
+    }
+    if (vector.expected.post) expect(result.target.post).toEqual(vector.expected.post);
+    const rendered = renderContentLook(result);
+    for (const line of vector.expected.render_contains ?? []) expect(rendered.split("\n")).toContain(line);
   });
 });

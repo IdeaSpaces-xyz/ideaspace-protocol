@@ -5,6 +5,8 @@
     "post_count": 58,
     "fix_index": 55,
     "fix_id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be",
+    "fix_kind": "correction",
+    "fix_author": "Integrator",
     "ordinary_directory": "docs",
     "ordinary_note_count": 55
   },
@@ -22,7 +24,9 @@
       "depth": "children",
       "limit": 10,
       "since": "49-post.md",
-      "expected": { "status": "ok", "page": { "total": 58, "shown": 8, "order": "older" }, "first": "50-post.md", "last": "57-post.md", "contains": "55-post.md" }
+      "expected": { "status": "ok", "page": { "total": 58, "shown": 8, "order": "older" }, "first": "50-post.md", "last": "57-post.md", "contains": "55-post.md",
+        "post_handles": { "50-post.md": { "id": "msg_00000050-fixture", "kind": "post" }, "55-post.md": { "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be", "kind": "correction", "author": "Integrator" } },
+        "render_contains": ["  _threads/engine/50-post.md [msg_00000050-fixture · post] — Post 50", "  _threads/engine/55-post.md [msg_75cc2f37-e925-48e0-a801-c0ac7920c8be · correction · Integrator] — Fixed dev run"] }
     },
     {
       "id": "thread-newer-page",
@@ -37,14 +41,17 @@
       "target": "_threads/engine",
       "depth": "full",
       "postId": "msg_75cc2f37",
-      "expected": { "status": "ok", "position": "_threads/engine/55-post.md", "surface_contains": "Fixed dev run" }
+      "expected": { "status": "ok", "position": "_threads/engine/55-post.md", "surface_contains": "Fixed dev run",
+        "post": { "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be", "kind": "correction", "author": "Integrator" },
+        "render_contains": ["  post: msg_75cc2f37-e925-48e0-a801-c0ac7920c8be · correction · Integrator"] }
     },
     {
       "id": "post-by-id-from-root",
       "target": ".",
       "depth": "summary",
       "postId": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be",
-      "expected": { "status": "ok", "position": "_threads/engine/55-post.md" }
+      "expected": { "status": "ok", "position": "_threads/engine/55-post.md",
+        "post": { "id": "msg_75cc2f37-e925-48e0-a801-c0ac7920c8be", "kind": "correction", "author": "Integrator" } }
     },
     {
       "id": "missing-post-id",
