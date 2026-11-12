@@ -248,8 +248,29 @@ export type { Frontmatter, FrontmatterSyntax } from "./frontmatter.js";
 
 // Portable supporting material — one pure lexical operation over an already
 // extracted relative Markdown destination. No filesystem lookup or mutation.
-export { ASSET_DIRECTORY, resolveAssetReference } from "./assets.js";
-export type { AssetReferenceResolution } from "./assets.js";
+export {
+  ASSET_DIRECTORY,
+  REPOSITORY_IMAGE_FIELD,
+  REPOSITORY_IMAGE_MAX_BYTES,
+  REPOSITORY_IMAGE_SOURCE,
+  REPOSITORY_IMAGE_TYPES,
+  checkRepositoryImageBytes,
+  checkSvgImageText,
+  resolveAssetReference,
+  resolveRepositoryImageDeclaration,
+} from "./assets.js";
+export type {
+  AssetReferenceResolution,
+  RepositoryImageBytesCheck,
+  RepositoryImageDeclaration,
+  RepositoryImageMediaType,
+  RepositoryImageProblemCode,
+} from "./assets.js";
+
+// A Space's identity image: README.md's `image:` field, checked on disk.
+// A problem is a result, never fatal.
+export { readRepositoryImage } from "./repository-image.js";
+export type { RepositoryImage, RepositoryImageRead } from "./repository-image.js";
 
 // Portable collaboration threads — standard named extension `_threads/`:
 // immutable dated posts, DAG timeline reconstruction, curated README lens,

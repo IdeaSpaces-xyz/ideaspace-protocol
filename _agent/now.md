@@ -1,8 +1,20 @@
 ---
 name: Now
-summary: "v0.32.0, not released: the current Thread Map, specified with a pure reader and vectors. Before it, access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
+summary: "v0.32.0, not released: a Space's identity image (README.md image:, under _assets/ rules) and the current Thread Map, each specified with a pure reader and vectors. Before it, access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
 ---
 # Now
+
+## A Space's identity image, v0.32.0 (not released)
+
+A Space MAY name one picture of itself (a repo's icon, an agent's avatar, a person's portrait) with
+`image: _assets/<file>` in its root `README.md` front matter, and nowhere else. It resolves by the
+`_assets/` rules from `README.md`; PNG, JPEG, WebP or SVG; at most 256 KiB; inside the root after
+symlinks; bytes match the extension; an SVG passes a lexical rule and is drawn only as an image.
+Every failed check is a coded, reported result, never fatal; readers show their default. Remote
+pictures are never fetched. `resolveRepositoryImageDeclaration` and `checkRepositoryImageBytes` are
+pure and browser-safe (`./assets`); `readRepositoryImage` reads the disk; a content look at the Space
+root carries `image` from `summary` up. See [`schema/assets.md`](../schema/assets.md#identity-image)
+and `conformance/assets/repository-image.json`. No tag or release is part of this change.
 
 ## The current Thread Map, v0.32.0 (not released)
 
