@@ -204,9 +204,9 @@ export type AccessRelation = Capability | "owner";
 export interface AccessObject extends AccessTarget {
   /** Complete root-first content ancestry, derived by the host. Empty on non-content roots. */
   ancestors: AccessTarget[];
-  /** Repo → Vault only. Ownership defaults to the Vault's fresh owner unless transferred. */
+  /** Repo → Space only (`vault` is the compatibility name). Ownership defaults to the Space's fresh owner unless transferred. */
   vault?: string;
-  /** Vault metadata, never a content inheritance edge. */
+  /** Space metadata: its Map (`homeSpace` is the compatibility name), never a content inheritance edge. */
   homeSpace?: string;
   company?: string;
   /** Positive admission facts for hosted Threads. A pending knock supplies no admission. */
@@ -330,7 +330,7 @@ function relationPaths(facts: AccessFacts, object: AccessObject, relation: Acces
 function evaluatedPaths(facts: AccessFacts, actor: AccessActor, target: AccessTarget, relation: AccessRelation, now: number): AccessPath[] {
   if (!validActor(actor, now) || ![...CAPABILITIES, "owner"].includes(relation)) return [];
   let object = accessObject(facts, target);
-  // Access to a Vault is access to its Home Space, not an inherited content grant.
+  // Being in a Space (`vault`) is access to its Map (`space`), not an inherited content grant.
   if (object?.kind === "vault" && relation !== "owner") object = object.homeSpace
     ? accessObject(facts, { kind: "space", id: object.homeSpace }) : undefined;
   if (!object) return [];

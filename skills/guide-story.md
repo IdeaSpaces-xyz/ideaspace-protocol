@@ -18,21 +18,23 @@ understanding doesn't.
 ## The idea
 
 A **Repo** is a folder on your computer that holds your notes and instructions for working with
-them. A **Vault** is the larger place that coordinates your work. A **Space** is a lens on that
-work: a view and a boundary, made of references to the things you want to work with together.
-It holds no content of its own.
+them. A **Space** is the shared place where you, or your company, keep your Repos and the Threads
+of work on them: your own Space, or a Company Space. A **Map** is a view across that work: pointers
+to the things you want to look at together, each with how deep. It holds no content of its own.
 
 Think of a well-run workshop. There's the work itself — the projects on the bench. And there's a
 whiteboard by the door: what we're building, why, what's in progress right now, what's next.
 Anyone who walks in reads the whiteboard and can be useful in five minutes, without you stopping
 to brief them.
 
-The Repo is the workshop. Its instructions are the whiteboard. A Space is your view of the
-benches you are working with, even when they are in different workshops.
+The Repo is the workshop. Its instructions are the whiteboard. The Space is the building the
+workshops are in. A Map is your view of the benches you are working with, even when they are in
+different workshops.
 
-Inviting someone to a Space does not give them access to its content. Grants on the Space say
-what they can do there, such as add items or people. Each owner gives access to their own
-content separately. Seeing a reference is not permission to open it; asking for access is a knock.
+Inviting someone into a Space does not give them access to its content. Grants on the Space say
+what they can do there, such as add items to its Map or add people. Each owner gives access to
+their own content separately. Seeing a pointer is not permission to open it; asking for access is
+a knock.
 
 Local and remote Spaces are separate and can change independently. Import and export make
 copies, not a sync connection.

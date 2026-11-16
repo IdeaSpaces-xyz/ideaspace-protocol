@@ -27,8 +27,9 @@ map stays current under you.
 ## Many hands, one understanding
 
 Because a Repo keeps its agreement alongside ordinary files, it isn't tied to one assistant,
-one tool, or one session. A Vault coordinates the wider work; a Space is a lens across it,
-a view and a boundary that references content without holding it. Any agent that understands
+one tool, or one session. A Space is the shared place the Repos and Threads of a person or a
+company live in; a Map is a view across them, pointers that reference content without holding it.
+Any agent that understands
 the shape can arrive, read the whiteboard, and work — today's session, tomorrow's, a different assistant entirely, several at once in different
 rooms. Each one leaves the understanding better-organized than it found it, because keeping the
 agreement current is part of the work, not an afterthought.
@@ -37,9 +38,9 @@ Sessions stop being islands. What one conversation learns, every later one stand
 
 ## Shared between people and agents
 
-The same notes serve your colleague and your colleague's assistant. Share a Space and you share
-a view of the work, not access to the content it references. Grants on the Space govern adding
-items or people. Each owner grants access to their own content separately; someone without it
+The same notes serve your colleague and your colleague's assistant. Invite someone into a Space
+and you share its Map, a view of the work, not access to the content it points at. Grants on the
+Space govern adding items or people. Each owner grants access to their own content separately; someone without it
 can ask through a knock. With access, they can ask what they need, take home what helps, and
 leave what they learned if you're working together.
 

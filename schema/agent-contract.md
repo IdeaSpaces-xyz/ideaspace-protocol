@@ -93,7 +93,7 @@ fail Agreement assembly as `contract_invalid`; readers MUST NOT return a partial
 The nearest Agreement carrying a valid `root_node_id` starts a repository context. Otherwise the Git
 repository root is the ceiling. Outside Git, the outermost Agreement on the ancestor path is the
 ceiling. An Agreement without identity refines the current context; one with identity re-roots it.
-This is the loader's context boundary, not a Space lens, an access grant, or a new Git repository.
+This is the loader's context boundary, not a Map, an access grant, or a new Git repository.
 
 A root `agreement.md` entrypoint MAY declare `agreement: <kind>:repo:<root_node_id>` (or bare
 `repo:<root_node_id>`) to state the Agreement convention it adopts. Readers surface the reference
