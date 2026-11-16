@@ -24,11 +24,11 @@ this contract. A projected view need not be stored to be useful.
 A map-note is an ordinary Note with an optional `map` block. The Markdown body is its legend: why
 these members belong together, what is where, and what proved unhelpful.
 
-Thread posts use this same block. New `kind: snapshot` posts MUST carry a valid Map; writers refuse
-one without it and explain how to add one (`--map <note>` in a CLI). Readers retain older snapshots
-without a Map and warn, naming the post. Other post kinds MAY carry a Map, and every kind counts
-when selecting the [current Thread Map](threads.md#the-current-thread-map). An empty valid Map
-counts too. This requirement changes no kind or tag vocabulary; search filters remain outside the
+Thread posts, and the entries of any folder that keeps time, use this same block. A snapshot is an
+entry that carries a Map, of any kind; the kind `snapshot` is legacy, and readers retain older
+snapshots without a Map and warn, naming the post ([`time.md`](time.md#entries-set-state)). Every
+kind counts when selecting the [current Thread Map](threads.md#the-current-thread-map). An empty
+valid Map counts too. This changes no kind or tag vocabulary; search filters remain outside the
 Map block.
 
 ```yaml
