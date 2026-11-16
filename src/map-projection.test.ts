@@ -128,6 +128,21 @@ describe("Content tree Map projection", () => {
     );
   });
 
+  it("omits only recursive counts when a cache-stable renderer asks", () => {
+    expect(renderContentTreeProjection(projectContentTreeMembers(fixtureTree()), { counts: false })).toBe(
+      [
+        "Tree:",
+        "  alpha/ — Alpha summary.",
+        "    deep/",
+        "      finding.md",
+        "    notes.md",
+        "    … and 2 more",
+        "  overview.md — Overview summary.",
+        "  … and 2 more",
+      ].join("\n"),
+    );
+  });
+
   it("retains explicit full-diagnostic summaries without changing member depth semantics", () => {
     const tree: ContentAwarenessTree = {
       placement: "head",

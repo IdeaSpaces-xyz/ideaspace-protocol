@@ -1,6 +1,6 @@
 ---
 name: Now
-summary: "v0.33.0, not released: a Thread's place in the tree is parent, one post reference set by its newest post, and what it is about is about, typed links; legacy attached_to reads as one or the other. Before it, v0.32.0 (not released): a repository's identity image and the current Thread Map, each with a pure reader and vectors; and access version one. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
+summary: "v0.33.0, not released: a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
 ---
 # Now
 
@@ -16,6 +16,14 @@ as `parent` when it names a post and as `about` otherwise; writers write both du
 compatibility window. See
 [`schema/threads.md`](../schema/threads.md#where-a-thread-sits-and-what-it-is-about-parent-and-about)
 and `conformance/threads/parent.json`. No tag or release is part of this change.
+
+## Cache-stable ambient Tree text, v0.33.0 (not released)
+
+The typed awareness Tree still carries total and per-directory Markdown counts. The ambient `head`
+and canonical full render omit those recursive counts, so adding a file beneath an already-listed
+directory does not change the cache-stable section. Explicit Tree sections, focus reads and standalone
+Tree diagnostics retain the counts. The placement conformance fixture and a count-only mutation test
+prove the split. No consumer source change, tag or release is part of this fix.
 
 ## A repository's identity image, v0.32.0 (not released)
 

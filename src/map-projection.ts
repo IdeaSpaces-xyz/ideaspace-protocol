@@ -74,6 +74,11 @@ export interface RenderRootMapMembersOptions {
   omittedMembers?: number;
 }
 
+export interface RenderContentTreeProjectionOptions {
+  /** Show recursive Markdown counts. Ambient head rendering disables them for cache stability. */
+  counts?: boolean;
+}
+
 /**
  * Project a Content tree into ordered repository-position Map members.
  *
@@ -191,11 +196,13 @@ export function renderRootMapMembers(
   return lines.join("\n");
 }
 
-/** Render the existing tree text from the canonical flat member projection. */
+/** Render tree text from the canonical flat member projection. Counts default on for explicit reads. */
 export function renderContentTreeProjection(
   projection: ContentTreeMapProjection,
+  opts: RenderContentTreeProjectionOptions = {},
 ): string {
-  const lines = [`Tree (${projection.totalMarkdownFiles} files):`];
+  const counts = opts.counts !== false;
+  const lines = [counts ? `Tree (${projection.totalMarkdownFiles} files):` : "Tree:"];
   const openDirectories: ContentTreeMemberPresentation[] = [];
   const closeThrough = (level: number): void => {
     while (
@@ -217,7 +224,7 @@ export function renderContentTreeProjection(
     const disclosure = entry.member.disclosure;
     const name = disclosure?.name ?? entry.member.position;
     const base = entry.presentation.kind === "directory"
-      ? entry.presentation.markdownFiles
+      ? counts && entry.presentation.markdownFiles
         ? `${indent}${name}/ (${entry.presentation.markdownFiles})`
         : `${indent}${name}/`
       : `${indent}${name}`;

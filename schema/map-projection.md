@@ -28,8 +28,9 @@ first. The projector does not apply another sort.
 Prompt placement, entry kind, nesting level, recursive Markdown count, and
 omitted-child counts are not Map semantics. They remain in the presentation
 sidecar. Top-level omission and total Markdown counts remain projection facts.
-`renderContentTreeProjection` uses these facts to reproduce the canonical
-Content tree text.
+`renderContentTreeProjection` uses these facts to reproduce the canonical Content tree text. Counts
+are on by default for explicit reads; `counts: false` preserves names, summaries and omission facts
+while omitting the total and per-directory Markdown counts for a cache-stable ambient head.
 
 ## Root-handle projection
 

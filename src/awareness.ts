@@ -1068,7 +1068,9 @@ function renderAwarenessSections(
         rendered = data.now ? `Now: ${data.now.text}` : null;
         break;
       case "tree":
-        rendered = data.tree ? renderTree(data.tree) : null;
+        // Ambient head text is cached across requests. Keep its names and summaries stable when
+        // only a recursive file count changes; explicit Tree reads still show every count.
+        rendered = data.tree ? renderTree(data.tree, opts.placement !== "head" && opts.sections !== undefined) : null;
         break;
       case "contract":
         rendered = renderContract(data.contract, data.levelBase);
@@ -1536,8 +1538,8 @@ async function countMarkdown(dir: string, strict = false): Promise<number> {
   return count;
 }
 
-function renderTree(tree: ContentAwarenessTree): string {
-  return renderContentTreeProjection(projectContentTreeMembers(tree));
+function renderTree(tree: ContentAwarenessTree, counts = true): string {
+  return renderContentTreeProjection(projectContentTreeMembers(tree), { counts });
 }
 
 /** `guide (branch/)` for entries below the space root; bare name at the root or without a base. */

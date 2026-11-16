@@ -26,6 +26,7 @@
     "exact_revision",
     "prompt_placement",
     "placement_selective_render",
+    "head_tree_counts_omitted",
     "placement_disjoint",
     "activity_tail_only",
     "agreement_reference",
@@ -88,6 +89,7 @@
       "covers": [
         "prompt_placement",
         "placement_selective_render",
+        "head_tree_counts_omitted",
         "placement_disjoint",
         "activity_tail_only"
       ],
