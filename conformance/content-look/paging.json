@@ -8,9 +8,58 @@
     "fix_kind": "correction",
     "fix_author": "Integrator",
     "ordinary_directory": "docs",
-    "ordinary_note_count": 55
+    "ordinary_note_count": 55,
+    "time_folder": "memory",
+    "time_agreement": "---\nname: Memory\nkeeps_time: true\n---\n# Memory\n",
+    "time_note_count": 2,
+    "time_entry_count": 3,
+    "time_entry_id_prefix": "msg_mem0000000",
+    "time_untimed_folder": "scratch",
+    "time_untimed_agreement": "---\nname: Scratch\nkeeps_time: yes\n---\n# Scratch\n"
   },
   "vectors": [
+    {
+      "id": "declared-folder-lists-notes-and-entries",
+      "target": "memory",
+      "depth": "children",
+      "expected": { "status": "ok", "page": { "total": 5, "shown": 5, "order": "older" }, "first": "2026-11-01-note-0.md", "last": "2026-11-12T10-00-00-000Z-msg_mem00000002.md",
+        "post_handles": { "2026-11-01-note-0.md": null, "2026-11-10T10-00-00-000Z-msg_mem00000000.md": { "id": "msg_mem00000000", "kind": "post" }, "2026-11-11T10-00-00-000Z-msg_mem00000001.md": { "id": "msg_mem00000001", "kind": "correction", "author": "Integrator" } },
+        "no_warnings": true,
+        "render_contains": ["  memory/2026-11-01-note-0.md — A lesson kept as a Note.", "  memory/2026-11-10T10-00-00-000Z-msg_mem00000000.md [msg_mem00000000 · post] — Lesson 0"] }
+    },
+    {
+      "id": "declared-folder-entry-by-id",
+      "target": "memory",
+      "depth": "summary",
+      "postId": "msg_mem00000001",
+      "expected": { "status": "ok", "position": "memory/2026-11-11T10-00-00-000Z-msg_mem00000001.md", "post": { "id": "msg_mem00000001", "kind": "correction", "author": "Integrator" } }
+    },
+    {
+      "id": "declared-folder-entry-target-carries-post",
+      "target": "memory/2026-11-12T10-00-00-000Z-msg_mem00000002.md",
+      "depth": "name",
+      "expected": { "status": "ok", "post": { "id": "msg_mem00000002", "kind": "post" } }
+    },
+    {
+      "id": "declared-folder-note-has-no-post",
+      "target": "memory/2026-11-01-note-0.md",
+      "depth": "summary",
+      "expected": { "status": "ok", "no_post": true, "no_warnings": true }
+    },
+    {
+      "id": "ordinary-folder-rejects-a-post-id",
+      "target": "docs",
+      "depth": "summary",
+      "postId": "msg_mem00000001",
+      "expected": { "status": "invalid_post_scope" }
+    },
+    {
+      "id": "non-boolean-keeps-time-does-not-keep-time",
+      "target": "scratch",
+      "depth": "summary",
+      "postId": "msg_mem00000001",
+      "expected": { "status": "invalid_post_scope" }
+    },
     {
       "id": "thread-first-page",
       "target": "_threads/engine",

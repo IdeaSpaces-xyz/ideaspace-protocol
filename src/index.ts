@@ -313,6 +313,53 @@ export type {
   ThreadTimeline,
 } from "./threads.js";
 
+// Time — a folder that keeps time, by placement (a Thread) or by its Agreement's
+// `keeps_time: true`: entries, order, the DAG, entries setting state, the current
+// Map, and the as_of / since / newest selections. The Thread names above are
+// these operations under the Thread rule.
+export {
+  ENTRY_KINDS,
+  LEGACY_ENTRY_KINDS,
+  readsTime,
+  parseEntry,
+  inspectEntries,
+  currentMap,
+  reconstructTimeline,
+  selectEntries,
+  resolveTimeCursor,
+  resolveEntryById,
+  supersededIds,
+  isEntryPath,
+  entryInstant,
+  dateFromFileName,
+} from "./time.js";
+export type {
+  KnownEntryKind,
+  EntryKind,
+  TimeKeeping,
+  EntryFrontmatter,
+  EntryFieldWarning,
+  EntryMark,
+  Entry,
+  EntryParseResult,
+  EntryReadResult,
+  ParseEntryOptions,
+  EntrySource,
+  EntryHandle,
+  InspectEntriesOptions,
+  EntryInspection,
+  CurrentMapOptions,
+  CurrentMapSkip,
+  CurrentMap,
+  EntryNode,
+  EntryTimeline,
+  TimeCursor,
+  ResolvedTimeCursor,
+  TimeCursorResolution,
+  TimeWindow,
+  EntrySelection,
+} from "./time.js";
+
 // Portable Map frontmatter — ordered addresses, canonical repository URLs,
 // exact Git pins, representation ceilings, and access vocabulary. No fetch, access, or hosted lifecycle.
 export {

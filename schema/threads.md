@@ -1,6 +1,6 @@
 # Collaboration threads and `_threads/`
 
-> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, root-relative Map pointers, a Thread's `parent` and `about`, and the current Thread Map. **Provisional, v0.33.0.**
+> Language-neutral contract for recognizing local collaboration threads, their immutable posts, a Thread's `parent` and `about`, the README as a view of its state, root-relative Map pointers, and the current Thread Map. **Provisional, v0.33.0.** A Thread is a folder that keeps time by placement; what every such folder shares (entries, order, the DAG, corrections and marks, how entries set state, the current Map, `as_of`/`since`/`newest`) is in [`time.md`](time.md). This page adds what belongs to the Threads kind.
 
 ## Role, name, and placement
 
@@ -10,7 +10,7 @@ beneath it are **collaboration threads**:
 
 - they travel as tracked repository files;
 - each immediate child directory under `_threads/` represents one distinct **Thread** (e.g.
-  `_threads/2026-09-26-authorization/`);
+  `_threads/2026-09-26-authorization/`), a folder that keeps time by placement ([`time.md`](time.md));
 - they are not ordinary Content positions, surfaces, or ambient agent context;
 - a thread-unaware reader skips the directory without failing the containing Space;
 - a thread-aware reader interprets threads, indexes posts, and exposes them to search and timeline navigation.
@@ -41,14 +41,19 @@ host filesystem does not normalize `_Threads/` into the convention. `_Threads/`,
 
 Each thread folder (e.g. `_threads/<thread>/`) contains:
 
-1. `_agent/agreement.md` — standing terms and entry schema for the thread; during the compatibility window it may carry the fallback `parent` (legacy `attached_to`).
-2. **Posts** — dated Markdown files (e.g. `2026-09-26-01-decision.md` or `2026-09-26T12-00-00Z.md`).
-3. `README.md` — the curated lens for the thread.
+1. `_agent/agreement.md` — standing terms for the thread, the one hand-kept file; during the
+   compatibility window it may carry the fallback `parent` (legacy `attached_to`).
+2. **Posts** — the Thread's entries: dated Markdown files (e.g. `2026-09-26-01-decision.md` or
+   `2026-09-26T12-00-00Z.md`), immutable, as [`time.md`](time.md#entries) defines them. In a Thread
+   every direct Markdown file except `README.md` is a post, and one that cannot be read as a post is
+   unreadable and named: the stricter rule of a folder that keeps time by placement.
+3. `README.md` — a view of the Thread's current state (below).
 
 ### Where a Thread sits and what it is about: `parent` and `about`
 
-Two fields on posts carry two relations. Both follow the rule the current Map follows: a post sets
-a value, and the Thread's current value is the newest post's.
+Two fields on posts carry two relations. Both follow the state rule in
+[`time.md`](time.md#entries-set-state): a post sets a value, and the Thread's current value is the
+newest readable post's.
 
 **`parent` is the Thread's place in the tree: one post reference.** The opening post's `parent` is
 the Thread's **origin**, where it started, immutable with the post. A later post that carries
@@ -56,7 +61,7 @@ the Thread's **origin**, where it started, immutable with the post. A later post
 the reason travels with the Thread. The **current parent** is the `parent` of the newest post after
 the opening that carries a valid one, whatever its kind: `reframe` is the kind writers use, and a
 `correction` that carries `parent` puts the Thread back. Newest is code-unit filename order, as for
-the current Map; an authored `date` does not reorder it. When no later post carries one, the Thread
+every state field; an authored `date` does not reorder it. When no later post carries one, the Thread
 Agreement's `parent` (or its legacy `attached_to`) is the current parent; when the Agreement declares
 none, the origin is. A reader reports where the value came from (`source`: `post`, `agreement` or
 `origin`) and the post it came from, and shows the origin beside a current parent that differs from
@@ -80,7 +85,7 @@ nothing. When a Thread starts from several points of context, `parent` names the
 - `post:_threads/<thread>/<post>.md` — a canonical post path in the same root;
 - `post:@<root>//<selector>` — an **addressed post** in a named root: `<root>` is a root identity
   `n_…` or a Map root name, and `<selector>` is a canonical post path or a folder's `msg_…` id
-  (`_threads/<thread>/msg_…`, or `msg_…` at the root, as the post-id look below defines). The
+  (`_threads/<thread>/msg_…`, or `msg_…` at the root, as the entry look in `time.md` defines). The
   reader's own root (`//…`) is not a parent form; a post in the same root uses the plain forms.
 
 A bare `msg_…` id and a bare canonical post path are accepted as aliases. Typed `id:…` and
@@ -140,137 +145,61 @@ stores it is the host's.
 
 ### Immutable posts and field tolerance
 
-Every post is an immutable Markdown file with a YAML frontmatter metalayer. Once written and committed, a post is never edited in place; updates and corrections are appended as new posts.
+A post is an entry: its fields, the field-tolerance rule, the two flaws that make it unreadable, the
+repair rule, code-unit order and the opening, the reply DAG, `correction` with `supersedes` and
+`mark` folding are all in [`time.md`](time.md#entries) and are not restated here. What the Threads
+kind adds:
 
-A post MUST declare valid leading YAML frontmatter containing at least a non-empty `id`:
-
-| Field | Shape | Meaning |
-|---|---|---|
-| `id` | Non-empty string | Globally unique post identifier minted by the writer (e.g. `msg_...` or timestamp-prefixed id). |
-| `date` | Calendar-valid ISO instant: `YYYY-MM-DDTHH:mm:ss[.sss]Z` or `YYYY-MM-DDTHH:mm:ss[.sss]±HH:mm` (fraction 1–3 digits); legacy `YYYY-MM-DD` | Optional for old posts; new writers record the instant used in the filename stamp. Readers prefer the authored date: an instant normalizes to UTC `Z`, a date-only value stays a day with no instant. Treat a YAML-coerced timestamp as that same ISO instant; implementations read the scalar without rejecting the post due to YAML timestamp typing. With no field, a valid filename stamp supplies UTC instant; an unstamped name supplies no time. Malformed authored date yields diagnostic `dateWarning: invalid_date`, never invalidates the post and never falls back silently. |
-| `in_reply_to` | String or string array | Optional parent post id(s). Absent for the initial thread post; a string for a single parent reply; an array of 2+ ids for a multi-parent join (merge). |
-| `references` | Array of strings | Optional ancestor chain of post ids, ordered from oldest ancestor to immediate parent. |
-| `kind` | String | What a reader acts on: standard `post` (default), `snapshot`, `reframe`, `correction`, `closure`, `mark`. A writer uses only these; a label for a post goes in `tags`. A reader keeps tolerating any other value: unknown kinds are valid and preserved in the DAG. The raw nonempty string is kept; `"mark "` is an unknown kind, not normalized to `mark`. |
-| `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). The authored string is kept; whitespace-only or YAML-coerced non-string values warn and are not folded. |
-| `parent` | String (post reference) | Optional. The Thread's place in the tree: `post:msg_…`, a canonical post path, an addressed post `post:@<root>//…`, or a bare alias. On the opening post, the origin; on a later post, a move. The current parent is the newest post's. |
-| `about` | String or array of strings (`<type>:<id>`) | Optional. What the Thread is about or grew out of: open typed links, any number; `[]` clears. Never a tree edge. The current `about` is the newest post's. |
-| `attached_to` | String (`<type>:<id>`) | Legacy, before 0.33.0. A post reference reads as `parent`; any other typed link reads as `about`. Writers keep it beside the new fields during the compatibility window. |
-| `supersedes` | String | Optional post id being superseded when `kind` is `correction` or when retracting a mark. |
-| `map` | Object | Map block (`roots`, `members`) capturing cited coordinates and selections. REQUIRED on new `kind: snapshot` posts; optional on other kinds. |
-| `name` | String | Optional title or subject line. |
-| `summary` | String | Optional dense summary for search and orientation. |
-| `tags` | Array of strings | Optional retrieval tags, and where a post's label goes (`delivery`, `decision`). A label changes no reader's behaviour. |
-| `actor_ref` / `author` | String | Optional author identity or human-readable author attribution. |
-
-#### Field tolerance rule
-
-A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one member, `references`, `supersedes`, `parent`, `about` or one of its links, `attached_to`, `in_reply_to`, `date`, `kind`, or `mark`) is dropped with a diagnostic warning naming the post and field; the post itself remains valid and readable. One bad `about` link drops that link and warns `invalid_about`; the good links stay. A numeric-looking mark such as `+1` MUST be quoted as a string in YAML (`mark: '+1'`); otherwise YAML may coerce it to a number and the parser warns `invalid_mark`.
-
-#### `kind: snapshot` carries a Map
-
-A writer MUST refuse a new `kind: snapshot` post without a valid `map` block, before writing any
-post file. The refusal MUST explain how to add one (for a CLI, `--map <note>`). Other kinds MAY
-carry a Map; labels remain in `tags`, not new kinds. A valid empty Map (`roots: []`, `members: []`)
-counts, as it deliberately clears the Thread's Map.
-
-A reader MUST keep reading an older snapshot without a Map and warn `snapshot_requires_map` on
-field `map`, naming the post. A null or wholly invalid Map also warns; ordinary Map diagnostics
-still apply. Member-level tolerance still keeps a Map whose valid members survived. No warning
-rewrites the post, hides it, blocks later writes, or makes a Map-less snapshot replace the current
-Thread Map. A string such as `"snapshot "` stays an unknown kind, not a snapshot.
+- **The standard kinds a reader acts on** are `post`, `snapshot`, `reframe`, `correction`, `closure`
+  and `mark` (`THREAD_KINDS`). A writer uses `post`, `reframe`, `correction` and `mark`; `snapshot`
+  and `closure` are legacy forms of the `map` and `closed` fields, read as `time.md` says and no
+  longer written. A reader keeps tolerating any other value.
+- **A Thread's `name` and `summary`** are the newest readable `reframe`'s, as `time.md` says; when no
+  reframe carries them, they are the opening post's.
+- **`closed`** is the field, `true` or `false`, with `kind: closure` reading as `closed: true`, and
+  the one named exception: an unreadable post newer than the one that settled it makes `closed`
+  `unknown`, and the Thread stays writable.
+- **A snapshot is a post that carries a Map.** A writer no longer refuses or requires anything of a
+  `kind: snapshot`; it writes the Map on a `post`. A reader keeps a legacy Map-less snapshot and
+  warns `snapshot_requires_map`, naming the post; no warning rewrites, hides or blocks anything.
 
 #### Unreadable posts and repair
 
-Only two flaws make a post completely unreadable:
-1. Missing or unparseable YAML frontmatter.
-2. Missing, non-string, or whitespace-only `id`.
-
-When a post is unreadable, the reader skips and names it with diagnostic issues; the Thread still lists and opens by its folder.
-- An empty Thread (no posts yet) has no broken opening: parent is absent, closed is false and creation of the first post is allowed.
-- If an existing **opening post** is unreadable, its parent reads `unknown` (not "none") and **writes are refused**, naming that post and the repair step. Without its id, an untargeted reply has nowhere to branch from.
-- Any **other** unreadable post warns but **does not block writes**. A malformed post may have been a closure, so closed state reads `unknown` unless a readable closure settles it. A visible misplaced write into a closed Thread is preferable to locking out every writer.
-
-**Anyone who may write in the Thread may repair an unreadable post** whose frontmatter never parsed (or whose id was never valid). Commit the repair with a message stating why; once-valid posts remain immutable. This is not a license to silently edit authored history.
+As in [`time.md`](time.md#unreadable-entries-and-repair). In a Thread a post without an `id` is
+unreadable (`invalid_id`), not a Note: every direct Markdown file but `README.md` is a post. An
+unreadable opening post makes `origin` `unknown` and refuses writes, naming the post and the repair
+step; any other unreadable post warns, is named by the state rule, and does not block writes.
 
 #### Post-id look and child pages
 
-A reader MAY look up one immutable post by id within a caller-selected Thread folder, or within
-the selected Space root's `_threads/` only. It selects the file whose authored `id` matches the full
-`msg_…` string. An eight-hex shorthand such as `msg_75cc2f37` can match a longer id only when the
-next character is `-`; an exact id takes precedence. A unique match opens that file through the
-normal post reader; no match is `unresolved` and more than one match is `ambiguous`. Never scan a
-second root, pick the first duplicate or repin an authored Map commit to HEAD. A Map address ending
+As in [`time.md`](time.md#entry-look-and-paging): one post by full `msg_…` id or a unique eight-hex
+shorthand within a caller-selected Thread folder, `_threads/`, or the selected root; folder pages at
+`children` and `full` with `total`, `nextCursor`, `order` and exclusive `since`. A Map address ending
 `_threads/<thread>/msg_…` is a **read-time selector** inside that named Thread; it does not create
-an actual `.md` path or grant access. A caller may instead pass the id as a `postId` alongside the
-Thread folder or supplied root. Its reference frame is the selected post's Thread frame.
+an actual `.md` path or grant access. Its reference frame is the selected post's Thread frame.
 
-A folder look at `children` or `full` reports all eligible direct post handles as `total` but shows
-only the selected page (default 50), with `nextCursor` equal to its last filename when more remain.
-`order: older` is code-unit filename order, and `newer` is its reverse. Pass the page's
-`nextCursor` filename as exclusive `since` in that directory and order; a missing filename is an
-error, not a reset. A page
-never loads post bodies just to display other pages. The same page vocabulary works on other
-Content directories; generic Content ordering retains directories before Markdown files.
+### The README: a view of the Thread's state
 
-#### `kind: mark` folding
+`README.md` in a thread folder is a **view** of the Thread's current state, as
+[`time.md`](time.md#a-view-of-the-state) defines it: the Thread's name and summary (the newest
+reframe's, else the opening's), where it sits (`parent`, with the origin beside it when they differ),
+whether it is `closed`, and its current Map. A writer rewrites it from the posts; a reader never needs
+it to know the state, and a README that disagrees with the posts is stale, not authoritative. It MAY
+carry a `map` frontmatter block of its own, the curator's lens over key posts at chosen rungs; that Map
+is not the current Thread Map. The index of posts in timeline order is derived by readers from post
+headers, never stored as a generated index file.
 
-Posts with `kind: mark` attach open-ended status or reaction marks (e.g. `claimed`, `done`) to a target post:
-- `mark` carries the string value.
-- `in_reply_to` names exactly one target post id.
-- A mark can be retracted or superseded by a `correction` post carrying `supersedes: <mark_post_id>`.
-- In timeline reconstruction, valid marks are folded onto the target post's `marks` array and excluded from the linear post sequence. A malformed mark (missing value, other than exactly one target, or target missing in the selected snapshot or itself a mark) stays visible as a post with a field warning; it is not silently erased. The missing/mark-target warning requires a selected Thread snapshot and appears in `inspectThreadPosts` and timeline reconstruction, not in a standalone post look without its neighbours.
-- Fold rule: collect `(author, mark)` pairs on each target post, drop marks superseded **only by `kind: correction`**, and deduplicate repeated marks by the same named author so one author's repeat counts once. Missing author does not identify a person: anonymous marks remain distinct by post id. This is a projection rule, not an authorship/authorization policy; the protocol imposes no same-author condition on a correction. A writing surface applies its own access policy.
-- Timeline reconstruction MUST NOT mutate the caller's parsed posts or carry a previous fold into a later reconstruction. The opening is the earliest direct post filename in code-unit order, not whichever parsed post happens to be the first DAG root. A writer leaves `in_reply_to` absent on that opening; in a conforming Thread it is also a DAG root. Timeline ties use code-unit order of authored paths, then ids (not host locale), so implementations choose the same opening.
-
-The Markdown body follows the frontmatter and contains the message text. The reader also exposes optional derived `fileDate`: the valid filename instant **or day**, independent of the authored `date`. It recognizes `YYYY-MM-DDTHH-mm-ss[-SSS]Z-…`, minute-precision `YYYY-MM-DDTHHmm-…`, and day-only `YYYY-MM-DD-…` (or a `.md` terminator for timestamp forms); invalid calendar/time stamps supply no `fileDate`. An authored or filename-only day displays as `YYYY-MM-DD`, never as an invented midnight instant. Consumers order date-only authored `date` by `fileDate` when present, otherwise by that day; other valid authored instants normalize to UTC before time comparison. This is a consumer ordering rule, not a change to the timeline DAG's topological order.
-
-### The curated lens (`README.md`)
-
-`README.md` in a thread folder is the **curated lens**:
-- It provides a human-written story of what the thread has become, kept current by its owner or participating agents.
-- It MAY carry a `map` frontmatter block whose members reference key milestone posts in the timeline at chosen representation rungs (`name`, `summary`, `full`), branch points, and the active frame.
-- The `README.md` is the pinned summary; no separate pin field exists.
-- The index of posts in timeline order is derived by readers from post headers, never stored as a generated index file.
-
-Only two files change over time: `_agent/agreement.md` and `README.md`, tracked by Git history. Posts remain strictly immutable.
+Only `_agent/agreement.md` is hand-kept and changes over time, tracked by Git history. `README.md`
+changes as a view of the posts. Posts remain strictly immutable.
 
 ### The current Thread Map
 
-A Thread has many Maps over time: each post may carry one, and that Map belongs to the post it was
-posted with. The post is its context. The **current Thread Map** is the newest of them: the Map of
-the newest post that carries one, whatever its kind. Posts are immutable, so the current Map moves
-only by appending a post with a Map, and every earlier Map stays where it was posted. A reader can
-step back through them to see what the Thread was looking at as of any post. A reader derives the
-current Map from the posts and never stores it.
-
-- **Newest** is the last post in code-unit filename order, whose stamp is the instant of writing.
-  An authored `date` does not reorder it. The opening is the earliest filename, as for the timeline.
-- **Any kind counts.** `post`, `snapshot`, `reframe`, `correction`, `closure`, `mark` and unknown
-  kinds are all read the same way. New snapshots MUST carry a Map; for other kinds it is the
-  writer's choice. Readers retain legacy Map-less snapshots with a named warning.
-- **A post without a Map doesn't replace it.** An absent `map` field or an empty `map:` (YAML null)
-  means no Map. A Map with no roots and no members is a Map: a post can clear the Thread's Map that
-  way.
-- **A malformed Map is skipped and named.** If a post's Map block fails to parse as a whole, the
-  reader passes over that post to the next older one and reports it as `invalid_map`. A Map that
-  kept its valid members after the parser dropped bad ones still counts, and the dropped members
-  are reported with it, as the field tolerance rule says. A legacy Map-less snapshot is named as
-  `snapshot_requires_map` in the skipped diagnostics. A newer post that is unreadable may have
-  carried a Map, so it is reported as `unreadable`, never silently ignored.
-- **The lookback cap is visible.** A reader may examine only the newest posts, by a cap or because
-  it read only part of the Thread. If it finds no Map before it stops, it falls back to the opening
-  post's Map and reports `stopped` with how many posts it examined. Without the opening post, a
-  partial read reports that the opening is unknown, and never treats the earliest post it happened
-  to read as the opening.
-- **No Map is a state, not an error.** An empty Thread, a Thread whose posts carry no readable Map,
-  and a partial read without its opening each report no Map, with their reason.
-
-The current Thread Map is the Thread's frame: what a session started on the Thread is given, and
-what the Thread view shows as "what's here". It carries no access. Like every Map, it points; each
-referenced item keeps its own grants. The `README.md` lens may carry a `map` of its own. That Map is
-the curator's lens, not the current Thread Map. A post's Map captures a moment, so it follows the
-moment rule in [`maps.md`](maps.md): a consumer that writes one pins every root and gives every
-position member a depth.
+The current Thread Map is the current Map of [`time.md`](time.md#the-current-map): the Map of the
+newest post that carries one, whatever its kind; an absent or empty `map:` never replaces it; a Map
+with no roots and no members clears it; a malformed Map is skipped and named; a capped or partial read
+falls back to the opening post's Map and reports `stopped`; no Map is a state with a reason. It is the
+Thread's frame and carries no access. The `README.md` view's own `map` is the curator's lens, not the
+current Thread Map.
 
 ## Authored references and Map pointers
 
@@ -339,39 +268,47 @@ A thread-unaware reader follows the base protocol's extension rules:
 
 ## Portable operations and conformance
 
-Independent implementations share these portable operations:
+Independent implementations share these portable operations. The time operations are defined in
+[`time.md`](time.md#portable-operations-and-conformance) and keep their Thread names here:
 
-1. **`parse_thread_post` (`parseThreadPost`)**:
-   - Extracts frontmatter and body. Only unparseable frontmatter or an invalid `id` makes a post unreadable.
-   - Keeps unknown `kind` values and tolerates optional fields with post-and-field warnings. A bad Map member is dropped without erasing good members. Invalid authored dates retain `dateWarning: invalid_date`.
+1. **`parse_thread_post` (`parseThreadPost`)**: `parse_entry` on a Thread post: only unparseable
+   frontmatter or an invalid `id` makes a post unreadable; unknown `kind` values kept; optional fields
+   tolerated with post-and-field warnings; a bad Map member dropped without erasing good members;
+   `closed` read from the field or the legacy kind; invalid authored dates retain
+   `dateWarning: invalid_date`.
 
 2. **`inspect_thread_posts` (`inspectThreadPosts`) and `reconstruct_thread_timeline` (`reconstructThreadTimeline`)**:
-   - Inspect caller-supplied direct, canonical `_threads/<thread>/<post>.md` files only (not `README.md`, `_agent/`, or other nested payload) without inferring the opening from surviving parsed posts. An unreadable opening means unknown parent and refuses writes, naming the file and repair step. Later unreadable posts warn but do not block writes; closure reads unknown unless a readable closure settles it. Look still reads the folder and surviving posts.
-   - Reconstruct the reply DAG and topologically ordered timeline. Keep unknown kinds in the DAG. Fold `kind: mark` posts onto their target by `(author, mark)`, dropping those retracted by a correction and counting an author's repeat once; do not put marks in the linear timeline.
+   `inspect_entries` and `reconstruct_timeline` over caller-supplied direct, canonical
+   `_threads/<thread>/<post>.md` files only (not `README.md`, `_agent/`, or other nested payload),
+   without inferring the opening from surviving parsed posts. The inspection returns `origin` (the
+   opening post's `parent`, or `unknown` when the opening is unreadable), `parent` (the newest later
+   post's, else a valid Agreement field, else `origin`), `source` (`post`, `agreement`, `origin` or
+   `null`) with `parentPost`, `about` with `aboutPost`, `closed` with `closedPost`, `name` and
+   `summary` with `namePost`, the superseded ids, and `writable` with the refusal. An unreadable
+   opening means unknown origin and refuses writes, naming the file and repair step; later unreadable
+   posts warn, are named by the state rule, and do not block writes. Timeline reconstruction keeps
+   unknown kinds in the DAG, folds marks by `(author, mark)`, drops those retracted by a correction,
+   counts an author's repeat once, and keeps marks out of the linear timeline.
 
-3. **`parse_thread_post` (`parseThreadPost`), `parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
-   - `parseThreadPost` sets `post.parent` from `parent` (else, when the post has no `parent` field, a legacy post `attached_to`) and `post.about` from `about` (else, when it has no `about` field, a legacy non-post `attached_to` as one link), keeping `attachedTo` as authored. `inspectThreadPosts(sources, agreementAttachment)` orders the supplied canonical post files by code-unit comparison of their paths, the same order that selects the opening and the current Map, and never by authored `date` or the order supplied; "newest" below is the last in that order. It returns `origin` (the opening post's `parent`, or `unknown` when the opening is unreadable), `parent` (the newest later post's, else a valid Agreement field, else `origin`), `source` (`post`, `agreement`, `origin` or `null`) with `parentPost`, and `about` with `aboutPost` (the newest post's that carries one; empty when none does). The resolver understands `post:` (including the addressed form) and bare `id`/`path` aliases only; all other open types return `none` with the link preserved. An invalid Agreement `parent` or `attached_to` returns absent plus warning rather than rejecting the Agreement; consumers must show that warning. Only post references are tree edges; `isPostReference` is that test. Resolve a post edge against explicitly supplied pinned root snapshots; an addressed post resolves only in the supplied root whose label is the address's root. Report resolved, unresolved, or ambiguous for a post edge; return `none` for a non-post link while keeping its metadata. Never guess or change an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
+3. **`parse_thread_attachment` (`parseThreadAttachment`), `parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
+   `parseThreadPost` sets `post.parent` from `parent` (else, when the post has no `parent` field, a legacy post `attached_to`) and `post.about` from `about` (else, when it has no `about` field, a legacy non-post `attached_to` as one link), keeping `attachedTo` as authored. `inspectThreadPosts(sources, agreementAttachment)` orders the supplied canonical post files by code-unit comparison of their paths, the same order that selects the opening and the current Map, and never by authored `date` or the order supplied. The resolver understands `post:` (including the addressed form) and bare `id`/`path` aliases only; all other open types return `none` with the link preserved. An invalid Agreement `parent` or `attached_to` returns absent plus warning rather than rejecting the Agreement; consumers must show that warning. Only post references are tree edges; `isPostReference` is that test. Resolve a post edge against explicitly supplied pinned root snapshots; an addressed post resolves only in the supplied root whose label is the address's root. Report resolved, unresolved, or ambiguous for a post edge; return `none` for a non-post link while keeping its metadata. Never guess or change an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
 
 4. **`resolve_thread_git_path` (`resolveThreadGitPath`)**:
    - Resolves an authored repository-relative `_threads/...` Map position against a pinned Git tree,
      transparently supporting both unified repository trees and dedicated worktree branch commit roots.
 
 5. **`look` and `navigate` for Threads**:
-   - `assembleContentLook` deepens Thread folders, READMEs, posts, and `_agent/` files at five canonical rungs (`name`, `summary`, `surface`, `children`, `full`).
+   - `assembleContentLook` deepens Thread folders, READMEs, posts, and `_agent/` files at five canonical rungs (`name`, `summary`, `surface`, `children`, `full`), and does the same for any folder whose Agreement keeps time.
    - `assembleContentFocus` assembles reference context for Thread folders, READMEs, posts, and `_agent/` positions, providing reference-frame Agreement and depth-1 post outline.
    - Pinned Map member addresses resolving to `_threads/...` or `_agent/...` positions resolve through the same canonical local contract after the authored tree is selected; Map membership is not filesystem authorization.
    - A Thread folder's `full` is one README surface plus a capped list of direct post handles, not the post bodies or a timeline. See [`content-look.md`](content-look.md) for the five rung and cap rules.
 
-6. **`current_thread_map` (`currentThreadMap`)**:
-   - Takes caller-supplied canonical direct post files, in any order, and optionally `complete: false`
-     with the separately read `opening` post and a positive `lookback` cap. Returns `status`
-     (`post`, `opening` or `none`), the chosen post's `id`, `path` and `kind`, the Map, the chosen
-     Map's field warnings, `skipped` posts newest first (`invalid_map`, `unreadable`, or
-     `snapshot_requires_map` for a legacy Map-less snapshot), and
-     `lookback` (`examined`, `limit`, `stopped`). `none` carries `reason`: `empty`, `no_map` or
-     `opening_unknown`. Pure: no filesystem, Git or network read.
+6. **`current_thread_map` (`currentThreadMap`)**: `current_map` over caller-supplied canonical direct
+   post files, in any order, with the optional `complete: false`, separately read `opening` and
+   positive `lookback` cap; returns `status`, the chosen post, the Map, the Map's field warnings,
+   `skipped` newest first, `lookback` and `reason`. Pure.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. Every one of them also passes through the time operations, and again on a folder that is not `_threads/`; that rule and the state, selection and memory vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json). The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 
@@ -449,6 +386,35 @@ only as the legacy reading says.
   writing `attached_to` once every reader its Threads reach is on this version or later.
 - **`isPostReference(link)`** is exported: the test a reader applies before treating a link as a tree
   edge.
+
+**Time and state, in the same version.** The generic part of this page moved to
+[`time.md`](time.md) and the functions to `src/time.ts`, behind re-exports; every name a consumer
+imports from `@ideaspaces/protocol` or `@ideaspaces/protocol/threads` stays.
+
+- **A folder keeps time by its Agreement.** `keeps_time: true` on a folder's `_agent/agreement.md`
+  makes its direct Markdown files with an `id` entries and the rest ordinary Notes. `_threads/` keeps
+  time by placement, unchanged. A reader (Content look, a CLI) that pages posts or selects one by id
+  in a Thread does the same in such a folder.
+- **`closed` is a field.** A post carrying `closed: true` closes the Thread and `closed: false`
+  reopens it; `kind: closure` reads as `closed: true`. `inspectThreadPosts` keeps `closed` as
+  `true | false | "unknown"` and gains `closedPost`. The reading changes in one case: a Thread with a
+  readable closure *and* a newer unreadable post read `true` before and reads `unknown` now, because
+  the unreadable post may have reopened it. New warning `invalid_closed`.
+- **A snapshot is a post that carries a Map.** A writer stops offering or requiring
+  `kind: snapshot`: `threads post --map <note>` on a `post` is the snapshot. The reader keeps legacy
+  snapshots and the `snapshot_requires_map` warning. `THREAD_KINDS` still lists all six kinds a reader
+  acts on; `ENTRY_KINDS` (`post`, `reframe`, `correction`, `mark`) are the ones a writer offers.
+- **A `reframe` renames.** The Thread's `name` and `summary` are the newest readable reframe's, else
+  the opening post's; `inspectThreadPosts` gains `name`, `summary`, `namePost` and `summaryPost`. A writer that moves
+  without renaming leaves `name` and `summary` off the reframe. Legacy move-reframes that carried a
+  descriptive title ("Moved under …") now read as the Thread's name until a reframe with the right one
+  is appended; a consumer may show the README's name beside it meanwhile and say which is which.
+- **The README is a view.** A writer that closes, renames, moves or snapshots a Thread rewrites
+  `README.md` from the posts; nothing reads the README for state.
+- **Selections.** `selectEntries` with `as_of`, `since` and `newest`; `inspectEntries` takes an
+  `asOf` cursor. New result fields: `notes` (declared folders), `superseded`.
+- **New result fields on `ThreadPostInspection`:** `closedPost`, `name`, `summary`, `namePost`,
+  `summaryPost`, `superseded`, `notes`, and `asOf` when a cursor was given. Additive.
 
 ## Format evolution
 

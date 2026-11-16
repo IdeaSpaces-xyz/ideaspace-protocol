@@ -99,6 +99,12 @@ A root `agreement.md` entrypoint MAY declare `agreement: <kind>:repo:<root_node_
 `repo:<root_node_id>`) to state the Agreement convention it adopts. Readers surface the reference
 on awareness manifests, and listeners choose how to project it.
 
+Any `agreement.md` MAY declare `keeps_time: true` for its own folder: the folder's direct Markdown
+files that declare an `id` are then immutable entries read by [`time.md`](time.md), and its files
+without an `id` stay ordinary Notes. The declaration changes no loading rule here; it is read by
+time-aware readers (Content look, a Thread reader) and ignored by the rest. Only the boolean `true`
+turns time on. `_threads/<thread>/` keeps time by placement and needs no declaration.
+
 ## Representation, placement, and revision
 
 These dimensions are distinct:

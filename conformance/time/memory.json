@@ -1,0 +1,82 @@
+{
+  "format": "ideaspaces-time-memory/v1",
+  "rule": "Memory is the fixture: a folder of dated lessons whose Agreement declares keeps_time: true. Its older files have no id and stay ordinary Notes, outside the timeline and never a diagnostic. A new lesson is an entry; a changed lesson is a correction that supersedes it; what was known as of a date is the as_of selection; what is new since the last session is the since selection. Each is one call.",
+  "folder": "memory",
+  "agreement": "---\nname: Memory\nsummary: What shipping has taught, one dated note per lesson.\nkeeps_time: true\n---\n# Memory\n",
+  "files": {
+    "note_a": { "path": "memory/2026-11-04-strict-main-expires-an-approve.md", "content": "---\nname: Strict main expires an Approve\nsummary: A protected branch re-requires review when the head moves.\ndate: 2026-11-04\n---\n# Strict main expires an Approve\n\nThe lesson, as a Note.\n" },
+    "note_b": { "path": "memory/2026-11-05-a-shared-lock-needs-a-runner-that-releases-it.md", "content": "---\nname: A shared lock needs a runner that releases it\nsummary: A lock held by a dead process blocks everyone.\n---\n# A shared lock needs a runner that releases it\n" },
+    "lesson_1": { "path": "memory/2026-11-10T08-00-00-000Z-msg_lesson1.md", "content": "---\nid: msg_lesson1\ndate: 2026-11-10T08:00:00.000Z\nname: Read CI before reading the verdict\nsummary: A green check means the review ran, not that it approved.\n---\nThe verdict lives in the comment.\n" },
+    "lesson_2": { "path": "memory/2026-11-12T09-00-00-000Z-msg_lesson2.md", "content": "---\nid: msg_lesson2\ndate: 2026-11-12T09:00:00.000Z\nname: A wrapper that fills a default hides a CLI default fix\nsummary: Test the CLI's own default, not the wrapper's.\n---\nBody\n" },
+    "lesson_1_corrected": { "path": "memory/2026-11-14T10-00-00-000Z-msg_lesson1b.md", "content": "---\nid: msg_lesson1b\ndate: 2026-11-14T10:00:00.000Z\nkind: correction\nsupersedes: msg_lesson1\nname: Read CI before reading the verdict, and read the review body\nsummary: A green check means the review ran; Request Changes does not fail it.\n---\nThe earlier lesson understated it.\n" },
+    "bad_id": { "path": "memory/2026-11-15T10-00-00-000Z-msg_bad.md", "content": "---\nid: \"\"\nname: An entry that declared an empty id\n---\nBody\n" },
+    "lesson_with_map": { "path": "memory/2026-11-10T08-00-00-000Z-msg_lesson1.md", "content": "---\nid: msg_lesson1\ndate: 2026-11-10T08:00:00.000Z\nname: Read CI before reading the verdict\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/ci.md\n      depth: summary\n---\nBody\n" }
+  },
+  "vectors": [
+    {
+      "id": "notes-without-an-id-are-outside-the-timeline",
+      "operation": "inspect",
+      "covers": ["notes_outside_timeline", "keeps_time_declared"],
+      "files": ["note_a", "note_b", "lesson_1"],
+      "expected": { "notes": ["memory/2026-11-04-strict-main-expires-an-approve.md", "memory/2026-11-05-a-shared-lock-needs-a-runner-that-releases-it.md"], "readableIds": ["msg_lesson1"], "unreadablePaths": [], "warnings": [], "closed": false, "writable": true, "name": null, "summary": null }
+    },
+    {
+      "id": "add-a-lesson",
+      "operation": "inspect",
+      "covers": ["memory_add"],
+      "files": ["note_a", "note_b", "lesson_1", "lesson_2"],
+      "expected": { "readableIds": ["msg_lesson1", "msg_lesson2"], "superseded": [], "current": ["msg_lesson1", "msg_lesson2"], "warnings": [] }
+    },
+    {
+      "id": "supersede-a-lesson",
+      "operation": "inspect",
+      "covers": ["memory_supersede"],
+      "files": ["note_a", "note_b", "lesson_1", "lesson_2", "lesson_1_corrected"],
+      "expected": { "readableIds": ["msg_lesson1", "msg_lesson2", "msg_lesson1b"], "superseded": ["msg_lesson1"], "current": ["msg_lesson2", "msg_lesson1b"], "warnings": [] }
+    },
+    {
+      "id": "as-of-before-the-correction",
+      "operation": "inspect",
+      "covers": ["memory_as_of"],
+      "asOf": { "at": "2026-11-13" },
+      "files": ["note_a", "note_b", "lesson_1", "lesson_2", "lesson_1_corrected"],
+      "expected": { "readableIds": ["msg_lesson1", "msg_lesson2"], "superseded": [], "current": ["msg_lesson1", "msg_lesson2"], "notes": ["memory/2026-11-04-strict-main-expires-an-approve.md", "memory/2026-11-05-a-shared-lock-needs-a-runner-that-releases-it.md"], "asOf": { "status": "ok", "cursor": { "kind": "at", "at": "2026-11-13" } } }
+    },
+    {
+      "id": "since-the-last-session",
+      "operation": "select",
+      "covers": ["memory_since"],
+      "window": { "since": { "id": "msg_lesson1" } },
+      "files": ["note_a", "note_b", "lesson_1", "lesson_2", "lesson_1_corrected"],
+      "expected": { "status": "ok", "ids": ["msg_lesson2", "msg_lesson1b"], "undated": [] }
+    },
+    {
+      "id": "a-declared-id-must-be-a-non-empty-string",
+      "operation": "inspect",
+      "covers": ["declared_id_must_be_string"],
+      "files": ["note_a", "lesson_1", "bad_id"],
+      "expected": { "notes": ["memory/2026-11-04-strict-main-expires-an-approve.md"], "readableIds": ["msg_lesson1"], "unreadablePaths": ["memory/2026-11-15T10-00-00-000Z-msg_bad.md"], "closed": "unknown", "writable": true }
+    },
+    {
+      "id": "the-current-map-skips-notes",
+      "operation": "current_map",
+      "covers": ["current_map_skips_notes"],
+      "files": ["note_a", "note_b", "lesson_with_map", "lesson_2"],
+      "expected": { "status": "opening", "post": { "id": "msg_lesson1", "path": "memory/2026-11-10T08-00-00-000Z-msg_lesson1.md", "kind": "post" }, "members": ["notes/ci.md"], "skipped": [], "warnings": [], "lookback": { "examined": 1, "stopped": false } }
+    },
+    {
+      "id": "the-declaration",
+      "operation": "reads_time",
+      "covers": ["keeps_time_declared", "keeps_time_invalid"],
+      "cases": [
+        { "frontmatter": { "keeps_time": true }, "expected": { "keeps": true } },
+        { "frontmatter": { "keeps_time": false }, "expected": { "keeps": false } },
+        { "frontmatter": { "name": "Memory" }, "expected": { "keeps": false } },
+        { "frontmatter": null, "expected": { "keeps": false } },
+        { "frontmatter": { "keeps_time": "true" }, "expected": { "keeps": false, "warning": "invalid_keeps_time" } },
+        { "frontmatter": { "keeps_time": 1 }, "expected": { "keeps": false, "warning": "invalid_keeps_time" } },
+        { "frontmatter": { "keeps_time": null }, "expected": { "keeps": false, "warning": "invalid_keeps_time" } }
+      ]
+    }
+  ]
+}

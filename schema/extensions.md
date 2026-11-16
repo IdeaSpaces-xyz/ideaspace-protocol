@@ -73,15 +73,22 @@ replace a missing semantic with registry, package, discovery, or adapter machine
 [`threads.md`](threads.md) is the second standard extension contract:
 
 - **Name and placement:** exact `_threads/`, beneath any directory carrying an Agreement.
-- **Payload:** collaboration threads with thread `_agent/agreement.md`, immutable dated posts (`id`,
-  `in_reply_to`, `references`, `kind`, `map`, `parent`, `about`), and curated `README.md` lens.
+- **Payload:** collaboration threads with a hand-kept thread `_agent/agreement.md`, immutable dated
+  posts (`id`, `in_reply_to`, `references`, `kind`, `map`, `parent`, `about`, `closed`) that set the
+  Thread's state, and a `README.md` that is a view of that state. A Thread is a folder that keeps
+  time by placement; the shared time contract is [`time.md`](time.md), and any folder may keep time
+  by declaring `keeps_time: true` in its own Agreement.
 - **Authored references:** root-relative Map member positions (`_threads/<thread>/README.md`,
   `_threads/<thread>/<post>.md`), resolving across unified checkouts and separate worktree branches.
 - **Unaware behavior:** the generic extension boundary skips the subtree quietly; Map readers
   preserve the pointer without descending.
-- **Portable operations:** `parse_thread_post` (`parseThreadPost`), `reconstruct_thread_timeline`
-  (`reconstructThreadTimeline`), and `resolve_thread_git_path` (`resolveThreadGitPath`).
-- **Vectors:** [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json).
+- **Portable operations:** the time operations under their Thread names, `parse_thread_post`
+  (`parseThreadPost`), `inspect_thread_posts` (`inspectThreadPosts`), `reconstruct_thread_timeline`
+  (`reconstructThreadTimeline`), `current_thread_map` (`currentThreadMap`), plus the kind's own
+  `resolve_thread_parent` (`resolveThreadParent`) and `resolve_thread_git_path`
+  (`resolveThreadGitPath`).
+- **Vectors:** [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json) and
+  [`../conformance/time/manifest.json`](../conformance/time/manifest.json).
 - **Format evolution:** additive only; search active for thread-aware readers.
 
 Rendering, MIME and size limits, storage, serving, access, upload, and filesystem capabilities remain

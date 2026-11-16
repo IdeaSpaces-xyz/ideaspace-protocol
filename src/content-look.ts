@@ -10,7 +10,8 @@ import {
   type ContentFocusManifest,
 } from "./awareness.js";
 import { parseFrontmatter, stripFrontmatter } from "./frontmatter.js";
-import { parseThreadPost, resolveThreadPostById, type ThreadPost, type ThreadPostFieldWarning } from "./threads.js";
+import { type ThreadPost, type ThreadPostFieldWarning } from "./threads.js";
+import { parseEntry, readsTime, resolveEntryById, type TimeKeeping } from "./time.js";
 import {
   inspectMarkdown,
   summarizeMarkdown,
@@ -240,35 +241,61 @@ export async function assembleContentLook(
   };
 }
 
-/** Resolve one post only inside the caller-selected Thread or root, never by scanning another Space. */
+/**
+ * Does this directory keep time by its own Agreement (`keeps_time: true` in `_agent/agreement.md`)?
+ * A missing or unreadable Agreement, or any value but the boolean `true`, is no.
+ */
+async function keepsTimeByAgreement(dirPath: string): Promise<boolean> {
+  try {
+    const content = await fs.readFile(join(dirPath, "_agent", "agreement.md"), "utf-8");
+    return readsTime(parseFrontmatter(content)).keeps;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve one entry only inside the caller-selected Thread, declared folder or root, never by
+ * scanning another Space.
+ */
 async function selectThreadPost(
   path: string, position: string, kind: "directory" | "markdown", postId: string,
 ): Promise<{ status: "resolved"; path: string } | { status: "unresolved" | "ambiguous" | "invalid_post_scope"; reason: string }> {
-  if (kind !== "directory" || !(isThreadFolderPosition(position) || position === "." || position === "_threads")) {
-    return { status: "invalid_post_scope", reason: "Select a Thread folder, _threads, or this repository root for a post id." };
+  const threadFolder = kind === "directory" && isThreadFolderPosition(position);
+  const rootScope = kind === "directory" && (position === "." || position === "_threads");
+  const declared = kind === "directory" && !threadFolder && !rootScope && !isAgentPosition(position) &&
+    await keepsTimeByAgreement(path);
+  if (!threadFolder && !rootScope && !declared) {
+    return { status: "invalid_post_scope", reason: "Select a Thread folder, a folder whose Agreement keeps time, _threads, or this repository root for a post id." };
   }
-  const threadDirs = isThreadFolderPosition(position)
-    ? [{ name: basename(path), path }]
-    : await fs.readdir(position === "_threads" ? path : join(path, "_threads"), { withFileTypes: true })
+  const folders: Array<{ path: string; portable: string; keeping: TimeKeeping }> = threadFolder
+    ? [{ path, portable: `_threads/${basename(path)}`, keeping: "placement" }]
+    : declared
+      ? [{ path, portable: position, keeping: "agreement" }]
+      : await fs.readdir(position === "_threads" ? path : join(path, "_threads"), { withFileTypes: true })
         .then((entries) => entries.filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
-          .map((entry) => ({ name: entry.name, path: join(position === "_threads" ? path : join(path, "_threads"), entry.name) })))
+          .map((entry) => ({
+            path: join(position === "_threads" ? path : join(path, "_threads"), entry.name),
+            portable: `_threads/${entry.name}`,
+            keeping: "placement" as TimeKeeping,
+          })))
         .catch((error: NodeJS.ErrnoException) => { if (error.code === "ENOENT") return []; throw error; });
   const candidates: Array<{ path: string; id: string }> = [];
   const paths = new Map<string, string>();
-  for (const dir of threadDirs) {
-    const entries = await fs.readdir(dir.path, { withFileTypes: true });
+  for (const folder of folders) {
+    const entries = await fs.readdir(folder.path, { withFileTypes: true });
     for (const entry of entries) {
       if (!entry.isFile() || entry.name.startsWith(".") || entry.name === "README.md" || !entry.name.endsWith(".md")) continue;
-      const file = join(dir.path, entry.name);
-      const portable = `_threads/${dir.name}/${entry.name}`;
-      const parsed = parseThreadPost(await fs.readFile(file, "utf8"), portable);
+      const file = join(folder.path, entry.name);
+      const portable = joinPortable(folder.portable, entry.name);
+      const parsed = parseEntry(await fs.readFile(file, "utf8"), portable, { keeping: folder.keeping });
       if (parsed.status === "valid") {
         candidates.push({ path: portable, id: parsed.post.id });
         paths.set(portable, file);
       }
     }
   }
-  const selected = resolveThreadPostById(postId, candidates);
+  const selected = resolveEntryById(postId, candidates);
   return selected.status === "resolved" ? { status: "resolved", path: paths.get(selected.post.path)! }
     : { status: selected.status, reason: selected.status === "ambiguous"
       ? `${postId} names several posts in the selected root; use a full id or narrower Thread folder.`
@@ -306,14 +333,18 @@ async function readMarkdownTarget(
 ): Promise<ContentLookTarget> {
   const source = await fs.readFile(path, "utf-8");
   const isPost = isThreadPostPosition(position);
+  // A file in a folder whose Agreement keeps time is an entry when it declares an id, else a Note.
+  const keeping: TimeKeeping | undefined = isPost ? "placement"
+    : !isAgentPosition(position) && basename(path) !== "README.md" && await keepsTimeByAgreement(dirname(path))
+      ? "agreement" : undefined;
   const frontmatter = parseFrontmatter(source);
   let name: string;
   let summary: string | null;
   let warnings: ContentLookTarget["warnings"];
   let post: ContentLookPostHandle | undefined;
 
-  if (isPost) {
-    const postResult = parseThreadPost(source, position);
+  const postResult = keeping ? parseEntry(source, position, { keeping }) : undefined;
+  if (postResult && postResult.status !== "note") {
     if (postResult.status === "valid") {
       name = nonEmptyString(postResult.post.frontmatter.name) ??
         nonEmptyString(postResult.post.id) ??
@@ -363,8 +394,11 @@ async function readDirectoryTarget(
 
   const isThreadFolder = isThreadFolderPosition(position);
   const isAgentDir = isAgentPosition(position);
+  // A folder whose own Agreement keeps time is read like a Thread folder; its files without an id are Notes.
+  const keeping: TimeKeeping | undefined = isThreadFolder ? "placement"
+    : !isAgentDir && position !== "." && await keepsTimeByAgreement(path) ? "agreement" : undefined;
 
-  if (isThreadFolder) {
+  if (keeping) {
     const readme = await readDirectoryReadme(path);
     const readmeFm = readme.content === null ? null : parseFrontmatter(readme.content);
     const readmeSummary = readme.content === null ? null : summarizeMarkdown(readme.content);
@@ -408,11 +442,16 @@ async function readDirectoryTarget(
         const postPath = join(path, fileName);
         try {
           const content = await fs.readFile(postPath, "utf-8");
-          const postResult = parseThreadPost(content, joinPortable(position, fileName));
+          const postResult = parseEntry(content, joinPortable(position, fileName), { keeping });
           let postName: string;
           let postSummary: string | undefined;
           let post: ContentLookPostHandle | undefined;
-          if (postResult.status === "valid") {
+          if (postResult.status === "note") {
+            // An ordinary Note in a folder that keeps time: listed, outside the timeline, no diagnostic.
+            const fm = parseFrontmatter(content);
+            postName = nonEmptyString(fm?.name) ?? basename(fileName, ".md");
+            postSummary = (fm?.summary ? String(fm.summary) : summarizeMarkdown(content)) || undefined;
+          } else if (postResult.status === "valid") {
             warnings.push(...(postResult.post.warnings ?? []).map((warning) => ({ post: joinPortable(position, fileName), ...warning })));
             postName = nonEmptyString(postResult.post.frontmatter.name) ??
               nonEmptyString(postResult.post.id) ??
