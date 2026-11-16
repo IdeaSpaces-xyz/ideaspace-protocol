@@ -19,8 +19,8 @@ The field belongs only to a root contract entrypoint. It is not knowledge-Note f
 per-Note identity, a storage primary key, or proof of access. A nested Foundation starts another
 repository context. Under Agreement loading, the nearest Agreement carrying identity starts another
 context while an Agreement without identity refines the current one. These are loading boundaries,
-not Space lenses or new Git repositories. A Space points at content; this field identifies a root
-that it may point at. If both entrypoints at one boundary declare identity, they MUST agree.
+not Maps or new Git repositories. A Map points at content; this field identifies a root that it
+may point at. If both entrypoints at one boundary declare identity, they MUST agree.
 
 The field is optional. Its absence is valid for legacy repositories, imported plain Markdown, and
 contract-free folders. A reader MUST NOT fail conformance, create a contract entrypoint, or require a
