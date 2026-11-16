@@ -19,10 +19,8 @@ A folder keeps time in one of two ways:
    the stricter rule, unchanged.
 2. **By declaration.** A folder's own `_agent/agreement.md` carries `keeps_time: true` in its
    frontmatter. Only the boolean `true` turns time on; any other value is read as not keeping time,
-   and a reader MAY report `invalid_keeps_time` (the reporting is a MAY, the reading is a MUST: no
-   value but the boolean `true` keeps time; the reference implementation reports it, and the
-   vectors expect the report from an implementation that claims it). The declaration applies to
-   that folder's direct Markdown files only; a subfolder keeps time by its own Agreement.
+   and a reader MAY report `invalid_keeps_time`. The declaration applies to that folder's direct
+   Markdown files only; a subfolder keeps time by its own Agreement.
 
 In a **declared** folder, a direct Markdown file whose frontmatter declares no `id` is an **ordinary
 Note**: listed by a reader, searchable as knowledge, outside the timeline, and never a diagnostic. A
@@ -172,15 +170,6 @@ every writer. A legacy `kind: closure` entry that also carries `closed` is read 
 it, and a legacy `kind: snapshot` without a Map is kept with the warning `snapshot_requires_map` on
 field `map`, naming the entry; it never replaces the current Map. New writers put the Map on a `post`
 (or on any kind that fits what they are saying) and write no `snapshot`.
-
-**When the legacy kinds go.** The legacy reads (`kind: snapshot` as a Map carrier with its
-`snapshot_requires_map` warning, and `kind: closure` as `closed: true`) stay in every reader until
-two things are true: no writer a Thread reaches still produces them (the CLI, Home's skills, the
-Desktop), and one release of each reader (the CLI, the MCP server, Pi, the Claude Code plugin, the
-Desktop's vendored CLI) has shipped after that. They may then be dropped, no earlier than 1.0, in a
-release these notes name when it is chosen; `THREAD_KINDS` shrinks with them, and entries already on
-disk keep reading as the field values they stood for. Until then they are legacy surface, not
-permanent surface.
 
 **A `reframe` is the one kind whose `name` and `summary` are the folder's own.** Every other entry's
 `name` and `summary` are its own title and summary. A reframe therefore renames; a reframe that

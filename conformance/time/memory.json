@@ -68,7 +68,6 @@
       "id": "the-declaration",
       "operation": "reads_time",
       "covers": ["keeps_time_declared", "keeps_time_invalid"],
-      "rule": "Only the boolean true turns time on: that reading is a MUST. Reporting invalid_keeps_time for any other declared value is a MAY in schema/time.md; the reference implementation reports it, and an implementation that claims the report must match these cases. An implementation that does not report it still reads every case as keeps: false.",
       "cases": [
         { "frontmatter": { "keeps_time": true }, "expected": { "keeps": true } },
         { "frontmatter": { "keeps_time": false }, "expected": { "keeps": false } },
