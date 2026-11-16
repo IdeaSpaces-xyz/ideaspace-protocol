@@ -1,7 +1,7 @@
 {
   "format": "ideaspaces-thread-agreement-schema/v1",
   "schema": "../../schema/thread-agreement.schema.json",
-  "description": "For new authoring, apply the separate schema to parsed YAML frontmatter of _threads/<thread>/_agent/agreement.md; invalid attached_to values fail schema validation. A tolerant reader drops only the malformed legacy field and reports a warning (parent: false), keeping the Agreement. The Note schema remains separate.",
+  "description": "For new authoring, apply the separate schema to parsed YAML frontmatter of _threads/<thread>/_agent/agreement.md; invalid parent or attached_to values fail schema validation. A tolerant reader drops only the malformed legacy field and reports a warning (parent: false), keeping the Agreement. `parent` is read before `attached_to`. The Note schema remains separate.",
   "cases": [
     { "id": "absent-field", "frontmatter": { "name": "Child" }, "valid": true },
     { "id": "empty-frontmatter", "frontmatter": {}, "valid": true },
@@ -14,7 +14,14 @@
     { "id": "hidden-thread", "frontmatter": { "attached_to": "_threads/.hidden/first.md" }, "valid": false },
     { "id": "traversal", "frontmatter": { "attached_to": "_threads/../first.md" }, "valid": false },
     { "id": "null-parent", "frontmatter": { "attached_to": null }, "valid": false },
-    { "id": "array-parent", "frontmatter": { "attached_to": ["msg_first"] }, "valid": false }
+    { "id": "array-parent", "frontmatter": { "attached_to": ["msg_first"] }, "valid": false },
+    { "id": "parent-id", "frontmatter": { "parent": "msg_first" }, "valid": true, "parent": true },
+    { "id": "parent-typed-post-id", "frontmatter": { "parent": "post:msg_first" }, "valid": true, "parent": true },
+    { "id": "parent-typed-post-path", "frontmatter": { "parent": "post:_threads/parent/first.md" }, "valid": true, "parent": true },
+    { "id": "parent-note-link-invalid", "frontmatter": { "parent": "note:@home//notes/topic.md" }, "valid": false },
+    { "id": "parent-addressed-form-not-here", "frontmatter": { "parent": "post:@n_0123456789abcdef01234567//_threads/parent/msg_first" }, "valid": false },
+    { "id": "parent-readme-not-post", "frontmatter": { "parent": "post:_threads/parent/README.md" }, "valid": false },
+    { "id": "parent-null", "frontmatter": { "parent": null }, "valid": false }
   ],
   "note_schema_boundary": [
     { "frontmatter": { "attached_to": "node:thing" }, "valid": true },

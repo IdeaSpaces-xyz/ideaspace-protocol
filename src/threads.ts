@@ -9,7 +9,13 @@
  */
 
 import { parseFrontmatter, stripFrontmatter } from "./frontmatter.js";
-import { parseMap, type MapBlock, type MapBuildInput, type MapParseResult } from "./maps.js";
+import {
+  parseMap,
+  parseMapPositionAddress,
+  type MapBlock,
+  type MapBuildInput,
+  type MapParseResult,
+} from "./maps.js";
 
 /** Exact, case-sensitive threads directory name. */
 export const THREADS_DIRECTORY = "_threads";
@@ -48,7 +54,20 @@ export interface ThreadPostFrontmatter {
   kind?: ThreadKind;
   /** Mark value when kind is "mark" (e.g. "claimed", "done"). */
   mark?: string;
-  /** Primary entity binding or parent attachment on opening post (e.g. post:msg_..., note:@root//pos). */
+  /**
+   * The Thread's place in the tree: one post reference (`post:msg_…`, a canonical post path, or an
+   * addressed post `post:@<root>//…`). On the opening post it is the origin; on a later post it
+   * moves the Thread.
+   */
+  parent?: string;
+  /** What the Thread is about or grew out of: open typed links `<type>:<id>`, any number. Never a tree edge. */
+  about?: string | string[];
+  /**
+   * Legacy, before 0.33.0: a `post:` value (or bare alias) reads as `parent`; any other typed link
+   * reads as `about`; a post that carries the new field is read by it alone. Writers keep it beside
+   * the new fields during the compatibility window, which each consumer closes where it ships; see
+   * "Consumer migration: 0.32.0 → 0.33.0" in schema/threads.md.
+   */
   attached_to?: string;
   /** Superseded post id when kind is "correction" or retracting a mark. */
   supersedes?: string;
@@ -99,6 +118,17 @@ export interface ThreadPost {
   references: string[];
   kind: string;
   mark?: string;
+  /**
+   * The post reference this post sets as the Thread's parent: its `parent` field, else a legacy
+   * `attached_to` that names a post. Absent when the post sets no parent.
+   */
+  parent?: ThreadAttachment;
+  /**
+   * The typed links this post sets as what the Thread is about: its `about` field (an empty list
+   * clears), else a legacy non-post `attached_to` as one link. Absent when the post sets none.
+   */
+  about?: ThreadAttachment[];
+  /** The authored legacy `attached_to`, kept as written. Readers act on `parent` and `about`. */
   attachedTo?: ThreadAttachment;
   supersedes?: string;
   mapResult?: MapParseResult;
@@ -118,10 +148,13 @@ export interface ThreadAttachment {
 
 export type ThreadAttachmentParseResult =
   | { status: "valid"; attachment: ThreadAttachment }
-  | { status: "absent"; warning?: "invalid_attached_to" }
+  | { status: "absent"; warning?: "invalid_attached_to" | "invalid_parent" }
   | { status: "invalid"; issue: "invalid_context" | "invalid_frontmatter" | "invalid_attached_to" };
 
-/** Parse an attached_to value into a structured ThreadAttachment. */
+const POST_ID = /^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const POST_PATH = /^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/;
+
+/** Parse a typed link (`parent`, `about`, legacy `attached_to`) into a structured ThreadAttachment. */
 export function parseThreadAttachment(value: unknown): ThreadAttachment | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const raw = value.trim();
@@ -139,19 +172,56 @@ export function parseThreadAttachment(value: unknown): ThreadAttachment | null {
     }
   }
 
-  if (/^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(raw)) return { kind: "id", value: raw, raw };
-  if (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(raw) && !raw.endsWith("/README.md")) {
-    return { kind: "path", value: raw, raw };
-  }
+  if (POST_ID.test(raw)) return { kind: "id", value: raw, raw };
+  if (isPostPath(raw)) return { kind: "path", value: raw, raw };
   return null;
 }
 
-function isPostAttachmentTarget(value: string): boolean {
-  return /^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value) ||
-    (/^_threads\/[^/.][^/]*\/[^/.][^/]*\.md$/.test(value) && !value.endsWith("/README.md"));
+/** A post reference: `post:` typed, or one of its bare aliases. The only kinds that make a tree edge. */
+export function isPostReference(attachment: ThreadAttachment): boolean {
+  return attachment.kind === "post" || attachment.kind === "id" || attachment.kind === "path";
 }
 
-/** Read the relation only from a Thread Agreement; ordinary Notes keep subject semantics. */
+function isPostPath(value: string): boolean {
+  return POST_PATH.test(value) && !value.endsWith("/README.md");
+}
+
+function isPostAttachmentTarget(value: string): boolean {
+  return POST_ID.test(value) || isPostPath(value) || addressedPostTarget(value) !== null;
+}
+
+/**
+ * An addressed post in a named root: `@n_…//<selector>` or `@name//<selector>`, where the selector is
+ * a canonical post path or a folder's `msg_…` id (`_threads/<thread>/msg_…`, or `msg_…` at the
+ * root). The reader's own root (`//…`) is not a parent form: a post in the same root uses the
+ * plain forms.
+ */
+function addressedPostTarget(value: string): { root: string; selector: string } | null {
+  if (!value.startsWith("@")) return null;
+  const parsed = parseMapPositionAddress(value);
+  if (parsed.status !== "valid" || parsed.address.root.kind === "self") return null;
+  const selector = parsed.address.position;
+  const last = selector.split("/").at(-1) ?? "";
+  if (!isPostPath(selector) && !POST_ID.test(last)) return null;
+  const root = parsed.address.root.kind === "identity" ? parsed.address.root.rootNodeId : parsed.address.root.name;
+  return { root, selector };
+}
+
+/** Does a supplied post answer an addressed selector: its exact path, or its id inside the named folder. */
+function matchesPostSelector(post: { path: string; id: string }, selector: string): boolean {
+  if (post.path === selector) return true;
+  const slash = selector.lastIndexOf("/");
+  const folder = slash < 0 ? "" : selector.slice(0, slash);
+  const id = slash < 0 ? selector : selector.slice(slash + 1);
+  if (!POST_ID.test(id) || post.id !== id) return false;
+  const postFolder = post.path.slice(0, post.path.lastIndexOf("/"));
+  return folder === "" || postFolder === folder;
+}
+
+/**
+ * Read the Thread's parent from a Thread Agreement; ordinary Notes keep subject semantics.
+ * `parent` is read first, then the legacy `attached_to`; both carry the post-only grammar.
+ */
 export function parseThreadAgreementAttachment(
   content: string,
   agreementPath: string,
@@ -163,12 +233,14 @@ export function parseThreadAgreementAttachment(
   if (!/^---\r?\n/.test(content)) return { status: "absent" };
   const frontmatter = parseFrontmatter(content);
   if (!frontmatter) return { status: "invalid", issue: "invalid_frontmatter" };
-  if (!("attached_to" in frontmatter)) {
+  const field = "parent" in frontmatter ? "parent" : "attached_to" in frontmatter ? "attached_to" : undefined;
+  if (!field) {
     return { status: "absent" };
   }
-  const attachment = parseThreadAttachment(frontmatter.attached_to);
-  if (!attachment || (attachment.kind !== "post" && attachment.kind !== "id" && attachment.kind !== "path")) {
-    return { status: "absent", warning: "invalid_attached_to" };
+  const attachment = parseThreadAttachment(frontmatter[field]);
+  // The Agreement's fallback names a post in the same root; the addressed form belongs on posts.
+  if (!attachment || !isPostReference(attachment) || attachment.value.startsWith("@")) {
+    return { status: "absent", warning: field === "parent" ? "invalid_parent" : "invalid_attached_to" };
   }
   return { status: "valid", attachment };
 }
@@ -192,28 +264,34 @@ export type ThreadParentResolution =
   | { status: "none"; attachment: ThreadAttachment }
   | { status: "unresolved" | "ambiguous" };
 
-/** Resolve against only supplied root snapshots; an authored pin is never replaced by HEAD. */
+/**
+ * Resolve against only supplied root snapshots; an authored pin is never replaced by HEAD. An
+ * addressed post (`post:@<root>//…`) resolves only in the supplied root whose `root` label is the
+ * address's root identity or name, by exact path or by id inside the named folder.
+ */
 export function resolveThreadParent(
   attachment: ThreadAttachment,
   roots: ThreadAttachmentRoot[],
   authoredPin?: string,
 ): ThreadParentResolution {
-  if (attachment.kind !== "post" && attachment.kind !== "id" && attachment.kind !== "path") {
+  if (!isPostReference(attachment)) {
     return { status: "none", attachment };
   }
   const targetVal = attachment.value;
-  const matchId = attachment.kind === "id" || (attachment.kind === "post" && /^msg_[A-Za-z0-9][A-Za-z0-9_-]*$/.test(targetVal));
-  const matchPath = attachment.kind === "path" || (attachment.kind === "post" && !matchId && isPostAttachmentTarget(targetVal));
-  if (!matchId && !matchPath) return { status: "unresolved" };
+  const addressed = attachment.kind === "post" ? addressedPostTarget(targetVal) : null;
+  const matchId = attachment.kind === "id" || (attachment.kind === "post" && POST_ID.test(targetVal));
+  const matchPath = attachment.kind === "path" || (attachment.kind === "post" && !matchId && isPostPath(targetVal));
+  if (!matchId && !matchPath && !addressed) return { status: "unresolved" };
   const matches: ResolvedThreadParent[] = [];
   for (const root of roots) {
     if (authoredPin !== undefined && root.pin !== authoredPin) continue;
+    if (addressed && root.root !== addressed.root) continue;
     for (const post of root.posts) {
       // Snapshots contain canonical positions, not stripped worktree tree paths.
       if (parseThreadAttachment(post.path)?.kind !== "path") continue;
-      if ((matchId && post.id === targetVal) || (matchPath && post.path === targetVal)) {
-        matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
-      }
+      const hit = addressed ? matchesPostSelector(post, addressed.selector)
+        : (matchId && post.id === targetVal) || (matchPath && post.path === targetVal);
+      if (hit) matches.push({ root: root.root, pin: root.pin, path: post.path, id: post.id });
     }
   }
   return matches.length === 1 ? { status: "resolved", parent: matches[0] }
@@ -401,6 +479,42 @@ export function parseThreadPost(
     }
   }
 
+  let parent: ThreadAttachment | undefined;
+  if ("parent" in fm) {
+    const parsed = parseThreadAttachment(fm.parent);
+    if (parsed && isPostReference(parsed)) {
+      parent = parsed;
+    } else {
+      warnings.push({ field: "parent", warning: "invalid_parent" });
+    }
+  }
+
+  let about: ThreadAttachment[] | undefined;
+  if ("about" in fm) {
+    const items = Array.isArray(fm.about) ? fm.about : [fm.about];
+    const kept: ThreadAttachment[] = [];
+    let dropped = false;
+    for (const item of items) {
+      const parsed = parseThreadAttachment(item);
+      if (parsed) kept.push(parsed);
+      else dropped = true;
+    }
+    // One bad link does not erase the good ones; a field with nothing valid is dropped.
+    if (dropped) warnings.push({ field: "about", warning: "invalid_about" });
+    if (kept.length > 0 || !dropped) about = kept;
+  }
+
+  // Legacy `attached_to`: a post reference was the parent; anything else was what the Thread is
+  // about. It fills in only when the post carries no new field at all: a post that carries `parent`
+  // or `about`, even malformed, is read by the new field alone, and the legacy one stays as authored.
+  if (attachedTo) {
+    if (isPostReference(attachedTo)) {
+      if (!("parent" in fm)) parent = attachedTo;
+    } else if (!("about" in fm)) {
+      about = [attachedTo];
+    }
+  }
+
   let mapResult: MapParseResult | undefined;
   if ("map" in fm) {
     const parsed = parseMap(fm.map);
@@ -444,6 +558,8 @@ export function parseThreadPost(
     references,
     kind,
     ...(mark ? { mark } : {}),
+    ...(parent ? { parent } : {}),
+    ...(about ? { about } : {}),
     ...(attachedTo ? { attachedTo } : {}),
     ...(supersedes ? { supersedes } : {}),
     ...(mapResult ? { mapResult } : {}),
@@ -463,13 +579,22 @@ export interface ThreadPostInspection {
   unreadable: Array<{ path: string; issues: string[] }>;
   warnings: Array<ThreadPostFieldWarning & { post: string }>;
   /**
-   * Current parent: the Thread Agreement's valid `attached_to`, else the
-   * opening post's (`origin`). `unknown` only when no Agreement parent exists
-   * and the opening post is unreadable.
+   * Current parent: the `parent` of the newest post after the opening that carries one, whatever
+   * its kind; else the Thread Agreement's valid `parent` or legacy `attached_to`; else the opening
+   * post's (`origin`). `unknown` only when nothing later sets it, the Agreement declares none, and
+   * the opening post is unreadable.
    */
   parent: ThreadAttachment | "unknown" | null;
-  /** Where the Thread started: the opening post's `attached_to`, immutable. */
+  /** Where the current parent came from. `null` when there is none. */
+  source: "post" | "agreement" | "origin" | null;
+  /** The post whose `parent` is current: the newest later post that set one, or the opening when `source` is `origin`. */
+  parentPost?: { id: string; path: string; kind: string };
+  /** Where the Thread started: the opening post's `parent` (a legacy post `attached_to` counts), immutable. */
   origin: ThreadAttachment | "unknown" | null;
+  /** What the Thread is about: the `about` of the newest post that carries one. Empty when none does. */
+  about: ThreadAttachment[];
+  /** The post whose `about` is current. */
+  aboutPost?: { id: string; path: string; kind: string };
   closed: boolean | "unknown";
   writable: boolean;
   /** Actionable message, only when the opening post cannot be read. */
@@ -483,8 +608,9 @@ export interface ThreadPostInspection {
  * a readable closure settles it. Only an unreadable opening prevents writes:
  * without its id, a reply with no target cannot branch from the Thread.
  *
- * The Thread Agreement's attachment decides the current parent; the opening
- * post's attachment is the immutable origin and the fallback parent.
+ * The newest later post that carries `parent` decides the current parent (the same rule as the
+ * current Map); the Thread Agreement's field is the next fallback; the opening post's `parent`
+ * is the immutable origin and the last. `about` is the newest post's that carries one.
  */
 export function inspectThreadPosts(
   sources: ThreadPostSource[],
@@ -507,7 +633,8 @@ export function inspectThreadPosts(
     }
   }
   if (agreementAttachment?.status === "absent" && agreementAttachment.warning) {
-    warnings.push({ post: "_agent/agreement.md", field: "attached_to", warning: agreementAttachment.warning });
+    const field = agreementAttachment.warning === "invalid_parent" ? "parent" : "attached_to";
+    warnings.push({ post: "_agent/agreement.md", field, warning: agreementAttachment.warning });
   }
   const byId = new Map(posts.map((post) => [post.id, post]));
   for (const post of posts) {
@@ -519,15 +646,35 @@ export function inspectThreadPosts(
   // An empty Thread may still be starting: there is no broken opening to repair.
   const openingUnreadable = Boolean(opening && unreadable.some((entry) => entry.path === opening.path));
   const firstPost = posts.find((post) => post.path === opening?.path);
-  const origin = !opening ? null : openingUnreadable ? "unknown" : firstPost?.attachedTo ?? null;
-  const parent = agreementAttachment?.status === "valid" ? agreementAttachment.attachment : origin;
+  const origin = !opening ? null : openingUnreadable ? "unknown" : firstPost?.parent ?? null;
+  const handle = (post: ThreadPost) => ({ id: post.id, path: post.path, kind: post.kind });
+  // `posts` is in code-unit filename order; the newest later post that sets a field wins.
+  const newestFirst = [...posts].reverse();
+  const mover = newestFirst.find((post) => post.parent && post.path !== opening?.path);
+  let parent: ThreadPostInspection["parent"];
+  let source: ThreadPostInspection["source"];
+  let parentPost: ThreadPost | undefined;
+  if (mover?.parent) {
+    parent = mover.parent; source = "post"; parentPost = mover;
+  } else if (agreementAttachment?.status === "valid") {
+    parent = agreementAttachment.attachment; source = "agreement";
+  } else {
+    parent = origin; source = origin === null ? null : "origin";
+    if (origin !== null && origin !== "unknown") parentPost = firstPost;
+  }
+  const aboutPost = newestFirst.find((post) => post.about !== undefined);
+  const about = aboutPost?.about ?? [];
   const closed = posts.some((post) => post.kind === "closure") ? true :
     unreadable.length ? "unknown" : false;
   const writeRefusal = openingUnreadable
     ? `Opening post ${opening?.path ?? "(missing)"} is unreadable; writes refused. Any Thread writer may repair it with a commit explaining why.`
     : undefined;
   return {
-    posts, unreadable, warnings, parent, origin, closed,
+    posts, unreadable, warnings, parent, source,
+    ...(parentPost ? { parentPost: handle(parentPost) } : {}),
+    origin, about,
+    ...(aboutPost ? { aboutPost: handle(aboutPost) } : {}),
+    closed,
     writable: !openingUnreadable,
     ...(writeRefusal ? { writeRefusal } : {}),
   };

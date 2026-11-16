@@ -285,6 +285,7 @@ export {
   isThreadPosition,
   resolveThreadGitPath,
   parseThreadAttachment,
+  isPostReference,
   parseThreadAgreementAttachment,
   resolveThreadParent,
   resolveThreadPostById,

@@ -17,6 +17,8 @@ import {
   resolveThreadParent,
   resolveThreadPostById,
   childThreadsOfPost,
+  isPostReference,
+  type ThreadAttachment,
   type ThreadPost,
   type ThreadKind,
   HOSTED_THREAD_ID,
@@ -58,6 +60,9 @@ const metalayer = JSON.parse(readFileSync(
 const agreementSchemaVectors = JSON.parse(readFileSync(
   new URL("../conformance/threads/agreement-schema.json", import.meta.url), "utf-8",
 ));
+const parentVectors = JSON.parse(readFileSync(
+  new URL("../conformance/threads/parent.json", import.meta.url), "utf-8",
+));
 const threadAgreementSchema = JSON.parse(readFileSync(
   new URL("../schema/thread-agreement.schema.json", import.meta.url), "utf-8",
 ));
@@ -65,18 +70,21 @@ const noteSchema = JSON.parse(readFileSync(
   new URL("../schema/frontmatter.schema.json", import.meta.url), "utf-8",
 ));
 
-// Exercise the published JSON Schema's optional field and disjoint oneOf patterns.
+// Exercise the published JSON Schema's optional parent fields and disjoint oneOf patterns.
 // The other Agreement fields are intentionally unconstrained by this schema.
+const AGREEMENT_PARENT_FIELDS = ["parent", "attached_to"] as const;
 function acceptsAttachment(schema: any, frontmatter: Record<string, unknown>): boolean {
-  if (!("attached_to" in frontmatter)) return true;
-  const value = frontmatter.attached_to;
-  const fieldSchema = schema.properties.attached_to;
-  const alternatives = fieldSchema.oneOf ?? [fieldSchema];
-  return alternatives.filter((alternative: any) =>
-    alternative.type === "string" && typeof value === "string" &&
-    new RegExp(alternative.pattern).test(value) &&
-    (!alternative.not || !new RegExp(alternative.not.pattern).test(value))
-  ).length === 1;
+  return AGREEMENT_PARENT_FIELDS.every((field) => {
+    if (!(field in frontmatter)) return true;
+    const value = frontmatter[field];
+    const fieldSchema = schema.properties[field];
+    const alternatives = fieldSchema.oneOf ?? [fieldSchema];
+    return alternatives.filter((alternative: any) =>
+      alternative.type === "string" && typeof value === "string" &&
+      new RegExp(alternative.pattern).test(value) &&
+      (!alternative.not || !new RegExp(alternative.not.pattern).test(value))
+    ).length === 1;
+  });
 }
 
 describe("Thread Agreement JSON Schema vectors", () => {
@@ -89,18 +97,22 @@ describe("Thread Agreement JSON Schema vectors", () => {
     expect(threadAgreementSchema.additionalProperties).toBe(true);
     expect(threadAgreementSchema.required).toBeUndefined();
     expect(threadAgreementSchema.properties.attached_to.oneOf).toHaveLength(2);
+    expect(threadAgreementSchema.properties.parent.oneOf).toHaveLength(2);
     expect(noteSchema.properties.attached_to.pattern).toBe("^[a-z][a-z0-9_]*:.+$");
   });
 
   it.each(agreementSchemaVectors.cases)("checks $id", (vector: any) => {
     expect(acceptsAttachment(threadAgreementSchema, vector.frontmatter)).toBe(vector.valid);
-    if ("attached_to" in vector.frontmatter) {
+    const field = AGREEMENT_PARENT_FIELDS.find((name) => name in vector.frontmatter);
+    if (field) {
       const parsedAgreement = parseThreadAgreementAttachment(
-        `---\nattached_to: ${JSON.stringify(vector.frontmatter.attached_to)}\n---\n`,
+        `---\n${field}: ${JSON.stringify(vector.frontmatter[field])}\n---\n`,
         "_threads/t/_agent/agreement.md",
       );
       expect(parsedAgreement.status).toBe(vector.parent ? "valid" : "absent");
-      if (!vector.parent) expect(parsedAgreement).toEqual({ status: "absent", warning: "invalid_attached_to" });
+      if (!vector.parent) {
+        expect(parsedAgreement).toEqual({ status: "absent", warning: field === "parent" ? "invalid_parent" : "invalid_attached_to" });
+      }
     }
   });
 
@@ -115,7 +127,7 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
@@ -213,13 +225,19 @@ describe("metalayer conformance vectors", () => {
     expect(metalayer.vectors.length).toBeGreaterThanOrEqual(7);
   });
 
-  it.each(metalayer.vectors)("executes $id", (vector: any) => {
+  const rawLink = (value: ThreadAttachment | "unknown" | null | undefined) =>
+    value === "unknown" || value === null || value === undefined ? value ?? null : value.raw;
+
+  function executeThreadVector(vector: any): void {
     if (vector.operation === "parse_post") {
       const parsed = parseThreadPost(vector.input.content, vector.input.path);
       expect(parsed.status).toBe(vector.expected.status);
       if (parsed.status !== "valid") throw new Error("Expected readable post");
       expect(parsed.post.id).toBe(vector.expected.id);
       expect(parsed.post.warnings).toEqual(vector.expected.warnings);
+      if ("parent" in vector.expected) expect(rawLink(parsed.post.parent)).toBe(vector.expected.parent);
+      if ("about" in vector.expected) expect(parsed.post.about?.map((link) => link.raw) ?? null).toEqual(vector.expected.about);
+      if ("attachedTo" in vector.expected) expect(rawLink(parsed.post.attachedTo)).toBe(vector.expected.attachedTo);
       if (vector.expected.references) expect(parsed.post.references).toEqual(vector.expected.references);
       if (vector.expected.mapDropped) expect(parsed.post.mapResult).toBeUndefined();
       if (vector.expected.mapMemberPositions) {
@@ -247,15 +265,17 @@ describe("metalayer conformance vectors", () => {
         expect(timeline.postsById.get(vector.expected.markTarget)?.marks?.map((m) => m.id)).toEqual(vector.expected.markIds);
       }
     } else if (vector.operation === "resolve_parent") {
-      const attachment = parseThreadAttachment(vector.input.attached_to);
+      const attachment = parseThreadAttachment(vector.input.parent ?? vector.input.attached_to);
       expect(attachment).not.toBeNull();
       if (!attachment) throw new Error("Expected typed attachment");
       const resolved = resolveThreadParent(attachment, vector.input.roots);
       if (vector.expected.attachmentKind) expect(attachment.kind).toBe(vector.expected.attachmentKind);
       if (vector.expected.status === "resolved") {
         expect(resolved).toEqual({ status: "resolved", parent: vector.expected.parent });
+      } else if (vector.expected.status === "none") {
+        expect(resolved).toEqual({ status: "none", attachment });
       } else {
-        expect(resolved).toEqual({ status: vector.expected.status, attachment });
+        expect(resolved).toEqual({ status: vector.expected.status });
       }
     } else if (vector.operation === "inspect_posts") {
       const agreement = vector.input.agreement
@@ -268,6 +288,10 @@ describe("metalayer conformance vectors", () => {
       expect(inspection.closed).toBe(vector.expected.closed);
       expect(inspection.writable).toBe(vector.expected.writable);
       expect(inspection.writeRefusal).toBe(vector.expected.writeRefusal);
+      if ("source" in vector.expected) expect(inspection.source).toBe(vector.expected.source);
+      if ("parentPost" in vector.expected) expect(inspection.parentPost ?? null).toEqual(vector.expected.parentPost);
+      if ("about" in vector.expected) expect(inspection.about.map((link) => link.raw)).toEqual(vector.expected.about);
+      if ("aboutPost" in vector.expected) expect(inspection.aboutPost ?? null).toEqual(vector.expected.aboutPost);
       if (vector.expected.readableIds) expect(inspection.posts.map((p) => p.id)).toEqual(vector.expected.readableIds);
       if (vector.expected.unreadablePaths) {
         expect(inspection.unreadable.map((p) => p.path)).toEqual(vector.expected.unreadablePaths);
@@ -277,6 +301,29 @@ describe("metalayer conformance vectors", () => {
       }
       if (vector.expected.warnings) expect(inspection.warnings).toEqual(vector.expected.warnings);
     } else throw new Error(`Unknown operation ${vector.operation}`);
+  }
+
+  it.each(metalayer.vectors)("executes $id", (vector: any) => executeThreadVector(vector));
+
+  it("publishes parent and about vectors through the manifest", () => {
+    expect((manifest as any).parent_vectors).toBe("parent.json");
+    expect(parentVectors.format).toBe("ideaspaces-thread-parent/v1");
+    expect(parentVectors.vectors.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it.each(parentVectors.vectors)("executes $id", (vector: any) => executeThreadVector(vector));
+
+  it("names the kinds that make a tree edge", () => {
+    for (const value of ["post:msg_a", "msg_a", "_threads/t/01.md", "post:@n_0123456789abcdef01234567//_threads/t/msg_a"]) {
+      const link = parseThreadAttachment(value);
+      expect(link, value).not.toBeNull();
+      expect(isPostReference(link!), value).toBe(true);
+    }
+    for (const value of ["note:@home//notes/a.md", "id:msg_a", "path:_threads/t/01.md", "repo:n_0123456789abcdef01234567"]) {
+      const link = parseThreadAttachment(value);
+      expect(link, value).not.toBeNull();
+      expect(isPostReference(link!), value).toBe(false);
+    }
   });
 });
 
@@ -672,7 +719,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }

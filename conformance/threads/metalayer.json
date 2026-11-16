@@ -119,7 +119,7 @@
       "operation": "inspect_posts",
       "covers": ["agreement_attachment_precedence", "origin_kept"],
       "input": { "agreement": "---\nattached_to: post:msg_current\n---\n", "sources": [{ "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: note:@home//notes/topic.md\n---\nNew topic" }] },
-      "expected": { "parent": "post:msg_current", "origin": "note:@home//notes/topic.md", "closed": false, "writable": true }
+      "expected": { "parent": "post:msg_current", "source": "agreement", "origin": null, "about": ["note:@home//notes/topic.md"], "closed": false, "writable": true }
     },
     {
       "id": "opening-attachment-fallback",

@@ -74,7 +74,7 @@ replace a missing semantic with registry, package, discovery, or adapter machine
 
 - **Name and placement:** exact `_threads/`, beneath any directory carrying an Agreement.
 - **Payload:** collaboration threads with thread `_agent/agreement.md`, immutable dated posts (`id`,
-  `in_reply_to`, `references`, `kind`, `map`), and curated `README.md` lens.
+  `in_reply_to`, `references`, `kind`, `map`, `parent`, `about`), and curated `README.md` lens.
 - **Authored references:** root-relative Map member positions (`_threads/<thread>/README.md`,
   `_threads/<thread>/<post>.md`), resolving across unified checkouts and separate worktree branches.
 - **Unaware behavior:** the generic extension boundary skips the subtree quietly; Map readers
