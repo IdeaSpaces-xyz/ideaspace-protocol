@@ -403,7 +403,9 @@ imports from `@ideaspaces/protocol` or `@ideaspaces/protocol/threads` stays.
 - **A snapshot is a post that carries a Map.** A writer stops offering or requiring
   `kind: snapshot`: `threads post --map <note>` on a `post` is the snapshot. The reader keeps legacy
   snapshots and the `snapshot_requires_map` warning. `THREAD_KINDS` still lists all six kinds a reader
-  acts on; `ENTRY_KINDS` (`post`, `reframe`, `correction`, `mark`) are the ones a writer offers.
+  acts on; `ENTRY_KINDS` (`post`, `reframe`, `correction`, `mark`) are the ones a writer offers. The
+  legacy reads go only when no writer produces the kinds and one release of each reader has shipped
+  after that, no earlier than 1.0 ([`time.md`](time.md#entries-set-state), "When the legacy kinds go").
 - **A `reframe` renames.** The Thread's `name` and `summary` are the newest readable reframe's, else
   the opening post's; `inspectThreadPosts` gains `name`, `summary`, `namePost` and `summaryPost`. A writer that moves
   without renaming leaves `name` and `summary` off the reframe. Legacy move-reframes that carried a
