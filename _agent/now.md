@@ -1,8 +1,21 @@
 ---
 name: Now
-summary: "v0.32.0, not released: a repository's identity image (README.md image:, under _assets/ rules) and the current Thread Map, each specified with a pure reader and vectors. Before it, access version one: pure supplied-fact check, list and who-with-path, settled Space/company/ownership rules and portable evaluator vectors. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
+summary: "v0.33.0, not released: a Thread's place in the tree is parent, one post reference set by its newest post, and what it is about is about, typed links; legacy attached_to reads as one or the other. Before it, v0.32.0 (not released): a repository's identity image and the current Thread Map, each with a pure reader and vectors; and access version one. No release, engine, or consumer pin change. Three product questions remain named in schema/access.md."
 ---
 # Now
+
+## Parent and about, v0.33.0 (not released)
+
+A Thread's place in the tree is `parent`, one post reference on a post; what it is about or grew out
+of is `about`, any number of open typed links that never make a tree edge. The opening post's
+`parent` is the origin; a `reframe` that carries `parent` moves the Thread; the current parent is
+the newest post's, then the Agreement's, then the origin, and `inspectThreadPosts` says which
+(`source`) and from which post. A post reference may name a post in another root,
+`post:@<root>//…`, resolved only in a supplied root with that label. A legacy `attached_to` reads
+as `parent` when it names a post and as `about` otherwise; writers write both during the
+compatibility window. See
+[`schema/threads.md`](../schema/threads.md#where-a-thread-sits-and-what-it-is-about-parent-and-about)
+and `conformance/threads/parent.json`. No tag or release is part of this change.
 
 ## A repository's identity image, v0.32.0 (not released)
 

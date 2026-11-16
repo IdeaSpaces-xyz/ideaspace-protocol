@@ -2,11 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://ideaspaces.xyz/schema/thread-agreement.schema.json",
   "title": "Ideaspace Thread Agreement frontmatter",
-  "description": "Optional frontmatter on _threads/<thread>/_agent/agreement.md only. For new authoring, validate a parsed YAML object against this schema, not the ordinary Note schema. A reader tolerates an old malformed attached_to, drops that field and reports invalid_attached_to instead of rejecting the Agreement. A plain Markdown Agreement has no declared parent; malformed YAML is diagnosed before schema validation. PROVISIONAL, v0.28.0.",
+  "description": "Optional frontmatter on _threads/<thread>/_agent/agreement.md only. For new authoring, validate a parsed YAML object against this schema, not the ordinary Note schema. Since 0.33.0 the Thread's current parent is set by posts (the newest post that carries `parent`); the Agreement field is the fallback a writer keeps during the compatibility window, read as `parent` first, then the legacy `attached_to`. A reader tolerates an old malformed value, drops that field and reports invalid_parent or invalid_attached_to instead of rejecting the Agreement. A plain Markdown Agreement has no declared parent; malformed YAML is diagnosed before schema validation. PROVISIONAL, v0.33.0.",
   "type": "object",
   "properties": {
+    "parent": {
+      "description": "Optional fallback parent post, written during the compatibility window: a canonical repository-root-relative post path or opaque msg_ id, with or without the post: prefix. A post's `parent` newer than the opening wins over it; it wins over the opening post, which records the immutable origin. The addressed form post:@<root>//… belongs on posts, not here. No pin is carried; see threads.md for resolution.",
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^(post:)?msg_[A-Za-z0-9][A-Za-z0-9_-]*$"
+        },
+        {
+          "type": "string",
+          "pattern": "^(post:)?_threads/[^/.][^/]*/[^/.][^/]*\\.md$",
+          "not": { "pattern": "/README\\.md$" }
+        }
+      ]
+    },
     "attached_to": {
-      "description": "Optional current parent post: a canonical repository-root-relative post path or opaque msg_ id. It wins over the opening post attachment, which records the immutable origin. No pin is carried here; see threads.md for resolution.",
+      "description": "Legacy name of `parent`, read when `parent` is absent: a canonical repository-root-relative post path or opaque msg_ id. Writers keep it beside a post's `parent` during the compatibility window and stop after it. No pin is carried here; see threads.md for resolution.",
       "oneOf": [
         {
           "type": "string",

@@ -1,6 +1,6 @@
 # Collaboration threads and `_threads/`
 
-> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, root-relative Map pointers, and the current Thread Map. **Provisional, v0.32.0.**
+> Language-neutral contract for recognizing local collaboration threads, immutable posts, curated README lens, root-relative Map pointers, a Thread's `parent` and `about`, and the current Thread Map. **Provisional, v0.33.0.**
 
 ## Role, name, and placement
 
@@ -41,27 +41,99 @@ host filesystem does not normalize `_Threads/` into the convention. `_Threads/`,
 
 Each thread folder (e.g. `_threads/<thread>/`) contains:
 
-1. `_agent/agreement.md` — standing terms and entry schema for the thread; optionally attaches this Thread to a parent post.
+1. `_agent/agreement.md` — standing terms and entry schema for the thread; during the compatibility window it may carry the fallback `parent` (legacy `attached_to`).
 2. **Posts** — dated Markdown files (e.g. `2026-09-26-01-decision.md` or `2026-09-26T12-00-00Z.md`).
 3. `README.md` — the curated lens for the thread.
 
-### Parent attachment: origin on the opening post, current parent in the Agreement
+### Where a Thread sits and what it is about: `parent` and `about`
 
-A Thread's opening post MAY declare one `attached_to: <type>:<id>` typed link, capturing what the Thread grew out of at birth. The type namespace is open, not a protocol-defined list. For example, `note:@<root>//<position>`, `repo:n_…`, `change:chg_…` and unfamiliar types are kept and shown; readers and listeners interpret what they recognise. Only `post:msg_…` or `post:_threads/<thread>/<post>.md` establishes an edge in the Thread tree. Bare `msg_…` post ids and canonical post paths are accepted as aliases. Typed `id:...` and `path:...` are *not* bare aliases: they are kept as non-post metadata with no tree edge, even if their value looks like a post target. The pure parser projects them as `kind: typed:id` and `kind: typed:path` with `raw` retaining the authored value; this internal distinction prevents the typed values from masquerading as the bare `kind: id` and `kind: path` aliases. Other open types retain their authored kind. Absent means the Thread starts independently from nothing.
+Two fields on posts carry two relations. Both follow the rule the current Map follows: a post sets
+a value, and the Thread's current value is the newest post's.
 
-**One relation, one parent:** A Thread's parent and what it is about are unified in `attached_to`. A Thread has at most one parent. When a Thread starts from multiple points of context across threads or notes, `attached_to` names the primary parent, while the opening post's `map` block carries pointers in time to all cited posts and notes.
+**`parent` is the Thread's place in the tree: one post reference.** The opening post's `parent` is
+the Thread's **origin**, where it started, immutable with the post. A later post that carries
+`parent` moves the Thread; a writer records a move as a `kind: reframe` post whose body says why, so
+the reason travels with the Thread. The **current parent** is the `parent` of the newest post after
+the opening that carries a valid one, whatever its kind: `reframe` is the kind writers use, and a
+`correction` that carries `parent` puts the Thread back. Newest is code-unit filename order, as for
+the current Map; an authored `date` does not reorder it. When no later post carries one, the Thread
+Agreement's `parent` (or its legacy `attached_to`) is the current parent; when the Agreement declares
+none, the origin is. A reader reports where the value came from (`source`: `post`, `agreement` or
+`origin`) and the post it came from, and shows the origin beside a current parent that differs from
+it. The parent is `unknown` only when no later post sets it, the Agreement declares none, and the
+opening post cannot be read; that unreadable opening still refuses writes. An unreadable post newer
+than the one that set the parent may have moved the Thread: a reader names it in its unreadable
+list and never guesses.
 
-**Origin and current parent:** Posts are immutable, whereas an Agreement can change over time. The opening post's `attached_to` records the Thread's **origin**: what it grew out of at birth, which never changes. The Thread Agreement's `attached_to` records the Thread's **current parent**, which its holders may change when the work moves under another post. A reader MUST prefer a valid Thread Agreement `attached_to` as the current parent, and falls back to the opening post's attachment when the Agreement declares none (absent, plain Markdown, or a malformed field dropped with a warning). Readers keep both: when the current parent differs from the origin, a reader that shows one SHOULD show the other. Removing the Agreement field restores the origin as the parent; there is no detach value. A valid Agreement parent resolves even when the opening post is unreadable, so the parent is `unknown` only when the Agreement declares none and the opening post cannot be read; that unreadable opening still refuses writes.
+**`about` is what the Thread is about or grew out of: any number of typed links.** Each is
+`<type>:<id>` in the open namespace (`note:@<root>//<position>`, `repo:n_…`, `web:https://…`,
+`change:chg_…`, or a type the reader has never seen, kept and shown). A `post:` link in `about`
+cites a post without sitting under it. `about` never establishes an edge in the Thread tree. The
+Thread's `about` is the `about` of the newest post that carries the field; `about: []` clears it.
+Listeners read `about`; the tree reads `parent`. Absent both, the Thread starts independently from
+nothing. When a Thread starts from several points of context, `parent` names the one it sits under,
+`about` names the rest, and the opening post's `map` block pins them all in time.
 
-The two locations have intentionally different grammars. The opening post carries the open typed link above. The Thread Agreement carries a **post target only**: new authors write a bare `msg_…` id or a canonical post path; readers also accept the `post:` form of either. The ordinary Note frontmatter JSON Schema does not govern `_threads/` Agreements. For **new authoring**, the separate [`thread-agreement.schema.json`](thread-agreement.schema.json) validates the Agreement's post-target grammar and rejects a malformed field before writing. A **reader** of an existing malformed Agreement `attached_to` drops only that field, warns `invalid_attached_to`, and falls back to the origin. So `note:@root//pos` (or any open type) is retained on an opening post and reports no *post* parent edge, but the same value on an Agreement is outside its post-only grammar and yields absent plus a warning. A malformed YAML block still cannot be read as an Agreement.
+**A post reference** has three forms, and bare aliases of the first two:
 
-Moving a Thread under another post is a write to its Agreement's `attached_to`, recorded by a `reframe` post that names the previous and new parent, so the reason travels with the Thread. Hosted Thread parents are server-owned and outside this local rule.
+- `post:msg_…` — a post by id, resolved in the roots the caller supplies;
+- `post:_threads/<thread>/<post>.md` — a canonical post path in the same root;
+- `post:@<root>//<selector>` — an **addressed post** in a named root: `<root>` is a root identity
+  `n_…` or a Map root name, and `<selector>` is a canonical post path or a folder's `msg_…` id
+  (`_threads/<thread>/msg_…`, or `msg_…` at the root, as the post-id look below defines). The
+  reader's own root (`//…`) is not a parent form; a post in the same root uses the plain forms.
+
+A bare `msg_…` id and a bare canonical post path are accepted as aliases. Typed `id:…` and
+`path:…` are *not* aliases: they are kept as non-post metadata with no tree edge, even if their value
+looks like a post target. The pure parser projects them as `kind: typed:id` and `kind: typed:path`
+with `raw` retaining the authored value; this internal distinction prevents the typed values from
+masquerading as the bare `kind: id` and `kind: path` aliases. The path form of a post has exactly
+three segments: `_threads/`, a nonempty thread name not beginning with `.`, and a nonempty `.md`
+post filename not beginning with `.` and not `README.md`; `.`/`..` segments, absolute paths and
+extra segments are invalid. An id starts `msg_` followed by an ASCII letter or digit, then zero or
+more ASCII letters, digits, `_` or `-` (`^msg_[A-Za-z0-9][A-Za-z0-9_-]*$`).
+
+**Resolution.** A reader resolves a post reference using **only** root snapshots explicitly supplied
+or authorized by its caller. A path matches only that exact canonical post position within a
+supplied root; an id matches only the post's authored `id` within those roots. An addressed post
+matches only in the supplied root whose label is the address's root identity or name: by exact path,
+or by id among the posts of the named folder (an id at the root matches in any folder of that root).
+A post id that happens to equal another post's path does not make a path match ambiguous. A unique
+match reports both the authored value and the parent root, pin, Thread and post; no match is
+`unresolved`, and multiple matches are `ambiguous` with **no chosen parent**. Every form produces
+the same reverse child-Thread link. A reader MUST NOT scan arbitrary filesystem roots, pick the first
+match, or substitute working-tree HEAD when an authored pin lacks the post. `about` links are not
+resolved by this contract: a reader reports `status: none` for them and keeps them as metadata for
+listeners; `unresolved` is reserved for a missing post edge.
+
+**The legacy field, `attached_to`.** Before 0.33.0 one field carried both relations, and existing
+Threads keep it for good. A reader reads a post's `attached_to` as `parent` when it is a post
+reference (or bare alias) and as `about`, one link, otherwise; when the post also carries `parent`
+or `about`, the new field wins and `attached_to` is kept as authored. A Thread Agreement's
+`attached_to` keeps its post-only grammar and reads as the Agreement's `parent`.
+
+**Writers during the compatibility window.** Until every reader a Thread reaches reads `parent` and
+`about`, a writer writes both: an opening post carries `parent` and an `attached_to` with the same
+post value, or `about` and an `attached_to` with its first link when there is no parent; a move is a
+`reframe` carrying `parent`, and the writer sets the Agreement's `attached_to` to the same value.
+After the window a writer writes `parent` and `about` only, and never the Agreement field. The
+window is a consumer decision, named where each reader ships; the protocol does not date it.
+
+**The Agreement's grammar.** The ordinary Note frontmatter JSON Schema does not govern `_threads/`
+Agreements. For **new authoring**, the separate
+[`thread-agreement.schema.json`](thread-agreement.schema.json) validates the Agreement's `parent` and
+`attached_to` as a post in the same root (the addressed form belongs on posts) and rejects a
+malformed value before writing. A **reader** of an existing malformed value drops only that field,
+warns `invalid_parent` or `invalid_attached_to`, and falls back to the next source. So
+`note:@root//pos` on an opening post is `about`, but the same value on an Agreement is outside its
+post-only grammar and yields absent plus a warning. A malformed YAML block still cannot be read as
+an Agreement.
+
+A hosted Thread's parent has the same shape: a post reference whose current value comes from the
+newest entry that set it, then the Thread's Agreement where one exists, then the origin; how a host
+stores it is the host's.
 
 **Rejected alternative — cross-Thread `in_reply_to`:** An `in_reply_to` field on the opening post pointing to another Thread is rejected because it would conflate within-Thread timeline DAG ancestry with the Thread tree hierarchy. `in_reply_to` is reserved for replies within the same Thread's timeline.
-
-The path form of a post attachment has exactly three segments: `_threads/`, a nonempty thread name not beginning with `.`, and a nonempty `.md` post filename not beginning with `.` and not `README.md`; `.`/`..` segments, absolute paths and extra segments are invalid. An id starts `msg_` followed by an ASCII letter or digit, then zero or more ASCII letters, digits, `_` or `-` (`^msg_[A-Za-z0-9][A-Za-z0-9_-]*$`).
-
-A reader resolves a `post:` attachment using **only** root snapshots explicitly supplied or authorized by its caller. A path matches only that exact canonical post position within a supplied root; an id matches only the post's authored `id` within those roots. A post id that happens to equal another post's path does not make a path match ambiguous. A unique match reports both the original authored value and the parent root, pin, Thread and post; no match is `unresolved`, and multiple matches are `ambiguous` with **no chosen parent**. Both forms produce the same reverse child-Thread link. A reader MUST NOT scan arbitrary filesystem roots, pick the first match, or substitute working-tree HEAD when an authored pin lacks the post. Non-post attachments (`note:`, `repo:`, `change:`, or custom types) do not establish edges in the Thread tree. Report `status: none` (no parent edge), keeping the attachment as metadata for listeners; `unresolved` is reserved for a missing post edge.
 
 ### Immutable posts and field tolerance
 
@@ -77,7 +149,9 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 | `references` | Array of strings | Optional ancestor chain of post ids, ordered from oldest ancestor to immediate parent. |
 | `kind` | String | What a reader acts on: standard `post` (default), `snapshot`, `reframe`, `correction`, `closure`, `mark`. A writer uses only these; a label for a post goes in `tags`. A reader keeps tolerating any other value: unknown kinds are valid and preserved in the DAG. The raw nonempty string is kept; `"mark "` is an unknown kind, not normalized to `mark`. |
 | `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). The authored string is kept; whitespace-only or YAML-coerced non-string values warn and are not folded. |
-| `attached_to` | String (`<type>:<id>`) | Optional open typed link on the opening post; only `post:` (or a bare post alias) has tree-edge semantics. |
+| `parent` | String (post reference) | Optional. The Thread's place in the tree: `post:msg_…`, a canonical post path, an addressed post `post:@<root>//…`, or a bare alias. On the opening post, the origin; on a later post, a move. The current parent is the newest post's. |
+| `about` | String or array of strings (`<type>:<id>`) | Optional. What the Thread is about or grew out of: open typed links, any number; `[]` clears. Never a tree edge. The current `about` is the newest post's. |
+| `attached_to` | String (`<type>:<id>`) | Legacy, before 0.33.0. A post reference reads as `parent`; any other typed link reads as `about`. Writers keep it beside the new fields during the compatibility window. |
 | `supersedes` | String | Optional post id being superseded when `kind` is `correction` or when retracting a mark. |
 | `map` | Object | Map block (`roots`, `members`) capturing cited coordinates and selections. REQUIRED on new `kind: snapshot` posts; optional on other kinds. |
 | `name` | String | Optional title or subject line. |
@@ -87,7 +161,7 @@ A post MUST declare valid leading YAML frontmatter containing at least a non-emp
 
 #### Field tolerance rule
 
-A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one member, `references`, `supersedes`, `attached_to`, `in_reply_to`, `date`, `kind`, or `mark`) is dropped with a diagnostic warning naming the post and field; the post itself remains valid and readable. A numeric-looking mark such as `+1` MUST be quoted as a string in YAML (`mark: '+1'`); otherwise YAML may coerce it to a number and the parser warns `invalid_mark`.
+A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one member, `references`, `supersedes`, `parent`, `about` or one of its links, `attached_to`, `in_reply_to`, `date`, `kind`, or `mark`) is dropped with a diagnostic warning naming the post and field; the post itself remains valid and readable. One bad `about` link drops that link and warns `invalid_about`; the good links stay. A numeric-looking mark such as `+1` MUST be quoted as a string in YAML (`mark: '+1'`); otherwise YAML may coerce it to a number and the parser warns `invalid_mark`.
 
 #### `kind: snapshot` carries a Map
 
@@ -273,7 +347,7 @@ Independent implementations share these portable operations:
    - Reconstruct the reply DAG and topologically ordered timeline. Keep unknown kinds in the DAG. Fold `kind: mark` posts onto their target by `(author, mark)`, dropping those retracted by a correction and counting an author's repeat once; do not put marks in the linear timeline.
 
 3. **`parse_thread_post` (`parseThreadPost`), `parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
-   - `inspectThreadPosts(sources, agreementAttachment)` returns `origin` (the parsed opening post's `attachedTo`, or `unknown` when the opening is unreadable) and `parent` (a valid Agreement attachment, else `origin`). The resolver understands `post:` and bare `id`/`path` post aliases only; all other open types return `none` with the attachment preserved. An invalid Agreement `attached_to` returns absent plus warning rather than rejecting the Agreement; consumers must show that warning. Only post targets are tree edges. Resolve a post edge against explicitly supplied pinned root snapshots. Report resolved, unresolved, or ambiguous for a post edge; return `none` for a non-post attachment while keeping its metadata. Never guess or change an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
+   - `parseThreadPost` sets `post.parent` from `parent` (else a legacy post `attached_to`) and `post.about` from `about` (else a legacy non-post `attached_to`, one link), keeping `attachedTo` as authored. `inspectThreadPosts(sources, agreementAttachment)` returns `origin` (the opening post's `parent`, or `unknown` when the opening is unreadable), `parent` (the newest later post's, else a valid Agreement field, else `origin`), `source` (`post`, `agreement`, `origin` or `null`) with `parentPost`, and `about` with `aboutPost` (the newest post's that carries one; empty when none does). The resolver understands `post:` (including the addressed form) and bare `id`/`path` aliases only; all other open types return `none` with the link preserved. An invalid Agreement `parent` or `attached_to` returns absent plus warning rather than rejecting the Agreement; consumers must show that warning. Only post references are tree edges; `isPostReference` is that test. Resolve a post edge against explicitly supplied pinned root snapshots; an addressed post resolves only in the supplied root whose label is the address's root. Report resolved, unresolved, or ambiguous for a post edge; return `none` for a non-post link while keeping its metadata. Never guess or change an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
 
 4. **`resolve_thread_git_path` (`resolveThreadGitPath`)**:
    - Resolves an authored repository-relative `_threads/...` Map position against a pinned Git tree,
@@ -294,7 +368,7 @@ Independent implementations share these portable operations:
      `lookback` (`examined`, `limit`, `stopped`). `none` carries `reason`: `empty`, `no_map` or
      `opening_unknown`. Pure: no filesystem, Git or network read.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 
@@ -346,6 +420,32 @@ Additive. No file on disk changes meaning.
   and named, where a client may have used it or stopped.
 - **Show `stopped` and `skipped`.** A capped or partial read that falls back to the opening post's
   Map should say so, and a passed-over post should be named where the Map is shown.
+
+## Consumer migration: 0.32.0 → 0.33.0
+
+Additive for files on disk: no field is removed, and an existing post or Agreement changes meaning
+only as the legacy reading says.
+
+- **`parent` and `about` take over `attached_to`'s two jobs.** A post's `parent` is one post
+  reference; `about` is any number of typed links. A reader derives both from a legacy
+  `attached_to`: a post reference is `parent`, anything else is `about`. A consumer that showed a
+  non-post `attached_to` as the parent now shows it under `about`, and the Thread's `origin` is
+  `null` unless the opening names a post.
+- **The current parent moves with posts.** `inspectThreadPosts` takes the newest later post that
+  carries `parent`, then the Agreement's `parent` or `attached_to`, then the origin. A Thread whose
+  Agreement was edited to move it reads the same as before until a post moves it again. The result
+  gains `source` (`post` | `agreement` | `origin` | `null`), `parentPost`, `about` and `aboutPost`.
+- **Addressed posts.** `post:@<root>//<selector>` is a valid `parent` on a post. `resolveThreadParent`
+  resolves it only in the supplied root whose label is the address's root identity or name; a
+  consumer that labels its roots otherwise reports `unresolved`, which is honest, not a defect. The
+  Agreement's fallback field does not take the addressed form.
+- **New warnings:** `invalid_parent` on a post or an Agreement, `invalid_about` on a post. Show them
+  where `invalid_attached_to` is shown.
+- **Writers write both during the window:** `parent` or `about` beside `attached_to` on the opening
+  post, and the Agreement's `attached_to` beside a `reframe`'s `parent` on a move. A writer stops
+  writing `attached_to` once every reader its Threads reach is on this version or later.
+- **`isPostReference(link)`** is exported: the test a reader applies before treating a link as a tree
+  edge.
 
 ## Format evolution
 

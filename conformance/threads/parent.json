@@ -1,0 +1,271 @@
+{
+  "format": "ideaspaces-thread-parent/v1",
+  "description": "Where a Thread sits (`parent`, one post reference) and what it is about (`about`, open typed links), on posts. parse_post: compare id, warnings, and the raw parent/about/attachedTo the post sets. inspect_posts: compare the current parent (raw), its source (post, agreement, origin or null), the post it came from, the origin, the current about list (raw) and its post, plus closed/writable. resolve_parent: an addressed post `post:@<root>//…` resolves only in the supplied root whose label is the address's root, by exact path or by id inside the named folder. Roots are explicit authorized snapshots, never live HEAD.",
+  "vectors": [
+    {
+      "id": "opening-parent-and-about",
+      "operation": "parse_post",
+      "covers": ["parent_field", "about_field"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_item\nabout:\n  - note:@home//notes/topic.md\n  - repo:n_0123456789abcdef01234567\n---\nNew topic" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": "post:msg_item", "about": ["note:@home//notes/topic.md", "repo:n_0123456789abcdef01234567"] }
+    },
+    {
+      "id": "about-one-string-is-one-link",
+      "operation": "parse_post",
+      "covers": ["about_field"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nabout: web:https://example.org/page\n---\nNew topic" },
+      "expected": { "status": "valid", "id": "msg_open", "about": ["web:https://example.org/page"] }
+    },
+    {
+      "id": "about-empty-list-clears",
+      "operation": "parse_post",
+      "covers": ["about_clears"],
+      "input": { "path": "_threads/child/02.md", "content": "---\nid: msg_clear\nabout: []\n---\nNo longer about anything" },
+      "expected": { "status": "valid", "id": "msg_clear", "about": [] }
+    },
+    {
+      "id": "about-post-link-is-kept-as-a-link",
+      "operation": "parse_post",
+      "covers": ["about_field", "about_no_edge"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nabout:\n  - post:msg_cited\n---\nCites a post without sitting under it" },
+      "expected": { "status": "valid", "id": "msg_open", "about": ["post:msg_cited"] }
+    },
+    {
+      "id": "invalid-parent-dropped-with-warning",
+      "operation": "parse_post",
+      "covers": ["invalid_parent_warns"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: note:@home//notes/topic.md\n---\nA Note is not a parent" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": null, "about": null, "warnings": [{ "field": "parent", "warning": "invalid_parent" }] }
+    },
+    {
+      "id": "about-drops-bad-link-keeps-good",
+      "operation": "parse_post",
+      "covers": ["invalid_about_warns"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nabout:\n  - note:@home//notes/a.md\n  - 42\n  - garbage\n---\nMixed" },
+      "expected": { "status": "valid", "id": "msg_open", "about": ["note:@home//notes/a.md"], "warnings": [{ "field": "about", "warning": "invalid_about" }] }
+    },
+    {
+      "id": "about-with-nothing-valid-is-dropped",
+      "operation": "parse_post",
+      "covers": ["invalid_about_warns"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nabout: garbage\n---\nNothing valid" },
+      "expected": { "status": "valid", "id": "msg_open", "about": null, "warnings": [{ "field": "about", "warning": "invalid_about" }] }
+    },
+    {
+      "id": "legacy-attached-to-post-reads-as-parent",
+      "operation": "parse_post",
+      "covers": ["legacy_attached_to_parent"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: post:msg_item\n---\nOld writer" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": "post:msg_item", "about": null, "attachedTo": "post:msg_item" }
+    },
+    {
+      "id": "legacy-bare-id-reads-as-parent",
+      "operation": "parse_post",
+      "covers": ["legacy_attached_to_parent"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: msg_item\n---\nOld writer" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": "msg_item", "attachedTo": "msg_item" }
+    },
+    {
+      "id": "legacy-attached-to-note-reads-as-about",
+      "operation": "parse_post",
+      "covers": ["legacy_attached_to_about"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: note:@home//notes/topic.md\n---\nOld writer" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": null, "about": ["note:@home//notes/topic.md"], "attachedTo": "note:@home//notes/topic.md" }
+    },
+    {
+      "id": "legacy-typed-id-is-about-not-parent",
+      "operation": "parse_post",
+      "covers": ["legacy_attached_to_about"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: id:msg_item\n---\nTyped id is metadata" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": null, "about": ["id:msg_item"], "attachedTo": "id:msg_item" }
+    },
+    {
+      "id": "parent-wins-over-legacy-attached-to",
+      "operation": "parse_post",
+      "covers": ["parent_over_attached_to"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_new\nattached_to: post:msg_old\n---\nBoth written in the window" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": "post:msg_new", "attachedTo": "post:msg_old" }
+    },
+    {
+      "id": "about-wins-over-legacy-attached-to",
+      "operation": "parse_post",
+      "covers": ["parent_over_attached_to"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nabout:\n  - repo:n_0123456789abcdef01234567\nattached_to: note:@home//notes/topic.md\n---\nBoth written in the window" },
+      "expected": { "status": "valid", "id": "msg_open", "about": ["repo:n_0123456789abcdef01234567"], "attachedTo": "note:@home//notes/topic.md" }
+    },
+    {
+      "id": "addressed-parent-parses",
+      "operation": "parse_post",
+      "covers": ["parent_addressed_post"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:@n_0123456789abcdef01234567//_threads/parent/msg_item\n---\nParent in another root" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": "post:@n_0123456789abcdef01234567//_threads/parent/msg_item" }
+    },
+    {
+      "id": "addressed-non-post-position-is-invalid",
+      "operation": "parse_post",
+      "covers": ["parent_addressed_post", "invalid_parent_warns"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:@n_0123456789abcdef01234567//notes/topic.md\n---\nA Note address is not a post" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": null, "warnings": [{ "field": "parent", "warning": "invalid_parent" }] }
+    },
+    {
+      "id": "self-address-is-not-a-parent-form",
+      "operation": "parse_post",
+      "covers": ["parent_addressed_post", "invalid_parent_warns"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post://_threads/parent/msg_item\n---\nSame root uses the plain forms" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": null, "warnings": [{ "field": "parent", "warning": "invalid_parent" }] }
+    },
+    {
+      "id": "addressed-parent-resolves-by-id-in-named-folder",
+      "operation": "resolve_parent",
+      "covers": ["parent_addressed_post"],
+      "input": { "parent": "post:@n_0123456789abcdef01234567//_threads/parent/msg_item", "roots": [{ "root": "n_0123456789abcdef01234567", "pin": "aaaa", "posts": [
+        { "path": "_threads/parent/01.md", "id": "msg_item" },
+        { "path": "_threads/other/02.md", "id": "msg_item" }
+      ] }] },
+      "expected": { "status": "resolved", "parent": { "root": "n_0123456789abcdef01234567", "pin": "aaaa", "path": "_threads/parent/01.md", "id": "msg_item" } }
+    },
+    {
+      "id": "addressed-parent-resolves-by-exact-path",
+      "operation": "resolve_parent",
+      "covers": ["parent_addressed_post"],
+      "input": { "parent": "post:@home//_threads/parent/01.md", "roots": [{ "root": "home", "pin": "aaaa", "posts": [{ "path": "_threads/parent/01.md", "id": "msg_item" }] }] },
+      "expected": { "status": "resolved", "parent": { "root": "home", "pin": "aaaa", "path": "_threads/parent/01.md", "id": "msg_item" } }
+    },
+    {
+      "id": "addressed-parent-in-another-root-is-unresolved",
+      "operation": "resolve_parent",
+      "covers": ["parent_addressed_post"],
+      "input": { "parent": "post:@n_0123456789abcdef01234567//_threads/parent/msg_item", "roots": [{ "root": "home", "pin": "aaaa", "posts": [{ "path": "_threads/parent/01.md", "id": "msg_item" }] }] },
+      "expected": { "status": "unresolved" }
+    },
+    {
+      "id": "addressed-root-id-selector-matches-any-folder",
+      "operation": "resolve_parent",
+      "covers": ["parent_addressed_post"],
+      "input": { "parent": "post:@home//msg_item", "roots": [{ "root": "home", "pin": "aaaa", "posts": [
+        { "path": "_threads/parent/01.md", "id": "msg_item" },
+        { "path": "_threads/other/02.md", "id": "msg_item" }
+      ] }] },
+      "expected": { "status": "ambiguous" }
+    },
+    {
+      "id": "newest-post-with-parent-is-current",
+      "operation": "inspect_posts",
+      "covers": ["parent_newest_post", "parent_source_reported"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\n---\nStarted under a" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_move\nkind: reframe\nin_reply_to: msg_open\nparent: post:msg_b\n---\nMoved under b, because" },
+        { "path": "_threads/child/03.md", "content": "---\nid: msg_later\nin_reply_to: msg_move\n---\nNo parent here" }
+      ] },
+      "expected": { "parent": "post:msg_b", "source": "post", "parentPost": { "id": "msg_move", "path": "_threads/child/02.md", "kind": "reframe" }, "origin": "post:msg_a", "about": [], "closed": false, "writable": true }
+    },
+    {
+      "id": "any-kind-sets-the-parent",
+      "operation": "inspect_posts",
+      "covers": ["parent_newest_post"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\n---\nStarted under a" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_move\nkind: reframe\nin_reply_to: msg_open\nparent: post:msg_b\n---\nMoved" },
+        { "path": "_threads/child/03.md", "content": "---\nid: msg_undo\nkind: correction\nsupersedes: msg_move\nin_reply_to: msg_move\nparent: post:msg_a\n---\nThe move was wrong; back under a" }
+      ] },
+      "expected": { "parent": "post:msg_a", "source": "post", "parentPost": { "id": "msg_undo", "path": "_threads/child/03.md", "kind": "correction" }, "origin": "post:msg_a", "closed": false, "writable": true }
+    },
+    {
+      "id": "later-post-beats-the-agreement",
+      "operation": "inspect_posts",
+      "covers": ["parent_newest_post", "parent_agreement_fallback"],
+      "input": { "agreement": "---\nparent: post:msg_c\n---\n", "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\n---\nStarted" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_move\nkind: reframe\nparent: post:msg_b\n---\nMoved" }
+      ] },
+      "expected": { "parent": "post:msg_b", "source": "post", "parentPost": { "id": "msg_move", "path": "_threads/child/02.md", "kind": "reframe" }, "origin": "post:msg_a", "closed": false, "writable": true }
+    },
+    {
+      "id": "agreement-parent-when-no-post-moves",
+      "operation": "inspect_posts",
+      "covers": ["parent_agreement_fallback", "agreement_parent_alias"],
+      "input": { "agreement": "---\nparent: post:msg_current\n---\n", "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\n---\nStarted" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nTalk" }
+      ] },
+      "expected": { "parent": "post:msg_current", "source": "agreement", "parentPost": null, "origin": "post:msg_a", "closed": false, "writable": true }
+    },
+    {
+      "id": "legacy-agreement-attached-to-is-the-fallback",
+      "operation": "inspect_posts",
+      "covers": ["parent_agreement_fallback", "legacy_attached_to_parent"],
+      "input": { "agreement": "---\nattached_to: msg_current\n---\n", "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: post:msg_a\n---\nOld writer" }
+      ] },
+      "expected": { "parent": "msg_current", "source": "agreement", "origin": "post:msg_a", "closed": false, "writable": true }
+    },
+    {
+      "id": "agreement-parent-wins-over-its-attached-to",
+      "operation": "inspect_posts",
+      "covers": ["agreement_parent_alias"],
+      "input": { "agreement": "---\nparent: post:msg_new\nattached_to: msg_old\n---\n", "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\n---\nStarted" }
+      ] },
+      "expected": { "parent": "post:msg_new", "source": "agreement", "origin": "post:msg_a", "closed": false, "writable": true }
+    },
+    {
+      "id": "malformed-agreement-parent-warns-and-falls-back",
+      "operation": "inspect_posts",
+      "covers": ["parent_agreement_fallback", "parent_origin_fallback"],
+      "input": { "agreement": "---\nparent: note:@home//notes/topic.md\n---\n", "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\n---\nStarted" }
+      ] },
+      "expected": { "parent": "post:msg_a", "source": "origin", "origin": "post:msg_a", "closed": false, "writable": true, "warnings": [{ "post": "_agent/agreement.md", "field": "parent", "warning": "invalid_parent" }] }
+    },
+    {
+      "id": "origin-when-nothing-else-sets-it",
+      "operation": "inspect_posts",
+      "covers": ["parent_origin_fallback", "parent_source_reported"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\n---\nStarted" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nTalk" }
+      ] },
+      "expected": { "parent": "post:msg_a", "source": "origin", "parentPost": { "id": "msg_open", "path": "_threads/child/01.md", "kind": "post" }, "origin": "post:msg_a", "closed": false, "writable": true }
+    },
+    {
+      "id": "unreadable-newer-post-is-named-not-guessed",
+      "operation": "inspect_posts",
+      "covers": ["parent_unreadable_newer_named"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\n---\nStarted" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_move\nkind: reframe\nparent: post:msg_b\n---\nMoved" },
+        { "path": "_threads/child/03.md", "content": "---\nid: [\n---\nBroken; may have moved the Thread" }
+      ] },
+      "expected": { "parent": "post:msg_b", "source": "post", "parentPost": { "id": "msg_move", "path": "_threads/child/02.md", "kind": "reframe" }, "origin": "post:msg_a", "closed": "unknown", "writable": true, "unreadablePaths": ["_threads/child/03.md"] }
+    },
+    {
+      "id": "about-from-the-newest-post-that-carries-it",
+      "operation": "inspect_posts",
+      "covers": ["about_newest_wins"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: post:msg_a\nabout:\n  - note:@home//notes/topic.md\n---\nStarted" },
+        { "path": "_threads/child/02.md", "content": "---\nid: msg_widen\nin_reply_to: msg_open\nabout:\n  - note:@home//notes/topic.md\n  - repo:n_0123456789abcdef01234567\n---\nAlso about the repo now" },
+        { "path": "_threads/child/03.md", "content": "---\nid: msg_reply\nin_reply_to: msg_widen\n---\nNo about here" }
+      ] },
+      "expected": { "parent": "post:msg_a", "source": "origin", "origin": "post:msg_a", "about": ["note:@home//notes/topic.md", "repo:n_0123456789abcdef01234567"], "aboutPost": { "id": "msg_widen", "path": "_threads/child/02.md", "kind": "post" }, "closed": false, "writable": true }
+    },
+    {
+      "id": "legacy-opening-note-is-about-not-origin",
+      "operation": "inspect_posts",
+      "covers": ["legacy_attached_to_about"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nattached_to: note:@home//notes/topic.md\n---\nGrew out of a Note" }
+      ] },
+      "expected": { "parent": null, "source": null, "parentPost": null, "origin": null, "about": ["note:@home//notes/topic.md"], "aboutPost": { "id": "msg_open", "path": "_threads/child/01.md", "kind": "post" }, "closed": false, "writable": true }
+    },
+    {
+      "id": "no-parent-and-no-about",
+      "operation": "inspect_posts",
+      "covers": ["parent_origin_fallback"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\n---\nIndependent" }
+      ] },
+      "expected": { "parent": null, "source": null, "parentPost": null, "origin": null, "about": [], "aboutPost": null, "closed": false, "writable": true }
+    }
+  ]
+}
