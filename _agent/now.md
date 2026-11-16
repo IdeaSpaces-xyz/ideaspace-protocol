@@ -1,8 +1,25 @@
 ---
 name: Now
-summary: "v0.33.0, not released: a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
+summary: "v0.33.0, not released: time is something a folder keeps, entries set its state by one rule, and as_of/since/newest read it in time; a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
 ---
 # Now
+
+## Time and state, v0.33.0 (not released)
+
+A folder keeps time by placement (`_threads/<thread>/`) or by `keeps_time: true` in its own
+Agreement; in a declared folder a file without an `id` is an ordinary Note, so turning time on for a
+folder of Notes flags nothing. Entries set the folder's state by one rule: the newest readable entry
+that carries a field wins, and an unreadable newer entry is named. `closed` is a boolean field
+(`kind: closure` reads as `closed: true`) and the one named exception, reading `unknown` when a newer
+entry can't be read, because writers act on it. A snapshot is any entry carrying a Map (`snapshot` is
+legacy, kept on read); a `reframe` is the one kind whose `name` and `summary` are the Thread's own;
+the README is a view of the state and the Agreement the one hand-kept file. `as_of`, `since` and
+`newest` select entries by filename or by moment, naming what they cannot place. The generic text is
+[`schema/time.md`](../schema/time.md) and the code `src/time.ts`, behind the Thread names, so nothing
+a consumer imports is removed; Content look pages and selects by id in any folder that keeps time.
+Memory is the fixture: `conformance/time/memory.json`. The human, 2026-11-14 and 2026-11-16. What a
+writer must change (the CLI's `--kind snapshot|closure`, Home's skills, the README view) is named in
+the PR body of the change that brought this, not built here. No tag or release is part of this change.
 
 ## The words: a Space is the place, a Map is the view (not released)
 
