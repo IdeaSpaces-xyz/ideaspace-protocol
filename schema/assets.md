@@ -136,7 +136,7 @@ its own, drawn only as an image; until then a reader MUST NOT show an SVG as an 
 
 ### Where readers use it
 
-A reader that lists or looks at a repository root (a content look at `.`, a list of a Vault's repos or
+A reader that lists or looks at a repository root (a content look at `.`, a list of a Space's repos or
 agents, a Map's roots) MAY carry the result beside the root's name and summary. A content look at
 the repository root carries it from the `summary` rung upward (see [`content-look.md`](content-look.md)).
 A changed file or field is a changed image: a reader that keeps a copy keys it on the file's

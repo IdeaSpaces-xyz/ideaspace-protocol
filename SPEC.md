@@ -14,9 +14,9 @@ summary: >
 
 A Repo is a folder of Markdown under git. Knowledge accumulates as `.md` files; how-to-work lives in `_agent/`; optional payload lives in opaque extension containers; git makes it shareable and carries who-did-what. The shape is fixed so it is *predictable*: drop a conformant agent into a conformant Repo and it already knows where to look. This document names no platform — a Claude Code agent, a Pi agent, or a third-party tool all read the same shape.
 
-A **Space** is a lens: a view and a boundary around references to Repos, Notes, Threads, and agents. It holds no content and grants no access to that content. A **Vault** is the larger coordination layer. Grants on a Space govern what someone may do with the Space, such as add items or people; each content owner grants access separately. A reader without access can ask for it through a knock. Local and remote Spaces are separate and update independently. Import and export make copies; they do not sync Spaces.
+A **Space** is the shared place a person or a company works in: their own Space, or a Company Space. It was called a Vault until 2026-11-14. A Space holds Repos, Threads, and the people and agents who work there; membership comes from grants on the Space, and being in a Space never grants its content. A **Map** is a view: pointers into Repos, Notes, Threads and agents, each with a depth and, for a moment, a pin. It holds no content and grants no access to what it points at; each content owner grants access separately, and a reader without access can ask for it through a knock. A Map is not a Space, and a Space is no longer a lens. Local and remote Spaces are separate and update independently. Import and export make copies; they do not sync Spaces.
 
-The repository shape below is distinct from a Space. Existing API names that use `Space` for repository context remain compatibility names; this clarification changes no format or loading rule.
+The repository shape below is distinct from a Space. Existing API names that use `Space` for repository context, `vault` for a Space's ownership, or `space` for the grants on its Map remain compatibility names; this clarification changes no format or loading rule.
 
 Three properties, three pillars:
 
@@ -50,7 +50,7 @@ entrypoint contributes neither body nor summary. Selection loads offered meaning
 consent nor authority.
 
 Foundation is the frozen compatibility arm. It retains the five names and current behavior:
-`foundation.md` scopes one Space; `guide.md`, `purpose.md`, `now.md`, and `next.md` layer along the
+`foundation.md` scopes one Repo; `guide.md`, `purpose.md`, `now.md`, and `next.md` layer along the
 path; every ancestor remains visible while the nearest instruction wins. Missing Purpose or Now is a
 drift signal. Existing Foundation rendering stays reproducible while consumers migrate.
 
@@ -99,7 +99,7 @@ self-referencing), the Agent kind (`agent:repo:n_0935a5df1f883eeb60bcdfbb`), and
 
 **4. Fractal.** `_agent/` may appear at any position. In Agreement mode, every Agreement within the
 selected ceiling refines the active frame and loads in full. The nearest Agreement carrying
-`root_node_id` starts another Space; without identity it refines the current one. Without an identity
+`root_node_id` starts another Repo; without identity it refines the current one. Without an identity
 ceiling, the Git root bounds composition; outside Git, the outermost Agreement on the ancestor path
 does. Foundation keeps its legacy scoping and layering unchanged.
 
@@ -279,10 +279,11 @@ Editor changes the current state, implying comment and fork but neither Git acce
 Git fetch and push require edit plus pull on the Repo root; pull implies history. Scope never grows.
 Company content Editor includes sharing.
 
-Space Viewer views its Map, Editor adds items, Allow sharing adds people; no Space grants access
-to referenced content. Vault access is access to its Home Space. Company membership gives discover
+A Space's Viewer views its Map, its Editor adds items, Allow sharing adds people; no grant on a Space
+gives access to the content its Map points at. Being in a Space is access to its Map, not to its
+items. Company membership gives discover
 only; a removable org Viewer grant is written when a company Repo is created. Repo ownership
-defaults to the Vault owner unless transferred, and the Repo owner owns everything below it,
+defaults to the Space's owner unless transferred, and the Repo owner owns everything below it,
 without Note-level overrides. Agents own nothing. Conversations remain human-owner-only, with
 no grants or export. Hosted Threads have no Editor, copying or export. Local Threads inherit as content.
 
@@ -294,7 +295,7 @@ List agrees with check; who returns paths under a sharing/owner gate. The access
 language-neutral vectors define their complete inputs and outputs. No evaluator engine is chosen.
 
 Map depth is a representation ceiling, never access. Pull targets only a whole Repo; fork takes
-current state without history. A Home Space shows every item in its Vault the person can discover.
+current state without history. A Space's Map shows every item in the Space the person can discover.
 View is current state only; it never includes history. The contract keeps three named product
 questions open. Identity lookup, persistence, timing equalization, audit, export completeness
 and Git transport enforcement remain host concerns.
@@ -317,7 +318,7 @@ language-neutral vectors are in [`schema/maps.md`](schema/maps.md),
 
 ### Repository root identity
 
-A repository context MAY declare one `root_node_id` in its selected root `_agent/foundation.md` or `_agent/agreement.md`. It names that root across checkouts without exposing a private storage key, granting access, or assigning IDs to every Note. A nested Foundation starts another repository context; an Agreement carrying identity does the same. This is a loading boundary, not a Space lens or a requirement to create a nested Git repository. If both entrypoints at one boundary declare identity, they MUST agree.
+A repository context MAY declare one `root_node_id` in its selected root `_agent/foundation.md` or `_agent/agreement.md`. It names that root across checkouts without exposing a private storage key, granting access, or assigning IDs to every Note. A nested Foundation starts another repository context; an Agreement carrying identity does the same. This is a loading boundary, not a Map or a requirement to create a nested Git repository. If both entrypoints at one boundary declare identity, they MUST agree.
 
 One side mints per lifecycle. A local-first creator mints the current 96-bit form and a Keeper adopts it; a Keeper-first Repo retains the Keeper's existing ID and may declare it locally later. Clone retains identity; fork remints. Missing identity remains valid indefinitely. Declaration drift never silently rebinds hosted authority.
 

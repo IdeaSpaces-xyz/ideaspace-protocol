@@ -23,7 +23,7 @@ Implications: `pull → history`; `edit → comment, fork`;
 `discover, view, history, comment, edit, fork, pull, reshare`. Neither fork nor pull implies the other.
 Inapplicable source capabilities are discarded before closure; they do not manufacture view.
 No implication widens scope: a Note Editor gains nothing on the Repo root. Applicability always
-filters the closure: Space edit does not give comment, fork or pull on the Map or its references.
+filters the closure: edit on a Space's Map does not give comment, fork or pull on what it points at.
 
 `CAPABILITY_LADDER` is the display spine `discover, view, comment, edit`, not a privilege rank.
 `CAPABILITY_OPTIONS` is `history, fork, pull, reshare`. `capabilityRank` is deprecated and never authority.
@@ -41,8 +41,8 @@ revoked. This replaces #92's edit → pull edge; it does not change the person/a
 
 | Object | Applicable relations and profiles |
 |---|---|
-| Vault | Its owner. Access to the Vault means access to its Home Space, not its items. No Vault grants. |
-| Space, including Home Space | Viewer views its Map; Editor adds items (`edit`); Allow sharing adds people (`reshare`). No Commenter. No content inheritance. |
+| Space, as owned (API kind `vault`, its name until 2026-11-14) | Its owner. Being in the Space is access to its Map, not to its items. No grants on this kind; membership grants are on its Map. |
+| A Space's Map (API kind `space`; the API's Home Space is the Space's own Map) | Viewer views the Map; Editor adds items (`edit`); Allow sharing adds people (`reshare`). No Commenter. No content inheritance. |
 | Repo | All relations. Viewer is view; Commenter is comment; Editor is edit. |
 | Folder, Note | All except pull. Profiles as Repo; the Repo's owner owns everything below. No independent ownership row. |
 | Hosted Thread | Viewer, Commenter, Owner, Allow sharing. No Editor, fork or pull. Only its owner manages its Agreement, name and closure. |
@@ -50,7 +50,7 @@ revoked. This replaces #92's edit → pull edge; it does not change the person/a
 
 `accessLevelProfile` returns `grantable` with the applicable expanded rights, `owner` (not a
 transferable set), or `not_applicable`. On content, `{companyVault: true}` adds reshare to Editor.
-It does not add sharing to a Space Editor. Company context is supplied, never authenticated here.
+It does not add sharing to the Editor of a Space's Map. Company context is supplied, never authenticated here.
 `owner` on a folder/Note profile describes the inherited Repo relationship, not a new owner row.
 
 Company membership gives **discover only**, never read. When a company Repo is created, the
@@ -73,22 +73,22 @@ are `space | repo | folder | note | thread`; IDs are opaque nonempty strings. Su
 `invalid_grant`, or `invalid_target`, `invalid_subject`, `invalid_capabilities`,
 `thread_has_no_editor`, `thread_has_no_copy`, `invalid_public_capabilities`, as applicable.
 Thread grants cannot contain edit/fork/pull. Public cannot comment/edit/reshare. Accepting a
-capability structurally is not permission to perform an inapplicable operation (e.g. Space fork).
+capability structurally is not permission to perform an inapplicable operation (e.g. forking a Space's Map).
 Every relation is positive. `closed`/`blocked` is reserved for 1.1, not a version-one grant.
 
 Ownership is `{target: {kind, id}, owner: {kind: person | organisation, id}}`. Targets can be
-Vault, Space, Repo, hosted Thread or Conversation; a Conversation requires a person.
+a Space (`vault`), its Map (`space`), Repo, hosted Thread or Conversation; a Conversation requires a person.
 `parseAccessOwnership` returns `valid` with unchanged `ownership`, or `invalid` with ordered
 `invalid_ownership`, or `invalid_target`, `invalid_owner`, `conversation_requires_human_owner`.
 Agents, teams and public never own. Granting every capability never transfers ownership.
 
 The Repo's owner owns all folders and Notes below it, ignoring old Note owner rows. A Repo
-defaults to its Vault's owner unless transferred. Org membership is not org ownership: fresh
+defaults to its Space's owner unless transferred. Org membership is not org ownership: fresh
 explicit organisation-owner facts identify its controllers. Token roles are not authority.
 
 Only Repo → folder → Note inherits grants downward. Paths and the identity index derive this
 tree; the host supplies complete root-first ancestors with each check, not stored parent edges.
-The only stored parent is Repo → Vault for ownership. Space references, nested Spaces, Thread
+The only stored parent is Repo → Space (`vault`) for ownership. Map references, nested Maps, Thread
 home/attachment and Conversations never create inheritance. Local Threads are content folders,
 not hosted Thread objects. Legacy exchanges have no version-one relations or porting rule.
 
@@ -99,7 +99,7 @@ not hosted Thread objects. Legacy exchanges have no version-one relations or por
 - `facts.objects`: `{kind, id, ancestors}`; ancestors is empty on roots/non-content and is the
   complete Repo-first chain of folder ancestors on folders/Notes. Every ancestor must have one
   matching object with the matching prefix. Missing/conflicting identity fails closed, never guessed.
-  Repo metadata may carry `vault`; Vault metadata may carry `homeSpace` and company org id `company`.
+  Repo metadata may carry `vault` (its Space); Space metadata may carry `homeSpace` (its Map) and company org id `company`.
   Hosted Threads carry positive `admittedAgents` IDs; a pending knock supplies no admission.
 - `facts.grants`, `facts.ownership`: the statements above, read fresh on each request.
 - `facts.memberships`: `{person, group: {kind: organisation | team, id}}`.
@@ -116,8 +116,8 @@ not hosted Thread objects. Legacy exchanges have no version-one relations or por
 
 For a session the check intersects **person rights ∩ agent grants ∩ session allowed acts** inside
 the evaluator. It closes each set first, then filters by target applicability. The agent never
-inherits the person's org audience, public audience or ownership as its ceiling. Its default Vault
-scope must be materialized by the host as scoped grants over actual targets, not a Vault grant
+inherits the person's org audience, public audience or ownership as its ceiling. Its default Space
+scope must be materialized by the host as scoped grants over actual targets, not a Space-wide grant
 that opens everything. An agent cannot read an unadmitted hosted Thread, even if its person can. Its discover grant
 can still permit a knock; admission never supplies a missing grant.
 Visible tools come from consented allowed acts; every call still checks the object. A narrower
@@ -143,11 +143,11 @@ hidden objects alike. Paths carry `source` (grant/owner/company_discover/signed_
 paths are retained, including both person and ceiling evidence for sessions. Candidates and
 membership expansion are host-supplied; this is not an identity directory.
 
-## Home Space discovery and hosted Threads
+## The Space's Map, discovery and hosted Threads
 
-A Home Space shows every item in its Vault the person can discover (agreed 2026-11-07).
-The host supplies that Vault's complete candidate set to list for each kind, using `discover`;
-reading the Map does not open the items. List returning partial is never a complete Home catalog.
+A Space's Map (the API's Home Space) shows every item in the Space the person can discover (agreed 2026-11-07).
+The host supplies that Space's complete candidate set to list for each kind, using `discover`;
+reading the Map does not open the items. List returning partial is never a complete catalog of the Space.
 Hosted Threads have no export tooling, including for an owner. An agent may deliberately copy
 what it can read by hand; this creates neither a Thread fork nor a transcript-export permission.
 
@@ -171,8 +171,8 @@ Public read, state copying and full-history grants are explicit, separate choice
 public Git gate's human-only restriction is a host transport constraint, not a new relation.
 
 `canPassAccess(held, requested)` checks reshare and every requested right within the held closure.
-The host must still check actor, scope, target applicability and fresh authority. Space invitations
-pass Map rights only. `intersectAccessCapabilities` is a set helper, not a second surface evaluator.
+The host must still check actor, scope, target applicability and fresh authority. An invitation into
+a Space passes Map rights only. `intersectAccessCapabilities` is a set helper, not a second surface evaluator.
 
 ## Compatibility, not authority
 
@@ -182,7 +182,7 @@ copy/allow_copying→fork+pull, manage/manage_access→reshare. Canonical names 
 It ignores unsupported names/families and Conversation/Vault grant aliases. Stored `history`
 maps to the separate history relation, never to view alone.
 The Git push aliases preserve both halves of full Collaborate instead of becoming hosted edit
-alone. This mapping never grants owner, widens scope or makes copying applicable on a Space or Thread.
+alone. This mapping never grants owner, widens scope or makes copying applicable on a Space's Map or a Thread.
 Review old combined-copy counts before any migration. No migration runs here. Repo catalog roles,
 token creator and cached org roles are not content authority.
 
@@ -191,7 +191,7 @@ token creator and cached org roles are not content authority.
 Closing a content branch is deferred. It needs changed resolver/cache behaviour, not a new v1
 row. Proposed future fork filtering and pull's closed-set lookup are not v1 conformance promises.
 Closed *hosted Thread* lifecycle (read-only posting) is a separate host state gate, not branch closing.
-Local agent limits through a Space lens narrow sight/tools, never widen content access; their
+Local agent limits through a Map narrow sight/tools, never widen content access; their
 mechanism is still in development. A same-user process can read local files; remote push checks remain.
 
 ## Open — named, not filled with defaults
@@ -202,7 +202,7 @@ The two history/Editor implication questions were settled above on 2026-11-09. R
    who added it, or the person whose post woke it? The host must supply an authenticated person;
    this check does not select one. Removed-person agent membership is not inferred either.
 2. Public full history has no shipped choice; public Git transport is not offered today.
-3. Local agent mechanism: how a Space limits sight/tools; not designed here.
+3. Local agent mechanism: how a Map limits an agent's sight/tools; not designed here.
 
 Copy at any content depth is settled; the Share sheet's Repo-only offering catches up later.
 

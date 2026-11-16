@@ -4,6 +4,15 @@ summary: "v0.33.0, not released: a Thread's tree edge is parent and its subjects
 ---
 # Now
 
+## The words: a Space is the place, a Map is the view (not released)
+
+Text only. What the protocol called a Vault is a **Space**: the shared place a person or a company
+works in, holding Repos, Threads, and the people and agents there. What it called a Space, a lens of
+references, is a **Map**: a view with a depth and, for a moment, a pin. The human, 2026-11-14: "Space
+== Vault. Maps are views... We call Vaults Spaces now." The API's compatibility names stay: `Space`
+for repository context, `vault` for a Space's ownership, `space` and `homeSpace` for the grants on
+its Map. No format, loading rule or vector changes; the guide skills say the new words.
+
 ## Parent and about, v0.33.0 (not released)
 
 A Thread's place in the tree is `parent`, one post reference on a post; what it is about or grew out
@@ -52,14 +61,14 @@ and named, and a capped or partial read reports `stopped`. See
 
 See [`schema/access.md`](../schema/access.md) and `conformance/access/manifest.json`. The pure
 check intersects person, agent grants and session acts; ancestors are derived by the host.
-Space grants never reach content; Vault access is Home Space access; a company Repo starts
+Grants on a Space's Map never reach content; being in a Space is access to its Map; a company Repo starts
 with a removable org Viewer grant. The Repo owner owns everything below; agents own nothing.
 Closing is reserved for 1.1. List and guarded who-with-path share the check. No engine, server
 migration, consumer pin change, tag or release is part of this change. Three product questions
 remain explicitly Open. View is current state only; history is separate.
 The 2026-11-09 decision separates hosted edit from Git:
 edit has no Git/history; Git fetch/push require edit plus pull on the Repo root; pull implies history.
-Home Space lists discoverable Vault items; hosted Threads have no export.
+A Space's Map lists the Space's discoverable items; hosted Threads have no export.
 
 ## Earlier state
 

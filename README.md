@@ -15,7 +15,7 @@ This repository is the standard: the spec, a machine-readable schema, a referenc
 
 [How it works](https://ideaspaces.xyz/how-it-works) · [Use with Claude Code, Codex, or Cowork](https://github.com/IdeaSpaces-xyz/claude-code-plugin) · [Use with Pi](https://github.com/IdeaSpaces-xyz/pi-is-space) · [CLI](https://github.com/IdeaSpaces-xyz/cli) · [Read the spec](SPEC.md)
 
-A **Space** is a lens: a view and a boundary around references to Repos, Notes, Threads, and agents. It holds no content and grants no access to that content. A **Vault** is the larger coordination layer. Grants on a Space govern what someone may do with the Space, such as add items or people; each content owner grants access separately. A reader without access can ask for it through a knock (not yet offered from every reference view). Local and remote Spaces are separate and update independently. Import and export make copies; they do not sync Spaces.
+A **Space** is the shared place a person or a company works in: their own Space, or a Company Space. It holds Repos, Threads, and the people and agents who work there; being in a Space never grants its content. A **Map** is a view: pointers into Repos, Notes, Threads and agents, with a depth and, for a moment, a pin. It holds no content and grants no access to what it points at; each content owner grants access separately, and a reader without access can ask for it through a knock (not yet offered from every reference view). Local and remote Spaces are separate and update independently. Import and export make copies; they do not sync Spaces.
 
 Hosting at [ideaspaces.xyz](https://ideaspaces.xyz) is optional: sharing and access control. Nothing above needs it.
 
