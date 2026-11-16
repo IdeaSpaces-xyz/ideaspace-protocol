@@ -6,7 +6,7 @@ Position:
 
 Now: Current work.
 
-Tree (2 files):
+Tree:
   README.md — v2
   changed.md — new
 

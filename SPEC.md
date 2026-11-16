@@ -118,7 +118,10 @@ manifest's typed item placement, preserve canonical order within each result, an
 intersection when an explicit section filter is also present. Head and tail are disjoint; activity
 MUST appear only in tail. The canonical full render is the head render followed by the tail render,
 omitting an empty side and separating non-empty sides by the normal section break. This selection
-does not change manifest data, Map members, or private runtime residency. `history` remains exclusive
+does not change manifest data, Map members, or private runtime residency. The ambient head and the
+canonical full render MUST omit recursive Markdown counts from the Tree heading and directory rows:
+count-only changes are volatile and MUST NOT change the cache-stable head. The typed Tree retains
+those counts, and an explicit Tree section or focus read MAY render them. `history` remains exclusive
 to the separate focus renderer.
 
 A **Content tail** is the one composition of the volatile register a local harness renders after the

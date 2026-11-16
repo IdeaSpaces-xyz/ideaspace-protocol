@@ -165,10 +165,12 @@ does not emit it.
 `renderContentAwareness` accepts optional `placement: head | tail`. The renderer derives membership
 from the manifest's typed placement rather than a caller-owned section list. Head and tail are
 disjoint, activity renders only in tail, and canonical section order is preserved within each side.
-With no placement or section filter, the compatibility full render is unchanged: non-empty head
-followed by non-empty tail with the canonical section break. If `placement` and `sections` are both
-supplied, the renderer applies their intersection. Selection changes only rendered output; it does
-not claim or change runtime residency.
+With no placement or section filter, the canonical full render is the non-empty head followed by the
+non-empty tail with the canonical section break. The ambient head and that full render omit recursive
+Markdown counts from the Tree heading and directory rows, so a count-only filesystem change does not
+change the cache-stable text. If `placement` and `sections` are both supplied, the renderer applies
+their intersection. Selection changes only rendered output; it does not claim or change runtime
+residency.
 
 ## Content tail
 
@@ -209,9 +211,11 @@ are in `conformance/content-look/paging.json`.
 
 The standalone tree assembler requires no contract. Its entries project through the shared
 [`projectContentTreeMembers`](map-projection.md) operation: observed names/summaries become Map
-member disclosure while placement, kind, counts, and omissions remain presentation facts. `depth:
-full` is an explicit local diagnostic walk to leaves with summary handles, not ambient awareness and
-not Map member `depth: full`.
+member disclosure while placement, kind, counts, and omissions remain presentation facts. Counts
+remain in the typed manifest and render for an explicit Tree section, a focus read, and standalone
+Tree diagnostics; only the ambient head/full rendering suppresses them. `depth: full` is an explicit
+local diagnostic walk to leaves with summary handles, not ambient awareness and not Map member
+`depth: full`.
 
 ## Canonical sections
 

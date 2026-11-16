@@ -378,6 +378,38 @@ describe("Content awareness manifest", () => {
     ).toBe("Now: Current focus.");
   });
 
+  it("keeps ambient head bytes stable when only Tree file counts change", async () => {
+    await writeAgent({
+      "agreement.md": "---\nname: Agreement\nsummary: Stable frame.\n---\n# Agreement\n",
+    });
+    await fs.mkdir(join(tmp, "memory"));
+    await fs.writeFile(join(tmp, "memory", "a.md"), "# A", "utf-8");
+
+    const first = await assembleContentAwareness({
+      position: tmp,
+      contractSource: "agreement",
+      lastSha: null,
+    });
+    const firstHead = renderContentAwareness(first!, { placement: "head" });
+    const firstProbe = renderContentAwareness(first!, { sections: ["tree"] });
+
+    await fs.writeFile(join(tmp, "memory", "b.md"), "# B", "utf-8");
+    const second = await assembleContentAwareness({
+      position: tmp,
+      contractSource: "agreement",
+      lastSha: null,
+    });
+    const secondHead = renderContentAwareness(second!, { placement: "head" });
+    const secondProbe = renderContentAwareness(second!, { sections: ["tree"] });
+
+    expect(firstHead).toBe(secondHead);
+    expect(secondHead).toContain("Tree:\n  memory/");
+    expect(secondHead).not.toContain("files):");
+    expect(secondHead).not.toMatch(/memory\/ \(\d+\)/);
+    expect(firstProbe).toContain("Tree (1 files):\n  memory/ (1)");
+    expect(secondProbe).toContain("Tree (2 files):\n  memory/ (2)");
+  });
+
   it("keeps missing direction as structured drift and renders it selectively", async () => {
     await writeAgent({ "foundation.md": "Foundation" });
     const manifest = await assembleContentAwareness({

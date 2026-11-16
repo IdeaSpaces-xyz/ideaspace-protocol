@@ -6,8 +6,8 @@ Position:
 
 Now: Ship structured awareness.
 
-Tree (2 files):
-  docs/ (1)
+Tree:
+  docs/
   README.md
 
 Agent context:
