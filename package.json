@@ -70,7 +70,13 @@
       "import": "./dist/access.js"
     },
     "./schema/access": "./schema/access.md",
-    "./conformance/access": "./conformance/access/manifest.json"
+    "./conformance/access": "./conformance/access/manifest.json",
+    "./time": {
+      "types": "./dist/time.d.ts",
+      "import": "./dist/time.js"
+    },
+    "./schema/time": "./schema/time.md",
+    "./conformance/time": "./conformance/time/manifest.json"
   },
   "files": [
     "dist",
@@ -78,6 +84,7 @@
     "conformance/extensions",
     "conformance/assets",
     "conformance/threads",
+    "conformance/time",
     "conformance/local-effects",
     "conformance/root-identity",
     "conformance/awareness",

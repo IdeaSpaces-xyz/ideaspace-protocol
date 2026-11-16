@@ -30,6 +30,23 @@ beforeAll(async () => {
   for (let i = 0; i < vectors.fixture.ordinary_note_count; i++) {
     await fs.writeFile(join(docs, `${String(i).padStart(2, "0")}.md`), `# Note ${i}\n`);
   }
+  // A folder that keeps time by its Agreement: older Notes without an id, then dated entries with one.
+  const memory = join(root, vectors.fixture.time_folder);
+  await fs.mkdir(join(memory, "_agent"), { recursive: true });
+  await fs.writeFile(join(memory, "_agent/agreement.md"), vectors.fixture.time_agreement);
+  for (let i = 0; i < vectors.fixture.time_note_count; i++) {
+    await fs.writeFile(join(memory, `2026-11-0${i + 1}-note-${i}.md`), `---\nname: Note ${i}\n---\nA lesson kept as a Note.\n`);
+  }
+  for (let i = 0; i < vectors.fixture.time_entry_count; i++) {
+    const id = `${vectors.fixture.time_entry_id_prefix}${i}`;
+    const declared = i === 1 ? `kind: correction\nsupersedes: ${vectors.fixture.time_entry_id_prefix}0\nauthor: Integrator\n` : "";
+    await fs.writeFile(join(memory, `2026-11-1${i}T10-00-00-000Z-${id}.md`), `---\nid: ${id}\n${declared}name: Lesson ${i}\n---\nLesson ${i}\n`);
+  }
+  // A folder whose Agreement says keeps_time in a form that is not the boolean true keeps no time.
+  const scratch = join(root, vectors.fixture.time_untimed_folder);
+  await fs.mkdir(join(scratch, "_agent"), { recursive: true });
+  await fs.writeFile(join(scratch, "_agent/agreement.md"), vectors.fixture.time_untimed_agreement);
+  await fs.writeFile(join(scratch, "2026-11-11T10-00-00-000Z-msg_mem00000001.md"), "---\nid: msg_mem00000001\n---\nNot an entry here.\n");
 });
 afterAll(async () => { if (root) await rm(root, { recursive: true, force: true }); });
 
@@ -59,9 +76,13 @@ describe("language-neutral Content look page vectors", () => {
     // A post's own id, kind and author, on its handle in a children list and on the post itself.
     for (const [file, post] of Object.entries(vector.expected.post_handles ?? {})) {
       const child = result.target.children?.find((item) => item.kind !== "section" && item.position.endsWith(`/${file}`));
-      expect(child && child.kind !== "section" ? child.post : undefined).toEqual(post);
+      expect(child).toBeDefined();
+      // `null` in the vector means the handle carries no post: an ordinary Note in a folder that keeps time.
+      expect(child && child.kind !== "section" ? child.post ?? null : undefined).toEqual(post);
     }
     if (vector.expected.post) expect(result.target.post).toEqual(vector.expected.post);
+    if (vector.expected.no_post) expect(result.target).not.toHaveProperty("post");
+    if (vector.expected.no_warnings) expect(result.target).not.toHaveProperty("warnings");
     const rendered = renderContentLook(result);
     for (const line of vector.expected.render_contains ?? []) expect(rendered.split("\n")).toContain(line);
   });

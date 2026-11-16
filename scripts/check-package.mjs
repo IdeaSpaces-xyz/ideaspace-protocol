@@ -27,6 +27,9 @@ const expected = [
   "conformance/threads/post-selection.json",
   "conformance/threads/current-map.json",
   "conformance/threads/parent.json",
+  "conformance/time/manifest.json",
+  "conformance/time/state.json",
+  "conformance/time/memory.json",
   "conformance/awareness/focus-full-render.txt",
   "conformance/awareness/focus-render.txt",
   "conformance/awareness/foundation-render.txt",
@@ -133,6 +136,10 @@ const expected = [
   "dist/path-context.d.ts.map",
   "dist/path-context.js",
   "dist/path-context.js.map",
+  "dist/post-links.d.ts",
+  "dist/post-links.d.ts.map",
+  "dist/post-links.js",
+  "dist/post-links.js.map",
   "dist/repository-image.d.ts",
   "dist/repository-image.d.ts.map",
   "dist/repository-image.js",
@@ -169,6 +176,10 @@ const expected = [
   "dist/threads.d.ts.map",
   "dist/threads.js",
   "dist/threads.js.map",
+  "dist/time.d.ts",
+  "dist/time.d.ts.map",
+  "dist/time.js",
+  "dist/time.js.map",
   "dist/trailers.d.ts",
   "dist/trailers.d.ts.map",
   "dist/trailers.js",
@@ -183,6 +194,7 @@ const expected = [
   "schema/agent-contract.md",
   "schema/assets.md",
   "schema/threads.md",
+  "schema/time.md",
   "schema/content-awareness.md",
   "schema/content-look.md",
   "schema/extensions.md",
@@ -259,6 +271,9 @@ try {
     "./access",
     "./schema/access",
     "./conformance/access",
+    "./time",
+    "./schema/time",
+    "./conformance/time",
   ];
   if (JSON.stringify(exportKeys) !== JSON.stringify(expectedExports)) {
     throw new Error(`Unexpected package exports: ${exportKeys.join(", ")}`);
@@ -305,7 +320,18 @@ try {
     import * as localEffects from "@ideaspaces/protocol/local-effects";
     import * as mapsRuntime from "@ideaspaces/protocol/maps";
     import * as threadsRuntime from "@ideaspaces/protocol/threads";
+    import * as timeRuntime from "@ideaspaces/protocol/time";
     const require = createRequire(import.meta.url);
+    const time = require("@ideaspaces/protocol/conformance/time");
+    if (time.format !== "ideaspaces-time/v1" || !time.required_coverage?.length) throw new Error("Time conformance manifest did not load");
+    if (!require.resolve("@ideaspaces/protocol/schema/time").endsWith("schema/time.md")) throw new Error("Time schema export did not resolve");
+    deepStrictEqual(timeRuntime.inspectEntries, protocol.inspectEntries);
+    deepStrictEqual(threadsRuntime.parseThreadPost("---\\nid: msg_a\\nkind: closure\\n---\\n", "_threads/t/01.md"), timeRuntime.parseEntry("---\\nid: msg_a\\nkind: closure\\n---\\n", "_threads/t/01.md"));
+    const memoryVectors = require(resolve(dirname(require.resolve("@ideaspaces/protocol/conformance/time")), time.memory_vectors));
+    const supersede = memoryVectors.vectors.find((v) => v.id === "supersede-a-lesson");
+    const inspected = timeRuntime.inspectEntries(supersede.files.map((name) => memoryVectors.files[name]), { keeping: "agreement", folder: memoryVectors.folder });
+    deepStrictEqual(inspected.superseded, supersede.expected.superseded);
+    deepStrictEqual(inspected.notes.length, 2);
     const access = require("@ideaspaces/protocol/conformance/access");
     require.resolve("@ideaspaces/protocol/schema/access");
     deepStrictEqual(accessRuntime.CAPABILITIES, protocol.CAPABILITIES);
@@ -372,9 +398,16 @@ try {
       "renderRootMapMembers",
       "resolveAssetReference",
       "parseThreadPost",
+      "inspectThreadPosts",
+      "currentThreadMap",
       "reconstructThreadTimeline",
       "resolveThreadGitPath",
       "isThreadPosition",
+      "parseEntry",
+      "inspectEntries",
+      "currentMap",
+      "selectEntries",
+      "readsTime",
       "validateCommitPathsRequest",
       "validateSpace",
       "validateWriteMarkdownRequest",
@@ -602,7 +635,8 @@ try {
       import { parseMap, buildMap } from "@ideaspaces/protocol/maps";
       import { parseFrontmatter, stripFrontmatter, composeFrontmatter } from "@ideaspaces/protocol/frontmatter";
       import { parseThreadPost, reconstructThreadTimeline, resolveThreadGitPath, isThreadPosition } from "@ideaspaces/protocol/threads";
-      export { parseAccessGrant, accessLevelProfile, parseMap, buildMap, parseFrontmatter, stripFrontmatter, composeFrontmatter, parseThreadPost, reconstructThreadTimeline, resolveThreadGitPath, isThreadPosition };
+      import { parseEntry, inspectEntries, selectEntries, currentMap } from "@ideaspaces/protocol/time";
+      export { parseAccessGrant, accessLevelProfile, parseMap, buildMap, parseFrontmatter, stripFrontmatter, composeFrontmatter, parseThreadPost, reconstructThreadTimeline, resolveThreadGitPath, isThreadPosition, parseEntry, inspectEntries, selectEntries, currentMap };
     `,
   );
 

@@ -1,0 +1,259 @@
+{
+  "format": "ideaspaces-time-state/v1",
+  "rule": "The current value of a state field is the value of the newest readable entry that carries the field; an unreadable entry newer than that one is named, never guessed at. closed is the one exception: it reads unknown then, because writers act on it. Each inspect vector runs twice: on _threads/t/ by placement, and on notes/ declared by its Agreement, with the same expected result unless expected_declared overrides a field.",
+  "vectors": [
+    {
+      "id": "closed-field-closes",
+      "operation": "inspect",
+      "covers": ["closed_field", "state_newest_readable_wins"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nname: Start\nsummary: Where it began\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_done.md", "content": "---\nid: msg_done\nin_reply_to: msg_open\nclosed: true\n---\nDone, closing.\n" }
+      ],
+      "expected": { "closed": true, "closedPost": { "id": "msg_done", "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_done.md", "kind": "post" }, "writable": true, "warnings": [] }
+    },
+    {
+      "id": "closed-false-reopens",
+      "operation": "inspect",
+      "covers": ["closed_reopens", "state_newest_readable_wins"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_close.md", "content": "---\nid: msg_close\nkind: closure\nin_reply_to: msg_open\n---\nClosed\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_reopen.md", "content": "---\nid: msg_reopen\nin_reply_to: msg_close\nclosed: false\n---\nNot done after all.\n" }
+      ],
+      "expected": { "closed": false, "closedPost": { "id": "msg_reopen", "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_reopen.md", "kind": "post" }, "writable": true }
+    },
+    {
+      "id": "legacy-closure-reads-closed",
+      "operation": "inspect",
+      "covers": ["closed_legacy_closure"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_close.md", "content": "---\nid: msg_close\nkind: closure\nin_reply_to: msg_open\n---\nClosed\n" }
+      ],
+      "expected": { "closed": true, "closedPost": { "id": "msg_close", "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_close.md", "kind": "closure" }, "writable": true, "warnings": [] }
+    },
+    {
+      "id": "closure-kind-with-field-is-read-by-the-field",
+      "operation": "inspect",
+      "covers": ["closed_field_over_legacy_kind"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_odd.md", "content": "---\nid: msg_odd\nkind: closure\nclosed: false\nin_reply_to: msg_open\n---\nA closure that says open.\n" }
+      ],
+      "expected": { "closed": false, "closedPost": { "id": "msg_odd", "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_odd.md", "kind": "closure" } }
+    },
+    {
+      "id": "invalid-closed-is-dropped-and-sets-nothing",
+      "operation": "inspect",
+      "covers": ["closed_invalid_dropped"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_bad.md", "content": "---\nid: msg_bad\nin_reply_to: msg_open\nclosed: yes\n---\nMeant to close.\n" }
+      ],
+      "expected": { "closed": false, "closedPost": null, "readableIds": ["msg_open", "msg_bad"], "warnings": [{ "post": "_threads/t/2026-11-01T11-00-00-000Z-msg_bad.md", "field": "closed", "warning": "invalid_closed" }] }
+    },
+    {
+      "id": "unreadable-newer-than-the-closure-is-unknown",
+      "operation": "inspect",
+      "covers": ["closed_unknown_newer_unreadable"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_close.md", "content": "---\nid: msg_close\nkind: closure\nin_reply_to: msg_open\n---\nClosed\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_broken.md", "content": "---\nid: [\n---\nMight have reopened.\n" }
+      ],
+      "expected": { "closed": "unknown", "closedPost": { "id": "msg_close", "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_close.md", "kind": "closure" }, "writable": true, "unreadablePaths": ["_threads/t/2026-11-01T12-00-00-000Z-msg_broken.md"] }
+    },
+    {
+      "id": "unreadable-older-than-the-closure-is-settled",
+      "operation": "inspect",
+      "covers": ["closed_older_unreadable_settled"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_broken.md", "content": "---\nid: [\n---\nBroken\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_close.md", "content": "---\nid: msg_close\nclosed: true\nin_reply_to: msg_open\n---\nClosed\n" }
+      ],
+      "expected": { "closed": true, "closedPost": { "id": "msg_close", "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_close.md", "kind": "post" }, "writable": true, "unreadablePaths": ["_threads/t/2026-11-01T11-00-00-000Z-msg_broken.md"] }
+    },
+    {
+      "id": "a-closing-entry-with-a-map-sets-the-current-map",
+      "operation": "current_map",
+      "covers": ["snapshot_any_entry_with_map"],
+      "posts": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_done.md", "content": "---\nid: msg_done\nin_reply_to: msg_open\nclosed: true\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/final.md\n      depth: full\n---\nDone; this is where it ended.\n" }
+      ],
+      "expected": { "status": "post", "post": { "id": "msg_done", "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_done.md", "kind": "post" }, "members": ["notes/final.md"], "skipped": [], "warnings": [], "lookback": { "examined": 1, "stopped": false } }
+    },
+    {
+      "id": "reframe-sets-name-and-summary",
+      "operation": "inspect",
+      "covers": ["reframe_sets_name_summary", "state_newest_readable_wins"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nname: Start\nsummary: Where it began\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_post.md", "content": "---\nid: msg_post\nin_reply_to: msg_open\nname: A post with its own title\nsummary: Not the Thread's\n---\nBody\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_rename.md", "content": "---\nid: msg_rename\nkind: reframe\nin_reply_to: msg_open\nname: Renamed\nsummary: What it is about now\n---\nThe goal moved.\n" }
+      ],
+      "expected": { "name": "Renamed", "summary": "What it is about now", "namePost": { "id": "msg_rename", "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_rename.md", "kind": "reframe" }, "summaryPost": { "id": "msg_rename", "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_rename.md", "kind": "reframe" } }
+    },
+    {
+      "id": "thread-name-falls-back-to-the-opening",
+      "operation": "inspect",
+      "covers": ["thread_name_falls_back_to_opening", "declared_folder_no_name_fallback"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nname: Start\nsummary: Where it began\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_post.md", "content": "---\nid: msg_post\nin_reply_to: msg_open\nname: A post with its own title\n---\nBody\n" }
+      ],
+      "expected": { "name": "Start", "summary": "Where it began", "namePost": null, "summaryPost": null },
+      "expected_declared": { "name": null, "summary": null }
+    },
+    {
+      "id": "a-move-reframe-without-a-name-keeps-the-name",
+      "operation": "inspect",
+      "covers": ["reframe_move_without_name"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nname: Start\nparent: post:msg_origin\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_move.md", "content": "---\nid: msg_move\nkind: reframe\nin_reply_to: msg_open\nparent: post:msg_elsewhere\n---\nMoved under a better home; see the discussion there.\n" }
+      ],
+      "expected": { "name": "Start", "namePost": null, "parent": "post:msg_elsewhere", "source": "post", "origin": "post:msg_origin", "parentPost": { "id": "msg_move", "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_move.md", "kind": "reframe" } },
+      "expected_declared": { "name": null }
+    },
+    {
+      "id": "a-correction-supersedes-an-entry",
+      "operation": "inspect",
+      "covers": ["correction_supersedes_entry", "only_correction_supersedes"],
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_claim.md", "content": "---\nid: msg_claim\nin_reply_to: msg_open\n---\nA claim.\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_fix.md", "content": "---\nid: msg_fix\nkind: correction\nsupersedes: msg_claim\nin_reply_to: msg_claim\n---\nThe claim, corrected.\n" },
+        { "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_plain.md", "content": "---\nid: msg_plain\nsupersedes: msg_open\nin_reply_to: msg_open\n---\nA post that says supersedes, which supersedes nothing.\n" }
+      ],
+      "expected": { "superseded": ["msg_claim"], "current": ["msg_open", "msg_fix", "msg_plain"], "readableIds": ["msg_open", "msg_claim", "msg_fix", "msg_plain"] }
+    },
+    {
+      "id": "as-of-an-entry-by-id",
+      "operation": "inspect",
+      "covers": ["as_of_by_entry", "as_of_state"],
+      "asOf": { "id": "msg_claim" },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_claim.md", "content": "---\nid: msg_claim\nin_reply_to: msg_open\n---\nA claim.\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_fix.md", "content": "---\nid: msg_fix\nkind: correction\nsupersedes: msg_claim\nclosed: true\nin_reply_to: msg_claim\n---\nCorrected and closed.\n" }
+      ],
+      "expected": { "readableIds": ["msg_open", "msg_claim"], "superseded": [], "closed": false, "closedPost": null, "asOf": { "status": "ok", "cursor": { "kind": "id", "id": "msg_claim", "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_claim.md" } } }
+    },
+    {
+      "id": "as-of-a-moment",
+      "operation": "inspect",
+      "covers": ["as_of_by_moment", "as_of_state"],
+      "asOf": { "at": "2026-11-01T11:30:00Z" },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\ndate: 2026-11-01T10:00:00.000Z\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_mid.md", "content": "---\nid: msg_mid\ndate: 2026-11-01T11:00:00.000Z\nin_reply_to: msg_open\n---\nMid\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_late.md", "content": "---\nid: msg_late\ndate: 2026-11-01T12:00:00.000Z\nin_reply_to: msg_open\nclosed: true\n---\nLate\n" }
+      ],
+      "expected": { "readableIds": ["msg_open", "msg_mid"], "closed": false, "asOf": { "status": "ok", "cursor": { "kind": "at", "at": "2026-11-01T11:30:00.000Z" } } }
+    },
+    {
+      "id": "as-of-a-day-includes-the-whole-day",
+      "operation": "inspect",
+      "covers": ["as_of_day_cursor"],
+      "asOf": { "at": "2026-11-01" },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" },
+        { "path": "_threads/t/2026-11-01T23-59-00-000Z-msg_night.md", "content": "---\nid: msg_night\nin_reply_to: msg_open\n---\nStill the first\n" },
+        { "path": "_threads/t/2026-11-02T00-00-00-000Z-msg_next.md", "content": "---\nid: msg_next\nin_reply_to: msg_open\n---\nThe next day\n" }
+      ],
+      "expected": { "readableIds": ["msg_open", "msg_night"], "asOf": { "status": "ok", "cursor": { "kind": "at", "at": "2026-11-01" } } }
+    },
+    {
+      "id": "as-of-an-unresolved-cursor-selects-nothing",
+      "operation": "inspect",
+      "covers": ["as_of_unresolved"],
+      "asOf": { "id": "msg_nowhere" },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\n---\nOpen\n" }
+      ],
+      "expected": { "readableIds": [], "parent": null, "closed": false, "writable": true, "asOf": { "status": "unresolved", "reason": "msg_nowhere is not the id of a supplied entry." } }
+    },
+    {
+      "id": "since-an-entry-excludes-it",
+      "operation": "select",
+      "covers": ["since_by_entry"],
+      "window": { "since": { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_b.md" } },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_a.md", "content": "---\nid: msg_a\n---\nA\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_b.md", "content": "---\nid: msg_b\n---\nB\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_c.md", "content": "---\nid: msg_c\n---\nC\n" }
+      ],
+      "expected": { "status": "ok", "ids": ["msg_c"], "undated": [], "cursors": { "since": { "kind": "path", "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_b.md" } } }
+    },
+    {
+      "id": "since-a-moment-excludes-a-day-only-entry-of-that-day",
+      "operation": "select",
+      "covers": ["since_by_moment", "since_day_only_entry"],
+      "window": { "since": { "at": "2026-11-01T09:00:00Z" } },
+      "sources": [
+        { "path": "_threads/t/2026-11-01-a-day-only-entry.md", "content": "---\nid: msg_day\n---\nSome time on the first\n" },
+        { "path": "_threads/t/2026-11-02T10-00-00-000Z-msg_b.md", "content": "---\nid: msg_b\n---\nB\n" }
+      ],
+      "expected": { "status": "ok", "ids": ["msg_b"], "undated": [], "cursors": { "since": { "kind": "at", "at": "2026-11-01T09:00:00.000Z" } } }
+    },
+    {
+      "id": "newest-two",
+      "operation": "select",
+      "covers": ["newest_n"],
+      "window": { "newest": 2 },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_a.md", "content": "---\nid: msg_a\n---\nA\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_b.md", "content": "---\nid: msg_b\n---\nB\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_c.md", "content": "---\nid: msg_c\n---\nC\n" }
+      ],
+      "expected": { "status": "ok", "ids": ["msg_b", "msg_c"], "undated": [], "cursors": {} }
+    },
+    {
+      "id": "newest-must-be-positive",
+      "operation": "select",
+      "covers": ["newest_invalid"],
+      "window": { "newest": 0 },
+      "sources": [{ "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_a.md", "content": "---\nid: msg_a\n---\nA\n" }],
+      "expected": { "status": "invalid" }
+    },
+    {
+      "id": "an-undated-entry-is-named-not-placed",
+      "operation": "select",
+      "covers": ["undated_named"],
+      "window": { "asOf": { "at": "2026-11-01T12:00:00Z" } },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_a.md", "content": "---\nid: msg_a\n---\nA\n" },
+        { "path": "_threads/t/old-post.md", "content": "---\nid: msg_old\n---\nNo stamp, no date\n" }
+      ],
+      "expected": { "status": "ok", "ids": ["msg_a"], "undated": ["_threads/t/old-post.md"] }
+    },
+    {
+      "id": "an-id-two-entries-carry-is-ambiguous",
+      "operation": "select",
+      "covers": ["ambiguous_id_cursor"],
+      "window": { "asOf": { "id": "msg_same" } },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_a.md", "content": "---\nid: msg_same\n---\nA\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_b.md", "content": "---\nid: msg_same\n---\nB\n" }
+      ],
+      "expected": { "status": "ambiguous" }
+    },
+    {
+      "id": "as-of-and-since-together",
+      "operation": "select",
+      "covers": ["window_as_of_and_since"],
+      "window": { "since": { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_a.md" }, "asOf": { "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_d.md" } },
+      "sources": [
+        { "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_a.md", "content": "---\nid: msg_a\n---\nA\n" },
+        { "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_b.md", "content": "---\nid: msg_b\n---\nB\n" },
+        { "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_c.md", "content": "---\nid: msg_c\n---\nC\n" },
+        { "path": "_threads/t/2026-11-01T13-00-00-000Z-msg_d.md", "content": "---\nid: msg_d\n---\nD\n" },
+        { "path": "_threads/t/2026-11-01T14-00-00-000Z-msg_e.md", "content": "---\nid: msg_e\n---\nE\n" }
+      ],
+      "expected": { "status": "ok", "ids": ["msg_b", "msg_c", "msg_d"], "undated": [] }
+    }
+  ]
+}

@@ -156,7 +156,7 @@ The state fields are:
 | `name`, `summary` (Threads) | a `reframe` carrying the field | — | the opening's, for a Thread; absent for a declared folder |
 
 A reader reports, for each field, the value and the entry it came from (`parentPost`, `aboutPost`,
-`closedPost`, `namePost`, the current Map's `post`), and lists every unreadable entry. For `parent`
+`closedPost`, `namePost`, `summaryPost`, the current Map's `post`), and lists every unreadable entry. For `parent`
 the report also says where the value came from (`source`: `post`, `agreement`, `origin`).
 
 **`closed` is the one exception, named.** When an entry newer than the one that settled `closed` is
@@ -228,9 +228,10 @@ Three selections read a folder as of a moment, since a moment, or by count. A **
 
 By entry, the selection follows filename order. By moment, it follows each entry's **time**: the
 authored `date` (an instant, or a day), else the `fileDate`, else none. An instant compares as an
-instant; a day-only entry lies inside its whole day, so `as_of` a moment on that day includes it and
-`since` a moment on that day excludes it. An entry with no time cannot be placed and is listed as
-`undated`, excluded from the selection, never guessed into it.
+instant. A day-only entry's time is the start of its day, and a day-only cursor is the end of its
+day: so `as_of` a day includes everything written that day, `since` a day starts the next, and
+`since` a moment on some day excludes a day-only entry of that day. An entry with no time cannot be
+placed and is listed as `undated`, excluded from the selection, never guessed into it.
 
 - **`as_of(cursor)`** — the entries at or before the cursor: by entry, that entry and every earlier
   filename; by moment, every entry whose time is not after it. The folder's state as of the cursor is
@@ -277,9 +278,10 @@ name a consumer imports today is removed.
    direct files of one folder, in any order. Returns the readable entries in filename order, the Notes
    (declared folder), the unreadable files with their issues, every warning with its entry, the
    superseded ids, the state (`parent` with `source` and `parentPost`, `origin`, `about` with
-   `aboutPost`, `closed` with `closedPost`, `name` and `summary` with `namePost`), and `writable` with
-   the refusal when the opening is unreadable. Accepts an `as_of` cursor and applies it before
-   computing anything.
+   `aboutPost`, `closed` with `closedPost`, `name` with `namePost`, `summary` with `summaryPost`),
+   and `writable` with the refusal when the opening is unreadable. Accepts an `as_of` cursor,
+   applies it before computing anything, and reports how it resolved (`ok` with the cursor, or
+   `unresolved`, `ambiguous`, `invalid` with a reason, selecting nothing).
 3. **`reconstruct_timeline`** (`reconstructTimeline`; `reconstructThreadTimeline`): the DAG and the
    linear order, marks folded, superseded marks dropped, nothing mutated.
 4. **`current_map`** (`currentMap`; `currentThreadMap`): the current Map with `status`, the chosen

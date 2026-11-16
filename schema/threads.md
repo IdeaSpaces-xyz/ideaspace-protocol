@@ -405,7 +405,7 @@ imports from `@ideaspaces/protocol` or `@ideaspaces/protocol/threads` stays.
   snapshots and the `snapshot_requires_map` warning. `THREAD_KINDS` still lists all six kinds a reader
   acts on; `ENTRY_KINDS` (`post`, `reframe`, `correction`, `mark`) are the ones a writer offers.
 - **A `reframe` renames.** The Thread's `name` and `summary` are the newest readable reframe's, else
-  the opening post's; `inspectThreadPosts` gains `name`, `summary` and `namePost`. A writer that moves
+  the opening post's; `inspectThreadPosts` gains `name`, `summary`, `namePost` and `summaryPost`. A writer that moves
   without renaming leaves `name` and `summary` off the reframe. Legacy move-reframes that carried a
   descriptive title ("Moved under …") now read as the Thread's name until a reframe with the right one
   is appended; a consumer may show the README's name beside it meanwhile and say which is which.
@@ -414,7 +414,7 @@ imports from `@ideaspaces/protocol` or `@ideaspaces/protocol/threads` stays.
 - **Selections.** `selectEntries` with `as_of`, `since` and `newest`; `inspectEntries` takes an
   `asOf` cursor. New result fields: `notes` (declared folders), `superseded`.
 - **New result fields on `ThreadPostInspection`:** `closedPost`, `name`, `summary`, `namePost`,
-  `superseded`, `notes`. Additive.
+  `summaryPost`, `superseded`, `notes`, and `asOf` when a cursor was given. Additive.
 
 ## Format evolution
 
