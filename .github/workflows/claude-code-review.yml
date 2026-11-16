@@ -83,6 +83,7 @@ jobs:
             - **Cross-language neutrality.** The normative core (spec + JSON Schema) must remain language-neutral so non-TypeScript runtimes can conform. The TS lib is the reference impl, not the only one.
             - **Read-only shape primitives.** `findSpaceRoot`, `assembleAwareness`, `stripFrontmatter` do not write the filesystem.
             - **Cross-platform paths** via `node:path`; **async by default** for I/O.
+            - **CI is a required check, not a review question.** `Typecheck, test, build` and `Package smoke (Node 18)` are required checks the merge queue enforces on this head; don't withhold Approve to confirm CI, and judge the code you read.
 
             ## Anti-pattern detection
             - Platform/sync code leaking into the protocol.
