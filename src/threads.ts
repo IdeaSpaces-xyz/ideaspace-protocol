@@ -62,7 +62,12 @@ export interface ThreadPostFrontmatter {
   parent?: string;
   /** What the Thread is about or grew out of: open typed links `<type>:<id>`, any number. Never a tree edge. */
   about?: string | string[];
-  /** Legacy: a `post:` value (or bare alias) reads as `parent`; any other typed link reads as `about`. */
+  /**
+   * Legacy, before 0.33.0: a `post:` value (or bare alias) reads as `parent`; any other typed link
+   * reads as `about`; a post that carries the new field is read by it alone. Writers keep it beside
+   * the new fields during the compatibility window, which each consumer closes where it ships; see
+   * "Consumer migration: 0.32.0 → 0.33.0" in schema/threads.md.
+   */
   attached_to?: string;
   /** Superseded post id when kind is "correction" or retracting a mark. */
   supersedes?: string;
@@ -499,10 +504,15 @@ export function parseThreadPost(
     if (kept.length > 0 || !dropped) about = kept;
   }
 
-  // Legacy `attached_to`: a post reference was the parent; anything else was what the Thread is about.
+  // Legacy `attached_to`: a post reference was the parent; anything else was what the Thread is
+  // about. It fills in only when the post carries no new field at all: a post that carries `parent`
+  // or `about`, even malformed, is read by the new field alone, and the legacy one stays as authored.
   if (attachedTo) {
-    if (isPostReference(attachedTo)) parent ??= attachedTo;
-    else about ??= [attachedTo];
+    if (isPostReference(attachedTo)) {
+      if (!("parent" in fm)) parent = attachedTo;
+    } else if (!("about" in fm)) {
+      about = [attachedTo];
+    }
   }
 
   let mapResult: MapParseResult | undefined;

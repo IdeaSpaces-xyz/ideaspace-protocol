@@ -87,6 +87,29 @@
       "expected": { "status": "valid", "id": "msg_open", "parent": "post:msg_new", "attachedTo": "post:msg_old" }
     },
     {
+      "id": "invalid-parent-is-not-filled-from-legacy-attached-to",
+      "operation": "parse_post",
+      "covers": ["parent_over_attached_to", "invalid_parent_warns"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: note:@home//notes/topic.md\nattached_to: post:msg_old\n---\nThe new field is read alone, even when malformed" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": null, "about": null, "attachedTo": "post:msg_old", "warnings": [{ "field": "parent", "warning": "invalid_parent" }] }
+    },
+    {
+      "id": "invalid-about-is-not-filled-from-legacy-attached-to",
+      "operation": "parse_post",
+      "covers": ["parent_over_attached_to", "invalid_about_warns"],
+      "input": { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nabout: garbage\nattached_to: note:@home//notes/topic.md\n---\nThe new field is read alone, even when malformed" },
+      "expected": { "status": "valid", "id": "msg_open", "parent": null, "about": null, "attachedTo": "note:@home//notes/topic.md", "warnings": [{ "field": "about", "warning": "invalid_about" }] }
+    },
+    {
+      "id": "opening-with-bad-parent-has-no-origin",
+      "operation": "inspect_posts",
+      "covers": ["parent_over_attached_to", "parent_origin_fallback"],
+      "input": { "sources": [
+        { "path": "_threads/child/01.md", "content": "---\nid: msg_open\nparent: note:@home//notes/topic.md\nattached_to: post:msg_old\n---\nA malformed parent on the opening leaves no origin; the legacy field does not fill in" }
+      ] },
+      "expected": { "parent": null, "source": null, "parentPost": null, "origin": null, "about": [], "closed": false, "writable": true, "warnings": [{ "post": "_threads/child/01.md", "field": "parent", "warning": "invalid_parent" }] }
+    },
+    {
       "id": "about-wins-over-legacy-attached-to",
       "operation": "parse_post",
       "covers": ["parent_over_attached_to"],
