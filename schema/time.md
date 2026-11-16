@@ -31,6 +31,11 @@ is declared but is not a non-empty string, is unreadable and named, because the 
 what it was. Turning time on for a folder of Notes therefore changes nothing on disk and flags none of
 the files that have no `id`; the folder's first entry is the first file that carries one.
 
+A writer appends entries to a declared folder as it does to a Thread: one immutable file carrying an
+`id`, a `date` and a `kind`, under every rule on this page, leaving the Notes as they are. Which
+entry a new one answers is the writer's to say in `in_reply_to`; nothing here makes it answer the
+opening, as a Thread writer may choose to by default.
+
 `README.md` and `_agent/` are never entries in either kind of folder.
 
 ## Entries
@@ -167,6 +172,11 @@ refused, a write into an open one is accepted, and the unreadable entry may have
 every other field the newest readable entry's value stands and the unreadable one is named. A folder
 whose `closed` is `unknown` stays writable: a visible misplaced write is preferable to locking out
 every writer. A legacy `kind: closure` entry that also carries `closed` is read by the field.
+
+**A closed folder accepts one entry: the one that reopens it.** An entry carrying `closed: false`
+may be appended to a closed folder and sets `closed` to `false`; a writer refuses every other entry
+until then, naming the entry that closed the folder. Reopening is therefore an entry like any other,
+in the timeline, with its reason in its body, never an edit to the entry that closed.
 
 **A snapshot is an entry that carries a Map.** The kind `snapshot` is legacy: a reader keeps reading
 it, and a legacy `kind: snapshot` without a Map is kept with the warning `snapshot_requires_map` on
