@@ -432,6 +432,8 @@ operation or required coverage tag rather than skip it. The reference implementa
   the service confirmed it, **`{level}`** the grade the service granted in its own word, **`{until}`**
   and **`{as_of}`** a time in the person's own zone ("Tue 17 Nov 15:57"), never an ISO instant.
   `facts` carries the exact values.
+- **`{n}`, `{m}`, `{k}`, `{o}`, `{t}` and `{p}` are counts**, never names: a list's sentence says how
+  many Spaces, orgs, people or invitations, and never which, because those names are others' text.
 - **"This computer"** is the neutral word; a host that knows the machine may say "this Mac".
 - **`{value}`** in a `not_from_person` sentence is injected text of any length: a renderer shows it
   quoted and cut to 60 characters (Security's review, 2026-11-17).
@@ -468,7 +470,7 @@ operation or required coverage tag rather than skip it. The reference implementa
 | any | a retired name | `refused` | `retired_name` | {old} is retired, so use {verb}, which does the same. |
 | any | the request is not the verb's | `refused` | `missing_field`, `unexpected_field`, `invalid_field` | *Missing:* Not done: {verb} needs {field}. *Unexpected:* Not done: {verb} doesn't take {field}. *Invalid:* Not done: {field} isn't a value {verb} takes. |
 | any | not a verb | `refused` | `unknown_verb` | Not done: {old} isn't a tool here; the four are map, look, post and write. |
-| `map` | `ideaspaces`: Personal, each org, Shared with you | `ok` | — | Listed what the person has on IdeaSpaces: {n} Spaces of their own, {m} in {orgs} orgs and {k} shared with them, and you can open one once the person names it. |
+| `map` | `ideaspaces`: Personal, each org, Shared with you | `ok` | — | Listed what the person has on IdeaSpaces: {n} Spaces of their own, {m} in {o} orgs and {k} shared with them, and you can open one once the person names it. |
 | `map` | an org's Spaces (`hostname:`) | `ok` | — | Listed {n} Spaces in that org, and you can open one once the person names it. |
 | `map` | what a person shared (`person:`) | `ok` | — | Listed {n} items {who} shared with the person and {m} Threads they are both in, and you can open one once the person names it. |
 | `map` | a list asked for by a listener or a launched child | `refused` | `no_lists` | Not listed: only a conversation with the person sees what is on IdeaSpaces, so work from what you were given and say in your reply what you would need. |
