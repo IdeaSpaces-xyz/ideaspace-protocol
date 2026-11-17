@@ -387,7 +387,7 @@ operation or required coverage tag rather than skip it. The reference implementa
 | `post` | taken back | `ok` | — | Took back {name} from {who}, who can't read it any more. |
 | `post` | visibility changed | `ok` | — | {name} is public now, and anyone can read it. *Private:* {name} is private now, and only the people it's shared with can read it. |
 | `post` | published (private, with its history) | `ok` | — | Published {name} to IdeaSpaces, private and with its history, which can't be taken back. |
-| `post` | not published: the Space's own settings redirect the push | `refused` | `redirected` | *AX, to confirm (Security's draft):* Not published: this Space is set to send what it shares somewhere else, so tell the person. |
+| `post` | not published: the Space's own settings redirect the push | `refused` | `redirected` | Not published: this Space is set to send its history somewhere other than IdeaSpaces, so tell the person. |
 | `post` | who or what not from the person | `refused` | `not_from_person` | Not done: the person hasn't named {value} in this conversation, and only the person says who and what, so ask them. |
 | `post` | an agent asked to take back | `refused` | `person_only` | Not taken back: only the person can take back {name}, so tell them. |
 | `post` | the day's count is used | `refused` | `limit_reached` | Not shared: today's limit is reached until {until}, and taking back still works. |
@@ -400,7 +400,8 @@ operation or required coverage tag rather than skip it. The reference implementa
 
 The `unknown_verb` row was added to Integrator's 24: it is a refusal with `next: null`, so its
 sentence is the only guide the agent gets. The `redirected` row came with Security's review (round
-2); its cell carries Security's draft, marked for AX to confirm or replace.
+2); AX's sentence says what would leave (the Space's history, which `publish` sends) and that it
+would go somewhere other than IdeaSpaces.
 
 ### The four descriptions' first sentences
 
