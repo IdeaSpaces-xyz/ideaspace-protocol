@@ -373,6 +373,44 @@ Results are `ok`, `partial`, or `error`. A durable write or index effect followe
 
 The full request/result grammar, failure vocabulary, phase semantics, and language-neutral conformance manifest are normative in [`schema/local-effects.md`](schema/local-effects.md) and [`conformance/local-effects/manifest.json`](conformance/local-effects/manifest.json). The package-root reference API remains mutation-free. TypeScript callers opt into the conformant reference implementation through `@ideaspaces/protocol/local-effects`, supplying explicit filesystem and Git capabilities.
 
+## The four verbs
+
+An agent works an ideaspace with four verbs, the same four a person would name: **`map`** (what is
+where), **`look`** (read one thing at a depth), **`post`** (add to something that keeps time, or ask
+for an act) and **`write`** (change what is on this machine, and add it to history when asked). Every
+route spells them under one name, `ideaspaces`: `ideaspaces <verb>` in a terminal, server
+`ideaspaces` with tool `<verb>` over MCP, `ideaspaces_<verb>` in a flat tool list. The address decides
+local or remote; nothing else distinguishes the two sides. Old names are aliases of the verb they fold
+under, in the CLI and the Claude Code plugin, until 1.0; a retired name answers one refusal that names
+the verb call.
+
+There is one `write` per route. It takes over the file write, the edit, the Note write and the
+commit; it writes any file the conversation may write under the local-effect boundary; it refuses to
+change an entry in a folder that keeps time and names the correcting `post`; and it adds to history
+only when asked, never on its own. `post` adds its one immutable entry to history on its own, by
+design.
+
+Every verb answers with **`said`**, one sentence in the person's words, first, and then **`facts`**,
+the Git facts under a closed set of named fields (`outcome`, `saved`, `history`, `shared`, `change`
+in full, `post`, `item`, `reason_code`, `next`, …). `said` never carries a Git word, a Git command or a
+hash. A refusal carries `reason_code` and `next`, the call that would work, which is one of the four
+verbs and never a `git` command; `next` is `null` only when no call of the agent's would work.
+
+`post`'s request kinds are `entry` (default), `start_thread`, `share`, `revoke` (take back),
+`visibility` and `publish`; an unknown kind is refused. The kinds that reach other people carry three
+guards as requirements: who and what come only from the person's own words in the conversation; the
+sign-in never reaches the model, and the closed fact set has no slot for it; only the person takes
+back. `publish` creates the item private and says it went with its history; `share` never hands out
+history. Where the verbs write history they follow [Identity](#identity): author = the person,
+`Co-authored-by` = the agent, `Conversation:` names the session, no signatures, and a trailer is
+attribution a service never decides by.
+
+The contract, the fixed field names, the fold of old names, and the table of words AX owns are
+[`schema/verbs.md`](schema/verbs.md); the pure vectors are
+[`conformance/verbs/manifest.json`](conformance/verbs/manifest.json). This section fixes how an act
+is asked for and answered; what a service does with it is that service's contract, and what Git does
+is [Local effects](#local-effects).
+
 ## Two Layers
 
 The spec is the **base layer** — a fixed, readable shape an agent *perceives* and one safe local-effect boundary implementations can execute. The **skills layer** carries intent and judgment: the verbs to *work* a space — orient, understand, capture, reflect, share — standardized and platform-neutral like the spec. A skill decides what should happen and supplies reviewed inputs; the local-effect contract decides whether the write or commit mechanics conformed. Skills aren't polish: the agreement is *maintained, not declared* — a space that can be read but not maintained goes stale on contact. Skills are their own document — [SKILLS.md](SKILLS.md).
@@ -418,6 +456,8 @@ A tool that claims **time conformance** (a Thread reader or writer, or a reader 
 A tool that claims provisional **Map parsing compatibility** additionally MUST pass every required coverage vector in [`conformance/maps/manifest.json`](conformance/maps/manifest.json), including optional absence, canonical HTTPS and loopback-development repo URLs, matching root identities, unpinned and mixed Space Maps, pinned moment validation (including rootless address-only moments), optional exact pins, ordered members, optional depths from the five-rung vocabulary, open external addresses, thread addresses with optional opaque revisions, observed disclosure versus annotations, root names and position addresses, root-index safety, retired `space`-field refusal, and graceful invalid-block handling. Parse-only readers parse the input of build vectors; construction implementations also build them and parse successful output back equal. This adds no base repository-conformance requirement.
 
 A tool that claims **assets conformance** additionally MUST pass every required coverage vector in [`conformance/assets/manifest.json`](conformance/assets/manifest.json), including exact recognition, relative resolution from the containing Markdown file, explicit authored selection when root and nested folders coexist, root escape, and repository-validator skipping. The pure language-neutral operation and its boundary are normative in [`schema/assets.md`](schema/assets.md). A tool that reads identity images also passes [`conformance/assets/repository-image.json`](conformance/assets/repository-image.json).
+
+A tool that claims **verbs conformance** (a host that offers `map`, `look`, `post` and `write` on any route) additionally MUST pass every required coverage vector in [`conformance/verbs/manifest.json`](conformance/verbs/manifest.json), including the spelling per route, aliases and retired names, each verb's and each `post` kind's fields, an unknown request refused, `write` refusing an entry and a service address, the three guards on the acts that reach other people (not from the person, person only, and no slot for a credential), and the answer shape: `said` first and free of Git words, hashes and commands, the closed fact set, a full `change`, and a refusal's `reason_code` and `next` as a verb call. The pure operations and their boundary are normative in [`schema/verbs.md`](schema/verbs.md).
 
 ---
 

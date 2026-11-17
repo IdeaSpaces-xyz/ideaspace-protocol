@@ -45,6 +45,12 @@ const expected = [
   "conformance/extensions/manifest.json",
   "conformance/local-effects/manifest.json",
   "conformance/map-projection/manifest.json",
+  "conformance/verbs/manifest.json",
+  "dist/verbs.d.ts",
+  "dist/verbs.d.ts.map",
+  "dist/verbs.js",
+  "dist/verbs.js.map",
+  "schema/verbs.md",
   "conformance/maps/manifest.json",
   "conformance/root-identity/manifest.json",
   "conformance/reference-agreement/README.md",
@@ -274,6 +280,8 @@ try {
     "./time",
     "./schema/time",
     "./conformance/time",
+    "./schema/verbs",
+    "./conformance/verbs",
   ];
   if (JSON.stringify(exportKeys) !== JSON.stringify(expectedExports)) {
     throw new Error(`Unexpected package exports: ${exportKeys.join(", ")}`);
@@ -358,6 +366,7 @@ try {
     const contentLook = require("@ideaspaces/protocol/conformance/content-look");
     const maps = require("@ideaspaces/protocol/conformance/maps");
     const mapProjection = require("@ideaspaces/protocol/conformance/map-projection");
+    const verbs = require("@ideaspaces/protocol/conformance/verbs");
     const repositoryPathSchema = require.resolve("@ideaspaces/protocol/schema/repository-path");
     const extensionsSchema = require.resolve("@ideaspaces/protocol/schema/extensions");
     const assetsSchema = require.resolve("@ideaspaces/protocol/schema/assets");
@@ -368,6 +377,7 @@ try {
     const mapProjectionSchema = require.resolve("@ideaspaces/protocol/schema/map-projection");
     const awarenessSchema = require.resolve("@ideaspaces/protocol/schema/content-awareness");
     const contentLookSchema = require.resolve("@ideaspaces/protocol/schema/content-look");
+    const verbsSchema = require.resolve("@ideaspaces/protocol/schema/verbs");
     const required = [
       "assembleContentAwareness",
       "assembleContentFocus",
@@ -397,6 +407,10 @@ try {
       "renderPosition",
       "renderRootMapMembers",
       "resolveAssetReference",
+      "validateVerbRequest",
+      "checkVerbAnswer",
+      "renderVerbAnswer",
+      "spellVerb",
       "parseThreadPost",
       "inspectThreadPosts",
       "currentThreadMap",
@@ -508,6 +522,19 @@ try {
     }
     if (mapProjection?.format !== "ideaspaces-map-projection/v1" || !mapProjection.required_coverage?.length) {
       throw new Error("Map-projection conformance manifest did not load");
+    }
+    if (verbs?.format !== "ideaspaces-verbs/v1" || !verbs.required_coverage?.length) {
+      throw new Error("Verbs conformance manifest did not load");
+    }
+    if (!verbsSchema.endsWith("schema/verbs.md")) {
+      throw new Error("Verbs schema export did not resolve");
+    }
+    const verbCheck = protocol.validateVerbRequest({ verb: "look", target: "notes/a.md" });
+    if (verbCheck.status !== "valid" || verbCheck.verb !== "look") {
+      throw new Error("Verb request validation did not execute");
+    }
+    if (protocol.spellVerb("mcp", "look") !== "mcp__ideaspaces__look") {
+      throw new Error("Verb spelling did not execute");
     }
     if (!repositoryPathSchema.endsWith("schema/repository-path.md")) {
       throw new Error("Repository-path schema export did not resolve");

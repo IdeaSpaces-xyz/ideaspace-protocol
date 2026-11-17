@@ -1,8 +1,27 @@
 ---
 name: Now
-summary: "v0.33.0, not released: time is something a folder keeps, entries set its state by one rule, and as_of/since/newest read it in time; a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
+summary: "v0.34.0, draft: the four verbs map, look, post and write under one ideaspaces namespace, one write, answers that say the person's sentence first and the Git facts as named fields, post's request kinds with three guards, and the words table left for AX. Before it, v0.33.0, not released: time is something a folder keeps, entries set its state by one rule, and as_of/since/newest read it in time; a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
 ---
 # Now
+
+## The four verbs, v0.34.0 (draft, spec/four-verbs)
+
+An agent works an ideaspace with four verbs, the ones a person names: `map`, `look`, `post`,
+`write`, spelled `ideaspaces <verb>`, `mcp__ideaspaces__<verb>` and `ideaspaces_<verb>` on the
+three kinds of route; the address decides local or remote. Old names are aliases in the CLI and the
+plugin until 1.0. One `write` per route takes over the file write, the edit, the Note write and the
+commit: any file, refuses an entry (naming the correcting `post`), adds to history only when asked.
+Every answer is `said` (one sentence in the person's words, never a Git word, command or hash) and
+then `facts` under a closed field set; a refusal carries `reason_code` and `next`, a verb call or
+`null`. `post` has `entry`, `start_thread`, `share`, `revoke`, `visibility` and `publish`; the ones
+that reach other people carry three guards as requirements (from the person's words, the sign-in
+never reaches the model, only the person takes back), each with a negative vector. The agreed
+decisions behind this are the human's of 2026-11-17 (Agreement v2 of Idea Explorer 0.9.23, 4.3, 4.7,
+4.8). The `said` words and the forbidden list are AX's, in a marked table at the end of
+[`schema/verbs.md`](../schema/verbs.md), filled in a follow-up on the branch; the vectors use
+placeholders. Pure: `src/verbs.ts`, `conformance/verbs/manifest.json`. What the CLI, the Desktop
+engine and the plugin must change is named in the PR body, not built here. No tag or release is part
+of this change.
 
 ## Time and state, v0.33.0 (not released)
 

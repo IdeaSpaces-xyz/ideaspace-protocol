@@ -1,0 +1,433 @@
+{
+  "format": "ideaspaces-verbs/v1",
+  "schema": "../../schema/verbs.md",
+  "verbs": ["map", "look", "post", "write"],
+  "namespace": "ideaspaces",
+  "routes": {
+    "cli": "ideaspaces <verb>",
+    "mcp": "mcp__ideaspaces__<verb>",
+    "flat": "ideaspaces_<verb>"
+  },
+  "post_requests": ["entry", "start_thread", "share", "revoke", "visibility", "publish"],
+  "map_requests": ["read", "create", "add", "remove"],
+  "fact_fields": [
+    "outcome", "path", "saved", "history", "shared", "change", "post", "item", "with", "from", "level",
+    "public", "pin", "now", "until", "look", "map", "page", "warnings", "reason_code", "next"
+  ],
+  "reason_codes": [
+    "unknown_verb", "retired_name", "missing_field", "unexpected_field", "invalid_field", "unknown_request",
+    "out_of_reach", "local_only", "keeps_time", "changed_since_read", "no_identity", "not_from_person",
+    "person_only", "limit_reached"
+  ],
+  "words_note": "The said sentences in these vectors are neutral placeholders and the forbidden_words list is a draft from AX's scoping; AX's table in schema/verbs.md replaces both. The vectors check shape, never wording.",
+  "required_coverage": [
+    "verb_spelling_per_route",
+    "alias_resolves_to_verb",
+    "retired_name_refused_with_next",
+    "unknown_verb_refused",
+    "map_read_default",
+    "map_add_takes_a_file",
+    "map_unknown_request_refused",
+    "map_remote_out_of_reach",
+    "look_local_valid",
+    "look_remote_in_reach",
+    "look_invalid_depth",
+    "post_entry_default_valid",
+    "post_entry_correction_needs_supersedes",
+    "post_unknown_request_refused",
+    "post_unexpected_field_refused",
+    "post_share_valid_from_person",
+    "post_share_target_not_from_person",
+    "post_share_with_not_from_person",
+    "post_share_nothing_known_fails_closed",
+    "post_revoke_by_person",
+    "post_revoke_by_agent_person_only",
+    "post_visibility_boolean",
+    "post_publish_local_folder",
+    "post_start_thread_with_from_person",
+    "write_body_valid",
+    "write_edits_valid",
+    "write_history_only",
+    "write_body_and_edits_exclusive",
+    "write_over_entry_keeps_time",
+    "write_service_address_local_only",
+    "write_frontmatter_markdown_only",
+    "answer_ok_valid",
+    "answer_said_first",
+    "answer_said_forbidden_word",
+    "answer_said_hash",
+    "answer_said_git_command",
+    "answer_unknown_fact",
+    "answer_credential_has_no_slot",
+    "answer_short_change",
+    "answer_refused_needs_reason_and_next",
+    "answer_next_is_verb_call",
+    "answer_next_git_command",
+    "answer_next_null_allowed",
+    "answer_partial_needs_reason",
+    "answer_render_order"
+  ],
+  "vectors": [
+    {
+      "id": "spelling-per-route",
+      "operation": "spell_verb",
+      "covers": ["verb_spelling_per_route"],
+      "cases": [
+        { "route": "cli", "verb": "look", "expected": "ideaspaces look" },
+        { "route": "mcp", "verb": "look", "expected": "mcp__ideaspaces__look" },
+        { "route": "flat", "verb": "look", "expected": "ideaspaces_look" },
+        { "route": "mcp", "verb": "write", "expected": "mcp__ideaspaces__write" },
+        { "route": "flat", "verb": "post", "expected": "ideaspaces_post" }
+      ]
+    },
+    {
+      "id": "alias-threads-post-is-post",
+      "operation": "validate_request",
+      "covers": ["alias_resolves_to_verb"],
+      "context": { "aliases": { "threads_post": "post" } },
+      "request": { "verb": "threads_post", "target": "_threads/2026-11-17-plan", "body": "Claimed." },
+      "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "_threads/2026-11-17-plan", "body": "Claimed.", "request": "entry" } }
+    },
+    {
+      "id": "retired-note-write-names-write",
+      "operation": "validate_request",
+      "covers": ["retired_name_refused_with_next"],
+      "context": { "retired": { "note_write": "write" } },
+      "request": { "verb": "note_write", "target": "notes/a.md", "body": "# A\n" },
+      "expected": { "status": "refused", "reason_code": "retired_name", "field": "verb", "next": { "verb": "write" } }
+    },
+    {
+      "id": "unknown-verb",
+      "operation": "validate_request",
+      "covers": ["unknown_verb_refused"],
+      "request": { "verb": "sync", "target": "." },
+      "expected": { "status": "refused", "reason_code": "unknown_verb", "field": "verb", "next": null }
+    },
+    {
+      "id": "map-read-is-the-default",
+      "operation": "validate_request",
+      "covers": ["map_read_default"],
+      "request": { "verb": "map", "start": "notes/", "depth": "summary" },
+      "expected": { "status": "valid", "verb": "map", "request": { "verb": "map", "start": "notes/", "depth": "summary", "request": "read" } }
+    },
+    {
+      "id": "map-add-a-file-to-a-space",
+      "operation": "validate_request",
+      "covers": ["map_add_takes_a_file"],
+      "request": { "verb": "map", "start": "home.map.md", "request": "add", "member": "/Users/someone/Documents/plan.pdf" },
+      "expected": { "status": "valid", "verb": "map", "request": { "verb": "map", "start": "home.map.md", "request": "add", "member": "/Users/someone/Documents/plan.pdf" } }
+    },
+    {
+      "id": "map-unknown-request",
+      "operation": "validate_request",
+      "covers": ["map_unknown_request_refused"],
+      "request": { "verb": "map", "start": "notes/", "request": "sync" },
+      "expected": { "status": "refused", "reason_code": "unknown_request", "field": "request", "next": null }
+    },
+    {
+      "id": "map-remote-out-of-reach",
+      "operation": "validate_request",
+      "covers": ["map_remote_out_of_reach"],
+      "context": { "reach": ["thread:x_0123456789abcdef01234567"] },
+      "request": { "verb": "map", "start": "repo:n_9ffe8bb354f1b10b6fbb059e" },
+      "expected": { "status": "refused", "reason_code": "out_of_reach", "field": "start", "next": null }
+    },
+    {
+      "id": "look-a-local-note",
+      "operation": "validate_request",
+      "covers": ["look_local_valid"],
+      "request": { "verb": "look", "target": "notes/a.md", "depth": "surface" },
+      "expected": { "status": "valid", "verb": "look", "request": { "verb": "look", "target": "notes/a.md", "depth": "surface" } }
+    },
+    {
+      "id": "look-a-hosted-thread-in-reach",
+      "operation": "validate_request",
+      "covers": ["look_remote_in_reach"],
+      "context": { "reach": ["thread:x_0123456789abcdef01234567"] },
+      "request": { "verb": "look", "target": "thread:x_0123456789abcdef01234567", "depth": "children", "limit": 10 },
+      "expected": { "status": "valid", "verb": "look", "request": { "verb": "look", "target": "thread:x_0123456789abcdef01234567", "depth": "children", "limit": 10 } }
+    },
+    {
+      "id": "look-invalid-depth",
+      "operation": "validate_request",
+      "covers": ["look_invalid_depth"],
+      "request": { "verb": "look", "target": "notes/a.md", "depth": "outline" },
+      "expected": { "status": "refused", "reason_code": "invalid_field", "field": "depth", "next": { "verb": "look" } }
+    },
+    {
+      "id": "post-an-entry-by-default",
+      "operation": "validate_request",
+      "covers": ["post_entry_default_valid"],
+      "request": { "verb": "post", "target": "_threads/2026-11-17-plan", "body": "PR 110 is open.", "reply_to": "msg_0f3a9c2e-5b7d-4e81-9a6c-2d4f8b1e7c35", "author": "Integrator" },
+      "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "_threads/2026-11-17-plan", "body": "PR 110 is open.", "reply_to": "msg_0f3a9c2e-5b7d-4e81-9a6c-2d4f8b1e7c35", "author": "Integrator", "request": "entry" } }
+    },
+    {
+      "id": "post-correction-needs-supersedes",
+      "operation": "validate_request",
+      "covers": ["post_entry_correction_needs_supersedes"],
+      "request": { "verb": "post", "target": "memory", "body": "The tag resolves in the lock.", "kind": "correction" },
+      "expected": { "status": "refused", "reason_code": "missing_field", "field": "supersedes", "next": { "verb": "post", "request": "entry", "kind": "correction" } }
+    },
+    {
+      "id": "post-unknown-request",
+      "operation": "validate_request",
+      "covers": ["post_unknown_request_refused"],
+      "context": { "caller": "person", "person_named": ["notes/", "@b"] },
+      "request": { "verb": "post", "target": "notes/", "request": "invite", "with": "@b" },
+      "expected": { "status": "refused", "reason_code": "unknown_request", "field": "request", "next": null }
+    },
+    {
+      "id": "post-share-with-a-field-that-is-not-its-kinds",
+      "operation": "validate_request",
+      "covers": ["post_unexpected_field_refused"],
+      "context": { "caller": "agent", "person_named": ["notes/plan.md", "@b"] },
+      "request": { "verb": "post", "target": "notes/plan.md", "request": "share", "with": "@b", "grade": "explore", "history": true },
+      "expected": { "status": "refused", "reason_code": "unexpected_field", "field": "history", "next": { "verb": "post" } }
+    },
+    {
+      "id": "post-share-from-the-persons-words",
+      "operation": "validate_request",
+      "covers": ["post_share_valid_from_person"],
+      "context": { "caller": "agent", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@b"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" },
+      "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" } }
+    },
+    {
+      "id": "post-share-target-the-person-never-named",
+      "operation": "validate_request",
+      "covers": ["post_share_target_not_from_person"],
+      "context": { "caller": "agent", "person_named": ["@b"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" },
+      "expected": { "status": "refused", "reason_code": "not_from_person", "field": "target", "next": null }
+    },
+    {
+      "id": "post-share-with-a-handle-read-in-a-note",
+      "operation": "validate_request",
+      "covers": ["post_share_with_not_from_person"],
+      "context": { "caller": "agent", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@x", "grade": "explore" },
+      "expected": { "status": "refused", "reason_code": "not_from_person", "field": "with", "next": null }
+    },
+    {
+      "id": "post-share-with-nothing-the-person-said-known",
+      "operation": "validate_request",
+      "covers": ["post_share_nothing_known_fails_closed"],
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" },
+      "expected": { "status": "refused", "reason_code": "not_from_person", "field": "target", "next": null }
+    },
+    {
+      "id": "post-revoke-by-the-person",
+      "operation": "validate_request",
+      "covers": ["post_revoke_by_person"],
+      "context": { "caller": "person", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@b"] },
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "revoke", "from": "@b" },
+      "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "revoke", "from": "@b" } }
+    },
+    {
+      "id": "post-revoke-by-an-agent",
+      "operation": "validate_request",
+      "covers": ["post_revoke_by_agent_person_only"],
+      "context": { "caller": "agent", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@b"] },
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "revoke", "from": "@b" },
+      "expected": { "status": "refused", "reason_code": "person_only", "next": null }
+    },
+    {
+      "id": "post-visibility-public-must-be-boolean",
+      "operation": "validate_request",
+      "covers": ["post_visibility_boolean"],
+      "context": { "caller": "agent", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "cases": [
+        { "public": true, "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "visibility", "public": true } } },
+        { "public": "yes", "expected": { "status": "refused", "reason_code": "invalid_field", "field": "public", "next": { "verb": "post", "request": "visibility" } } }
+      ],
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "visibility", "public": "$CASE.public" }
+    },
+    {
+      "id": "post-publish-a-local-folder",
+      "operation": "validate_request",
+      "covers": ["post_publish_local_folder"],
+      "context": { "caller": "agent", "person_named": ["/Users/someone/Spaces/garden"] },
+      "request": { "verb": "post", "target": "/Users/someone/Spaces/garden", "request": "publish" },
+      "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "/Users/someone/Spaces/garden", "request": "publish" } }
+    },
+    {
+      "id": "post-start-thread-with-one-person",
+      "operation": "validate_request",
+      "covers": ["post_start_thread_with_from_person"],
+      "context": { "caller": "agent", "person_named": ["@b"] },
+      "cases": [
+        { "with": "@b", "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "ideaspaces", "request": "start_thread", "name": "Plan review", "with": "@b" } } },
+        { "with": "@stranger", "expected": { "status": "refused", "reason_code": "not_from_person", "field": "with", "next": null } }
+      ],
+      "request": { "verb": "post", "target": "ideaspaces", "request": "start_thread", "name": "Plan review", "with": "$CASE.with" }
+    },
+    {
+      "id": "write-a-body",
+      "operation": "validate_request",
+      "covers": ["write_body_valid"],
+      "request": { "verb": "write", "target": "notes/a.md", "body": "# A\n", "frontmatter": { "set": { "name": "A" } } },
+      "expected": { "status": "valid", "verb": "write", "request": { "verb": "write", "target": "notes/a.md", "body": "# A\n", "frontmatter": { "set": { "name": "A" } } } }
+    },
+    {
+      "id": "write-edits-in-place",
+      "operation": "validate_request",
+      "covers": ["write_edits_valid"],
+      "request": { "verb": "write", "target": "src/main.ts", "edits": [{ "find": "const a = 1", "replace": "const a = 2" }] },
+      "expected": { "status": "valid", "verb": "write", "request": { "verb": "write", "target": "src/main.ts", "edits": [{ "find": "const a = 1", "replace": "const a = 2" }] } }
+    },
+    {
+      "id": "write-history-only",
+      "operation": "validate_request",
+      "covers": ["write_history_only"],
+      "request": { "verb": "write", "history": ["notes/a.md", "notes/b.md"], "message": "Capture A and B" },
+      "expected": { "status": "valid", "verb": "write", "request": { "verb": "write", "history": ["notes/a.md", "notes/b.md"], "message": "Capture A and B" } }
+    },
+    {
+      "id": "write-body-and-edits-together",
+      "operation": "validate_request",
+      "covers": ["write_body_and_edits_exclusive"],
+      "request": { "verb": "write", "target": "notes/a.md", "body": "# A\n", "edits": [{ "find": "x", "replace": "y" }] },
+      "expected": { "status": "refused", "reason_code": "invalid_field", "field": "edits", "next": { "verb": "write" } }
+    },
+    {
+      "id": "write-over-an-entry",
+      "operation": "validate_request",
+      "covers": ["write_over_entry_keeps_time"],
+      "context": { "entries": [{ "path": "_threads/2026-11-17-plan/2026-11-17T14-24-43-208Z-msg_0f3a9c2e.md", "id": "msg_0f3a9c2e-5b7d-4e81-9a6c-2d4f8b1e7c35", "folder": "_threads/2026-11-17-plan" }] },
+      "request": { "verb": "write", "target": "_threads/2026-11-17-plan/2026-11-17T14-24-43-208Z-msg_0f3a9c2e.md", "body": "A changed post." },
+      "expected": { "status": "refused", "reason_code": "keeps_time", "field": "target", "next": { "verb": "post", "target": "_threads/2026-11-17-plan", "request": "entry", "kind": "correction", "supersedes": "msg_0f3a9c2e-5b7d-4e81-9a6c-2d4f8b1e7c35" } }
+    },
+    {
+      "id": "write-to-a-service-address",
+      "operation": "validate_request",
+      "covers": ["write_service_address_local_only"],
+      "request": { "verb": "write", "target": "thread:x_0123456789abcdef01234567", "body": "A reply." },
+      "expected": { "status": "refused", "reason_code": "local_only", "field": "target", "next": { "verb": "post", "target": "thread:x_0123456789abcdef01234567" } }
+    },
+    {
+      "id": "write-frontmatter-on-a-non-markdown-file",
+      "operation": "validate_request",
+      "covers": ["write_frontmatter_markdown_only"],
+      "request": { "verb": "write", "target": "src/main.ts", "body": "export {};\n", "frontmatter": { "set": { "name": "Main" } } },
+      "expected": { "status": "refused", "reason_code": "invalid_field", "field": "frontmatter", "next": { "verb": "write" } }
+    },
+    {
+      "id": "answer-saved-and-in-history",
+      "operation": "check_answer",
+      "covers": ["answer_ok_valid"],
+      "context": { "forbidden_words": ["commit", "push", "pull", "branch", "staged", "HEAD", "repository", "remote", "upstream", "Git"] },
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "ok", "path": "notes/a.md", "saved": true, "history": true, "shared": false, "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6" } },
+      "expected": { "status": "valid" }
+    },
+    {
+      "id": "answer-said-must-come-first",
+      "operation": "check_answer",
+      "covers": ["answer_said_first"],
+      "context": { "forbidden_words": [] },
+      "answer": { "facts": { "outcome": "ok", "saved": true }, "said": "A neutral placeholder sentence." },
+      "expected": { "status": "invalid", "problems": [{ "code": "said_not_first", "field": "said" }] }
+    },
+    {
+      "id": "answer-said-with-a-git-word",
+      "operation": "check_answer",
+      "covers": ["answer_said_forbidden_word"],
+      "context": { "forbidden_words": ["commit", "push", "pull", "branch", "staged", "HEAD", "repository", "remote", "upstream", "Git"] },
+      "answer": { "said": "Not pushed; push it for anyone else to read it.", "facts": { "outcome": "ok", "history": true, "shared": false, "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6" } },
+      "expected": { "status": "invalid", "problems": [{ "code": "said_forbidden_word", "field": "push" }] }
+    },
+    {
+      "id": "answer-said-with-a-hash",
+      "operation": "check_answer",
+      "covers": ["answer_said_hash"],
+      "context": { "forbidden_words": [] },
+      "answer": { "said": "Saved as b52662fa5f62, only this file.", "facts": { "outcome": "ok", "history": true, "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6" } },
+      "expected": { "status": "invalid", "problems": [{ "code": "said_contains_hash", "field": "said" }] }
+    },
+    {
+      "id": "answer-said-tells-the-model-to-run-git",
+      "operation": "check_answer",
+      "covers": ["answer_said_git_command"],
+      "context": { "forbidden_words": [] },
+      "answer": { "said": "No identity. Set it, then save again: git -C . config user.name 'Name'.", "facts": { "outcome": "refused", "reason_code": "no_identity", "next": null } },
+      "expected": { "status": "invalid", "problems": [{ "code": "said_git_command", "field": "said" }] }
+    },
+    {
+      "id": "answer-with-a-field-this-page-does-not-name",
+      "operation": "check_answer",
+      "covers": ["answer_unknown_fact"],
+      "context": { "forbidden_words": [] },
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "ok", "saved": true, "checkout_path": "/Users/someone/private/space" } },
+      "expected": { "status": "invalid", "problems": [{ "code": "unknown_fact", "field": "checkout_path" }] }
+    },
+    {
+      "id": "answer-has-no-slot-for-a-credential",
+      "operation": "check_answer",
+      "covers": ["answer_credential_has_no_slot"],
+      "context": { "forbidden_words": [] },
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "ok", "item": "repo:n_9ffe8bb354f1b10b6fbb059e", "shared": true, "token": "ist_0000000000000000" } },
+      "expected": { "status": "invalid", "problems": [{ "code": "unknown_fact", "field": "token" }] }
+    },
+    {
+      "id": "answer-change-is-never-shortened",
+      "operation": "check_answer",
+      "covers": ["answer_short_change"],
+      "context": { "forbidden_words": [] },
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "ok", "history": true, "change": "b52662fa5f62" } },
+      "expected": { "status": "invalid", "problems": [{ "code": "short_change", "field": "change" }] }
+    },
+    {
+      "id": "answer-refused-without-reason-or-next",
+      "operation": "check_answer",
+      "covers": ["answer_refused_needs_reason_and_next"],
+      "context": { "forbidden_words": [] },
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "refused" } },
+      "expected": { "status": "invalid", "problems": [{ "code": "reason_code_missing", "field": "reason_code" }, { "code": "next_missing", "field": "next" }] }
+    },
+    {
+      "id": "answer-next-names-a-verb-call",
+      "operation": "check_answer",
+      "covers": ["answer_next_is_verb_call"],
+      "context": { "forbidden_words": [] },
+      "cases": [
+        { "next": { "verb": "look", "target": "notes/a.md" }, "expected": { "status": "valid" } },
+        { "next": { "verb": "commit", "paths": ["notes/a.md"] }, "expected": { "status": "invalid", "problems": [{ "code": "next_invalid", "field": "next" }] } },
+        { "next": "look at it again", "expected": { "status": "invalid", "problems": [{ "code": "next_invalid", "field": "next" }] } }
+      ],
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "refused", "reason_code": "changed_since_read", "next": "$CASE.next" } }
+    },
+    {
+      "id": "answer-next-carrying-a-git-command",
+      "operation": "check_answer",
+      "covers": ["answer_next_git_command"],
+      "context": { "forbidden_words": [] },
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "refused", "reason_code": "no_identity", "next": { "verb": "write", "message": "run git config user.name first" } } },
+      "expected": { "status": "invalid", "problems": [{ "code": "next_git_command", "field": "next" }] }
+    },
+    {
+      "id": "answer-next-null-when-only-the-person-can",
+      "operation": "check_answer",
+      "covers": ["answer_next_null_allowed"],
+      "context": { "forbidden_words": ["commit", "push", "pull", "branch", "staged", "HEAD", "repository", "remote", "upstream", "Git"] },
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "refused", "reason_code": "person_only", "next": null } },
+      "expected": { "status": "valid" }
+    },
+    {
+      "id": "answer-partial-needs-a-reason",
+      "operation": "check_answer",
+      "covers": ["answer_partial_needs_reason"],
+      "context": { "forbidden_words": [] },
+      "cases": [
+        { "reason_code": "stage_failed", "expected": { "status": "valid" } },
+        { "reason_code": null, "expected": { "status": "invalid", "problems": [{ "code": "reason_code_invalid", "field": "reason_code" }] } }
+      ],
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "partial", "path": "notes/a.md", "saved": true, "history": false, "reason_code": "$CASE.reason_code" } }
+    },
+    {
+      "id": "render-said-then-facts-in-order",
+      "operation": "render_answer",
+      "covers": ["answer_render_order"],
+      "answer": { "said": "A neutral placeholder sentence.", "facts": { "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6", "shared": false, "outcome": "ok", "history": true, "saved": true, "path": "notes/a.md" } },
+      "expected": "A neutral placeholder sentence.\n\noutcome: ok\npath: notes/a.md\nsaved: true\nhistory: true\nshared: false\nchange: b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6"
+    }
+  ]
+}

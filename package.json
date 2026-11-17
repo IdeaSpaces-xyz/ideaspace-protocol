@@ -76,7 +76,9 @@
       "import": "./dist/time.js"
     },
     "./schema/time": "./schema/time.md",
-    "./conformance/time": "./conformance/time/manifest.json"
+    "./conformance/time": "./conformance/time/manifest.json",
+    "./schema/verbs": "./schema/verbs.md",
+    "./conformance/verbs": "./conformance/verbs/manifest.json"
   },
   "files": [
     "dist",
@@ -93,6 +95,7 @@
     "conformance/content-look",
     "conformance/maps",
     "conformance/map-projection",
+    "conformance/verbs",
     "skills",
     "templates",
     "SPEC.md",
