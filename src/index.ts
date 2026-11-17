@@ -500,4 +500,45 @@ export type {
 } from "./access.js";
 
 export { check, list, who, companyRepoViewerGrant } from "./access.js";
+
+// The four verbs — the pure shape of schema/verbs.md: request validation with the three guards,
+// the answer check (said first, closed facts, next a verb call), the one render, and the spelling
+// per route, and the words a said sentence never contains. No filesystem, Git or network.
+export {
+  VERBS,
+  VERB_NAMESPACE,
+  VERB_ROUTES,
+  DEPTHS,
+  POST_REQUESTS,
+  MAP_REQUESTS,
+  REACHING_REQUESTS,
+  FACT_FIELDS,
+  OUTCOMES,
+  VERB_REASON_CODES,
+  SAID_FORBIDDEN_WORDS,
+  spellVerb,
+  isServiceAddress,
+  resolveVerbName,
+  validateVerbRequest,
+  checkVerbAnswer,
+  renderVerbAnswer,
+} from "./verbs.js";
+export type {
+  Verb,
+  VerbRoute,
+  PostRequest,
+  MapRequest,
+  FactField,
+  VerbOutcome,
+  VerbReasonCode,
+  VerbEntry,
+  VerbContext,
+  VerbRequest,
+  VerbCall,
+  VerbRequestCheck,
+  VerbAnswer,
+  VerbAnswerProblemCode,
+  VerbAnswerProblem,
+  VerbAnswerCheck,
+} from "./verbs.js";
 export type { AccessTarget, AccessRelation, AccessObject, AccessActor, AccessFacts, AccessAnswer, AccessPath } from "./access.js";
