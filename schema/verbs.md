@@ -124,7 +124,7 @@ not the kind's is refused `unexpected_field`, a missing one `missing_field`, an 
 | `share` | `target`, `with` | `grade` | asks the service to let one person (`with`, a handle or email) read `target`. `grade` is a grantable level the service names ([`access.md`](access.md)); left out, the service grants its **lowest** level; given, it is a word the person said (guard 1). History is never shared by this call |
 | `revoke` | `target`, `from` | — | **take back**: ends what `from` was given on `target`. By the person only (guard 3); the person's own take back is checked against nothing else, so it always works |
 | `visibility` | `target`, `public` (boolean) | — | makes `target` public or private |
-| `publish` | `target` (a local folder) | — | puts a local Repo on the service, **private**, with its history; it cannot be taken back |
+| `publish` | `target` (a local folder) | — | puts a local Repo on the service, **private**, with its history; it cannot be taken back. A service address as `target` is refused `invalid_field`: there is nothing to push |
 
 ### `write`
 
@@ -242,7 +242,10 @@ act is the person's alone), `next` is `null` and `said` tells the agent to tell 
 
 `share`, `revoke`, `visibility`, `publish` and `start_thread` with `with` reach beyond this machine
 under the person's own authority, with nothing asking first. Three guards are **requirements** on
-every host that offers them, each with a negative vector in the manifest:
+every host that offers them, each with a negative vector in the manifest. "These acts" means
+`start_thread` only when it carries `with`: a Thread opened with nobody in it, on this computer or
+on the service, reaches nobody, and guard 1 does not apply to it (reach still does to a service
+`target`, with the literal `ideaspaces` allowed).
 
 1. **Who and what come from the person's own words.** `with`, `from`, `grade`, and the `target` of
    these acts MUST be names the person wrote in this conversation, never text the agent read in a
@@ -263,9 +266,12 @@ every host that offers them, each with a negative vector in the manifest:
    a fact (the set is closed and has no slot for one), and is never in `said`, `next`, a warning or an
    echoed request. It may live in the host and in the one child process that needs it. A host runs
    `check_answer` with its live credentials as `context.secrets` on every answer before the model
-   reads it: any string anywhere in the answer (`said`, every fact including `warnings`, `next`,
-   `look`, `map`) that contains one is the problem `credential_in_answer`, which names the field and
-   never the value.
+   reads it: any string anywhere in the answer, a key or a value (`said`, every fact including
+   `warnings`, `next`, `look`, `map`, and the names of fields inside them), that contains one is the
+   problem `credential_in_answer`, which names the field and never the value. When the field name
+   itself would carry one, the problem names the slot that holds it (`facts` or `answer`), and any
+   other problem that would echo such a name is replaced the same way, so no report carries a
+   credential.
 
    **The one child that holds the credential for `publish`** is a single push of the item's own line
    of history to the exact `https://` address the service returned when it created the item. The

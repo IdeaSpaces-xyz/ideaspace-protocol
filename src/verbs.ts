@@ -309,16 +309,22 @@ export function validateVerbRequest(input: unknown, context: VerbContext = {}): 
       // The person's own take back (caller: person, which no request can set) is their act on their
       // own item: checked against nothing else, so it always works.
       if (kind === "revoke") return { status: "valid", verb, request: { ...request, request: kind } };
-      // Guard 1, the act (Proposed): what the person asked for, before who and what. Fails closed.
-      const act = kind === "visibility" ? (rest.public ? "public" : "private") : kind;
-      if (!(context.person_asked ?? []).includes(act)) return refuse("not_from_person", null, "request");
-      // Guard 1, who and what: from the person's own words. Fails closed.
-      const spoken: Array<[string, unknown]> = [];
-      if (kind !== "start_thread" && rest.target !== undefined) spoken.push(["target", rest.target]);
-      if (rest.with !== undefined) spoken.push(["with", rest.with]);
-      if (rest.grade !== undefined) spoken.push(["grade", rest.grade]);
-      for (const [field, value] of spoken) {
-        if (!fromPerson(value as string, context)) return refuse("not_from_person", null, field);
+      // publish takes a local folder: the host has nothing to push for a service address.
+      if (kind === "publish" && isServiceAddress(rest.target)) return refuse("invalid_field", { verb, request: kind }, "target");
+      // A Thread with nobody in it reaches nobody: guard 1 does not apply, reach still does.
+      const reaches = !(kind === "start_thread" && rest.with === undefined);
+      if (reaches) {
+        // Guard 1, the act (Proposed): what the person asked for, before who and what. Fails closed.
+        const act = kind === "visibility" ? (rest.public ? "public" : "private") : kind;
+        if (!(context.person_asked ?? []).includes(act)) return refuse("not_from_person", null, "request");
+        // Guard 1, who and what: from the person's own words. Fails closed.
+        const spoken: Array<[string, unknown]> = [];
+        if (kind !== "start_thread" && rest.target !== undefined) spoken.push(["target", rest.target]);
+        if (rest.with !== undefined) spoken.push(["with", rest.with]);
+        if (rest.grade !== undefined) spoken.push(["grade", rest.grade]);
+        for (const [field, value] of spoken) {
+          if (!fromPerson(value as string, context)) return refuse("not_from_person", null, field);
+        }
       }
       const accountLiteral = kind === "start_thread" && (rest.target as string | undefined)?.trim() === "ideaspaces";
       if (kind !== "publish" && isServiceAddress(rest.target) && !accountLiteral && !inReach(rest.target as string, context)) {
@@ -413,10 +419,11 @@ function anyStringMatches(value: unknown, pattern: RegExp): boolean {
   return false;
 }
 
+/** True when any string in the value, a key or a value at any depth, contains a secret. */
 function containsSecret(value: unknown, secrets: string[]): boolean {
   if (typeof value === "string") return secrets.some((secret) => value.includes(secret));
   if (Array.isArray(value)) return value.some((item) => containsSecret(item, secrets));
-  if (isRecord(value)) return Object.values(value).some((item) => containsSecret(item, secrets));
+  if (isRecord(value)) return Object.entries(value).some(([key, item]) => containsSecret(key, secrets) || containsSecret(item, secrets));
   return false;
 }
 
@@ -473,17 +480,34 @@ export function checkVerbAnswer(input: unknown, context: VerbContext = {}): Verb
   } else if (facts.next !== undefined) {
     problems.push({ code: "next_invalid", field: "next" });
   }
-  // Guard 2: no string anywhere in the answer carries a credential the host holds. Names the field, never the value.
+  // Guard 2: no string anywhere in the answer, a key or a value, carries a credential the host holds.
+  // The problem names the field, never the value; a field name that would carry one is named by the
+  // slot that holds it (`facts` or `answer`), and so is any earlier problem that would echo it.
   const secrets = (context.secrets ?? []).filter((secret) => secret.length > 0);
   if (secrets.length) {
     for (const [key, value] of Object.entries(input)) {
       if (key === "facts") {
         for (const [field, fact] of Object.entries(facts)) {
-          if (containsSecret(fact, secrets)) problems.push({ code: "credential_in_answer", field });
+          if (containsSecret(field, secrets)) problems.push({ code: "credential_in_answer", field: "facts" });
+          else if (containsSecret(fact, secrets)) problems.push({ code: "credential_in_answer", field });
         }
+      } else if (containsSecret(key, secrets)) {
+        problems.push({ code: "credential_in_answer", field: "answer" });
       } else if (containsSecret(value, secrets)) {
         problems.push({ code: "credential_in_answer", field: key });
       }
+    }
+    const factKeys = new Set(Object.keys(facts));
+    const blanked = problems.map((problem) =>
+      problem.field !== undefined && containsSecret(problem.field, secrets)
+        ? { code: "credential_in_answer" as const, field: factKeys.has(problem.field) ? "facts" : "answer" }
+        : problem,
+    );
+    const seen = new Set<string>();
+    problems.length = 0;
+    for (const problem of blanked) {
+      const id = `${problem.code}:${problem.field ?? ""}`;
+      if (!seen.has(id)) { seen.add(id); problems.push(problem); }
     }
   }
   return problems.length ? { status: "invalid", problems } : { status: "valid" };

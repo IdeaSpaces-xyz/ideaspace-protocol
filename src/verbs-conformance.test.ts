@@ -147,6 +147,20 @@ describe("the four verbs: reference behaviour beyond the vectors", () => {
     const leaked = checkVerbAnswer({ said: "Saved.", facts: { outcome: "ok", look: { name: "Plan", summary: "token ist_live_canary_t0k3n" } } }, { secrets });
     expect(leaked).toEqual({ status: "invalid", problems: [{ code: "credential_in_answer", field: "look" }] });
     expect(JSON.stringify(leaked)).not.toContain("canary");
+    // A secret used as a field name: in facts, at the top level, and inside look. No report carries it.
+    const asFactName = checkVerbAnswer({ said: "Saved.", facts: { outcome: "ok", ist_live_canary_t0k3n: "x" } }, { secrets });
+    expect(asFactName).toEqual({ status: "invalid", problems: [{ code: "credential_in_answer", field: "facts" }] });
+    const asTopName = checkVerbAnswer({ said: "Saved.", facts: { outcome: "ok" }, ist_live_canary_t0k3n: "x" }, { secrets });
+    expect(asTopName).toEqual({ status: "invalid", problems: [{ code: "credential_in_answer", field: "answer" }] });
+    const asLookName = checkVerbAnswer({ said: "Saved.", facts: { outcome: "ok", look: { name: "Plan", ist_live_canary_t0k3n: "x" } } }, { secrets });
+    expect(asLookName).toEqual({ status: "invalid", problems: [{ code: "credential_in_answer", field: "look" }] });
+    for (const result of [asFactName, asTopName, asLookName]) expect(JSON.stringify(result)).not.toContain("canary");
+  });
+
+  it("a Thread opened with nobody in it needs nothing asked; one with someone does", () => {
+    expect(validateVerbRequest({ verb: "post", request: "start_thread", name: "Plan" }, { caller: "agent" }).status).toBe("valid");
+    expect(validateVerbRequest({ verb: "post", request: "start_thread", name: "Plan", with: "@b" }, { caller: "agent" })).toMatchObject({ reason_code: "not_from_person", field: "request" });
+    expect(validateVerbRequest({ verb: "post", target: "thread:x_0123456789abcdef01234567", request: "start_thread", name: "Plan" }, { caller: "agent" })).toMatchObject({ reason_code: "out_of_reach" });
   });
 
   it("the person's words match whole and case-insensitively, never by substring", () => {

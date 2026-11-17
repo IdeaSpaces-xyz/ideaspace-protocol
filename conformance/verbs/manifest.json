@@ -62,6 +62,8 @@
     "post_hosted_entry_no_reach_known",
     "post_visibility_boolean",
     "post_publish_local_folder",
+    "post_publish_service_address_refused",
+    "post_start_thread_nobody_needs_nothing_asked",
     "post_start_thread_with_from_person",
     "write_body_valid",
     "write_edits_valid",
@@ -80,6 +82,7 @@
     "answer_credential_in_said",
     "answer_credential_in_warning",
     "answer_credential_in_next",
+    "answer_credential_as_field_name",
     "answer_short_change",
     "answer_refused_needs_reason_and_next",
     "answer_next_is_verb_call",
@@ -247,8 +250,12 @@
       "id": "post-share-with-nothing-the-person-said-known",
       "operation": "validate_request",
       "covers": ["post_share_nothing_known_fails_closed"],
-      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" },
-      "expected": { "status": "refused", "reason_code": "not_from_person", "field": "request", "next": null }
+      "cases": [
+        { "context": { "caller": "agent" }, "expected": { "status": "refused", "reason_code": "not_from_person", "field": "request", "next": null } },
+        { "context": { "caller": "agent", "person_asked": ["share"] }, "expected": { "status": "refused", "reason_code": "not_from_person", "field": "target", "next": null } }
+      ],
+      "context": "$CASE.context",
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" }
     },
     {
       "id": "post-share-at-a-grade-the-person-never-named",
@@ -332,6 +339,25 @@
       "context": { "caller": "agent", "person_asked": ["publish"], "person_named": ["/Users/someone/Spaces/garden"] },
       "request": { "verb": "post", "target": "/Users/someone/Spaces/garden", "request": "publish" },
       "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "/Users/someone/Spaces/garden", "request": "publish" } }
+    },
+    {
+      "id": "post-publish-a-service-address",
+      "operation": "validate_request",
+      "covers": ["post_publish_service_address_refused"],
+      "context": { "caller": "agent", "person_asked": ["publish"], "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "publish" },
+      "expected": { "status": "refused", "reason_code": "invalid_field", "field": "target", "next": { "verb": "post", "request": "publish" } }
+    },
+    {
+      "id": "post-start-thread-with-nobody-needs-nothing-asked",
+      "operation": "validate_request",
+      "covers": ["post_start_thread_nobody_needs_nothing_asked"],
+      "context": { "caller": "agent" },
+      "cases": [
+        { "request": { "verb": "post", "request": "start_thread", "name": "Plan" }, "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "request": "start_thread", "name": "Plan" } } },
+        { "request": { "verb": "post", "target": "ideaspaces", "request": "start_thread", "name": "Plan" }, "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "ideaspaces", "request": "start_thread", "name": "Plan" } } }
+      ],
+      "request": "$CASE.request"
     },
     {
       "id": "post-start-thread-with-one-person",
@@ -473,6 +499,18 @@
       "context": { "secrets": ["ist_live_canary_t0k3n"], "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
       "answer": { "said": "Not open to this conversation: Plan isn't something you were given, so ask the person for it.", "facts": { "outcome": "refused", "reason_code": "out_of_reach", "next": { "verb": "look", "target": "https://ideaspaces.xyz/r/n_9ffe8bb354f1b10b6fbb059e?t=ist_live_canary_t0k3n" } } },
       "expected": { "status": "invalid", "problems": [{ "code": "credential_in_answer", "field": "next" }] }
+    },
+    {
+      "id": "answer-with-the-credential-as-a-fact-name",
+      "operation": "check_answer",
+      "covers": ["answer_credential_as_field_name"],
+      "context": { "secrets": ["ist_live_canary_t0k3n"], "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "cases": [
+        { "answer": { "said": "Shared Plan with @bea as Viewer, and only the person can take it back.", "facts": { "outcome": "ok", "item": "repo:n_9ffe8bb354f1b10b6fbb059e", "shared": true, "ist_live_canary_t0k3n": "present" } }, "expected": { "status": "invalid", "problems": [{ "code": "credential_in_answer", "field": "facts" }] } },
+        { "answer": { "said": "Shared Plan with @bea as Viewer, and only the person can take it back.", "facts": { "outcome": "ok", "item": "repo:n_9ffe8bb354f1b10b6fbb059e", "shared": true }, "ist_live_canary_t0k3n": "present" }, "expected": { "status": "invalid", "problems": [{ "code": "credential_in_answer", "field": "answer" }] } },
+        { "answer": { "said": "Shared Plan with @bea as Viewer, and only the person can take it back.", "facts": { "outcome": "ok", "look": { "name": "Plan", "ist_live_canary_t0k3n": "present" } } }, "expected": { "status": "invalid", "problems": [{ "code": "credential_in_answer", "field": "look" }] } }
+      ],
+      "answer": "$CASE.answer"
     },
     {
       "id": "answer-change-is-never-shortened",
