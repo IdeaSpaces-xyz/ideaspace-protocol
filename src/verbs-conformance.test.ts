@@ -133,11 +133,24 @@ describe("the four verbs: reference behaviour beyond the vectors", () => {
     const revoke = validateVerbRequest({ verb: "post", target: "repo:n_0", request: "revoke", from: "@b" }, { person_named: ["repo:n_0", "@b"] });
     expect(revoke).toMatchObject({ status: "refused", reason_code: "person_only" });
     const publish = validateVerbRequest({ verb: "post", target: "/a/space", request: "publish" }, { caller: "agent" });
-    expect(publish).toMatchObject({ status: "refused", reason_code: "not_from_person", field: "target" });
+    expect(publish).toMatchObject({ status: "refused", reason_code: "not_from_person", field: "request" });
+    const named = validateVerbRequest({ verb: "post", target: "/a/space", request: "publish" }, { caller: "agent", person_asked: ["publish"] });
+    expect(named).toMatchObject({ status: "refused", reason_code: "not_from_person", field: "target" });
+    const look = validateVerbRequest({ verb: "look", target: "thread:x_0123456789abcdef01234567" }, {});
+    expect(look).toMatchObject({ status: "refused", reason_code: "out_of_reach" });
+  });
+
+  it("a secret is found anywhere in the answer, the problem names the field and never the value, and an empty secret matches nothing", () => {
+    const secrets = ["ist_live_canary_t0k3n", ""];
+    const clean = checkVerbAnswer({ said: "Saved.", facts: { outcome: "ok", look: { name: "Plan", summary: "A plan." } } }, { secrets });
+    expect(clean).toEqual({ status: "valid" });
+    const leaked = checkVerbAnswer({ said: "Saved.", facts: { outcome: "ok", look: { name: "Plan", summary: "token ist_live_canary_t0k3n" } } }, { secrets });
+    expect(leaked).toEqual({ status: "invalid", problems: [{ code: "credential_in_answer", field: "look" }] });
+    expect(JSON.stringify(leaked)).not.toContain("canary");
   });
 
   it("the person's words match whole and case-insensitively, never by substring", () => {
-    const context: VerbContext = { caller: "agent", person_named: ["@Bea", "notes/plan.md"] };
+    const context: VerbContext = { caller: "agent", person_asked: ["share"], person_named: ["@Bea", "notes/plan.md", "explore"] };
     expect(validateVerbRequest({ verb: "post", target: "notes/plan.md", request: "share", with: "@bea", grade: "explore" }, context).status).toBe("valid");
     expect(validateVerbRequest({ verb: "post", target: "notes/plan.md", request: "share", with: "@beatrice", grade: "explore" }, context)).toMatchObject({ reason_code: "not_from_person" });
   });
@@ -190,7 +203,7 @@ describe("the four verbs: AX's words in schema/verbs.md pass their own check", (
 
   it("fills every said cell, and each sentence has no forbidden word, hash or command", () => {
     const table = rows("The sentences");
-    expect(table.length).toBe(25);
+    expect(table.length).toBe(26);
     for (const row of table) {
       const cell = row[4];
       expect(cell, row[1]).not.toBe("*AX*");

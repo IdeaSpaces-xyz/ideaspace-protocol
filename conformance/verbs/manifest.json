@@ -17,7 +17,7 @@
   "reason_codes": [
     "unknown_verb", "retired_name", "missing_field", "unexpected_field", "invalid_field", "unknown_request",
     "out_of_reach", "local_only", "keeps_time", "changed_since_read", "no_identity", "not_from_person",
-    "person_only", "limit_reached"
+    "person_only", "limit_reached", "redirected"
   ],
   "words_note": "The said sentences are AX's, from the table in schema/verbs.md (The words), with Plan, @bea and Viewer standing in for {name}, {who} and {level}. said_forbidden_words is AX's list; every check_answer vector that checks words uses it. The vectors check shape and the list, not the wording of each sentence.",
   "said_forbidden_words": [
@@ -51,8 +51,15 @@
     "post_share_target_not_from_person",
     "post_share_with_not_from_person",
     "post_share_nothing_known_fails_closed",
+    "post_share_grade_not_from_person",
+    "post_publish_not_asked",
+    "post_public_not_asked",
     "post_revoke_by_person",
     "post_revoke_by_agent_person_only",
+    "post_revoke_by_agent_before_fields",
+    "post_revoke_by_person_from_card",
+    "look_remote_no_reach_known",
+    "post_hosted_entry_no_reach_known",
     "post_visibility_boolean",
     "post_publish_local_folder",
     "post_start_thread_with_from_person",
@@ -70,6 +77,9 @@
     "answer_said_git_command",
     "answer_unknown_fact",
     "answer_credential_has_no_slot",
+    "answer_credential_in_said",
+    "answer_credential_in_warning",
+    "answer_credential_in_next",
     "answer_short_change",
     "answer_refused_needs_reason_and_next",
     "answer_next_is_verb_call",
@@ -159,6 +169,20 @@
       "expected": { "status": "valid", "verb": "look", "request": { "verb": "look", "target": "thread:x_0123456789abcdef01234567", "depth": "children", "limit": 10 } }
     },
     {
+      "id": "look-remote-with-no-reach-known",
+      "operation": "validate_request",
+      "covers": ["look_remote_no_reach_known"],
+      "request": { "verb": "look", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "depth": "summary" },
+      "expected": { "status": "refused", "reason_code": "out_of_reach", "field": "target", "next": null }
+    },
+    {
+      "id": "post-hosted-entry-with-no-reach-known",
+      "operation": "validate_request",
+      "covers": ["post_hosted_entry_no_reach_known"],
+      "request": { "verb": "post", "target": "thread:x_0123456789abcdef01234567", "body": "A reply.", "reply_to": "msg_0f3a9c2e-5b7d-4e81-9a6c-2d4f8b1e7c35" },
+      "expected": { "status": "refused", "reason_code": "out_of_reach", "field": "target", "next": null }
+    },
+    {
       "id": "look-invalid-depth",
       "operation": "validate_request",
       "covers": ["look_invalid_depth"],
@@ -199,7 +223,7 @@
       "id": "post-share-from-the-persons-words",
       "operation": "validate_request",
       "covers": ["post_share_valid_from_person"],
-      "context": { "caller": "agent", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@b"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "context": { "caller": "agent", "person_asked": ["share"], "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@b", "explore"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
       "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" },
       "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" } }
     },
@@ -207,7 +231,7 @@
       "id": "post-share-target-the-person-never-named",
       "operation": "validate_request",
       "covers": ["post_share_target_not_from_person"],
-      "context": { "caller": "agent", "person_named": ["@b"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "context": { "caller": "agent", "person_asked": ["share"], "person_named": ["@b", "explore"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
       "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" },
       "expected": { "status": "refused", "reason_code": "not_from_person", "field": "target", "next": null }
     },
@@ -215,7 +239,7 @@
       "id": "post-share-with-a-handle-read-in-a-note",
       "operation": "validate_request",
       "covers": ["post_share_with_not_from_person"],
-      "context": { "caller": "agent", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "context": { "caller": "agent", "person_asked": ["share"], "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "explore"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
       "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@x", "grade": "explore" },
       "expected": { "status": "refused", "reason_code": "not_from_person", "field": "with", "next": null }
     },
@@ -224,7 +248,34 @@
       "operation": "validate_request",
       "covers": ["post_share_nothing_known_fails_closed"],
       "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "explore" },
-      "expected": { "status": "refused", "reason_code": "not_from_person", "field": "target", "next": null }
+      "expected": { "status": "refused", "reason_code": "not_from_person", "field": "request", "next": null }
+    },
+    {
+      "id": "post-share-at-a-grade-the-person-never-named",
+      "operation": "validate_request",
+      "covers": ["post_share_grade_not_from_person"],
+      "context": { "caller": "agent", "person_asked": ["share"], "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@b"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "cases": [
+        { "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b", "grade": "admin" }, "expected": { "status": "refused", "reason_code": "not_from_person", "field": "grade", "next": null } },
+        { "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b" }, "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "share", "with": "@b" } } }
+      ],
+      "request": "$CASE.request"
+    },
+    {
+      "id": "post-publish-the-person-did-not-ask-for",
+      "operation": "validate_request",
+      "covers": ["post_publish_not_asked"],
+      "context": { "caller": "agent", "person_asked": ["share"], "person_named": ["/s/garden", "@b"] },
+      "request": { "verb": "post", "target": "/s/garden", "request": "publish" },
+      "expected": { "status": "refused", "reason_code": "not_from_person", "field": "request", "next": null }
+    },
+    {
+      "id": "post-make-public-the-person-did-not-ask-for",
+      "operation": "validate_request",
+      "covers": ["post_public_not_asked"],
+      "context": { "caller": "agent", "person_asked": ["share"], "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@b"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "visibility", "public": true },
+      "expected": { "status": "refused", "reason_code": "not_from_person", "field": "request", "next": null }
     },
     {
       "id": "post-revoke-by-the-person",
@@ -243,10 +294,31 @@
       "expected": { "status": "refused", "reason_code": "person_only", "next": null }
     },
     {
+      "id": "post-revoke-by-an-agent-missing-from",
+      "operation": "validate_request",
+      "covers": ["post_revoke_by_agent_before_fields"],
+      "context": { "caller": "agent", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@b"] },
+      "cases": [
+        { "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "revoke" } },
+        { "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "revoke", "from": "@b", "grade": "explore" } },
+        { "request": { "verb": "post", "request": "revoke", "from": "@b" } }
+      ],
+      "request": "$CASE.request",
+      "expected": { "status": "refused", "reason_code": "person_only", "next": null }
+    },
+    {
+      "id": "post-revoke-by-the-person-from-the-card",
+      "operation": "validate_request",
+      "covers": ["post_revoke_by_person_from_card"],
+      "context": { "caller": "person" },
+      "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "revoke", "from": "@b" },
+      "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "revoke", "from": "@b" } }
+    },
+    {
       "id": "post-visibility-public-must-be-boolean",
       "operation": "validate_request",
       "covers": ["post_visibility_boolean"],
-      "context": { "caller": "agent", "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
+      "context": { "caller": "agent", "person_asked": ["public"], "person_named": ["repo:n_9ffe8bb354f1b10b6fbb059e"], "reach": ["repo:n_9ffe8bb354f1b10b6fbb059e"] },
       "cases": [
         { "public": true, "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "repo:n_9ffe8bb354f1b10b6fbb059e", "request": "visibility", "public": true } } },
         { "public": "yes", "expected": { "status": "refused", "reason_code": "invalid_field", "field": "public", "next": { "verb": "post", "request": "visibility" } } }
@@ -257,7 +329,7 @@
       "id": "post-publish-a-local-folder",
       "operation": "validate_request",
       "covers": ["post_publish_local_folder"],
-      "context": { "caller": "agent", "person_named": ["/Users/someone/Spaces/garden"] },
+      "context": { "caller": "agent", "person_asked": ["publish"], "person_named": ["/Users/someone/Spaces/garden"] },
       "request": { "verb": "post", "target": "/Users/someone/Spaces/garden", "request": "publish" },
       "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "/Users/someone/Spaces/garden", "request": "publish" } }
     },
@@ -265,7 +337,7 @@
       "id": "post-start-thread-with-one-person",
       "operation": "validate_request",
       "covers": ["post_start_thread_with_from_person"],
-      "context": { "caller": "agent", "person_named": ["@b"] },
+      "context": { "caller": "agent", "person_asked": ["start_thread"], "person_named": ["@b"] },
       "cases": [
         { "with": "@b", "expected": { "status": "valid", "verb": "post", "request": { "verb": "post", "target": "ideaspaces", "request": "start_thread", "name": "Plan review", "with": "@b" } } },
         { "with": "@stranger", "expected": { "status": "refused", "reason_code": "not_from_person", "field": "with", "next": null } }
@@ -377,6 +449,30 @@
       "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
       "answer": { "said": "Shared Plan with @bea as Viewer, and only the person can take it back.", "facts": { "outcome": "ok", "item": "repo:n_9ffe8bb354f1b10b6fbb059e", "shared": true, "token": "ist_0000000000000000" } },
       "expected": { "status": "invalid", "problems": [{ "code": "unknown_fact", "field": "token" }] }
+    },
+    {
+      "id": "answer-with-the-credential-in-said",
+      "operation": "check_answer",
+      "covers": ["answer_credential_in_said"],
+      "context": { "secrets": ["ist_live_canary_t0k3n"], "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Shared Plan with @bea as Viewer, and only the person can take it back (ist_live_canary_t0k3n).", "facts": { "outcome": "ok", "item": "repo:n_9ffe8bb354f1b10b6fbb059e", "shared": true } },
+      "expected": { "status": "invalid", "problems": [{ "code": "credential_in_answer", "field": "said" }] }
+    },
+    {
+      "id": "answer-with-the-credential-in-a-warning",
+      "operation": "check_answer",
+      "covers": ["answer_credential_in_warning"],
+      "context": { "secrets": ["ist_live_canary_t0k3n"], "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Shared Plan with @bea as Viewer, and only the person can take it back.", "facts": { "outcome": "ok", "item": "repo:n_9ffe8bb354f1b10b6fbb059e", "shared": true, "warnings": [{ "field": "authorization", "warning": "header echoed: Bearer ist_live_canary_t0k3n" }] } },
+      "expected": { "status": "invalid", "problems": [{ "code": "credential_in_answer", "field": "warnings" }] }
+    },
+    {
+      "id": "answer-with-the-credential-in-next",
+      "operation": "check_answer",
+      "covers": ["answer_credential_in_next"],
+      "context": { "secrets": ["ist_live_canary_t0k3n"], "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Not open to this conversation: Plan isn't something you were given, so ask the person for it.", "facts": { "outcome": "refused", "reason_code": "out_of_reach", "next": { "verb": "look", "target": "https://ideaspaces.xyz/r/n_9ffe8bb354f1b10b6fbb059e?t=ist_live_canary_t0k3n" } } },
+      "expected": { "status": "invalid", "problems": [{ "code": "credential_in_answer", "field": "next" }] }
     },
     {
       "id": "answer-change-is-never-shortened",

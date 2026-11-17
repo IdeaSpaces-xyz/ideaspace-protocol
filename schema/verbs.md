@@ -121,8 +121,8 @@ not the kind's is refused `unexpected_field`, a missing one `missing_field`, an 
 |---|---|---|---|
 | `entry` | `target`, `body` | `reply_to` (one id or a list), `kind` (`post`, `reframe`, `correction`, `mark`), `mark`, `supersedes`, `name`, `summary`, `map`, `tags`, `parent`, `about`, `closed`, `author` | one immutable entry under [`time.md`](time.md). Local: written, then added to history on its own, that one file, never pushed. Hosted (`thread:x_…`): sent, not retried |
 | `start_thread` | `name` | `target` (a folder, or `ideaspaces`), `summary`, `body`, `with` (one person), `parent`, `about`, `map` | opens a Thread: locally its folder, Agreement, README and opening post; on a service, a hosted Thread |
-| `share` | `target`, `with`, `grade` | — | asks the service to let one person (`with`, a handle or email) read `target` at `grade`, a grantable level the service names ([`access.md`](access.md)); history is never shared by this call |
-| `revoke` | `target`, `from` | — | **take back**: ends what `from` was given on `target` |
+| `share` | `target`, `with` | `grade` | asks the service to let one person (`with`, a handle or email) read `target`. `grade` is a grantable level the service names ([`access.md`](access.md)); left out, the service grants its **lowest** level; given, it is a word the person said (guard 1). History is never shared by this call |
+| `revoke` | `target`, `from` | — | **take back**: ends what `from` was given on `target`. By the person only (guard 3); the person's own take back is checked against nothing else, so it always works |
 | `visibility` | `target`, `public` (boolean) | — | makes `target` public or private |
 | `publish` | `target` (a local folder) | — | puts a local Repo on the service, **private**, with its history; it cannot be taken back |
 
@@ -232,9 +232,10 @@ act is the person's alone), `next` is `null` and `said` tells the agent to tell 
 | `keeps_time` | `write` | the target is an entry | the correcting `post` |
 | `changed_since_read` | `write` | the file moved after the last look | `look` at the target |
 | `no_identity` | `write`, `post` | the Space has no name to save under | `null` |
-| `not_from_person` | `share`, `revoke`, `visibility`, `publish`, `start_thread` | who or what did not come from the person's own words | `null` |
+| `not_from_person` | `share`, `visibility`, `publish`, `start_thread` | the act (`field: "request"`, Proposed), or who or what (`target`, `with`, `from`, `grade`), did not come from the person's own words | `null` |
 | `person_only` | `revoke` | only the person takes back | `null` |
 | `limit_reached` | the acts that widen who can read | the day's count is used; `until` says when | `null` |
+| `redirected` | `publish` | the Space's own settings would send the push somewhere else (guard 2) | `null` |
 | any code of [`local-effects.md`](local-effects.md) | `write`, `post` | the effect's own refusal | as above |
 
 ## The acts that reach other people, and their three guards
@@ -243,17 +244,48 @@ act is the person's alone), `next` is `null` and `said` tells the agent to tell 
 under the person's own authority, with nothing asking first. Three guards are **requirements** on
 every host that offers them, each with a negative vector in the manifest:
 
-1. **Who and what come from the person's own words.** `with`, `from`, and the `target` of these
-   acts MUST be names the person wrote in this conversation, never text the agent read in a Note, a
-   Thread or a page. A host checks a request against what the person said and refuses
-   `not_from_person`; a pure check with nothing the person said known refuses too. The pure form takes
-   `context.person_named`, the host's record of those words.
+1. **Who and what come from the person's own words.** `with`, `from`, `grade`, and the `target` of
+   these acts MUST be names the person wrote in this conversation, never text the agent read in a
+   Note, a Thread or a page. A host checks a request against what the person said and refuses
+   `not_from_person`, naming the field; a pure check with nothing the person said known refuses too.
+   The pure form takes `context.person_named`, the host's record of those words.
+
+   **Proposed (Security, 2026-11-17; the human decides): the act itself also comes from the
+   person.** `context.person_asked` lists what the person asked for in this conversation:
+   `start_thread`, `share`, `publish`, `public`, `private`. A reaching request whose act is not
+   listed is refused `not_from_person`, `field: "request"`, before who and what are looked at;
+   `visibility` counts as `public` or `private` by its value. If nothing is known, the request is
+   refused. Why it goes past the guard the human accepted ("who and what"): with the nouns alone, a
+   person who said "share garden with @b" has named garden, and a Note can then lead the agent to
+   **publish** garden or make it **public**, the two acts with no way back. The reference
+   implementation and the vectors carry this rule; a host that does not adopt it says so.
 2. **The sign-in never reaches the model.** A credential is not an input to any verb request, is not
    a fact (the set is closed and has no slot for one), and is never in `said`, `next`, a warning or an
-   echoed request. It may live in the host and in the one child process that needs it.
+   echoed request. It may live in the host and in the one child process that needs it. A host runs
+   `check_answer` with its live credentials as `context.secrets` on every answer before the model
+   reads it: any string anywhere in the answer (`said`, every fact including `warnings`, `next`,
+   `look`, `map`) that contains one is the problem `credential_in_answer`, which names the field and
+   never the value.
+
+   **The one child that holds the credential for `publish`** is a single push of the item's own line
+   of history to the exact `https://` address the service returned when it created the item. The
+   credential is passed in the child's environment as a header scoped to that address
+   (`http.<address>.extraHeader` via `GIT_CONFIG_KEY_n`/`GIT_CONFIG_VALUE_n`), never in argv, a file
+   or the Space's config. Before the child starts, the host refuses a Space whose own config rewrites
+   or redirects addresses (`url.*.insteadOf`, `url.*.pushInsteadOf`, `remote.*.pushurl`):
+   `reason_code: redirected`, `next: null`. The child runs with hooks off (`core.hooksPath` pointing
+   at an empty folder), `core.fsmonitor=false`, an empty `credential.helper`,
+   `http.followRedirects=false`, `GIT_TERMINAL_PROMPT=0`, and no `GIT_TRACE*` or `GIT_CURL_VERBOSE`
+   in its environment. A pure vector cannot check Git config, so this is proved by the host's own
+   tests, which every host that offers `publish` carries: `publish_refuses_space_with_insteadof`
+   (and `pushInsteadOf`, `pushurl`), `publish_push_runs_no_hooks` (a `pre-push` hook that writes its
+   environment to a file must not run), and `publish_push_token_only_in_that_git_child_env`.
 3. **Only the person takes back.** `revoke` from an agent (`context.caller` other than `person`) is
-   refused `person_only`; a host MUST NOT make its take-back reachable from a tool or a listener under
-   any name. Take back is free of any count and always works.
+   refused `person_only` **before any field of the request is looked at**, so a malformed take back
+   from an agent gets no help; a host MUST NOT make its take-back reachable from a tool or a listener
+   under any name. The person's own take back (`caller: person`, which no request can set) is checked
+   against nothing else, neither the person's words nor reach, because the click is the person's act
+   on their own item: it always works, and it is free of any count.
 
 Two further facts about these acts belong to the answer: `publish` creates the item **private**,
 and its `said` says it went with its history, because it cannot be taken back; `share` never hands
@@ -289,13 +321,16 @@ operations:
 - `validate_request(request, context)` returns `{ status: "valid", verb, request }` (`request` with
   the verb resolved from an alias) or `{ status: "refused", reason_code, field?, next }`. `context`
   carries what the host knows: `aliases` and `retired` (name → verb), `caller` (`person` or `agent`;
-  absent reads as `agent`), `person_named`, `reach`, and `entries` (`{ path, id, folder }` for the
-  files that are entries).
+  absent reads as `agent`), `person_named`, `person_asked` (Proposed, guard 1), `reach` (service
+  addresses the conversation may name; **absent reads as none**, so a missing reach never widens it;
+  the literal `ideaspaces` is allowed as `map.start` and `start_thread.target` without it), and
+  `entries` (`{ path, id, folder }` for the files that are entries).
 - `check_answer(answer, context)` returns `{ status: "valid" }` or `{ status: "invalid", problems:
   [{ code, field? }] }`. `context.forbidden_words` is the list a `said` sentence must not contain,
   the manifest's `said_forbidden_words` (AX's, [below](#words-said-never-contains));
   the check also refuses a hash (seven or more hex digits in a row) and a `next` that is not a verb
-  call.
+  call. `context.secrets` is the list of strings the host holds that must never reach the model: its
+  live credentials, a canary in tests; any answer containing one is `credential_in_answer`.
 
 Both are pure: no filesystem, no Git, no network. A runner MUST reject an unknown manifest format,
 operation or required coverage tag rather than skip it. The reference implementation is
@@ -327,6 +362,8 @@ operation or required coverage tag rather than skip it. The reference implementa
   and **`{as_of}`** a time in the person's own zone ("Tue 17 Nov 15:57"), never an ISO instant.
   `facts` carries the exact values.
 - **"This computer"** is the neutral word; a host that knows the machine may say "this Mac".
+- **`{value}`** in a `not_from_person` sentence is injected text of any length: a renderer shows it
+  quoted and cut to 60 characters (Security's review, 2026-11-17).
 - The verbs are words both sides share, so `said` may name them: "look at it again", "post a
   correction".
 
@@ -350,6 +387,7 @@ operation or required coverage tag rather than skip it. The reference implementa
 | `post` | taken back | `ok` | — | Took back {name} from {who}, who can't read it any more. |
 | `post` | visibility changed | `ok` | — | {name} is public now, and anyone can read it. *Private:* {name} is private now, and only the people it's shared with can read it. |
 | `post` | published (private, with its history) | `ok` | — | Published {name} to IdeaSpaces, private and with its history, which can't be taken back. |
+| `post` | not published: the Space's own settings redirect the push | `refused` | `redirected` | *AX, to confirm (Security's draft):* Not published: this Space is set to send what it shares somewhere else, so tell the person. |
 | `post` | who or what not from the person | `refused` | `not_from_person` | Not done: the person hasn't named {value} in this conversation, and only the person says who and what, so ask them. |
 | `post` | an agent asked to take back | `refused` | `person_only` | Not taken back: only the person can take back {name}, so tell them. |
 | `post` | the day's count is used | `refused` | `limit_reached` | Not shared: today's limit is reached until {until}, and taking back still works. |
@@ -360,8 +398,9 @@ operation or required coverage tag rather than skip it. The reference implementa
 | any | the request is not the verb's | `refused` | `missing_field`, `unexpected_field`, `invalid_field` | *Missing:* Not done: {verb} needs {field}. *Unexpected:* Not done: {verb} doesn't take {field}. *Invalid:* Not done: {field} isn't a value {verb} takes. |
 | any | not a verb | `refused` | `unknown_verb` | Not done: {old} isn't a tool here; the four are map, look, post and write. |
 
-The last row is added to Integrator's 24: `unknown_verb` is a refusal with `next: null`, so its
-sentence is the only guide the agent gets.
+The `unknown_verb` row was added to Integrator's 24: it is a refusal with `next: null`, so its
+sentence is the only guide the agent gets. The `redirected` row came with Security's review (round
+2); its cell carries Security's draft, marked for AX to confirm or replace.
 
 ### The four descriptions' first sentences
 

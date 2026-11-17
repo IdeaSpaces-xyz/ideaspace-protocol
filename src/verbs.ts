@@ -84,6 +84,7 @@ export const VERB_REASON_CODES = [
   "not_from_person",
   "person_only",
   "limit_reached",
+  "redirected",
 ] as const;
 export type VerbReasonCode = (typeof VERB_REASON_CODES)[number];
 
@@ -118,7 +119,7 @@ const POST_FIELDS: Record<PostRequest, { required: string[]; optional: string[] 
     optional: ["reply_to", "kind", "mark", "supersedes", "name", "summary", "map", "tags", "parent", "about", "closed", "author"],
   },
   start_thread: { required: ["name"], optional: ["target", "summary", "body", "with", "parent", "about", "map"] },
-  share: { required: ["target", "with", "grade"], optional: [] },
+  share: { required: ["target", "with"], optional: ["grade"] },
   revoke: { required: ["target", "from"], optional: [] },
   visibility: { required: ["target", "public"], optional: [] },
   publish: { required: ["target"], optional: [] },
@@ -148,14 +149,22 @@ export interface VerbContext {
   retired?: Record<string, Verb>;
   /** Who is calling. Absent reads as `agent`: the check fails closed. */
   caller?: "person" | "agent";
-  /** Names the person wrote in this conversation: handles, emails, addresses. */
+  /** Names the person wrote in this conversation: handles, emails, addresses, levels. */
   person_named?: string[];
-  /** Service addresses this conversation may name. Absent: no remote address is checked. */
+  /**
+   * The acts the person asked for in this conversation: `start_thread`, `share`, `publish`,
+   * `public`, `private`. Proposed (Security, 2026-11-17): a reaching request whose act is not
+   * listed is refused before who and what are looked at. Absent reads as none: fails closed.
+   */
+  person_asked?: string[];
+  /** Service addresses this conversation may name. Absent reads as none: a missing reach never widens it. */
   reach?: string[];
   /** Files known to be entries. */
   entries?: VerbEntry[];
   /** Words `said` never contains; whole words, case-insensitive. */
   forbidden_words?: string[];
+  /** Strings the host holds that must never reach the model: live credentials, a canary in tests. */
+  secrets?: string[];
 }
 
 export type VerbRequest = { verb: string } & Record<string, unknown>;
@@ -228,6 +237,11 @@ function fromPerson(value: string, context: VerbContext): boolean {
   return named.some((word) => word.trim().toLowerCase() === value.trim().toLowerCase());
 }
 
+/** A service address is in reach only when the host listed it; a missing list is an empty one. */
+function inReach(address: string, context: VerbContext): boolean {
+  return (context.reach ?? []).includes(address.trim());
+}
+
 /**
  * Validate one verb request against schema/verbs.md. Pure: the host supplies what it knows about
  * aliases, the caller, the person's words, reach and entries through `context`.
@@ -255,7 +269,7 @@ export function validateVerbRequest(input: unknown, context: VerbContext = {}): 
       if (kind === "remove" && (typeof rest.member_index !== "number" || !Number.isInteger(rest.member_index) || rest.member_index < 0)) {
         return refuse("invalid_field", { verb }, "member_index");
       }
-      if (isServiceAddress(rest.start) && rest.start.trim() !== "ideaspaces" && context.reach && !context.reach.includes(rest.start.trim())) {
+      if (isServiceAddress(rest.start) && rest.start.trim() !== "ideaspaces" && !inReach(rest.start, context)) {
         return refuse("out_of_reach", null, "start");
       }
       return { status: "valid", verb, request: { ...request, request: kind } };
@@ -266,12 +280,14 @@ export function validateVerbRequest(input: unknown, context: VerbContext = {}): 
       if (!isNonEmptyString(rest.target)) return refuse("invalid_field", { verb }, "target");
       if (rest.order !== undefined && rest.order !== "older" && rest.order !== "newer") return refuse("invalid_field", { verb }, "order");
       if (rest.agreement !== undefined && rest.agreement !== "summary" && rest.agreement !== "full") return refuse("invalid_field", { verb }, "agreement");
-      if (isServiceAddress(rest.target) && context.reach && !context.reach.includes(rest.target.trim())) return refuse("out_of_reach", null, "target");
+      if (isServiceAddress(rest.target) && !inReach(rest.target, context)) return refuse("out_of_reach", null, "target");
       return { status: "valid", verb, request };
     }
     case "post": {
       const kind = rest.request === undefined ? "entry" : rest.request;
       if (!isNonEmptyString(kind) || !(POST_REQUESTS as readonly string[]).includes(kind)) return refuse("unknown_request", null, "request");
+      // Guard 3, first: a take back from anyone but the person is refused before any field is looked at.
+      if (kind === "revoke" && context.caller !== "person") return refuse("person_only", null);
       const bad = checkFields(verb, rest, POST_FIELDS[kind as PostRequest], ["request"]);
       if (bad) return bad;
       if (rest.target !== undefined && !isNonEmptyString(rest.target)) return refuse("invalid_field", { verb }, "target");
@@ -282,25 +298,30 @@ export function validateVerbRequest(input: unknown, context: VerbContext = {}): 
         if (rest.kind === "mark" && !isNonEmptyString(rest.mark)) return refuse("missing_field", { verb, request: "entry", kind: "mark" }, "mark");
         if (rest.closed !== undefined && typeof rest.closed !== "boolean") return refuse("invalid_field", { verb, request: "entry" }, "closed");
         if (rest.reply_to !== undefined && !isNonEmptyString(rest.reply_to) && !isStringList(rest.reply_to)) return refuse("invalid_field", { verb, request: "entry" }, "reply_to");
-        if (isServiceAddress(rest.target) && context.reach && !context.reach.includes((rest.target as string).trim())) return refuse("out_of_reach", null, "target");
+        if (isServiceAddress(rest.target) && !inReach(rest.target as string, context)) return refuse("out_of_reach", null, "target");
         return { status: "valid", verb, request: { ...request, request: kind } };
       }
       if (kind === "visibility" && typeof rest.public !== "boolean") return refuse("invalid_field", { verb, request: kind }, "public");
-      if (kind === "share" && !isNonEmptyString(rest.grade)) return refuse("invalid_field", { verb, request: kind }, "grade");
+      if (kind === "share" && rest.grade !== undefined && !isNonEmptyString(rest.grade)) return refuse("invalid_field", { verb, request: kind }, "grade");
       for (const who of ["with", "from"]) {
         if (rest[who] !== undefined && !isNonEmptyString(rest[who])) return refuse("invalid_field", { verb, request: kind }, who);
       }
-      // Guard 3: only the person takes back.
-      if (kind === "revoke" && context.caller !== "person") return refuse("person_only", null);
-      // Guard 1: who and what come from the person's own words. The pure check fails closed.
+      // The person's own take back (caller: person, which no request can set) is their act on their
+      // own item: checked against nothing else, so it always works.
+      if (kind === "revoke") return { status: "valid", verb, request: { ...request, request: kind } };
+      // Guard 1, the act (Proposed): what the person asked for, before who and what. Fails closed.
+      const act = kind === "visibility" ? (rest.public ? "public" : "private") : kind;
+      if (!(context.person_asked ?? []).includes(act)) return refuse("not_from_person", null, "request");
+      // Guard 1, who and what: from the person's own words. Fails closed.
       const spoken: Array<[string, unknown]> = [];
       if (kind !== "start_thread" && rest.target !== undefined) spoken.push(["target", rest.target]);
       if (rest.with !== undefined) spoken.push(["with", rest.with]);
-      if (rest.from !== undefined) spoken.push(["from", rest.from]);
+      if (rest.grade !== undefined) spoken.push(["grade", rest.grade]);
       for (const [field, value] of spoken) {
         if (!fromPerson(value as string, context)) return refuse("not_from_person", null, field);
       }
-      if (kind !== "publish" && isServiceAddress(rest.target) && (rest.target as string).trim() !== "ideaspaces" && context.reach && !context.reach.includes((rest.target as string).trim())) {
+      const accountLiteral = kind === "start_thread" && (rest.target as string | undefined)?.trim() === "ideaspaces";
+      if (kind !== "publish" && isServiceAddress(rest.target) && !accountLiteral && !inReach(rest.target as string, context)) {
         return refuse("out_of_reach", null, "target");
       }
       return { status: "valid", verb, request: { ...request, request: kind } };
@@ -362,7 +383,8 @@ export type VerbAnswerProblemCode =
   | "reason_code_invalid"
   | "next_missing"
   | "next_invalid"
-  | "next_git_command";
+  | "next_git_command"
+  | "credential_in_answer";
 
 export interface VerbAnswerProblem {
   code: VerbAnswerProblemCode;
@@ -388,6 +410,13 @@ function anyStringMatches(value: unknown, pattern: RegExp): boolean {
   if (typeof value === "string") return pattern.test(value);
   if (Array.isArray(value)) return value.some((item) => anyStringMatches(item, pattern));
   if (isRecord(value)) return Object.values(value).some((item) => anyStringMatches(item, pattern));
+  return false;
+}
+
+function containsSecret(value: unknown, secrets: string[]): boolean {
+  if (typeof value === "string") return secrets.some((secret) => value.includes(secret));
+  if (Array.isArray(value)) return value.some((item) => containsSecret(item, secrets));
+  if (isRecord(value)) return Object.values(value).some((item) => containsSecret(item, secrets));
   return false;
 }
 
@@ -443,6 +472,19 @@ export function checkVerbAnswer(input: unknown, context: VerbContext = {}): Verb
     }
   } else if (facts.next !== undefined) {
     problems.push({ code: "next_invalid", field: "next" });
+  }
+  // Guard 2: no string anywhere in the answer carries a credential the host holds. Names the field, never the value.
+  const secrets = (context.secrets ?? []).filter((secret) => secret.length > 0);
+  if (secrets.length) {
+    for (const [key, value] of Object.entries(input)) {
+      if (key === "facts") {
+        for (const [field, fact] of Object.entries(facts)) {
+          if (containsSecret(fact, secrets)) problems.push({ code: "credential_in_answer", field });
+        }
+      } else if (containsSecret(value, secrets)) {
+        problems.push({ code: "credential_in_answer", field: key });
+      }
+    }
   }
   return problems.length ? { status: "invalid", problems } : { status: "valid" };
 }
