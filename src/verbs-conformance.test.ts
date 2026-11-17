@@ -245,8 +245,7 @@ describe("the four verbs: AX's words in schema/verbs.md pass their own check", (
     for (const row of table) {
       const cell = row[4];
       expect(cell, row[1]).not.toBe("*AX*");
-      // A row marked for AX to write is left for AX; its words are checked when they land.
-      if (cell === "*AX, to write*") continue;
+      expect(cell, row[1]).not.toBe("*AX, to write*");
       for (const said of sentences(cell)) {
         const outcome = row[2].replace(/`/g, "") as VerbAnswer["facts"]["outcome"];
         const facts =

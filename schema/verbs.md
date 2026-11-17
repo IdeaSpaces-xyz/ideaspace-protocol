@@ -453,14 +453,21 @@ operation or required coverage tag rather than skip it. The reference implementa
 | any | a retired name | `refused` | `retired_name` | {old} is retired, so use {verb}, which does the same. |
 | any | the request is not the verb's | `refused` | `missing_field`, `unexpected_field`, `invalid_field` | *Missing:* Not done: {verb} needs {field}. *Unexpected:* Not done: {verb} doesn't take {field}. *Invalid:* Not done: {field} isn't a value {verb} takes. |
 | any | not a verb | `refused` | `unknown_verb` | Not done: {old} isn't a tool here; the four are map, look, post and write. |
-| `map` | `ideaspaces`: Personal, each org, Shared with you | `ok` | — | *AX, to write* |
-| `map` | an org's Spaces (`hostname:`) | `ok` | — | *AX, to write* |
-| `map` | what a person shared (`person:`) | `ok` | — | *AX, to write* |
-| `map` | a list asked for by a listener or a launched child | `refused` | `no_lists` | *AX, to write* |
-| `look` | who can read this item (`access` filled); *not managed:* `access: not_checked` | `ok` | — | *AX, to write* |
+| `map` | `ideaspaces`: Personal, each org, Shared with you | `ok` | — | Listed what the person has on IdeaSpaces: {n} Spaces of their own, {m} in {orgs} orgs and {k} shared with them, and you can open one once the person names it. |
+| `map` | an org's Spaces (`hostname:`) | `ok` | — | Listed {n} Spaces in that org, and you can open one once the person names it. |
+| `map` | what a person shared (`person:`) | `ok` | — | Listed {n} items {who} shared with the person and {m} Threads they are both in, and you can open one once the person names it. |
+| `map` | a list asked for by a listener or a launched child | `refused` | `no_lists` | Not listed: only a conversation with the person sees what is on IdeaSpaces, so work from what you were given and say in your reply what you would need. |
+| `look` | who can read this item (`access` filled); *not managed:* `access: not_checked` | `ok` | — | *Private:* {name} is private, and {n} people and {t} orgs can read it, with {p} invitations not yet accepted. *Public:* {name} is public, so anyone can read it, and {n} people and {t} orgs have their own access too. *Not managed:* Who can read this isn't shown, because the person doesn't manage it. |
 
-The five `map` and `look` rows above came with the lists (spec/remote-entities) and are marked for
-AX; the vectors for them check shape, not wording.
+The five `map` and `look` rows above came with the lists (spec/remote-entities). A list's sentence
+gives counts and never quotes a listed name (rule 2), and it ends by saying that seeing is not
+reaching (rule 1), so the agent asks before it opens anything it only saw listed. `{who}` there is
+the handle the request started from. `no_lists` breaks the "tell the person" rule on purpose: a
+listener or a launched child has nobody present to tell, so it says what it would need in its
+reply. The `access` sentence names the item only when the person manages it; an item the person
+does not manage is "this", because its name is others' text. `who_not_a_handle`, `access_invalid`
+and the `list_*` codes are problems `check_answer` finds in a host's answer, never an answer an
+agent reads, so they have no sentence.
 
 The `unknown_verb` row was added to Integrator's 24: it is a refusal with `next: null`, so its
 sentence is the only guide the agent gets. The `redirected` row came with Security's review (round
