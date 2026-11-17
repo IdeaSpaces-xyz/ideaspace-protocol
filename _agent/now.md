@@ -4,7 +4,18 @@ summary: "v0.34.0, draft: the four verbs map, look, post and write under one ide
 ---
 # Now
 
-## The four verbs, v0.34.0 (draft, spec/four-verbs)
+## Lists and readers (draft, spec/remote-entities)
+
+`map` from `ideaspaces`, an org (`hostname:<host>`) or a person (`person:<handle>`) is a list:
+Personal, each org, Shared with you; an org's Spaces; what a person shared. `look` at a service
+address carries `access`, who can read the item, only when the person manages it. Security's
+conditions are requirements with vectors: seeing is not reaching (`context.listed` is consulted for
+nothing), fields only with names cut to 120 characters and marked `by_others`, no lists for listeners
+or launched children (`context.lists`, `no_lists`), handles by shape and never an email or a display
+name, pending as a count, and accepted shares only. Scout's additions 1 and 2, placed by the human
+2026-11-17 18:31. The five new `said` rows are marked for AX. No tag or release is part of this change.
+
+## The four verbs, v0.34.0 (spec/four-verbs, merged 03c7e52)
 
 An agent works an ideaspace with four verbs, the ones a person names: `map`, `look`, `post`,
 `write`, spelled `ideaspaces <verb>`, `mcp__ideaspaces__<verb>` and `ideaspaces_<verb>` on the
