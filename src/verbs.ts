@@ -399,7 +399,9 @@ export interface VerbAnswerProblem {
 
 export type VerbAnswerCheck = { status: "valid" } | { status: "invalid"; problems: VerbAnswerProblem[] };
 
-const HASH_RUN = /\b[0-9a-f]{7,}\b/i;
+// A hash is seven or more hex characters with both a digit and a letter: a plain number
+// ("1000000") or a word spelled in hex letters ("defaced") is not one.
+const HASH_RUN = /\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,}\b/i;
 const GIT_COMMAND = /(^|[\s`'"(])git\s+[a-z-]+/i;
 const REASON_CODE = /^[a-z][a-z0-9_]*$/;
 const FULL_ID = /^[0-9a-f]{40,}$/;

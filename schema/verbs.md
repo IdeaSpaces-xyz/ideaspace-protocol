@@ -335,8 +335,9 @@ operations:
 - `check_answer(answer, context)` returns `{ status: "valid" }` or `{ status: "invalid", problems:
   [{ code, field? }] }`. `context.forbidden_words` is the list a `said` sentence must not contain,
   the manifest's `said_forbidden_words` (AX's, [below](#words-said-never-contains));
-  the check also refuses a hash (seven or more hex digits in a row) and a `next` that is not a verb
-  call. `context.secrets` is the list of strings the host holds that must never reach the model: its
+  the check also refuses a hash (seven or more hex characters in a row with both a digit and a
+  letter, so neither a plain number nor a word spelled in hex letters) and a `next` that is not a
+  verb call. `context.secrets` is the list of strings the host holds that must never reach the model: its
   live credentials, a canary in tests; any answer containing one is `credential_in_answer`.
 
 Both are pure: no filesystem, no Git, no network. A runner MUST reject an unknown manifest format,
@@ -435,7 +436,8 @@ case-insensitively, so each form a sentence could use is listed. The list is
   rebase, rebased, branch, branches, checkout, clone, cloned, stash, diff.
 - **Its places:** staged, staging, unstaged, untracked, worktree, HEAD, repository, repositories,
   repo, repos, remote, remotes, upstream.
-- **Its ids:** sha, hash. A run of seven or more hex digits is refused by the check on its own.
+- **Its ids:** sha, hash. A run of seven or more hex characters with both a digit and a letter is
+  refused by the check on its own.
 - **Not the person's word for where things live:** Vault, Vaults. The word is Space (4.7).
 
 "HEAD" matched case-insensitively also keeps out the plain word "head"; no sentence here needs it.

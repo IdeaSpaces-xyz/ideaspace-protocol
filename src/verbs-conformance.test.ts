@@ -179,6 +179,13 @@ describe("the four verbs: reference behaviour beyond the vectors", () => {
     });
   });
 
+  it("a hash needs a digit and a letter: a plain number and a word in hex letters pass, a short id does not", () => {
+    const facts = { outcome: "ok" as const };
+    expect(checkVerbAnswer({ said: "Saved 1000000 words.", facts }).status).toBe("valid");
+    expect(checkVerbAnswer({ said: "The defaced Note is saved.", facts }).status).toBe("valid");
+    expect(checkVerbAnswer({ said: "Saved as b52662f.", facts })).toEqual({ status: "invalid", problems: [{ code: "said_contains_hash", field: "said" }] });
+  });
+
   it("a non-object answer is one problem, not a crash", () => {
     expect(checkVerbAnswer("Saved.")).toEqual({ status: "invalid", problems: [{ code: "answer_not_object" }] });
     expect(checkVerbAnswer({ said: "Saved." })).toEqual({ status: "invalid", problems: [{ code: "facts_missing", field: "facts" }] });
