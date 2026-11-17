@@ -1,6 +1,6 @@
 ---
 name: Now
-summary: "v0.34.0, draft: the four verbs map, look, post and write under one ideaspaces namespace, one write, answers that say the person's sentence first and the Git facts as named fields, post's request kinds with three guards, and the words table left for AX. Before it, v0.33.0, not released: time is something a folder keeps, entries set its state by one rule, and as_of/since/newest read it in time; a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
+summary: "v0.34.0, draft: the four verbs map, look, post and write under one ideaspaces namespace, one write, answers that say the person's sentence first and the Git facts as named fields, post's request kinds with three guards, and AX's words table. Before it, v0.33.0, not released: time is something a folder keeps, entries set its state by one rule, and as_of/since/newest read it in time; a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
 ---
 # Now
 
@@ -17,9 +17,9 @@ then `facts` under a closed field set; a refusal carries `reason_code` and `next
 that reach other people carry three guards as requirements (from the person's words, the sign-in
 never reaches the model, only the person takes back), each with a negative vector. The agreed
 decisions behind this are the human's of 2026-11-17 (Agreement v2 of Idea Explorer 0.9.23, 4.3, 4.7,
-4.8). The `said` words and the forbidden list are AX's, in a marked table at the end of
-[`schema/verbs.md`](../schema/verbs.md), filled in a follow-up on the branch; the vectors use
-placeholders. Pure: `src/verbs.ts`, `conformance/verbs/manifest.json`. What the CLI, the Desktop
+4.8). The `said` words, the descriptions' first sentences and the forbidden list are AX's, in The
+words at the end of [`schema/verbs.md`](../schema/verbs.md); the list is `SAID_FORBIDDEN_WORDS` and
+the manifest's `said_forbidden_words`, and a test holds the table to it. Pure: `src/verbs.ts`, `conformance/verbs/manifest.json`. What the CLI, the Desktop
 engine and the plugin must change is named in the PR body, not built here. No tag or release is part
 of this change.
 

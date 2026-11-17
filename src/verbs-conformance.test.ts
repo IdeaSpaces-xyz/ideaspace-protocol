@@ -6,6 +6,7 @@ import {
   MAP_REQUESTS,
   POST_REQUESTS,
   renderVerbAnswer,
+  SAID_FORBIDDEN_WORDS,
   spellVerb,
   validateVerbRequest,
   VERB_NAMESPACE,
@@ -40,6 +41,7 @@ const manifest = JSON.parse(
   map_requests: string[];
   fact_fields: string[];
   reason_codes: string[];
+  said_forbidden_words: string[];
   required_coverage: string[];
   vectors: Vector[];
 };
@@ -81,6 +83,15 @@ describe("the four verbs: language-neutral manifest", () => {
     const ids = manifest.vectors.map((vector) => vector.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const vector of manifest.vectors) expect(OPERATIONS.has(vector.operation), vector.id).toBe(true);
+  });
+
+  it("carries AX's forbidden list, and every vector that checks words uses all of it", () => {
+    expect(manifest.said_forbidden_words).toEqual([...SAID_FORBIDDEN_WORDS]);
+    for (const vector of manifest.vectors) {
+      const words = vector.context?.forbidden_words;
+      if (vector.operation !== "check_answer" || !words || words.length === 0) continue;
+      expect(words, vector.id).toEqual([...SAID_FORBIDDEN_WORDS]);
+    }
   });
 
   it("covers every required behavior and names no uncovered tag", () => {
@@ -131,7 +142,7 @@ describe("the four verbs: reference behaviour beyond the vectors", () => {
     expect(validateVerbRequest({ verb: "post", target: "notes/plan.md", request: "share", with: "@beatrice", grade: "explore" }, context)).toMatchObject({ reason_code: "not_from_person" });
   });
 
-  it("a forbidden word matches whole words only, so 'pushed' is caught and 'pulley' is not", () => {
+  it("a forbidden word matches whole words only, so 'pushed' needs its own entry and 'pulley' is never caught", () => {
     const facts = { outcome: "ok" as const };
     expect(checkVerbAnswer({ said: "Saved; not pushed yet.", facts }, { forbidden_words: ["push"] }).status).toBe("valid");
     expect(checkVerbAnswer({ said: "Saved; the pulley note.", facts }, { forbidden_words: ["pull"] }).status).toBe("valid");
@@ -149,5 +160,54 @@ describe("the four verbs: reference behaviour beyond the vectors", () => {
   it("renders a null next as 'none' and an object fact as JSON", () => {
     const rendered = renderVerbAnswer({ said: "A sentence.", facts: { outcome: "refused", reason_code: "person_only", next: null, warnings: [{ field: "date", warning: "invalid_date" }] } });
     expect(rendered).toBe('A sentence.\n\noutcome: refused\nwarnings: [{"field":"date","warning":"invalid_date"}]\nreason_code: person_only\nnext: none');
+  });
+});
+
+describe("the four verbs: AX's words in schema/verbs.md pass their own check", () => {
+  const page = readFileSync(new URL("../schema/verbs.md", import.meta.url), "utf-8");
+
+  /** The rows of the table under one `###` heading, as cells. */
+  function rows(heading: string): string[][] {
+    const start = page.indexOf(`### ${heading}`);
+    expect(start, heading).toBeGreaterThan(-1);
+    const rest = page.slice(start).split("\n").slice(1);
+    const end = rest.findIndex((line) => line.startsWith("### "));
+    return (end === -1 ? rest : rest.slice(0, end))
+      .filter((line) => line.startsWith("| ") && !line.startsWith("|---"))
+      .slice(1)
+      .map((line) => line.split(" | ").map((cell) => cell.replace(/^\| ?| ?\|$/g, "").trim()));
+  }
+
+  /** One cell's sentences: the variants after `*Label:*` split out, placeholders filled. */
+  function sentences(cell: string): string[] {
+    return cell
+      .split(/\*[^*]+:\*/)
+      .map((part) => part.replace(/\{[a-z_]+\}/g, "Plan").trim())
+      .filter((part) => part.length > 0);
+  }
+
+  const context: VerbContext = { forbidden_words: [...SAID_FORBIDDEN_WORDS] };
+
+  it("fills every said cell, and each sentence has no forbidden word, hash or command", () => {
+    const table = rows("The sentences");
+    expect(table.length).toBe(25);
+    for (const row of table) {
+      const cell = row[4];
+      expect(cell, row[1]).not.toBe("*AX*");
+      for (const said of sentences(cell)) {
+        const outcome = row[2].replace(/`/g, "") as VerbAnswer["facts"]["outcome"];
+        const facts =
+          outcome === "ok" ? { outcome } : outcome === "partial" ? { outcome, reason_code: "stage_failed" } : { outcome, reason_code: "keeps_time", next: null };
+        expect(checkVerbAnswer({ said, facts }, context), `${row[1]}: ${said}`).toEqual({ status: "valid" });
+      }
+    }
+  });
+
+  it("opens each verb's description with a sentence free of the same words", () => {
+    const table = rows("The four descriptions' first sentences");
+    expect(table.map((row) => row[0].replace(/`/g, ""))).toEqual([...VERBS]);
+    for (const row of table) {
+      expect(checkVerbAnswer({ said: row[1], facts: { outcome: "ok" } }, context), row[0]).toEqual({ status: "valid" });
+    }
   });
 });

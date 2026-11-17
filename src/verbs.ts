@@ -5,7 +5,8 @@
 // context. `checkVerbAnswer` checks one answer: `said` first and free of Git words, the facts under
 // the closed field set, a refusal carrying `reason_code` and a `next` that is a verb call.
 // `renderVerbAnswer` is the one human-readable render. Nothing here touches the filesystem, Git, or
-// a network; the words themselves (`said`) are the host's, from AX's table.
+// a network. The words themselves (`said`) are the host's, from AX's table in schema/verbs.md;
+// the words they never contain are SAID_FORBIDDEN_WORDS.
 
 import type { PathRevision } from "./local-effects.js";
 
@@ -85,6 +86,23 @@ export const VERB_REASON_CODES = [
   "limit_reached",
 ] as const;
 export type VerbReasonCode = (typeof VERB_REASON_CODES)[number];
+
+/**
+ * The words a `said` sentence, and each verb description's first sentence, never contain: AX's list
+ * in schema/verbs.md ("Words `said` never contains"). Whole words, case-insensitive, so each form a
+ * sentence could use is listed. A host's word test passes this as `context.forbidden_words`.
+ */
+export const SAID_FORBIDDEN_WORDS = [
+  "git", "commit", "commits", "committed", "committing", "uncommitted",
+  "push", "pushes", "pushed", "pushing", "unpushed",
+  "pull", "pulls", "pulled", "pulling", "fetch", "fetched",
+  "merge", "merged", "merging", "rebase", "rebased",
+  "branch", "branches", "checkout", "clone", "cloned", "stash", "diff",
+  "staged", "staging", "unstaged", "untracked", "worktree", "HEAD",
+  "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream",
+  "sha", "hash",
+  "Vault", "Vaults",
+] as const;
 
 /** Field sets per verb. `post` and `map` refine them per `request`. */
 const VERB_FIELDS: Record<Verb, { required: string[]; optional: string[] }> = {

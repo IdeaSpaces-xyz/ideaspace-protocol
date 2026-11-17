@@ -19,7 +19,18 @@
     "out_of_reach", "local_only", "keeps_time", "changed_since_read", "no_identity", "not_from_person",
     "person_only", "limit_reached"
   ],
-  "words_note": "The said sentences in these vectors are neutral placeholders and the forbidden_words list is a draft from AX's scoping; AX's table in schema/verbs.md replaces both. The vectors check shape, never wording.",
+  "words_note": "The said sentences are AX's, from the table in schema/verbs.md (The words), with Plan, @bea and Viewer standing in for {name}, {who} and {level}. said_forbidden_words is AX's list; every check_answer vector that checks words uses it. The vectors check shape and the list, not the wording of each sentence.",
+  "said_forbidden_words": [
+    "git", "commit", "commits", "committed", "committing", "uncommitted",
+    "push", "pushes", "pushed", "pushing", "unpushed",
+    "pull", "pulls", "pulled", "pulling", "fetch", "fetched",
+    "merge", "merged", "merging", "rebase", "rebased",
+    "branch", "branches", "checkout", "clone", "cloned", "stash", "diff",
+    "staged", "staging", "unstaged", "untracked", "worktree", "HEAD",
+    "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream",
+    "sha", "hash",
+    "Vault", "Vaults"
+  ],
   "required_coverage": [
     "verb_spelling_per_route",
     "alias_resolves_to_verb",
@@ -315,23 +326,23 @@
       "id": "answer-saved-and-in-history",
       "operation": "check_answer",
       "covers": ["answer_ok_valid"],
-      "context": { "forbidden_words": ["commit", "push", "pull", "branch", "staged", "HEAD", "repository", "remote", "upstream", "Git"] },
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "ok", "path": "notes/a.md", "saved": true, "history": true, "shared": false, "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6" } },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Saved Plan and added it to history, not shared yet.", "facts": { "outcome": "ok", "path": "notes/a.md", "saved": true, "history": true, "shared": false, "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6" } },
       "expected": { "status": "valid" }
     },
     {
       "id": "answer-said-must-come-first",
       "operation": "check_answer",
       "covers": ["answer_said_first"],
-      "context": { "forbidden_words": [] },
-      "answer": { "facts": { "outcome": "ok", "saved": true }, "said": "A neutral placeholder sentence." },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "facts": { "outcome": "ok", "saved": true }, "said": "Saved Plan on this computer, not in history yet." },
       "expected": { "status": "invalid", "problems": [{ "code": "said_not_first", "field": "said" }] }
     },
     {
       "id": "answer-said-with-a-git-word",
       "operation": "check_answer",
       "covers": ["answer_said_forbidden_word"],
-      "context": { "forbidden_words": ["commit", "push", "pull", "branch", "staged", "HEAD", "repository", "remote", "upstream", "Git"] },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
       "answer": { "said": "Not pushed; push it for anyone else to read it.", "facts": { "outcome": "ok", "history": true, "shared": false, "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6" } },
       "expected": { "status": "invalid", "problems": [{ "code": "said_forbidden_word", "field": "push" }] }
     },
@@ -355,79 +366,79 @@
       "id": "answer-with-a-field-this-page-does-not-name",
       "operation": "check_answer",
       "covers": ["answer_unknown_fact"],
-      "context": { "forbidden_words": [] },
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "ok", "saved": true, "checkout_path": "/Users/someone/private/space" } },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Saved Plan on this computer, not in history yet.", "facts": { "outcome": "ok", "saved": true, "checkout_path": "/Users/someone/private/space" } },
       "expected": { "status": "invalid", "problems": [{ "code": "unknown_fact", "field": "checkout_path" }] }
     },
     {
       "id": "answer-has-no-slot-for-a-credential",
       "operation": "check_answer",
       "covers": ["answer_credential_has_no_slot"],
-      "context": { "forbidden_words": [] },
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "ok", "item": "repo:n_9ffe8bb354f1b10b6fbb059e", "shared": true, "token": "ist_0000000000000000" } },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Shared Plan with @bea as Viewer, and only the person can take it back.", "facts": { "outcome": "ok", "item": "repo:n_9ffe8bb354f1b10b6fbb059e", "shared": true, "token": "ist_0000000000000000" } },
       "expected": { "status": "invalid", "problems": [{ "code": "unknown_fact", "field": "token" }] }
     },
     {
       "id": "answer-change-is-never-shortened",
       "operation": "check_answer",
       "covers": ["answer_short_change"],
-      "context": { "forbidden_words": [] },
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "ok", "history": true, "change": "b52662fa5f62" } },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Saved Plan and added it to history, not shared yet.", "facts": { "outcome": "ok", "history": true, "change": "b52662fa5f62" } },
       "expected": { "status": "invalid", "problems": [{ "code": "short_change", "field": "change" }] }
     },
     {
       "id": "answer-refused-without-reason-or-next",
       "operation": "check_answer",
       "covers": ["answer_refused_needs_reason_and_next"],
-      "context": { "forbidden_words": [] },
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "refused" } },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Not saved: Plan changed after you last read it, so look at it again, then write.", "facts": { "outcome": "refused" } },
       "expected": { "status": "invalid", "problems": [{ "code": "reason_code_missing", "field": "reason_code" }, { "code": "next_missing", "field": "next" }] }
     },
     {
       "id": "answer-next-names-a-verb-call",
       "operation": "check_answer",
       "covers": ["answer_next_is_verb_call"],
-      "context": { "forbidden_words": [] },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
       "cases": [
         { "next": { "verb": "look", "target": "notes/a.md" }, "expected": { "status": "valid" } },
         { "next": { "verb": "commit", "paths": ["notes/a.md"] }, "expected": { "status": "invalid", "problems": [{ "code": "next_invalid", "field": "next" }] } },
         { "next": "look at it again", "expected": { "status": "invalid", "problems": [{ "code": "next_invalid", "field": "next" }] } }
       ],
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "refused", "reason_code": "changed_since_read", "next": "$CASE.next" } }
+      "answer": { "said": "Not saved: Plan changed after you last read it, so look at it again, then write.", "facts": { "outcome": "refused", "reason_code": "changed_since_read", "next": "$CASE.next" } }
     },
     {
       "id": "answer-next-carrying-a-git-command",
       "operation": "check_answer",
       "covers": ["answer_next_git_command"],
-      "context": { "forbidden_words": [] },
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "refused", "reason_code": "no_identity", "next": { "verb": "write", "message": "run git config user.name first" } } },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Not added to history: this Space doesn't have the person's name to save it under yet, so tell the person.", "facts": { "outcome": "refused", "reason_code": "no_identity", "next": { "verb": "write", "message": "run git config user.name first" } } },
       "expected": { "status": "invalid", "problems": [{ "code": "next_git_command", "field": "next" }] }
     },
     {
       "id": "answer-next-null-when-only-the-person-can",
       "operation": "check_answer",
       "covers": ["answer_next_null_allowed"],
-      "context": { "forbidden_words": ["commit", "push", "pull", "branch", "staged", "HEAD", "repository", "remote", "upstream", "Git"] },
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "refused", "reason_code": "person_only", "next": null } },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
+      "answer": { "said": "Not taken back: only the person can take back Plan, so tell them.", "facts": { "outcome": "refused", "reason_code": "person_only", "next": null } },
       "expected": { "status": "valid" }
     },
     {
       "id": "answer-partial-needs-a-reason",
       "operation": "check_answer",
       "covers": ["answer_partial_needs_reason"],
-      "context": { "forbidden_words": [] },
+      "context": { "forbidden_words": ["git", "commit", "commits", "committed", "committing", "uncommitted", "push", "pushes", "pushed", "pushing", "unpushed", "pull", "pulls", "pulled", "pulling", "fetch", "fetched", "merge", "merged", "merging", "rebase", "rebased", "branch", "branches", "checkout", "clone", "cloned", "stash", "diff", "staged", "staging", "unstaged", "untracked", "worktree", "HEAD", "repository", "repositories", "repo", "repos", "remote", "remotes", "upstream", "sha", "hash", "Vault", "Vaults"] },
       "cases": [
         { "reason_code": "stage_failed", "expected": { "status": "valid" } },
         { "reason_code": null, "expected": { "status": "invalid", "problems": [{ "code": "reason_code_invalid", "field": "reason_code" }] } }
       ],
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "outcome": "partial", "path": "notes/a.md", "saved": true, "history": false, "reason_code": "$CASE.reason_code" } }
+      "answer": { "said": "Saved Plan, but adding it to history failed; the file is safe as written, so add it to history again.", "facts": { "outcome": "partial", "path": "notes/a.md", "saved": true, "history": false, "reason_code": "$CASE.reason_code" } }
     },
     {
       "id": "render-said-then-facts-in-order",
       "operation": "render_answer",
       "covers": ["answer_render_order"],
-      "answer": { "said": "A neutral placeholder sentence.", "facts": { "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6", "shared": false, "outcome": "ok", "history": true, "saved": true, "path": "notes/a.md" } },
-      "expected": "A neutral placeholder sentence.\n\noutcome: ok\npath: notes/a.md\nsaved: true\nhistory: true\nshared: false\nchange: b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6"
+      "answer": { "said": "Saved Plan and added it to history, not shared yet.", "facts": { "change": "b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6", "shared": false, "outcome": "ok", "history": true, "saved": true, "path": "notes/a.md" } },
+      "expected": "Saved Plan and added it to history, not shared yet.\n\noutcome: ok\npath: notes/a.md\nsaved: true\nhistory: true\nshared: false\nchange: b52662fa5f62e2b8a0c3f7d4e1a9b0c2d3e4f5a6"
     }
   ]
 }

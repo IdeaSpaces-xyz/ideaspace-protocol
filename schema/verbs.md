@@ -5,8 +5,8 @@
 > tool names fold under them, the shape of every answer (one sentence in the person's words first,
 > then the Git facts as named fields), the refusal that names the next call, the request kinds of
 > `post` and the three guards on the ones that reach other people, and where the verbs write history.
-> **Provisional, v0.34.0.** The words themselves (the `said` sentences) are in the table at the end,
-> which AX owns.
+> **Provisional, v0.34.0.** The words themselves (the `said` sentences, the descriptions' first
+> sentences and the forbidden words) are in [The words](#the-words) at the end, which AX owns.
 
 This page fixes **how an act is asked for and how it is answered**. It is pure shape: no transport,
 no sign-in, no API client, no service route. What a service does with a share or a publish is that
@@ -292,54 +292,105 @@ operations:
   absent reads as `agent`), `person_named`, `reach`, and `entries` (`{ path, id, folder }` for the
   files that are entries).
 - `check_answer(answer, context)` returns `{ status: "valid" }` or `{ status: "invalid", problems:
-  [{ code, field? }] }`. `context.forbidden_words` is the list a `said` sentence must not contain;
+  [{ code, field? }] }`. `context.forbidden_words` is the list a `said` sentence must not contain,
+  the manifest's `said_forbidden_words` (AX's, [below](#words-said-never-contains));
   the check also refuses a hash (seven or more hex digits in a row) and a `next` that is not a verb
   call.
 
 Both are pure: no filesystem, no Git, no network. A runner MUST reject an unknown manifest format,
 operation or required coverage tag rather than skip it. The reference implementation is
 `src/verbs.ts`, exported from the package root as `validateVerbRequest`, `checkVerbAnswer`,
-`renderVerbAnswer`, `spellVerb`, `isServiceAddress` and the constants.
+`renderVerbAnswer`, `spellVerb`, `isServiceAddress` and the constants, `SAID_FORBIDDEN_WORDS` among them.
 
-## The words (AX fills this table)
+## The words
 
-> **Left for AX on purpose.** The `said` sentence for each result and refusal below, the first
-> sentence of each verb's tool description (the act in the person's words, then at most one
-> "Under the hood:" line saying what Git it does), and the list of words `said` never contains, are
-> AX's, written in a follow-up on this branch. Integrator did not write them. Until that follow-up,
-> every `said` cell reads *AX*, the manifest's `check_answer` vectors use neutral placeholders, and
-> `context.forbidden_words` in those vectors is a draft list from AX's scoping, to be replaced by
-> AX's own.
+> **AX's, 2026-11-17.** The `said` sentence for each result and refusal, the first sentence of each
+> verb's tool description, and the words `said` never contains. A person and an agent read the same
+> sentence and understand each other, while Git stays inside the tools (the human, 2026-11-17, 4.2);
+> the person's word for where things live is **Space** (4.7). These are versioned strings an agent
+> copies into what it tells the person: changing one changes behaviour, so a change here is a
+> change to this page.
+
+### How a `said` sentence is written
+
+- **One sentence, the act first, in the past tense:** "Saved…", "Posted…", "Shared…". A refusal
+  opens with what did not happen: "Not saved…", "Not shared…".
+- **It says what is not done yet** when the person would want to know: "not in history yet", "not
+  shared yet". Those two are the person's whole picture of history: on this computer, in history,
+  shared.
+- **A refusal says the next act in the same words as `next`**, so an agent that reads only `said`
+  still makes the right call. When `next` is `null`, it says **tell the person** or **ask the
+  person**, and never what to run.
+- **`{name}`** is the item's own name as the person sees it (a Note's name, a Space's name),
+  never a path the person did not choose. **`{thread}`** is a Thread's name, **`{who}`** a handle as
+  the service confirmed it, **`{level}`** the grade the service granted in its own word, **`{until}`**
+  and **`{as_of}`** a time in the person's own zone ("Tue 17 Nov 15:57"), never an ISO instant.
+  `facts` carries the exact values.
+- **"This computer"** is the neutral word; a host that knows the machine may say "this Mac".
+- The verbs are words both sides share, so `said` may name them: "look at it again", "post a
+  correction".
+
+### The sentences
 
 | Verb | Case | `outcome` | `reason_code` | `said` |
 |---|---|---|---|---|
-| `write` | saved, not in history | `ok` | — | *AX* |
-| `write` | saved and in history | `ok` | — | *AX* |
-| `write` | in history, pushed or shared | `ok` | — | *AX* |
-| `write` | partial: written, not staged or not committed | `partial` | a local-effects code | *AX* |
-| `write` | the target is an entry | `refused` | `keeps_time` | *AX* |
-| `write` | changed since read | `refused` | `changed_since_read` | *AX* |
-| `write` | no identity | `refused` | `no_identity` | *AX* |
-| `write` | a service address | `refused` | `local_only` | *AX* |
-| `post` | local entry, in history | `ok` | — | *AX* |
-| `post` | local entry, not in history | `ok` | `no_identity` as a warning | *AX* |
-| `post` | hosted entry | `ok` | — | *AX* |
-| `post` | Thread opened | `ok` | — | *AX* |
-| `post` | shared | `ok` | — | *AX* |
-| `post` | taken back | `ok` | — | *AX* |
-| `post` | visibility changed | `ok` | — | *AX* |
-| `post` | published (private, with its history) | `ok` | — | *AX* |
-| `post` | who or what not from the person | `refused` | `not_from_person` | *AX* |
-| `post` | an agent asked to take back | `refused` | `person_only` | *AX* |
-| `post` | the day's count is used | `refused` | `limit_reached` | *AX* |
-| `post` | unknown request | `refused` | `unknown_request` | *AX* |
-| `look`, `map` | at a Map's moment, with changes since | `ok` | — | *AX* |
-| `look`, `map` | out of reach | `refused` | `out_of_reach` | *AX* |
-| any | a retired name | `refused` | `retired_name` | *AX* |
-| any | the request is not the verb's | `refused` | `missing_field`, `unexpected_field`, `invalid_field` | *AX* |
+| `write` | saved, not in history | `ok` | — | Saved {name} on this computer, not in history yet. |
+| `write` | saved and in history | `ok` | — | Saved {name} and added it to history, not shared yet. *With `history` only:* Added {n} files to history, not shared yet. |
+| `write` | in history, pushed or shared | `ok` | — | Saved {name} and added it to history, and everyone who can read this Space has it now. |
+| `write` | partial: written, not staged or not committed | `partial` | a local-effects code | Saved {name}, but adding it to history failed; the file is safe as written, so add it to history again. |
+| `write` | the target is an entry | `refused` | `keeps_time` | Not saved: {name} is a post, and posts aren't changed, so post a correction to it instead. |
+| `write` | changed since read | `refused` | `changed_since_read` | Not saved: {name} changed after you last read it, so look at it again, then write. |
+| `write` | no identity | `refused` | `no_identity` | Not added to history: this Space doesn't have the person's name to save it under yet, so tell the person. |
+| `write` | a service address | `refused` | `local_only` | Not saved: write changes only this computer, and {name} is on IdeaSpaces, so post to it instead. |
+| `post` | local entry, in history | `ok` | — | Posted to {thread} and added to history, not shared yet. |
+| `post` | local entry, not in history | `ok` | `no_identity` as a warning | Posted to {thread} on this computer, not in history yet: this Space doesn't have the person's name to save it under, so tell the person. |
+| `post` | hosted entry | `ok` | — | Posted to {thread} on IdeaSpaces, and everyone in the Thread can read it now. |
+| `post` | Thread opened | `ok` | — | Opened the Thread {thread} on this computer, not shared yet. *On IdeaSpaces:* Opened the Thread {thread} on IdeaSpaces with {who}. |
+| `post` | shared | `ok` | — | Shared {name} with {who} as {level}, and only the person can take it back. |
+| `post` | taken back | `ok` | — | Took back {name} from {who}, who can't read it any more. |
+| `post` | visibility changed | `ok` | — | {name} is public now, and anyone can read it. *Private:* {name} is private now, and only the people it's shared with can read it. |
+| `post` | published (private, with its history) | `ok` | — | Published {name} to IdeaSpaces, private and with its history, which can't be taken back. |
+| `post` | who or what not from the person | `refused` | `not_from_person` | Not done: the person hasn't named {value} in this conversation, and only the person says who and what, so ask them. |
+| `post` | an agent asked to take back | `refused` | `person_only` | Not taken back: only the person can take back {name}, so tell them. |
+| `post` | the day's count is used | `refused` | `limit_reached` | Not shared: today's limit is reached until {until}, and taking back still works. |
+| `post` | unknown request | `refused` | `unknown_request` | Not done: post adds an entry, opens a Thread, shares, takes back, makes public or private, or publishes, and {request} is none of those. |
+| `look`, `map` | at a Map's moment, with changes since | `ok` | — | As of {as_of}, this Map's moment, with {n} changes since. *None since:* As of {as_of}, this Map's moment, and nothing has changed since. |
+| `look`, `map` | out of reach | `refused` | `out_of_reach` | Not open to this conversation: {name} isn't something you were given, so ask the person for it. |
+| any | a retired name | `refused` | `retired_name` | {old} is retired, so use {verb}, which does the same. |
+| any | the request is not the verb's | `refused` | `missing_field`, `unexpected_field`, `invalid_field` | *Missing:* Not done: {verb} needs {field}. *Unexpected:* Not done: {verb} doesn't take {field}. *Invalid:* Not done: {field} isn't a value {verb} takes. |
+| any | not a verb | `refused` | `unknown_verb` | Not done: {old} isn't a tool here; the four are map, look, post and write. |
 
-**Words `said` never contains:** *AX*. (Draft, from AX's scoping, used only by the vectors until
-AX's list replaces it: commit, push, pull, branch, staged, HEAD, repository, remote, upstream, Git,
-and a hash.)
+The last row is added to Integrator's 24: `unknown_verb` is a refusal with `next: null`, so its
+sentence is the only guide the agent gets.
 
-**The four descriptions' first sentences:** *AX*.
+### The four descriptions' first sentences
+
+Each description opens with the act in the person's words. At most one "Under the hood:" line
+follows, which may name Git, because the agent works in Git and needs to know what happens; it says
+what the tool does so the agent need not do it, never what to tell the person. The word check runs
+on the first sentence, not the "Under the hood:" line.
+
+| Verb | First sentence | Under the hood |
+|---|---|---|
+| `map` | See what is where: a folder, a Map, a Thread, or everything the person can reach on IdeaSpaces, and add to or take from a Map. | Reads the files on disk, and a Map pinned to a moment from that commit; adding and taking from a Map edit its file and do not commit. |
+| `look` | Read one thing at the depth you ask for: a Note, a folder, a Thread, a post or a Map address, on this computer or on IdeaSpaces. | Reads files on disk or the service; a Map address reads at its pinned commit; it never writes. |
+| `post` | Add to something that keeps time, a post in a Thread or a new Thread, or ask IdeaSpaces to share, take back, make public or private, or publish. | A local post is one new file committed on its own and never pushed; the other acts are calls to the service under the person's sign-in, which you never see. |
+| `write` | Change any file on this computer, and add a set of files to history when you say so. | `history: [paths]` stages exactly those paths and commits them, the person as author and you as co-author; it never pushes. |
+
+### Words `said` never contains
+
+`said` and each description's first sentence never contain these words. They match whole words,
+case-insensitively, so each form a sentence could use is listed. The list is
+`SAID_FORBIDDEN_WORDS`, exported from the package root, and every `check_answer` vector uses it.
+
+- **Git, and its acts:** git, commit, commits, committed, committing, uncommitted, push, pushes,
+  pushed, pushing, unpushed, pull, pulls, pulled, pulling, fetch, fetched, merge, merged, merging,
+  rebase, rebased, branch, branches, checkout, clone, cloned, stash, diff.
+- **Its places:** staged, staging, unstaged, untracked, worktree, HEAD, repository, repositories,
+  repo, repos, remote, remotes, upstream.
+- **Its ids:** sha, hash. A run of seven or more hex digits is refused by the check on its own.
+- **Not the person's word for where things live:** Vault, Vaults. The word is Space (4.7).
+
+"HEAD" matched case-insensitively also keeps out the plain word "head"; no sentence here needs it.
+"Repo" is in the list because the person's word is Space: a published Space is still a Space in
+what the person reads, whatever the service calls it.

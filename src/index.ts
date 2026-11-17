@@ -503,7 +503,7 @@ export { check, list, who, companyRepoViewerGrant } from "./access.js";
 
 // The four verbs — the pure shape of schema/verbs.md: request validation with the three guards,
 // the answer check (said first, closed facts, next a verb call), the one render, and the spelling
-// per route. No filesystem, Git or network; the words themselves are the host's.
+// per route, and the words a said sentence never contains. No filesystem, Git or network.
 export {
   VERBS,
   VERB_NAMESPACE,
@@ -515,6 +515,7 @@ export {
   FACT_FIELDS,
   OUTCOMES,
   VERB_REASON_CODES,
+  SAID_FORBIDDEN_WORDS,
   spellVerb,
   isServiceAddress,
   resolveVerbName,
