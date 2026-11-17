@@ -109,7 +109,9 @@ remote path. `look` never writes.
 
 A `look` at a service address answers one more fact, **`access`: who can read this item**. It is
 filled only when the person **manages** the item and the service answered; for anything else it is
-the literal `not_checked`, never a guess. Its shape is closed: `{ public, people: [{ who, level }],
+the literal `not_checked`, never a guess; and it is a **list** (below), so it is filled only in a
+conversation with the person (`context.lists: true`) and is `not_checked` for a listener or a
+launched child, whatever they may `look` at. Its shape is closed: `{ public, people: [{ who, level }],
 teams: [{ hostname, level }], pending }`, where `who` is a handle by shape, `level` the grade in the
 service's word, and `pending` a **count** of invitations not yet accepted. No email, no display
 name, no invitation address ever appears (the rules under Lists).
@@ -326,17 +328,30 @@ vector (Security, 2026-11-17, msg_c965c00b; placed by the human, 18:31):
    `not_from_person`. The firefly gets to a listed item when the person names it, or a "Shared with
    you" row puts it into the person's own message. The pure form takes `context.listed`, the host's
    record of what lists returned, and consults it for nothing: that is the control. The marking of
-   names as others' is a hint to the model, not a control.
+   names as others' is a hint to the model, not a control. A pure vector cannot fail this rule in a
+   host, so every host that offers a list carries the test
+   `list_results_never_enter_reach_or_person_named`.
+
+   A list start is checked by shape before anything else: `person:` is followed by a handle and
+   `hostname:` by a host name, else `invalid_field` on `start`, so a list never asks the service
+   whether an email has an account or follows a path.
 2. **Fields only, and names cut and marked.** A list item carries `address`, `kind`, `level`, `who`,
    `time`, `name` and `by_others`, and no other field: no summary, description or README of an item
-   the person does not own reaches the model through a list. A `name` is one line with control
-   characters and line breaks removed, cut to 120 characters, and carries `by_others: true`. `said`
-   never quotes a listed name.
+   the person does not own reaches the model through a list. A `name` is one line, cut to 120
+   characters, with every control and format character removed (Unicode `Cc` and `Cf`: line breaks,
+   direction overrides, zero-width characters) and the line and paragraph separators (`Zl`, `Zp`)
+   with them, and it carries `by_others: true`. The fields others write outside `name` have fixed
+   shapes: `address` is a service address, `kind` is one of `space`, `org`, `repo`, `folder`, `note`,
+   `thread`, `person`, `level` is one word (letters, `_`, `-`, at most 32 characters, in the
+   service's own casing), `time` is an ISO instant; a sentence in any of them is refused
+   (`list_invalid`). `said` never quotes a listed name.
 3. **Listeners and launched children get no lists.** A list is read only in a conversation with the
    person, on any turn; the host says so with `context.lists: true`, and absent reads as false. A
    listener runs on posts other people wrote with nobody present to correct it; a child has its
    launch Map and nothing more. A `map` from a list start without it is refused `no_lists`,
-   `next: null`.
+   `next: null`, and `access` on a `look` is `not_checked`; an `access` object in an answer without
+   it fails the check (`access_without_lists`). The host test for both is
+   `listener_and_child_lists_false`.
 4. **Handles may pass, by shape; emails and display names never.** A `who`, in a list or in `access`,
    is a handle as the service spells it (`@`, then letters, digits, `_` or `-`); anything else is
    dropped by the host, and `check_answer` refuses it (`who_not_a_handle`), an email included. A

@@ -168,9 +168,25 @@ describe("the four verbs: reference behaviour beyond the vectors", () => {
 
   it("a handle is a handle by shape alone", () => {
     const facts = (who: string) => ({ outcome: "ok" as const, access: { public: false, people: [{ who, level: "Viewer" }], teams: [], pending: 0 } });
-    expect(checkVerbAnswer({ said: "A sentence.", facts: facts("@janis_b-2") }).status).toBe("valid");
+    expect(checkVerbAnswer({ said: "A sentence.", facts: facts("@janis_b-2") }, { lists: true }).status).toBe("valid");
     for (const bad of ["janis@example.com", "@", "@jānis", "@janis b", ""]) {
-      expect(checkVerbAnswer({ said: "A sentence.", facts: facts(bad) }), bad).toEqual({ status: "invalid", problems: [{ code: "who_not_a_handle", field: "access.people[0].who" }] });
+      expect(checkVerbAnswer({ said: "A sentence.", facts: facts(bad) }, { lists: true }), bad).toEqual({ status: "invalid", problems: [{ code: "who_not_a_handle", field: "access.people[0].who" }] });
+    }
+    // Readers are a list: without the person, an access object fails and not_checked passes.
+    expect(checkVerbAnswer({ said: "A sentence.", facts: facts("@janis") })).toEqual({ status: "invalid", problems: [{ code: "access_without_lists", field: "access" }] });
+    expect(checkVerbAnswer({ said: "A sentence.", facts: { outcome: "ok", access: "not_checked" } }).status).toBe("valid");
+  });
+
+  it("a list start is a handle or a host name by shape, and a listed name carries no invisible character", () => {
+    expect(validateVerbRequest({ verb: "map", start: "person:jan@x.com" }, { lists: true })).toMatchObject({ reason_code: "invalid_field", field: "start" });
+    expect(validateVerbRequest({ verb: "map", start: "hostname:../../x" }, { lists: true })).toMatchObject({ reason_code: "invalid_field", field: "start" });
+    expect(validateVerbRequest({ verb: "map", start: "hostname:acme.example" }, { lists: true }).status).toBe("valid");
+    const item = (name: string) => ({ outcome: "ok" as const, list: [{ address: "repo:n_9ffe8bb354f1b10b6fbb059e", kind: "repo", name, by_others: true }] });
+    expect(checkVerbAnswer({ said: "A sentence.", facts: item("Garden plan") }).status).toBe("valid");
+    // A direction override, a zero-width space, a C1 control, a tab, and the line and paragraph separators.
+    const invisible = [0x202e, 0x200b, 0x009b, 0x0009, 0x2028, 0x2029].map((code) => String.fromCharCode(code));
+    for (const character of invisible) {
+      expect(checkVerbAnswer({ said: "A sentence.", facts: item(`Garden ${character}plan`) }), character.charCodeAt(0).toString(16)).toEqual({ status: "invalid", problems: [{ code: "list_name_multiline", field: "list[0].name" }] });
     }
   });
 

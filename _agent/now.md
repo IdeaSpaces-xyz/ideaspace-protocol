@@ -12,8 +12,11 @@ address carries `access`, who can read the item, only when the person manages it
 conditions are requirements with vectors: seeing is not reaching (`context.listed` is consulted for
 nothing), fields only with names cut to 120 characters and marked `by_others`, no lists for listeners
 or launched children (`context.lists`, `no_lists`), handles by shape and never an email or a display
-name, pending as a count, and accepted shares only. Scout's additions 1 and 2, placed by the human
-2026-11-17 18:31. The five new `said` rows are marked for AX. No tag or release is part of this change.
+name, pending as a count, and accepted shares only. Security's round 2 added: `access` is a list too
+(`access_without_lists` for a listener or a child), list starts by shape (`person:` a handle,
+`hostname:` a host), names free of every control and format character, fixed shapes for `address`,
+`kind` (a closed set), `level` and `time`, and two named host tests. Scout's additions 1 and 2,
+placed by the human 2026-11-17 18:31. The five new `said` rows are marked for AX. No tag or release is part of this change.
 
 ## The four verbs, v0.34.0 (spec/four-verbs, merged 03c7e52)
 

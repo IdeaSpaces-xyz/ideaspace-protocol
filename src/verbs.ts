@@ -108,6 +108,10 @@ export const SAID_FORBIDDEN_WORDS = [
   "Vault", "Vaults",
 ] as const;
 
+/** What a list item can be. A kind outside this set is `list_invalid`. */
+export const LIST_KINDS = ["space", "org", "repo", "folder", "note", "thread", "person"] as const;
+export type ListKind = (typeof LIST_KINDS)[number];
+
 /** The fields a list item may carry, and no others (schema/verbs.md, Lists). */
 export const LIST_ITEM_FIELDS = ["address", "kind", "level", "who", "time", "name", "by_others"] as const;
 /** The longest a listed name may be, after control characters and line breaks are removed. */
@@ -198,10 +202,14 @@ export type VerbRequestCheck =
 
 const SERVICE_ADDRESS = /^(ideaspaces|repo:n_[0-9a-f]+|thread:x_[0-9a-f]+|x_[0-9a-f]+|person:[^\s]+|hostname:[^\s]+|space:[^\s]+|https:\/\/[^\s]+)$/i;
 const LIST_START = /^(ideaspaces|hostname:[^\s]+|person:[^\s]+)$/i;
+/** A level as the service names it: one word, letters, `_` or `-`, never a sentence. */
+const LEVEL = /^[a-z][a-z_-]{0,31}$/i;
+/** An ISO instant, as time.md spells one. */
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/;
 /** A handle as the service spells it: `@`, then 1 to 39 letters, digits, `_` or `-`. An email or a display name is not one. */
 const HANDLE = /^@[A-Za-z0-9][A-Za-z0-9_-]{0,38}$/;
 const HOSTNAME = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i;
-const CONTROL_OR_BREAK = /[\u0000-\u001f\u007f\u0085\u2028\u2029]/;
+const CONTROL_OR_BREAK = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
 
 /** A service address, as schema/verbs.md tells it from a local path or a Map address. */
 export function isServiceAddress(target: unknown): target is string {
@@ -305,7 +313,12 @@ export function validateVerbRequest(input: unknown, context: VerbContext = {}): 
       if (isListStart(rest.start)) {
         // A list (the account, an org, a person) is read under the person's own sign-in, only in a
         // conversation with the person. It is not reach, and it does not need reach.
-        if (kind !== "read") return refuse("invalid_field", { verb, start: rest.start.trim() }, "request");
+        // By shape: a person is a handle and an org a host name, so a list start never asks the
+        // service whether an email has an account or follows a path.
+        const start = rest.start.trim();
+        if (/^person:/i.test(start) && !isHandle(start.slice("person:".length))) return refuse("invalid_field", { verb }, "start");
+        if (/^hostname:/i.test(start) && !HOSTNAME.test(start.slice("hostname:".length))) return refuse("invalid_field", { verb }, "start");
+        if (kind !== "read") return refuse("invalid_field", { verb, start }, "request");
         if (context.lists !== true) return refuse("no_lists", null, "start");
       } else if (isServiceAddress(rest.start) && !inReach(rest.start, context)) {
         return refuse("out_of_reach", null, "start");
@@ -435,6 +448,7 @@ export type VerbAnswerProblemCode =
   | "list_name_multiline"
   | "list_name_unmarked"
   | "access_invalid"
+  | "access_without_lists"
   | "who_not_a_handle";
 
 export interface VerbAnswerProblem {
@@ -515,7 +529,7 @@ export function checkVerbAnswer(input: unknown, context: VerbContext = {}): Verb
     }
   }
   if (facts.list !== undefined) checkList(facts.list, problems);
-  if (facts.access !== undefined) checkAccess(facts.access, problems);
+  if (facts.access !== undefined) checkAccess(facts.access, problems, context);
   if (facts.outcome === "refused" || facts.outcome === "partial") {
     if (facts.reason_code === undefined) problems.push({ code: "reason_code_missing", field: "reason_code" });
     else if (typeof facts.reason_code !== "string" || !REASON_CODE.test(facts.reason_code)) problems.push({ code: "reason_code_invalid", field: "reason_code" });
@@ -572,6 +586,12 @@ function checkList(list: unknown, problems: VerbAnswerProblem[]): void {
     for (const key of Object.keys(item)) {
       if (!allowed.has(key)) problems.push({ code: "list_field_not_allowed", field: `${at}.${key}` });
     }
+    // Text others wrote outside `name` has a fixed shape: an address, a kind from the closed set, a
+    // level that is one word, an instant. A sentence in any of them is refused.
+    if (!isServiceAddress(item.address)) problems.push({ code: "list_invalid", field: `${at}.address` });
+    if (!(LIST_KINDS as readonly string[]).includes(item.kind)) problems.push({ code: "list_invalid", field: `${at}.kind` });
+    if (item.level !== undefined && (typeof item.level !== "string" || !LEVEL.test(item.level))) problems.push({ code: "list_invalid", field: `${at}.level` });
+    if (item.time !== undefined && (typeof item.time !== "string" || !ISO_INSTANT.test(item.time))) problems.push({ code: "list_invalid", field: `${at}.time` });
     if (item.who !== undefined && !isHandle(item.who)) problems.push({ code: "who_not_a_handle", field: `${at}.who` });
     if (item.name !== undefined) {
       if (typeof item.name !== "string") problems.push({ code: "list_invalid", field: `${at}.name` });
@@ -586,22 +606,25 @@ function checkList(list: unknown, problems: VerbAnswerProblem[]): void {
 }
 
 /** Who can read an item: `not_checked`, or public, people by handle and level, teams by host and level, pending as a count. */
-function checkAccess(access: unknown, problems: VerbAnswerProblem[]): void {
+function checkAccess(access: unknown, problems: VerbAnswerProblem[], context: VerbContext): void {
   if (access === "not_checked") return;
   if (!isRecord(access)) { problems.push({ code: "access_invalid", field: "access" }); return; }
+  // An item's readers are a list: filled only in a conversation with the person, never for a
+  // listener or a launched child, which get `not_checked`.
+  if (context.lists !== true) problems.push({ code: "access_without_lists", field: "access" });
   for (const key of Object.keys(access)) {
     if (!["public", "people", "teams", "pending"].includes(key)) problems.push({ code: "access_invalid", field: `access.${key}` });
   }
   if (typeof access.public !== "boolean") problems.push({ code: "access_invalid", field: "access.public" });
   if (!Array.isArray(access.people)) problems.push({ code: "access_invalid", field: "access.people" });
   else access.people.forEach((person, index) => {
-    if (!isRecord(person) || !isNonEmptyString(person.level) || Object.keys(person).some((key) => key !== "who" && key !== "level")) {
+    if (!isRecord(person) || typeof person.level !== "string" || !LEVEL.test(person.level) || Object.keys(person).some((key) => key !== "who" && key !== "level")) {
       problems.push({ code: "access_invalid", field: `access.people[${index}]` });
     } else if (!isHandle(person.who)) problems.push({ code: "who_not_a_handle", field: `access.people[${index}].who` });
   });
   if (!Array.isArray(access.teams)) problems.push({ code: "access_invalid", field: "access.teams" });
   else access.teams.forEach((team, index) => {
-    if (!isRecord(team) || !isNonEmptyString(team.level) || typeof team.hostname !== "string" || !HOSTNAME.test(team.hostname) || Object.keys(team).some((key) => key !== "hostname" && key !== "level")) {
+    if (!isRecord(team) || typeof team.level !== "string" || !LEVEL.test(team.level) || typeof team.hostname !== "string" || !HOSTNAME.test(team.hostname) || Object.keys(team).some((key) => key !== "hostname" && key !== "level")) {
       problems.push({ code: "access_invalid", field: `access.teams[${index}]` });
     }
   });
