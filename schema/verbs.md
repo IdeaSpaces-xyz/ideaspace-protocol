@@ -232,7 +232,7 @@ act is the person's alone), `next` is `null` and `said` tells the agent to tell 
 | `keeps_time` | `write` | the target is an entry | the correcting `post` |
 | `changed_since_read` | `write` | the file moved after the last look | `look` at the target |
 | `no_identity` | `write`, `post` | the Space has no name to save under | `null` |
-| `not_from_person` | `share`, `visibility`, `publish`, `start_thread` | the act (`field: "request"`, Proposed), or who or what (`target`, `with`, `from`, `grade`), did not come from the person's own words | `null` |
+| `not_from_person` | `share`, `visibility`, `publish`, `start_thread` | the act (`field: "request"`), or who or what (`target`, `with`, `from`, `grade`), did not come from the person's own words | `null` |
 | `person_only` | `revoke` | only the person takes back | `null` |
 | `limit_reached` | the acts that widen who can read | the day's count is used; `until` says when | `null` |
 | `redirected` | `publish` | the Space's own settings would send the push somewhere else (guard 2) | `null` |
@@ -253,15 +253,16 @@ on the service, reaches nobody, and guard 1 does not apply to it (reach still do
    `not_from_person`, naming the field; a pure check with nothing the person said known refuses too.
    The pure form takes `context.person_named`, the host's record of those words.
 
-   **Proposed (Security, 2026-11-17; the human decides): the act itself also comes from the
-   person.** `context.person_asked` lists what the person asked for in this conversation:
+   **The act itself also comes from the person** (Security's proposal of 2026-11-17; Agreed by the
+   human, 2026-11-17 18:20, msg_be285071: "Agreed on act rule"). `context.person_asked` lists what
+   the person asked for in this conversation:
    `start_thread`, `share`, `publish`, `public`, `private`. A reaching request whose act is not
    listed is refused `not_from_person`, `field: "request"`, before who and what are looked at;
    `visibility` counts as `public` or `private` by its value. If nothing is known, the request is
    refused. Why it goes past the guard the human accepted ("who and what"): with the nouns alone, a
    person who said "share garden with @b" has named garden, and a Note can then lead the agent to
    **publish** garden or make it **public**, the two acts with no way back. The reference
-   implementation and the vectors carry this rule; a host that does not adopt it says so.
+   implementation and the vectors carry this rule.
 2. **The sign-in never reaches the model.** A credential is not an input to any verb request, is not
    a fact (the set is closed and has no slot for one), and is never in `said`, `next`, a warning or an
    echoed request. It may live in the host and in the one child process that needs it. A host runs
@@ -327,7 +328,7 @@ operations:
 - `validate_request(request, context)` returns `{ status: "valid", verb, request }` (`request` with
   the verb resolved from an alias) or `{ status: "refused", reason_code, field?, next }`. `context`
   carries what the host knows: `aliases` and `retired` (name → verb), `caller` (`person` or `agent`;
-  absent reads as `agent`), `person_named`, `person_asked` (Proposed, guard 1), `reach` (service
+  absent reads as `agent`), `person_named`, `person_asked` (guard 1), `reach` (service
   addresses the conversation may name; **absent reads as none**, so a missing reach never widens it;
   the literal `ideaspaces` is allowed as `map.start` and `start_thread.target` without it), and
   `entries` (`{ path, id, folder }` for the files that are entries).

@@ -153,8 +153,8 @@ export interface VerbContext {
   person_named?: string[];
   /**
    * The acts the person asked for in this conversation: `start_thread`, `share`, `publish`,
-   * `public`, `private`. Proposed (Security, 2026-11-17): a reaching request whose act is not
-   * listed is refused before who and what are looked at. Absent reads as none: fails closed.
+   * `public`, `private`. A reaching request whose act is not listed is refused before who and what
+   * are looked at (agreed 2026-11-17). Absent reads as none: fails closed.
    */
   person_asked?: string[];
   /** Service addresses this conversation may name. Absent reads as none: a missing reach never widens it. */
@@ -314,7 +314,7 @@ export function validateVerbRequest(input: unknown, context: VerbContext = {}): 
       // A Thread with nobody in it reaches nobody: guard 1 does not apply, reach still does.
       const reaches = !(kind === "start_thread" && rest.with === undefined);
       if (reaches) {
-        // Guard 1, the act (Proposed): what the person asked for, before who and what. Fails closed.
+        // Guard 1, the act: what the person asked for, before who and what. Fails closed.
         const act = kind === "visibility" ? (rest.public ? "public" : "private") : kind;
         if (!(context.person_asked ?? []).includes(act)) return refuse("not_from_person", null, "request");
         // Guard 1, who and what: from the person's own words. Fails closed.

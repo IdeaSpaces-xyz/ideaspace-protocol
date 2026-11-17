@@ -398,8 +398,8 @@ verbs and never a `git` command; `next` is `null` only when no call of the agent
 
 `post`'s request kinds are `entry` (default), `start_thread`, `share`, `revoke` (take back),
 `visibility` and `publish`; an unknown kind is refused. The kinds that reach other people carry three
-guards as requirements: who and what come only from the person's own words in the conversation (and,
-proposed, the act itself); the sign-in never reaches the model, the closed fact set has no slot for
+guards as requirements: who, what and the act itself come only from the person's own words in the
+conversation; the sign-in never reaches the model, the closed fact set has no slot for
 it, and a host checks every answer against the credentials it holds; only the person takes back, and
 the person's own take back always works. The one push that carries the credential, for `publish`, is
 bounded in the same place. `publish` creates the item private and says it went with its history; `share` never hands out

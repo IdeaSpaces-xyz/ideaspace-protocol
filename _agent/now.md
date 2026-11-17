@@ -21,8 +21,8 @@ decisions behind this are the human's of 2026-11-17 (Agreement v2 of Idea Explor
 words at the end of [`schema/verbs.md`](../schema/verbs.md); the list is `SAID_FORBIDDEN_WORDS` and
 the manifest's `said_forbidden_words`, and a test holds the table to it. Pure: `src/verbs.ts`, `conformance/verbs/manifest.json`. What the CLI, the Desktop
 engine and the plugin must change is named in the PR body, not built here. Security's review (round
-2, 2026-11-17) added: the act itself comes from the person (`person_asked`, **Proposed**, the
-human decides), `grade` optional and from the person, a missing `reach` reads as none, `secrets` in
+2, 2026-11-17) added: the act itself comes from the person (`person_asked`; Agreed by the human,
+2026-11-17 18:20), `grade` optional and from the person, a missing `reach` reads as none, `secrets` in
 `check_answer` refusing a credential anywhere in an answer, take back checked `person_only` first and
 the person's own always working, and the `publish` push conditions with `redirected`. No tag or
 release is part of this change.
