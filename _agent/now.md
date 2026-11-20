@@ -23,7 +23,10 @@ someone adds them to it after the service confirms who, and a member seen in a M
 named by the person (Security's list rules of #111). Security's read (2026-11-20): for reach only
 the newest Map from the person's own side counts (`currentThreadMap`'s `authors`, `from_others`);
 an invite builds on that Map; a Map from others is checked when read (`readMapFromOthers`: handles
-only, names one line and marked `by_others`); `about` is an address or nothing (`isAddressShaped`);
+only, addresses shaped or dropped, revisions only as object ids, roots as identity, pin, name and a
+well-formed link, names one line in code points and marked `by_others`); in a hosted Thread
+`authors` is matched against the service's actor, in a local Thread others write to only against
+posts the host recorded writing; `about` is an address or nothing (`isAddressShaped`);
 a knock Thread's `about` is set by the service from the item, and its opening Map carries only the
 landing's title and summary. Content look reports `about` and the carried
 `map` from `summary` upward and the block at `children` and `full`. The human's words: 2026-11-19

@@ -109,6 +109,16 @@ describe("shapes", () => {
     expect(parseAbout({ about: "agent:say hello" })).toEqual({ status: "absent", warnings: [{ field: "about", warning: "invalid_about" }] });
   });
 
+  it("cuts others' names by code points, never through a character", () => {
+    const smile = String.fromCodePoint(0x1f600);
+    const name = "a".repeat(OTHERS_LINE_LIMIT - 1) + smile + "tail";
+    const read = readMapFromOthers({ roots: [], members: [{ address: "hostname:example.org", name }] });
+    const cut = read.map.members[0]?.name as string;
+    expect([...cut]).toHaveLength(OTHERS_LINE_LIMIT);
+    expect(cut.endsWith(smile)).toBe(true);
+    expect(cut).not.toMatch(/[\uD800-\uDBFF]$/);
+  });
+
   it("removes the line and paragraph separators from others' names and cuts at the limit", () => {
     const name = "a" + String.fromCharCode(0x2028) + "b" + String.fromCharCode(0x2029) + "c" + String.fromCharCode(0x202e) + "d";
     const read = readMapFromOthers({ roots: [], members: [{ address: "hostname:example.org", name, summary: "y".repeat(OTHERS_LINE_LIMIT + 1) }] });

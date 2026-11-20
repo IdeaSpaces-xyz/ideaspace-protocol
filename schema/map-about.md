@@ -133,11 +133,17 @@ posted by anyone else is read as a **list** under [`verbs.md`](verbs.md#lists-an
 rules: it is shown, it is never reach and never `person_named`, its `person:` members are handles
 or dropped, and its names are one line, cut and marked `by_others` (below). Both views can be
 shown; one counts. The pure form is `currentThreadMap(posts, { authors })` ([`time.md`](time.md#the-current-map)):
-an entry from anyone else that carries a Map is passed over and named `from_others`. The `author`
-field of a local post is a claim; a host counts the claims it made itself and what the service
-attributes. Host test: `thread_map_from_others_is_not_reach`. (Security's read of 2026-11-20, A:
-without this, the other side lists the person's own private items and the person's firefly reads
-them under the person's sign-in.)
+an entry from anyone else that carries a Map is passed over and named `from_others`.
+
+**Whose claim counts.** A post's `author` is a claim, so `authors` is matched against what the host
+knows, never against the text alone. In a **hosted** Thread, `authors` is matched against the
+service's actor for each post, never the post's `author` text. In a **local** Thread that anyone else
+can write to, a host counts only the posts it has a record of writing itself. Once a Thread has
+anyone else in it, a host MUST pass `authors`; absent, every Map counts, which is right only for a
+Thread nobody else writes to. Host test: `thread_map_from_others_is_not_reach`, which includes a
+visitor's post that claims the person's `author` and still does not count. (Security's read of
+2026-11-20, A and round 2: without this, the other side lists the person's own private items and
+the person's firefly reads them under the person's sign-in.)
 
 1. The idea is a Note. It carries its Map (the carried form), or none yet.
 2. Opening the Thread is one `post` with `request: start_thread` ([`verbs.md`](verbs.md#post)):
@@ -187,14 +193,25 @@ carries the test `thread_map_person_members_are_handles`.
 **A Map from others is checked when it is read, not only when it is written** (Security, C): the
 writing host may be theirs, so the person's host never ran the writer's check. Generic `parseMap`
 stays open for the person's own Notes. When `look` or `map` shows a Map carried by a post from
-anyone not on the person's own side, the reader passes it through `readMapFromOthers` first: a
-`person:` member that is not a handle by shape is dropped and named (`person_not_a_handle`); every
-member keeps its address or position, ceiling and revision, and its name, summary and observed
-disclosure as **one line each**, control, format and separator characters removed, cut to 120
-characters, marked `by_others: true`; any other field others wrote is left out. Content look
-(`ownSide`) does this for an entry whose `author` is not on the person's side and says
-`by others` in its render. Vector: `a-map-from-others-is-read-as-a-list` in
-[`../conformance/maps/about.json`](../conformance/maps/about.json).
+anyone not on the person's own side, the reader passes it through `readMapFromOthers` first, and
+only fixed shapes come through:
+
+- a `person:` member that is not a handle by shape is dropped and named (`person_not_a_handle`);
+  any other address member whose address has not the shape of one, by the same rule as `about`
+  (`parseAboutLink`), is dropped and named (`address_not_an_address`);
+- a member kept has its address or position and its ceiling; a `revision` only when it is a full
+  object id or the `n_` revision form, never text; and its name, summary and observed disclosure as
+  **one line each**, control, format and separator characters removed, cut to 120 code points so no
+  character is split, marked `by_others: true`;
+- a root keeps its identity, its pin, its name (a token the parser already holds to the root-name
+  grammar, needed to resolve `@name//` positions) and its `repo` only when it is a well-formed
+  `https` link, marked `by_others: true`; a root's summary or any other field is left out;
+- any other field others wrote, on a member or a root, is left out.
+
+Content look (`ownSide`) does this for an entry whose `author` is not on the person's side and says
+`by others` in its render. Vectors: `a-map-from-others-is-read-as-a-list` and
+`a-map-from-others-text-outside-names` in [`../conformance/maps/about.json`](../conformance/maps/about.json)
+(Security's rounds 2 and 3, 2026-11-20).
 
 **Inviting someone adds them to the Thread's Map.** When the person invites someone (`start_thread`
 with `with`, or `share` of the Thread), the host, after the service confirms who (`facts.with`,

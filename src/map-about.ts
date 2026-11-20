@@ -14,11 +14,13 @@ import { parseThreadAttachment, type ThreadAttachment } from "./post-links.js";
 import {
   parseMap,
   parseMapPositionAddress,
+  REVISION_PATTERN,
   type MapAddressMember,
   type MapBlock,
   type MapDisclosure,
   type MapMember,
   type MapPositionMember,
+  type MapRoot,
 } from "./maps.js";
 
 import { isHandle } from "./verbs.js";
@@ -33,8 +35,10 @@ const UNSHOWN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu;
 /** The same class without the global flag, for a stateless test. */
 const HAS_UNSHOWN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
 const WHITESPACE = /\s/u;
-/** The longest one-line name or summary read from someone else's Map (verbs.md, Lists, rule 2). */
+/** The longest one-line name or summary read from someone else's Map (verbs.md, Lists, rule 2), in code points. */
 export const OTHERS_LINE_LIMIT = 120;
+/** A full commit or blob object id: a Map pin, or one place of a path revision (`local-effects.md`). */
+const OBJECT_ID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 
 /** The link types whose value may be a position address, `@<root>//<position>` or `//<position>`. */
 export const ABOUT_POSITION_TYPES = ["note", "folder", "file", "thread", "post"] as const;
@@ -267,11 +271,12 @@ export function aboutMaps(entity: string, carriers: readonly AboutMapCarrier[], 
   return { status: "ok", entity, hits: [...carried, ...beside], skipped };
 }
 
-/** One member of a Map from others that was dropped or cut, by index and field. */
+/** One member of a Map from others that was dropped, by index and field. */
 export interface MapFromOthersWarning {
   member: number;
   field: string;
-  warning: "person_not_a_handle";
+  /** `person_not_a_handle`: a `person:` member whose id is no handle. `address_not_an_address`: any other address without the shape of one. */
+  warning: "person_not_a_handle" | "address_not_an_address";
 }
 
 export interface MapFromOthers {
@@ -279,11 +284,36 @@ export interface MapFromOthers {
   warnings: MapFromOthersWarning[];
 }
 
-/** One line from someone else's text: control, format and separator characters removed, cut to the limit. */
+/**
+ * One line from someone else's text: control, format and separator characters removed, cut to the
+ * limit in code points, so a cut never leaves half of a character (a lone surrogate) at the end.
+ */
 function oneLine(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
-  const cleaned = value.replace(UNSHOWN, "");
-  return cleaned.length > OTHERS_LINE_LIMIT ? cleaned.slice(0, OTHERS_LINE_LIMIT) : cleaned;
+  const points = [...value.replace(UNSHOWN, "")];
+  return points.length > OTHERS_LINE_LIMIT ? points.slice(0, OTHERS_LINE_LIMIT).join("") : points.join("");
+}
+
+/** A revision others wrote is kept only in a shape that cannot carry text: an object id, or the `n_` revision form. */
+function revisionFromOthers(value: unknown): string | undefined {
+  return typeof value === "string" && (OBJECT_ID.test(value) || REVISION_PATTERN.test(value)) ? value : undefined;
+}
+
+/**
+ * A root others wrote, as fields only: its identity and pin, its name (a token the parser already
+ * holds to the root-name grammar, needed to resolve `@name//` positions), and its `repo` only when
+ * it is a well-formed `https` link. Anything else a root carried (a summary, an unknown field) is
+ * others' text and is left out.
+ */
+function rootFromOthers(root: MapRoot): MapRoot {
+  const repo = typeof root.repo === "string" && parseAboutLink(root.repo)?.kind === "https" ? root.repo : undefined;
+  return {
+    ...(typeof root.root_node_id === "string" ? { root_node_id: root.root_node_id } : {}),
+    ...(typeof root.sha === "string" && OBJECT_ID.test(root.sha) ? { sha: root.sha } : {}),
+    ...(typeof root.name === "string" ? { name: root.name } : {}),
+    ...(repo !== undefined ? { repo } : {}),
+    by_others: true,
+  };
 }
 
 function disclosureFromOthers(value: unknown): MapDisclosure | undefined {
@@ -297,11 +327,13 @@ function disclosureFromOthers(value: unknown): MapDisclosure | undefined {
 
 /**
  * Read a valid Map that someone else posted, as a list (`verbs.md`, Lists): a `person:` member that
- * is not a handle by shape is dropped and named; every member keeps its address or position, its
- * ceiling and revision, and its name, summary and observed disclosure as one line each, control
- * and format characters removed, cut to 120 characters, and marked `by_others: true`; any other
- * field others wrote is left out. The result is a view to show; it is never reach, and nothing in
- * it is a name the person said. The person's own Maps are not read through this.
+ * is not a handle by shape is dropped and named, and so is any address member whose address has not
+ * the shape of one (the same rule as `about`); every member kept has its address or position, its
+ * ceiling, a revision only in a shape that cannot carry text, and its name, summary and observed
+ * disclosure as one line each, control and format characters removed, cut to 120 code points, and
+ * marked `by_others: true`; a root keeps its identity, pin, name and a well-formed `https` link;
+ * any other field others wrote is left out. The result is a view to show; it is never reach, and
+ * nothing in it is a name the person said. The person's own Maps are not read through this.
  */
 export function readMapFromOthers(map: MapBlock): MapFromOthers {
   const warnings: MapFromOthersWarning[] = [];
@@ -314,13 +346,18 @@ export function readMapFromOthers(map: MapBlock): MapFromOthers {
         warnings.push({ member: index, field: `members[${index}].address`, warning: "person_not_a_handle" });
         return;
       }
+      if (!parseAboutLink(address)) {
+        warnings.push({ member: index, field: `members[${index}].address`, warning: "address_not_an_address" });
+        return;
+      }
       const name = oneLine(member.name);
       const summary = oneLine(member.summary);
       const disclosure = disclosureFromOthers(member.disclosure);
+      const revision = revisionFromOthers(member.revision);
       members.push({
         address,
         ...(member.depth !== undefined ? { depth: member.depth } : {}),
-        ...(member.revision !== undefined ? { revision: member.revision } : {}),
+        ...(revision !== undefined ? { revision } : {}),
         ...(name !== undefined ? { name } : {}),
         ...(summary !== undefined ? { summary } : {}),
         ...(disclosure ? { disclosure } : {}),
@@ -338,5 +375,5 @@ export function readMapFromOthers(map: MapBlock): MapFromOthers {
       by_others: true,
     });
   });
-  return { map: { roots: map.roots, members }, warnings };
+  return { map: { roots: map.roots.map(rootFromOthers), members }, warnings };
 }

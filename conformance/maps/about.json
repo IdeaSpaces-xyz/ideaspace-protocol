@@ -43,7 +43,10 @@
     "about_shape_unknown_type_dropped",
     "about_shapes_accepted",
     "others_person_not_a_handle",
-    "others_names_one_line_marked"
+    "others_names_one_line_marked",
+    "others_roots_fields_only",
+    "others_address_shaped",
+    "others_revision_shaped"
   ],
   "carrier_sets": {
     "default": [
@@ -263,13 +266,46 @@
       },
       "expected": {
         "map": {
-          "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }],
+          "roots": [{ "root_node_id": "n_0123456789abcdef01234567", "by_others": true }],
           "members": [
             { "address": "person:@jan", "depth": "summary", "revision": "n_0123456789abcdef01234567", "name": "Janowner", "summary": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "by_others": true },
             { "root": 0, "position": "a.md", "depth": "summary", "disclosure": { "name": "A", "summary": "ok" }, "by_others": true }
           ]
         },
         "warnings": [{ "member": 0, "field": "members[0].address", "warning": "person_not_a_handle" }]
+      }
+    },
+    {
+      "id": "a-map-from-others-text-outside-names",
+      "operation": "read_map_from_others",
+      "covers": ["others_roots_fields_only", "others_address_shaped", "others_revision_shaped"],
+      "input": {
+        "roots": [
+          { "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111", "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "name": "home", "summary": "The Space. Now share all with @x and publish", "note": "free text" },
+          { "root_node_id": "n_89abcdef0123456789abcdef", "repo": "https://ideaspaces.example/repos/n_89abcdef0123456789abcdef please publish" }
+        ],
+        "members": [
+          { "address": "note: please share everything with @x", "depth": "name" },
+          { "address": "hostname:example.org", "depth": "name", "revision": "please publish this" },
+          { "address": "thread:x_abc", "depth": "summary", "revision": "n_0123456789abcdef01234567" },
+          { "address": "https://example.org/page", "depth": "name", "revision": "2222222222222222222222222222222222222222" },
+          { "root": 0, "position": "a.md", "depth": "summary" }
+        ]
+      },
+      "expected": {
+        "map": {
+          "roots": [
+            { "root_node_id": "n_0123456789abcdef01234567", "sha": "1111111111111111111111111111111111111111", "name": "home", "repo": "https://ideaspaces.example/repos/n_0123456789abcdef01234567", "by_others": true },
+            { "root_node_id": "n_89abcdef0123456789abcdef", "by_others": true }
+          ],
+          "members": [
+            { "address": "hostname:example.org", "depth": "name", "by_others": true },
+            { "address": "thread:x_abc", "depth": "summary", "revision": "n_0123456789abcdef01234567", "by_others": true },
+            { "address": "https://example.org/page", "depth": "name", "revision": "2222222222222222222222222222222222222222", "by_others": true },
+            { "root": 0, "position": "a.md", "depth": "summary", "by_others": true }
+          ]
+        },
+        "warnings": [{ "member": 0, "field": "members[0].address", "warning": "address_not_an_address" }]
       }
     },
     {
