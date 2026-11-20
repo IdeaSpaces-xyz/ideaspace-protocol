@@ -17,9 +17,17 @@
       "type": "string",
       "description": "When this applies — the trigger condition. The convention `_agent/skills/` entries carry (per the open Agent Skills spec, where it is the field an agent matches on); awareness prefers it over `summary` for skills. Ordinary knowledge Notes use `summary`."
     },
+    "about": {
+      "description": "What this Note is about: one typed link `<type>:<id>`, or a list of them (`[]` is about nothing). A Note that declares none is about itself. The Map a Note carries is about what the Note is about (schema/map-about.md). Same open type namespace as `attached_to`; a position inside a repository is `note:`, `folder:` or `file:` followed by `@<root>//<position>`; a page is its URL. A value that is not a string, or a list of strings, each a typed `<type>:<id>`, fails the key check in validateSpace as a malformed `attached_to` does (`about-type`, `about-pattern`); a link with that grammar but not the shape of an address (schema/map-about.md) is dropped by readers with the warning `invalid_about`, and the Note stays readable.",
+      "oneOf": [
+        { "type": "string", "pattern": "^[a-z][a-z0-9_]*:.+$" },
+        { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*:.+$" } }
+      ],
+      "x-examples": ["note:@n_0123456789abcdef01234567//ideas/x.md", "file:@n_0123456789abcdef01234567//data.txt", "https://example.org/page", ["person:@anna", "repo:n_0123456789abcdef01234567"]]
+    },
     "attached_to": {
       "type": "string",
-      "description": "For ordinary knowledge Notes, a SINGLE typed link to the entity this Note is about (subject, not provenance), written `<type>:<id>`. One value by design; the type namespace is PLATFORM-DEFINED and open. This Note schema does not validate Thread Agreements: their attached_to names a parent post by path or msg_ id under schema/threads.md, not a Note subject.",
+      "description": "Legacy single form of `about`: one typed link to the entity this Note is about (subject, not provenance), written `<type>:<id>`. Read as one `about` link when the Note carries no `about`; new writers write `about`. The type namespace is PLATFORM-DEFINED and open. This Note schema does not validate Thread Agreements: their attached_to names a parent post by path or msg_ id under schema/threads.md, not a Note subject.",
       "pattern": "^[a-z][a-z0-9_]*:.+$",
       "x-platform-type-examples": ["person", "agent", "web_page", "hostname", "node"]
     },

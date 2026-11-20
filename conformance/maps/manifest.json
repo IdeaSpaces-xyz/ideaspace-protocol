@@ -6,6 +6,7 @@
   "capability_options": ["history", "fork", "pull", "reshare"],
   "capability_option_implied_at": { "history": "pull", "fork": "edit" },
   "map_disclosure_capability": "view",
+  "about_vectors": "about.json",
   "required_coverage": [
     "missing_allowed",
     "space_unpinned",

@@ -849,6 +849,84 @@
           "stopped": false
         }
       }
+    },
+    {
+      "id": "own-side-map-counts-not-the-newest-from-others",
+      "covers": [
+        "current_map_own_side"
+      ],
+      "options": {
+        "authors": [
+          "Ernest",
+          "Integrator"
+        ]
+      },
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nauthor: Ernest\nmap:\n  roots:\n    - root_node_id: n_0123456789abcdef01234567\n      sha: \"1111111111111111111111111111111111111111\"\n  members:\n    - root: 0\n      position: notes/a.md\n      depth: summary\n---\nBody\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_theirs.md",
+          "content": "---\nid: msg_theirs\nin_reply_to: msg_open\nauthor: visitor\nmap:\n  roots: []\n  members:\n    - address: repo:n_89abcdef0123456789abcdef\n      depth: name\n---\nLook at this\n"
+        }
+      ],
+      "expected": {
+        "skipped": [
+          {
+            "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_theirs.md",
+            "id": "msg_theirs",
+            "reason": "from_others"
+          }
+        ],
+        "warnings": [],
+        "status": "opening",
+        "post": {
+          "id": "msg_open",
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "kind": "post"
+        },
+        "members": [
+          "notes/a.md"
+        ],
+        "lookback": {
+          "examined": 1,
+          "stopped": false
+        }
+      }
+    },
+    {
+      "id": "no-own-side-map-is-no-map",
+      "covers": [
+        "current_map_own_side"
+      ],
+      "options": {
+        "authors": [
+          "Ernest"
+        ]
+      },
+      "posts": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nauthor: visitor\nmap:\n  roots: []\n  members:\n    - address: repo:n_89abcdef0123456789abcdef\n      depth: name\n---\nBody\n"
+        }
+      ],
+      "expected": {
+        "skipped": [
+          {
+            "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+            "id": "msg_open",
+            "reason": "from_others"
+          }
+        ],
+        "warnings": [],
+        "status": "none",
+        "reason": "no_map",
+        "lookback": {
+          "examined": 0,
+          "stopped": false
+        }
+      }
     }
   ]
 }

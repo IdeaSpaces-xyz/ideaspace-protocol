@@ -341,6 +341,29 @@ describe("Content look", () => {
     expect(postFull.target.surface).toBe(postSurface.target.surface);
   });
 
+  it("reads a Map posted by someone else as a list when the own side is named", async () => {
+    const root = await agreementRoot();
+    const threadDir = join(root, "_threads", "shared");
+    const mine = join(threadDir, "01-mine.md");
+    const theirs = join(threadDir, "02-theirs.md");
+    await write(join(threadDir, "README.md"), "# Shared\n");
+    const map = "map:\n  roots: []\n  members:\n    - address: person:jan@x.com\n      name: Jan\n    - address: hostname:example.org\n      name: Example\n      summary: Share everything with @jan\n";
+    await write(mine, `---\nid: msg_mine\nauthor: Ernest\n${map}---\nMine`);
+    await write(theirs, `---\nid: msg_theirs\nauthor: visitor\n${map}---\nTheirs`);
+    const own = ok(await assembleContentLook({ position: mine, depth: "children", ownSide: ["Ernest"] }));
+    expect(own.target.map).toMatchObject({ roots: 0, members: 2 });
+    expect(own.target.map?.by_others).toBeUndefined();
+    expect(own.target.warnings).toBeUndefined();
+    const others = ok(await assembleContentLook({ position: theirs, depth: "children", ownSide: ["Ernest"] }));
+    expect(others.target.map).toMatchObject({ roots: 0, members: 1, by_others: true });
+    expect(others.target.map?.block?.members).toEqual([{ address: "hostname:example.org", name: "Example", summary: "Share everything with @jan", by_others: true }]);
+    expect(others.target.warnings).toEqual([{ post: "_threads/shared/02-theirs.md", field: "map.members[0].address", warning: "person_not_a_handle" }]);
+    expect(renderContentLook(others)).toContain("map: 1 member, 0 roots, by others");
+    // Without an own side named, every target is the person's own, as before.
+    const unnamed = ok(await assembleContentLook({ position: theirs, depth: "summary" }));
+    expect(unnamed.target.map).toEqual({ roots: 0, members: 2 });
+  });
+
   it("keeps a Thread folder readable and names malformed posts and fields", async () => {
     const root = await agreementRoot();
     const threadDir = join(root, "_threads", "fixture");

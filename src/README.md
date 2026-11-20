@@ -9,7 +9,7 @@ Present:
 - `repository-path.ts` — pure lexical classification of Markdown knowledge, exact core `_agent`, ordinary paths, reserved Git state, and the first opaque extension owner
 - `assets.ts` — exact `_assets/` recognition and pure lexical relative-reference resolution with no filesystem lookup, search, fallback, or mutation; the identity image's lexical declaration check and byte checks
 - `repository-image.ts` — reads a repository root's `README.md` `image:` and checks the file on disk (exists, inside the root after symlinks, size, type); every problem is a result, never a throw
-- `frontmatter.ts` — parse / compose / extract (Layer 1: `name`, `summary`, `attached_to`, `tags`)
+- `frontmatter.ts` — parse / compose / extract (Layer 1: `name`, `summary`, `about` and its legacy `attached_to`, `tags`)
 - `root-identity.ts` — optional Space root ID parsing, deterministic current-form generation, and pure lazy-alignment evaluation over caller-supplied evidence
 - `markdown-inspection.ts` — portable progressive-disclosure reads (`summary`, ATX `outline`, exact `section`) over a string or local file
 - `space.ts` — frozen five-file Foundation reader and composition
@@ -17,6 +17,7 @@ Present:
 - `awareness.ts` — selectable Foundation/Agreement/floor assembly, bounded reference focus reads, exact revisions, placement-selective head/tail rendering, canonical full rendering, and the compatibility `assembleAwareness` block; `content-look.ts` — one Note or directory at a canonical Map rung beneath a reference-only frame; `path-context.ts` — path walking
 - `git.ts` — git state / recent activity, reporting of already-staged knowledge/context/extension paths, plus the injected, read-only `pathRevision` fact; `local-effects.ts` — pure request/result types, capability contracts, and preflight validators; `local-effects-runtime.ts` — the opt-in `@ideaspaces/protocol/local-effects` reference implementation for atomic Markdown writes and exact-path commits; `stale-docs.ts` — drift signals
 - `workspace.ts` — neutral root handles and immediate-child workspace repository reads
+- `map-about.ts` — a Map about anything: a Note's `about` (with the legacy `attached_to`), whether two typed links name one entity, and the carried and beside Maps about one entity among Notes the reader holds; pure, no index
 - `maps.ts` — pure provisional Map parsing/building; `map-projection.ts` — ordered Content-tree and root-handle member projection with private presentation sidecars and canonical local rendering
 - `skills.ts` + `skill-catalog.generated.ts` — the canonical skill catalog (generated from `../skills/` by `scripts/embed-skills.mjs`)
 

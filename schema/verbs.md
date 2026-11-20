@@ -87,7 +87,7 @@ maps), and the other fields are the verb's. An address is one of three forms, to
 
 | Field | Shape | Meaning |
 |---|---|---|
-| `start` | address | where to map from. Three starts are **lists** (below): `ideaspaces`, the person's account; `hostname:<host>`, an org the person belongs to; `person:<handle>`, a person |
+| `start` | address | where to map from. Three starts are **lists** (below): `ideaspaces`, the person's account; `hostname:<host>`, an org the person belongs to; `person:<handle>`, a person. At any other entity, `read` gives its **about-Map** ([`map-about.md`](map-about.md)): its carried Map, a Thread's current Map, else the beside Maps the host holds, else the Content tree; `facts.path` names the carrier |
 | `request` | `read` (default), `create`, `add`, `remove` | read is what is there; the others change a curated Map or a Space's Map |
 | `depth` | one of the five rungs | a ceiling for the handles returned; default `summary` |
 | `kind` | string | optional filter on what `ideaspaces` lists (`repos`, `threads`, `spaces`) |
@@ -105,7 +105,9 @@ maps), and the other fields are the verb's. An address is one of three forms, to
 
 The fields are [`content-look.md`](content-look.md)'s: `target` (an address), `depth`, `agreement`,
 `limit`, `order`, `since`, `post`. A service address reads the same five rungs through the host's
-remote path. `look` never writes.
+remote path. `look` never writes. From `summary` upward the look carries what the target is about
+and the Map it carries ([`map-about.md`](map-about.md#how-look-and-map-show-it)); the `said`
+sentences for those cases are AX's, in [The words](map-about.md#the-words) there.
 
 A `look` at a service address answers one more fact, **`access`: who can read this item**. It is
 filled only when the person **manages** the item and the service answered; for anything else it is

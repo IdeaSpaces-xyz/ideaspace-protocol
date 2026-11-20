@@ -225,6 +225,14 @@ whatever its kind. A reader derives it from the entries and never stores it.
 - **No Map is a state, not an error.** An empty folder, a folder whose entries carry no readable Map,
   and a partial read without its opening each report no Map, with the reason (`empty`, `no_map`,
   `opening_unknown`).
+- **Only the person's own side counts for reach.** A reader may name the authors whose Maps count
+  (`authors`: the person and their own agents, as the host names them). Then an entry by anyone else
+  that carries a Map is passed over and named `from_others`, and the Map returned is the newest from
+  the person's own side; the others' Maps are still shown, read as lists
+  ([`map-about.md`](map-about.md#how-an-invitation-carries-it)). The `author` field is the entry's
+  claim: in a hosted Thread the host matches `authors` against the service's actor for each entry,
+  never the text; in a local folder others can write to, it counts only the entries it recorded
+  writing itself; and once anyone else is in, it MUST pass `authors`. Vectors: `current_map_own_side`.
 
 The current Map is the folder's frame: what a session started on it is given, and what a view shows
 as "what's here". It carries no access. An entry's Map captures a moment, so it follows the moment rule

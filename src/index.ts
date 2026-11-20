@@ -194,6 +194,30 @@ export {
   renderContentTreeProjection,
   renderRootMapMembers,
 } from "./map-projection.js";
+
+// A Map about anything: what a Note's Map is about, whether two typed links name one entity,
+// and the Maps about one entity among the Notes a reader already holds (schema/map-about.md).
+export {
+  ABOUT_POSITION_TYPES,
+  OTHERS_LINE_LIMIT,
+  isAddressShaped,
+  parseAboutLink,
+  parseAbout,
+  sameEntity,
+  aboutMaps,
+  readMapFromOthers,
+} from "./map-about.js";
+export type {
+  AboutWarning,
+  AboutParseResult,
+  AboutContext,
+  AboutMapCarrier,
+  AboutMapHit,
+  AboutMapsResult,
+  AboutMapsOutcome,
+  MapFromOthersWarning,
+  MapFromOthers,
+} from "./map-about.js";
 export type {
   ContentTreeMemberPresentation,
   ProjectedContentTreeMember,

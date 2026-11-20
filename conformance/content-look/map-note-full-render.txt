@@ -1,0 +1,28 @@
+Focus:
+  target: notes
+  space root: .
+  contract source: agreement
+  contract role: reference — read, never composed
+
+Agent context:
+  agreement — Reference terms for the Content look fixture.
+    summary only — read _agent/agreement.md in full before writing here
+
+Look:
+  position: notes/data.map.md
+  kind: markdown
+  depth: full
+  revision: sha256:24401af6bff7e8211b1df011cda1fbcfeb73a7e1b573208db3a165f55285cd5e
+  placement: history
+  name: About the data
+  summary: A Map beside a file that cannot carry one.
+  about: file:@n_0123456789abcdef01234567//data.txt
+  map: 1 member, 0 roots
+
+Surface:
+  # Legend
+  
+  The file is opaque; this Map says what it is and where it came from.
+
+Map:
+  https://example.org/source (name) Where the data came from
