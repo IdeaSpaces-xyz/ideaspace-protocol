@@ -191,6 +191,25 @@ post keeps its own kind.
   named, or null for a value of any other shape; a parsed post carries them as `to`, absent when no
   one is named. Vectors: [`../conformance/threads/addressees.json`](../conformance/threads/addressees.json).
 
+#### Which firefly wrote a post (`written_by`)
+
+A post written by a firefly for the person who signs it may say so in an optional `written_by`
+field ([`time.md`](time.md#entries) carries the row): `{ agent: "agent:<id>", name: "<display name>" }`.
+
+- **Who the parts are.** `agent` and `name` are the firefly, as the writer's client reports it. The
+  person it wrote for is never in the field: that is whoever signs the post. A local post's signer is
+  its file's author claim; a hosted service sets the signer from the sign-in and never from the post.
+  A reader shows the two together, as in "Written by Pilot for Anna".
+- **Tolerance.** Any other shape (a string, a list, a person's address as `agent`, a blank, too long
+  or multi-line `name`, a control or format character) drops the field with warning
+  `invalid_written_by`, and the post stays valid. Other keys in the object are ignored.
+- **What it does not do.** Like `author`, it is a claim. It grants, refuses, notifies and ranks
+  nothing, and no reader resolves it to an account. A reader may use it as a hint, for example to
+  leave a firefly's post out of what wakes another firefly, but never as a control.
+- **The operation.** `parseWrittenBy` reads a `written_by` value as `parseThreadPost` does: the
+  trimmed pair, or null for any other shape. A parsed post carries it as `writtenBy`. Vectors:
+  [`../conformance/threads/written-by.json`](../conformance/threads/written-by.json).
+
 #### Unreadable posts and repair
 
 As in [`time.md`](time.md#unreadable-entries-and-repair). In a Thread a post without an `id` is
