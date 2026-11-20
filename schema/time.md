@@ -55,6 +55,7 @@ An entry MUST declare valid leading YAML frontmatter containing a non-empty stri
 | `kind` | String | What a reader acts on. A writer uses `post` (default), `reframe`, `correction` or `mark`; a label goes in `tags`. `snapshot` and `closure` are **legacy kinds**: a reader keeps acting on them (below), a writer no longer writes them. Any other value is an unknown kind: valid, kept, preserved in the DAG. The raw nonempty string is kept; `"mark "` is an unknown kind, not normalized to `mark`. |
 | `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). The authored string is kept; whitespace-only or YAML-coerced non-string values warn and are not folded. |
 | `supersedes` | String | Optional id of the entry this one supersedes, on a `correction` (or when retracting a mark). |
+| `to` | String or array of strings | Optional: who the entry asks. Each is a name as an `author` would write it (`Security`, `UI/UX`) or a typed `<type>:<id>` address (`agent:…`, `person:…`); trimmed, one line, at most 200 UTF-16 code units, repeats dropped, authored order kept, at most 20. An absent field, an empty key or an empty list names no one. A claim like `author`, compared exactly and never resolved; it grants, notifies and restricts nothing. See [`threads.md`](threads.md#who-a-post-asks-to). |
 | `closed` | Boolean | Optional. Sets the folder's closed state: `true` closes, `false` reopens. A non-boolean value warns `invalid_closed` and is dropped. A legacy `kind: closure` without the field reads as `closed: true`. |
 | `map` | Object | Optional Map block (`roots`, `members`). An entry that carries a valid Map sets the folder's current Map; see below. |
 | `parent` | String (post reference) | Optional; the Threads kind's tree edge. Grammar and resolution in [`threads.md`](threads.md). An entry that carries it sets the folder's `parent`. |
@@ -75,7 +76,7 @@ filename-only day displays as `YYYY-MM-DD`, never as an invented midnight instan
 
 A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one
 member, `references`, `supersedes`, `parent`, `about` or one of its links, `attached_to`,
-`in_reply_to`, `date`, `kind`, `mark`, or `closed`) is dropped with a warning naming the entry and the
+`in_reply_to`, `date`, `kind`, `mark`, `closed`, or `to`) is dropped with a warning naming the entry and the
 field; the entry stays valid and readable, and sets no state through the dropped field. One bad
 `about` link drops that link and warns `invalid_about`; the good links stay. A numeric-looking mark
 such as `+1` MUST be quoted as a string in YAML (`mark: '+1'`), or YAML may coerce it and the parser
