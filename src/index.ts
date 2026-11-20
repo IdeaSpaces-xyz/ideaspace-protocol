@@ -199,9 +199,15 @@ export {
 // and the Maps about one entity among the Notes a reader already holds (schema/map-about.md).
 export {
   ABOUT_POSITION_TYPES,
+  HANDLE,
+  OTHERS_LINE_LIMIT,
+  isHandle,
+  isAddressShaped,
+  parseAboutLink,
   parseAbout,
   sameEntity,
   aboutMaps,
+  readMapFromOthers,
 } from "./map-about.js";
 export type {
   AboutWarning,
@@ -211,6 +217,8 @@ export type {
   AboutMapHit,
   AboutMapsResult,
   AboutMapsOutcome,
+  MapFromOthersWarning,
+  MapFromOthers,
 } from "./map-about.js";
 export type {
   ContentTreeMemberPresentation,

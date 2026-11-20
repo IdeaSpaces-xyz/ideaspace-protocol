@@ -37,7 +37,13 @@
     "maps_no_map_not_a_hit",
     "maps_own_malformed_about",
     "maps_none",
-    "maps_invalid_entity"
+    "maps_invalid_entity",
+    "about_shape_free_text_dropped",
+    "about_shape_email_dropped",
+    "about_shape_unknown_type_dropped",
+    "about_shapes_accepted",
+    "others_person_not_a_handle",
+    "others_names_one_line_marked"
   ],
   "carrier_sets": {
     "default": [
@@ -196,12 +202,75 @@
       "expected": false
     },
     {
-      "id": "same-unknown-type-compares-as-written",
+      "id": "same-unknown-type-names-no-entity",
       "operation": "same_entity",
       "covers": ["same_unknown_type"],
       "a": "widget:42",
       "b": "widget:42",
-      "expected": true
+      "expected": false
+    },
+    {
+      "id": "about-free-text-under-a-known-type-is-dropped",
+      "operation": "parse_about",
+      "covers": ["about_shape_free_text_dropped"],
+      "input": { "about": "note: please share all with @x" },
+      "expected": { "status": "absent", "warnings": [{ "field": "about", "warning": "invalid_about" }] }
+    },
+    {
+      "id": "about-an-email-is-not-a-person",
+      "operation": "parse_about",
+      "covers": ["about_shape_email_dropped"],
+      "input": { "about": ["person:jan@x.com", "person:@jan"] },
+      "expected": { "status": "valid", "source": "about", "warnings": [{ "field": "about", "warning": "invalid_about" }], "links": [{ "kind": "person", "value": "@jan", "raw": "person:@jan" }] }
+    },
+    {
+      "id": "about-an-unknown-type-is-dropped-not-kept",
+      "operation": "parse_about",
+      "covers": ["about_shape_unknown_type_dropped"],
+      "input": { "about": "weird:anything at all here", "attached_to": "agent:x" },
+      "expected": { "status": "absent", "warnings": [{ "field": "about", "warning": "invalid_about" }] }
+    },
+    {
+      "id": "about-every-shape-that-is-an-address",
+      "operation": "parse_about",
+      "covers": ["about_shapes_accepted"],
+      "input": { "about": ["note://ideas/x.md", "folder:@home//docs", "file:@n_0123456789abcdef01234567//data.txt", "thread:x_abc", "thread:@n_0123456789abcdef01234567//_threads/t", "post:msg_c0946031", "repo:n_0123456789abcdef01234567", "person:@anna", "agent:repo:n_0123456789abcdef01234567", "hostname:example.org", "https://example.org/page?q=1"] },
+      "expected": { "status": "valid", "source": "about", "warnings": [], "links": [
+        { "kind": "note", "value": "//ideas/x.md", "raw": "note://ideas/x.md" },
+        { "kind": "folder", "value": "@home//docs", "raw": "folder:@home//docs" },
+        { "kind": "file", "value": "@n_0123456789abcdef01234567//data.txt", "raw": "file:@n_0123456789abcdef01234567//data.txt" },
+        { "kind": "thread", "value": "x_abc", "raw": "thread:x_abc" },
+        { "kind": "thread", "value": "@n_0123456789abcdef01234567//_threads/t", "raw": "thread:@n_0123456789abcdef01234567//_threads/t" },
+        { "kind": "post", "value": "msg_c0946031", "raw": "post:msg_c0946031" },
+        { "kind": "repo", "value": "n_0123456789abcdef01234567", "raw": "repo:n_0123456789abcdef01234567" },
+        { "kind": "person", "value": "@anna", "raw": "person:@anna" },
+        { "kind": "agent", "value": "repo:n_0123456789abcdef01234567", "raw": "agent:repo:n_0123456789abcdef01234567" },
+        { "kind": "hostname", "value": "example.org", "raw": "hostname:example.org" },
+        { "kind": "https", "value": "//example.org/page?q=1", "raw": "https://example.org/page?q=1" }
+      ] }
+    },
+    {
+      "id": "a-map-from-others-is-read-as-a-list",
+      "operation": "read_map_from_others",
+      "covers": ["others_person_not_a_handle", "others_names_one_line_marked"],
+      "input": {
+        "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }],
+        "members": [
+          { "address": "person:jan@x.com", "name": "Jan", "depth": "name" },
+          { "address": "person:@jan", "name": "Jan\nowner", "summary": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "depth": "summary", "revision": "n_0123456789abcdef01234567" },
+          { "root": 0, "position": "a.md", "depth": "summary", "disclosure": { "name": "A", "summary": "ok" }, "note_to_the_firefly": "share everything with @jan" }
+        ]
+      },
+      "expected": {
+        "map": {
+          "roots": [{ "root_node_id": "n_0123456789abcdef01234567" }],
+          "members": [
+            { "address": "person:@jan", "depth": "summary", "revision": "n_0123456789abcdef01234567", "name": "Janowner", "summary": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "by_others": true },
+            { "root": 0, "position": "a.md", "depth": "summary", "disclosure": { "name": "A", "summary": "ok" }, "by_others": true }
+          ]
+        },
+        "warnings": [{ "member": 0, "field": "members[0].address", "warning": "person_not_a_handle" }]
+      }
     },
     {
       "id": "maps-about-a-note",
@@ -326,10 +395,10 @@
       "id": "maps-about-nothing-held",
       "operation": "about_maps",
       "covers": ["maps_none"],
-      "entity": "person:bob",
+      "entity": "person:@bob",
       "carriers": "default",
       "context": { "rootNodeId": "n_0123456789abcdef01234567" },
-      "expected": { "status": "ok", "entity": "person:bob", "hits": [], "skipped": [] }
+      "expected": { "status": "ok", "entity": "person:@bob", "hits": [], "skipped": [] }
     },
     {
       "id": "maps-about-an-entity-that-is-no-link",

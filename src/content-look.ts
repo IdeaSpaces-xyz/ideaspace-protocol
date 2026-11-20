@@ -29,7 +29,7 @@ import {
 } from "./maps.js";
 import { classifyRepositoryPath } from "./repository-path.js";
 import { readRepositoryImage } from "./repository-image.js";
-import { parseAbout } from "./map-about.js";
+import { parseAbout, readMapFromOthers } from "./map-about.js";
 import type { RepositoryImageMediaType, RepositoryImageProblemCode } from "./assets.js";
 import type { ContentRepresentation, ContractSource } from "./agreement.js";
 
@@ -54,6 +54,13 @@ export interface AssembleContentLookOpts {
   order?: "older" | "newer";
   /** Select one post by full msg_ id or a unique eight-hex msg_ shorthand. */
   postId?: string;
+  /**
+   * The authors on the person's own side: the person and their own agents, as the host names them.
+   * When given, the Map carried by an entry whose `author` is not among them is read as a list from
+   * others (`schema/map-about.md`): handles only, names one line and marked `by_others`. Absent, every
+   * target is read as the person's own, which is right for the files of their own Space.
+   */
+  ownSide?: readonly string[];
 }
 
 /**
@@ -147,6 +154,8 @@ export interface ContentLookCarriedMap {
   roots: number;
   members: number;
   block?: MapBlock;
+  /** The Map was posted by someone not on the person's own side: read as a list, never reach. */
+  by_others?: true;
 }
 
 export interface ContentLookManifest {
@@ -245,7 +254,7 @@ export async function assembleContentLook(
   }
 
   const target = kind === "markdown"
-    ? await readMarkdownTarget(path, position, depth)
+    ? await readMarkdownTarget(path, position, depth, opts.ownSide)
     : await readDirectoryTarget(
         path,
         position,
@@ -354,6 +363,7 @@ async function readMarkdownTarget(
   path: string,
   position: string,
   depth: MapDepth,
+  ownSide?: readonly string[],
 ): Promise<ContentLookTarget> {
   const source = await fs.readFile(path, "utf-8");
   const isPost = isThreadPostPosition(position);
@@ -390,7 +400,9 @@ async function readMarkdownTarget(
   const target = baseTarget(path, position, "markdown", depth, name, summary);
   if (warnings?.length) target.warnings = warnings;
   if (post) target.post = post;
-  describeCarried(target, frontmatter);
+  // An entry by someone not on the person's own side carries a Map that is read as a list from others.
+  const fromOthers = ownSide !== undefined && post !== undefined && !(post.author !== undefined && ownSide.includes(post.author));
+  describeCarried(target, frontmatter, fromOthers);
 
   if (depth === "surface" || depth === "full") {
     target.surface = stripFrontmatter(source);
@@ -669,7 +681,7 @@ function finishTarget(target: ContentLookTarget): ContentLookTarget {
  * `about` or `map` is a warning naming the field, never a failed look; a warning the entry reader
  * already raised for the same field is not raised twice.
  */
-function describeCarried(target: ContentLookTarget, frontmatter: Record<string, unknown> | null): void {
+function describeCarried(target: ContentLookTarget, frontmatter: Record<string, unknown> | null, fromOthers = false): void {
   if (target.depth === "name" || !frontmatter) return;
   const warnings: NonNullable<ContentLookTarget["warnings"]> = [];
   const about = parseAbout(frontmatter);
@@ -680,11 +692,14 @@ function describeCarried(target: ContentLookTarget, frontmatter: Record<string, 
   if ("map" in frontmatter) {
     const parsed = parseMap(frontmatter.map);
     if (parsed.status === "valid") {
+      const read = fromOthers ? readMapFromOthers(parsed.map) : { map: parsed.map, warnings: [] };
       target.map = {
-        roots: parsed.map.roots.length,
-        members: parsed.map.members.length,
-        ...(target.depth === "children" || target.depth === "full" ? { block: parsed.map } : {}),
+        roots: read.map.roots.length,
+        members: read.map.members.length,
+        ...(target.depth === "children" || target.depth === "full" ? { block: read.map } : {}),
+        ...(fromOthers ? { by_others: true as const } : {}),
       };
+      for (const warning of read.warnings) warnings.push({ post: target.position, field: `map.${warning.field}`, warning: warning.warning });
     } else if (parsed.status === "invalid") {
       warnings.push({ post: target.position, field: "map", warning: "invalid_map" });
     }
@@ -752,7 +767,7 @@ function renderTarget(target: ContentLookTarget): string {
   if (target.image?.status === "ok") lines.push(`  image: ${target.image.path} (${target.image.mediaType})`);
   else if (target.image) lines.push(`  image: not shown (${target.image.code}): ${target.image.message}`);
   if (target.about) lines.push(`  about: ${target.about.join(", ")}`);
-  if (target.map) lines.push(`  map: ${target.map.members} ${target.map.members === 1 ? "member" : "members"}, ${target.map.roots} ${target.map.roots === 1 ? "root" : "roots"}`);
+  if (target.map) lines.push(`  map: ${target.map.members} ${target.map.members === 1 ? "member" : "members"}, ${target.map.roots} ${target.map.roots === 1 ? "root" : "roots"}${target.map.by_others ? ", by others" : ""}`);
   if (target.warnings?.length) {
     lines.push("", "Warnings:");
     for (const warning of target.warnings) lines.push(`  ${warning.post}: ${warning.field}: ${warning.warning}`);

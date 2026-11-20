@@ -2,12 +2,16 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   ABOUT_POSITION_TYPES,
+  OTHERS_LINE_LIMIT,
   aboutMaps,
+  isHandle,
   parseAbout,
+  readMapFromOthers,
   sameEntity,
   type AboutContext,
   type AboutMapCarrier,
 } from "./map-about.js";
+import type { MapBlock } from "./maps.js";
 import { parseFrontmatter } from "./frontmatter.js";
 import { checkVerbAnswer, SAID_FORBIDDEN_WORDS, type VerbAnswer } from "./verbs.js";
 
@@ -21,7 +25,10 @@ interface AboutMapsVector {
   id: string; operation: "about_maps"; covers: string[]; entity: string; carriers: string; context?: AboutContext;
   expected: ReturnType<typeof aboutMaps>;
 }
-type AboutVector = ParseAboutVector | SameEntityVector | AboutMapsVector;
+interface ReadFromOthersVector {
+  id: string; operation: "read_map_from_others"; covers: string[]; input: MapBlock; expected: ReturnType<typeof readMapFromOthers>;
+}
+type AboutVector = ParseAboutVector | SameEntityVector | AboutMapsVector | ReadFromOthersVector;
 
 const mapsManifest = JSON.parse(
   readFileSync(new URL("../conformance/maps/manifest.json", import.meta.url), "utf-8"),
@@ -56,6 +63,10 @@ describe("Map about vectors", () => {
       } else if (vector.operation === "same_entity") {
         expect(sameEntity(vector.a, vector.b, vector.context)).toBe(vector.expected);
         expect(sameEntity(vector.b, vector.a, vector.context)).toBe(vector.expected);
+      } else if (vector.operation === "read_map_from_others") {
+        const frozen = Object.freeze(JSON.parse(JSON.stringify(vector.input)) as MapBlock);
+        expect(readMapFromOthers(frozen)).toEqual(vector.expected);
+        expect(frozen).toEqual(vector.input);
       } else {
         const carriers = manifest.carrier_sets[vector.carriers];
         expect(carriers, `carrier set ${vector.carriers}`).toBeDefined();
@@ -78,6 +89,31 @@ describe("parseAbout over a real Note", () => {
   it("treats a non-object as about nothing, without a warning", () => {
     expect(parseAbout(null)).toEqual({ status: "absent", warnings: [] });
     expect(parseAbout(["about"])).toEqual({ status: "absent", warnings: [] });
+  });
+});
+
+describe("shapes", () => {
+  it("knows a handle by shape and nothing else", () => {
+    expect(isHandle("@anna")).toBe(true);
+    expect(isHandle("@a-b_c9")).toBe(true);
+    expect(isHandle("anna")).toBe(false);
+    expect(isHandle("@jan@x.com")).toBe(false);
+    expect(isHandle("@" + "a".repeat(40))).toBe(false);
+    expect(isHandle("@Anna Smith")).toBe(false);
+  });
+
+  it("drops a URL with a space or a control character, and a host that is not one", () => {
+    expect(parseAbout({ about: "https://example.org/a page" })).toEqual({ status: "absent", warnings: [{ field: "about", warning: "invalid_about" }] });
+    expect(parseAbout({ about: "https://example.org/a" + String.fromCharCode(0x2028) + "b" })).toEqual({ status: "absent", warnings: [{ field: "about", warning: "invalid_about" }] });
+    expect(parseAbout({ about: "hostname:not a host" })).toEqual({ status: "absent", warnings: [{ field: "about", warning: "invalid_about" }] });
+    expect(parseAbout({ about: "agent:say hello" })).toEqual({ status: "absent", warnings: [{ field: "about", warning: "invalid_about" }] });
+  });
+
+  it("removes the line and paragraph separators from others' names and cuts at the limit", () => {
+    const name = "a" + String.fromCharCode(0x2028) + "b" + String.fromCharCode(0x2029) + "c" + String.fromCharCode(0x202e) + "d";
+    const read = readMapFromOthers({ roots: [], members: [{ address: "hostname:example.org", name, summary: "y".repeat(OTHERS_LINE_LIMIT + 1) }] });
+    expect(read.map.members[0]).toEqual({ address: "hostname:example.org", name: "abcd", summary: "y".repeat(OTHERS_LINE_LIMIT), by_others: true });
+    expect(read.warnings).toEqual([]);
   });
 });
 

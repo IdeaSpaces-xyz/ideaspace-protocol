@@ -779,14 +779,24 @@ export interface CurrentMapOptions {
   keeping?: TimeKeeping;
   /** The folder's portable position; default the canonical Thread rule. See {@link isEntryPath}. */
   folder?: string;
+  /**
+   * The authors whose Maps count: the person and their own agents, as the host names them. When
+   * given, an entry by anyone else that carries a Map is passed over and named `from_others`, so
+   * the Map returned is the newest from the person's own side (`schema/map-about.md`). The
+   * `author` field is the entry's claim; the host decides whose claim it counts.
+   */
+  authors?: readonly string[];
 }
 
 /** An entry newer than the chosen one that might have carried the current Map but cannot be read as one. */
 export interface CurrentMapSkip {
   path: string;
   id?: string;
-  /** `invalid_map`: an entry whose Map block failed to parse. `unreadable`: the entry itself did not parse. */
-  reason: "invalid_map" | "unreadable" | "snapshot_requires_map";
+  /**
+   * `invalid_map`: an entry whose Map block failed to parse. `unreadable`: the entry itself did not
+   * parse. `from_others`: an entry carrying a Map whose author is not among the `authors` that count.
+   */
+  reason: "invalid_map" | "unreadable" | "snapshot_requires_map" | "from_others";
 }
 
 /** The Map a folder stands on now, and the entry it came from. */
@@ -858,6 +868,10 @@ export function currentMap(
       if (parsed.post.kind === "snapshot") {
         skipped.push({ path: parsed.post.path, id: parsed.post.id, reason: "snapshot_requires_map" });
       }
+      return undefined;
+    }
+    if (options.authors && !(typeof parsed.post.frontmatter.author === "string" && options.authors.includes(parsed.post.frontmatter.author))) {
+      skipped.push({ path: parsed.post.path, id: parsed.post.id, reason: "from_others" });
       return undefined;
     }
     if (map === "invalid") {

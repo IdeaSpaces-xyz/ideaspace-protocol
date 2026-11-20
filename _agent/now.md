@@ -20,7 +20,12 @@ their firefly read the same Map first. A Thread's Map holds the other players (t
 "a map of other players, repos, knowledge, pages, people, fireflies, whatever"): a person as
 `person:@<handle>`, a handle by shape and never an email, a firefly as its repository; inviting
 someone adds them to it after the service confirms who, and a member seen in a Map never counts as
-named by the person (Security's list rules of #111). Content look reports `about` and the carried
+named by the person (Security's list rules of #111). Security's read (2026-11-20): for reach only
+the newest Map from the person's own side counts (`currentThreadMap`'s `authors`, `from_others`);
+an invite builds on that Map; a Map from others is checked when read (`readMapFromOthers`: handles
+only, names one line and marked `by_others`); `about` is an address or nothing (`isAddressShaped`);
+a knock Thread's `about` is set by the service from the item, and its opening Map carries only the
+landing's title and summary. Content look reports `about` and the carried
 `map` from `summary` upward and the block at `children` and `full`. The human's words: 2026-11-19
 ("Map can be attached to anything we have… Any message has one and we start to explore together")
 and 2026-11-20 ("map should be something we can attach to (about) to any note/folder or anything").

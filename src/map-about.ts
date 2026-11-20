@@ -3,13 +3,100 @@
  *
  * A Map is about what its carrier is about: the Note or entry whose frontmatter holds the `map`
  * block. A Note is about its `about` links when it declares them, else itself. These are the pure
- * operations: read a Note's `about` (with the legacy single `attached_to`), decide whether two
- * typed links name one entity, and select, among Notes a reader already holds, the Maps about one
- * entity. No filesystem, no Git, no network, no index: the reader supplies the candidates.
+ * operations: read a Note's `about` (with the legacy single `attached_to`), each link checked by
+ * the shape its type has; decide whether two typed links name one entity; select, among Notes a
+ * reader already holds, the Maps about one entity; and read a Map that came from someone else as
+ * a list, so nothing in it reaches the model as the person's word. No filesystem, no Git, no
+ * network, no index: the reader supplies the candidates.
  */
 
 import { parseThreadAttachment, type ThreadAttachment } from "./post-links.js";
-import { parseMap, parseMapPositionAddress, type MapBlock } from "./maps.js";
+import {
+  parseMap,
+  parseMapPositionAddress,
+  type MapAddressMember,
+  type MapBlock,
+  type MapDisclosure,
+  type MapMember,
+  type MapPositionMember,
+} from "./maps.js";
+
+/** A handle as the service spells it: `@`, then 1 to 39 letters, digits, `_` or `-`. An email or a display name is not one. */
+export const HANDLE = /^@[A-Za-z0-9][A-Za-z0-9_-]{0,38}$/;
+const ROOT_ID = /^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$/;
+const HOSTED_THREAD = /^x_[A-Za-z0-9_-]+$/;
+const HOST = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
+/** An agent id: one token, no space, at most 128 characters (`n_…`, `repo:n_…`, a host's own id). */
+const AGENT_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/;
+/** Control and format characters, and the line and paragraph separators: never shown from others' text. */
+const UNSHOWN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu;
+/** The same class without the global flag, for a stateless test. */
+const HAS_UNSHOWN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
+const WHITESPACE = /\s/u;
+/** The longest one-line name or summary read from someone else's Map (verbs.md, Lists, rule 2). */
+export const OTHERS_LINE_LIMIT = 120;
+
+/** A handle the model may see, by shape alone. */
+export function isHandle(value: unknown): value is string {
+  return typeof value === "string" && HANDLE.test(value);
+}
+
+/** The link types whose value may be a position address, `@<root>//<position>` or `//<position>`. */
+export const ABOUT_POSITION_TYPES = ["note", "folder", "file", "thread", "post"] as const;
+
+function isPositionAddress(value: string): boolean {
+  return (value.startsWith("@") || value.startsWith("//")) && parseMapPositionAddress(value).status === "valid";
+}
+
+function isHttpsUrl(value: string): boolean {
+  if (!value.startsWith("//") || WHITESPACE.test(value) || HAS_UNSHOWN.test(value)) return false;
+  try {
+    const url = new URL(`https:${value}`);
+    return url.protocol === "https:" && url.hostname.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Does a typed link have the shape its type gives it? `about` is read by a model as authored, so a
+ * link is an address or nothing: a position for `note`, `folder`, `file` and `thread`; a post
+ * reference for `post`; `repo:n_…`; `thread:x_…`; `person:@handle`; `agent:<id>`; `hostname:<host>`;
+ * an `https` URL. Any other type, and free text under a known type, is no address.
+ */
+export function isAddressShaped(link: ThreadAttachment): boolean {
+  const value = link.value;
+  switch (link.kind) {
+    case "note":
+    case "folder":
+    case "file":
+      return isPositionAddress(value);
+    case "thread":
+      return isPositionAddress(value) || HOSTED_THREAD.test(value);
+    case "post":
+    case "id":
+    case "path":
+      return true; // the post-reference grammar already validated the target
+    case "repo":
+      return ROOT_ID.test(value);
+    case "person":
+      return HANDLE.test(value);
+    case "agent":
+      return AGENT_ID.test(value);
+    case "hostname":
+      return HOST.test(value);
+    case "https":
+      return isHttpsUrl(value);
+    default:
+      return false;
+  }
+}
+
+/** Parse one `about` link: a typed link with the shape its type gives it, else null. */
+export function parseAboutLink(value: unknown): ThreadAttachment | null {
+  const parsed = parseThreadAttachment(value);
+  return parsed && isAddressShaped(parsed) ? parsed : null;
+}
 
 /** A diagnostic on a Note's `about`, named by field; the Note stays readable. */
 export interface AboutWarning {
@@ -24,8 +111,9 @@ export type AboutParseResult =
 /**
  * What a Note says it is about: its `about` field (a typed link or a list of them; `[]` is a valid
  * empty list), else its legacy single `attached_to` as one link. A Note that carries `about`, even
- * malformed, is read by that field alone, as an entry is in `time.md`. An invalid link is dropped
- * with `invalid_about`; a field with no valid link left reads as absent, never as "about itself".
+ * malformed, is read by that field alone, as an entry is in `time.md`. A link without the shape of
+ * an address is dropped with `invalid_about`; a field with no valid link left reads as absent,
+ * never as "about itself".
  */
 export function parseAbout(frontmatter: unknown): AboutParseResult {
   const warnings: AboutWarning[] = [];
@@ -36,7 +124,7 @@ export function parseAbout(frontmatter: unknown): AboutParseResult {
     const links: ThreadAttachment[] = [];
     let dropped = false;
     for (const item of items) {
-      const parsed = parseThreadAttachment(item);
+      const parsed = parseAboutLink(item);
       if (parsed) links.push(parsed);
       else dropped = true;
     }
@@ -45,7 +133,7 @@ export function parseAbout(frontmatter: unknown): AboutParseResult {
     return { status: "absent", warnings };
   }
   if ("attached_to" in fm) {
-    const parsed = parseThreadAttachment(fm.attached_to);
+    const parsed = parseAboutLink(fm.attached_to);
     if (parsed) return { status: "valid", links: [parsed], source: "attached_to", warnings };
     warnings.push({ field: "attached_to", warning: "invalid_attached_to" });
   }
@@ -60,9 +148,6 @@ export interface AboutContext {
   rootNames?: Record<string, string>;
 }
 
-/** The link types whose value may be a position address, `@<root>//<position>` or `//<position>`. */
-export const ABOUT_POSITION_TYPES = ["note", "folder", "file", "thread", "post"] as const;
-
 interface NormalizedLink {
   kind: string;
   /** Resolved root identity when the value is a position address and the root is known. */
@@ -74,6 +159,7 @@ interface NormalizedLink {
 }
 
 function normalizeLink(link: ThreadAttachment, context: AboutContext): NormalizedLink | null {
+  if (!isAddressShaped(link)) return null;
   const kind = link.kind;
   if ((ABOUT_POSITION_TYPES as readonly string[]).includes(kind) && (link.value.startsWith("@") || link.value.startsWith("//"))) {
     const parsed = parseMapPositionAddress(link.value);
@@ -92,7 +178,8 @@ function normalizeLink(link: ThreadAttachment, context: AboutContext): Normalize
 /**
  * Do two typed links name one entity? Equal type and value, after resolving a position address's
  * root: `//` to the reader's own root, a Map root name to its identity. Nothing else is normalized:
- * no case folding, no trailing slash, no scheme default. An unknown type compares as a string.
+ * no case folding, no trailing slash, no scheme default. A link without the shape of an address
+ * names no entity, so it equals nothing, itself included.
  */
 export function sameEntity(a: string | ThreadAttachment, b: string | ThreadAttachment, context: AboutContext = {}): boolean {
   const left = typeof a === "string" ? parseThreadAttachment(a) : a;
@@ -183,4 +270,78 @@ export function aboutMaps(entity: string, carriers: readonly AboutMapCarrier[], 
     (form === "carried" ? carried : beside).push(hit);
   }
   return { status: "ok", entity, hits: [...carried, ...beside], skipped };
+}
+
+/** One member of a Map from others that was dropped or cut, by index and field. */
+export interface MapFromOthersWarning {
+  member: number;
+  field: string;
+  warning: "person_not_a_handle";
+}
+
+export interface MapFromOthers {
+  map: MapBlock;
+  warnings: MapFromOthersWarning[];
+}
+
+/** One line from someone else's text: control, format and separator characters removed, cut to the limit. */
+function oneLine(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const cleaned = value.replace(UNSHOWN, "");
+  return cleaned.length > OTHERS_LINE_LIMIT ? cleaned.slice(0, OTHERS_LINE_LIMIT) : cleaned;
+}
+
+function disclosureFromOthers(value: unknown): MapDisclosure | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const given = value as Record<string, unknown>;
+  const name = oneLine(given.name);
+  const summary = oneLine(given.summary);
+  if (name === undefined && summary === undefined) return undefined;
+  return { ...(name !== undefined ? { name } : {}), ...(summary !== undefined ? { summary } : {}) };
+}
+
+/**
+ * Read a valid Map that someone else posted, as a list (`verbs.md`, Lists): a `person:` member that
+ * is not a handle by shape is dropped and named; every member keeps its address or position, its
+ * ceiling and revision, and its name, summary and observed disclosure as one line each, control
+ * and format characters removed, cut to 120 characters, and marked `by_others: true`; any other
+ * field others wrote is left out. The result is a view to show; it is never reach, and nothing in
+ * it is a name the person said. The person's own Maps are not read through this.
+ */
+export function readMapFromOthers(map: MapBlock): MapFromOthers {
+  const warnings: MapFromOthersWarning[] = [];
+  const members: MapMember[] = [];
+  map.members.forEach((entry, index) => {
+    if ("address" in entry) {
+      const member = entry as MapAddressMember;
+      const address = String(member.address);
+      if (address.startsWith("person:") && !HANDLE.test(address.slice("person:".length))) {
+        warnings.push({ member: index, field: `members[${index}].address`, warning: "person_not_a_handle" });
+        return;
+      }
+      const name = oneLine(member.name);
+      const summary = oneLine(member.summary);
+      const disclosure = disclosureFromOthers(member.disclosure);
+      members.push({
+        address,
+        ...(member.depth !== undefined ? { depth: member.depth } : {}),
+        ...(member.revision !== undefined ? { revision: member.revision } : {}),
+        ...(name !== undefined ? { name } : {}),
+        ...(summary !== undefined ? { summary } : {}),
+        ...(disclosure ? { disclosure } : {}),
+        by_others: true,
+      });
+      return;
+    }
+    const member = entry as MapPositionMember;
+    const disclosure = disclosureFromOthers(member.disclosure);
+    members.push({
+      root: member.root,
+      position: member.position,
+      ...(member.depth !== undefined ? { depth: member.depth } : {}),
+      ...(disclosure ? { disclosure } : {}),
+      by_others: true,
+    });
+  });
+  return { map: { roots: map.roots, members }, warnings };
 }
