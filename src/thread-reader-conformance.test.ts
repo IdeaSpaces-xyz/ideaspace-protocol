@@ -54,12 +54,14 @@ beforeAll(async () => {
 afterAll(async () => { await rm(temp, { recursive: true, force: true }); });
 
 describe("Thread and agent-context reader conformance", () => {
-  it("publishes a complete five-rung matrix for folder, README, post and _agent", () => {
+  it("publishes a complete five-rung matrix for folder, README, post, a Note in notes/ and _agent", () => {
     expect(manifest.format).toBe("ideaspaces-thread-reader/v1");
     expect(manifest.depths).toEqual(["name", "summary", "surface", "children", "full"]);
     expect(manifest.targets.map((target) => target.id)).toEqual([
-      "folder", "readme", "post", "agent-file", "agent-directory",
+      "folder", "readme", "post", "notes-file", "agent-file", "agent-directory",
     ]);
+    // The fixture's notes/ folder holds a Note, and the folder target's children are still only its posts.
+    expect(manifest.targets[0]?.children?.some((child) => child.includes("/notes/"))).toBe(false);
   });
 
   for (const target of manifest.targets) {

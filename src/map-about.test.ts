@@ -4,7 +4,6 @@ import {
   ABOUT_POSITION_TYPES,
   OTHERS_LINE_LIMIT,
   aboutMaps,
-  isHandle,
   parseAbout,
   readMapFromOthers,
   sameEntity,
@@ -12,6 +11,7 @@ import {
   type AboutMapCarrier,
 } from "./map-about.js";
 import type { MapBlock } from "./maps.js";
+import { isHandle } from "./verbs.js";
 import { parseFrontmatter } from "./frontmatter.js";
 import { checkVerbAnswer, SAID_FORBIDDEN_WORDS, type VerbAnswer } from "./verbs.js";
 

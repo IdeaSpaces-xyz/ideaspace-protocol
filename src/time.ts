@@ -82,6 +82,11 @@ export interface EntryFrontmatter {
   attached_to?: string;
   /** Superseded entry id when kind is "correction" or retracting a mark. */
   supersedes?: string;
+  /**
+   * Who the entry asks: one addressee or a list. Each is a name as an author would write it or a
+   * typed `<type>:<id>` address, claimed as `author` is. It grants, notifies and restricts nothing.
+   */
+  to?: string | string[];
   /** Sets the folder's closed state: `true` closes, `false` reopens. A legacy `kind: closure` reads as `true`. */
   closed?: boolean;
   /** Optional Map block capturing citations and coordinates. An entry that carries one sets the current Map. */
@@ -144,6 +149,8 @@ export interface Entry {
   /** The authored legacy `attached_to`, kept as written. Readers act on `parent` and `about`. */
   attachedTo?: ThreadAttachment;
   supersedes?: string;
+  /** Addressees from `to`, trimmed, in authored order without repeats. Absent when no one is named. */
+  to?: string[];
   /** The closed state this entry sets: its boolean `closed` field, else `true` for a legacy `kind: closure`. Absent when it sets none. */
   closed?: boolean;
   mapResult?: MapParseResult;
@@ -306,6 +313,17 @@ export function parseEntry(content: string, path: string = "", options: ParseEnt
     }
   }
 
+  // `to`: who the entry asks. A malformed value drops the whole field; an empty one names no one.
+  let to: string[] | undefined;
+  if ("to" in fm && fm.to !== null && fm.to !== undefined) {
+    const named = parseAddressees(fm.to);
+    if (named) {
+      if (named.length) to = named;
+    } else {
+      warnings.push({ field: "to", warning: "invalid_to" });
+    }
+  }
+
   // `closed` is the field; `kind: closure` is its legacy form. An entry that carries the field is
   // read by it alone, so a dropped malformed field sets nothing even on a closure.
   let closed: boolean | undefined;
@@ -409,11 +427,35 @@ export function parseEntry(content: string, path: string = "", options: ParseEnt
     ...(about ? { about } : {}),
     ...(attachedTo ? { attachedTo } : {}),
     ...(supersedes ? { supersedes } : {}),
+    ...(to ? { to } : {}),
     ...(closed !== undefined ? { closed } : {}),
     ...(mapResult ? { mapResult } : {}),
   };
 
   return { status: "valid", post };
+}
+
+/** The longest addressee a reader keeps, in UTF-16 code units, and the most addressees on one entry. */
+export const ADDRESSEE_MAX_LENGTH = 200;
+export const ADDRESSEES_MAX = 20;
+
+/**
+ * Parse an entry's `to`: a string or a list of strings, each nonempty after trimming, one line, at
+ * most {@link ADDRESSEE_MAX_LENGTH} long; at most {@link ADDRESSEES_MAX} distinct. Returns the
+ * trimmed addressees in authored order without repeats (an empty list names no one), or null when
+ * the value is not that shape. Pure: addressees are claims, compared exactly and never resolved.
+ */
+export function parseAddressees(value: unknown): string[] | null {
+  const list = typeof value === "string" ? [value] : Array.isArray(value) ? value : null;
+  if (!list) return null;
+  const named: string[] = [];
+  for (const entry of list) {
+    if (typeof entry !== "string") return null;
+    const trimmed = entry.trim();
+    if (!trimmed || /[\r\n]/.test(trimmed) || trimmed.length > ADDRESSEE_MAX_LENGTH) return null;
+    if (!named.includes(trimmed)) named.push(trimmed);
+  }
+  return named.length > ADDRESSEES_MAX ? null : named;
 }
 
 /** One caller-supplied entry file. The protocol never reads the filesystem for these operations. */

@@ -21,8 +21,8 @@ import {
   type MapPositionMember,
 } from "./maps.js";
 
-/** A handle as the service spells it: `@`, then 1 to 39 letters, digits, `_` or `-`. An email or a display name is not one. */
-export const HANDLE = /^@[A-Za-z0-9][A-Za-z0-9_-]{0,38}$/;
+import { isHandle } from "./verbs.js";
+
 const ROOT_ID = /^n_(?:[0-9a-f]{12}|[0-9a-f]{24})$/;
 const HOSTED_THREAD = /^x_[A-Za-z0-9_-]+$/;
 const HOST = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;
@@ -35,11 +35,6 @@ const HAS_UNSHOWN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
 const WHITESPACE = /\s/u;
 /** The longest one-line name or summary read from someone else's Map (verbs.md, Lists, rule 2). */
 export const OTHERS_LINE_LIMIT = 120;
-
-/** A handle the model may see, by shape alone. */
-export function isHandle(value: unknown): value is string {
-  return typeof value === "string" && HANDLE.test(value);
-}
 
 /** The link types whose value may be a position address, `@<root>//<position>` or `//<position>`. */
 export const ABOUT_POSITION_TYPES = ["note", "folder", "file", "thread", "post"] as const;
@@ -80,7 +75,7 @@ export function isAddressShaped(link: ThreadAttachment): boolean {
     case "repo":
       return ROOT_ID.test(value);
     case "person":
-      return HANDLE.test(value);
+      return isHandle(value); // the one handle check, verbs.md's, shared with lists and access
     case "agent":
       return AGENT_ID.test(value);
     case "hostname":
@@ -315,7 +310,7 @@ export function readMapFromOthers(map: MapBlock): MapFromOthers {
     if ("address" in entry) {
       const member = entry as MapAddressMember;
       const address = String(member.address);
-      if (address.startsWith("person:") && !HANDLE.test(address.slice("person:".length))) {
+      if (address.startsWith("person:") && !isHandle(address.slice("person:".length))) {
         warnings.push({ member: index, field: `members[${index}].address`, warning: "person_not_a_handle" });
         return;
       }

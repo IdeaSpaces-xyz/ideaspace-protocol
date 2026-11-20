@@ -34,7 +34,32 @@ The contract is [`schema/map-about.md`](../schema/map-about.md); vectors
 person reads are AX's, in its The words table: counts, never a member's name. The browser (0.9.24) and grants are named as not
 yet. Drafted for the human, AX and Security to read; no tag or release is part of this change.
 
-## The four verbs, v0.34.0 (draft, spec/four-verbs)
+## Who a post asks: `to` (rebased from #96)
+
+Any entry may name who it asks in an optional `to` field: one name or a list, each a name as an
+`author` would write it or a typed `<type>:<id>` address, trimmed, one line, at most 200 units,
+repeats dropped, at most 20; a malformed value warns `invalid_to` and the post stays valid. A claim
+like `author`, never resolved; it grants, notifies and restricts nothing. The human, 2026-11-09.
+Approved as #96 on 0.32.0 and rebased onto 0.33.0: the field lives in `time.ts` beside the other
+entry fields, `parseAddressees` is exported under the Thread names too, `verbs.md` lists `to` on a
+`post` entry, and the 18 vectors are unchanged in `conformance/threads/addressees.json`. No tag or
+release.
+
+## Lists and readers (draft, spec/remote-entities)
+
+`map` from `ideaspaces`, an org (`hostname:<host>`) or a person (`person:<handle>`) is a list:
+Personal, each org, Shared with you; an org's Spaces; what a person shared. `look` at a service
+address carries `access`, who can read the item, only when the person manages it. Security's
+conditions are requirements with vectors: seeing is not reaching (`context.listed` is consulted for
+nothing), fields only with names cut to 120 characters and marked `by_others`, no lists for listeners
+or launched children (`context.lists`, `no_lists`), handles by shape and never an email or a display
+name, pending as a count, and accepted shares only. Security's round 2 added: `access` is a list too
+(`access_without_lists` for a listener or a child), list starts by shape (`person:` a handle,
+`hostname:` a host), names free of every control and format character, fixed shapes for `address`,
+`kind` (a closed set), `level` and `time`, and two named host tests. Scout's additions 1 and 2,
+placed by the human 2026-11-17 18:31. The five new `said` rows are marked for AX. No tag or release is part of this change.
+
+## The four verbs, v0.34.0 (spec/four-verbs, merged 03c7e52)
 
 An agent works an ideaspace with four verbs, the ones a person names: `map`, `look`, `post`,
 `write`, spelled `ideaspaces <verb>`, `mcp__ideaspaces__<verb>` and `ideaspaces_<verb>` on the

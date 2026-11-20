@@ -87,7 +87,7 @@ maps), and the other fields are the verb's. An address is one of three forms, to
 
 | Field | Shape | Meaning |
 |---|---|---|
-| `start` | address | where to map from; `ideaspaces` maps the account's reach. At an entity, `read` gives its **about-Map** ([`map-about.md`](map-about.md)): its carried Map, a Thread's current Map, else the beside Maps the host holds, else the Content tree; `facts.path` names the carrier |
+| `start` | address | where to map from. Three starts are **lists** (below): `ideaspaces`, the person's account; `hostname:<host>`, an org the person belongs to; `person:<handle>`, a person. At any other entity, `read` gives its **about-Map** ([`map-about.md`](map-about.md)): its carried Map, a Thread's current Map, else the beside Maps the host holds, else the Content tree; `facts.path` names the carrier |
 | `request` | `read` (default), `create`, `add`, `remove` | read is what is there; the others change a curated Map or a Space's Map |
 | `depth` | one of the five rungs | a ceiling for the handles returned; default `summary` |
 | `kind` | string | optional filter on what `ideaspaces` lists (`repos`, `threads`, `spaces`) |
@@ -109,6 +109,15 @@ remote path. `look` never writes. From `summary` upward the look carries what th
 and the Map it carries ([`map-about.md`](map-about.md#how-look-and-map-show-it)); the `said`
 sentences for those cases are AX's, in [The words](map-about.md#the-words) there.
 
+A `look` at a service address answers one more fact, **`access`: who can read this item**. It is
+filled only when the person **manages** the item and the service answered; for anything else it is
+the literal `not_checked`, never a guess; and it is a **list** (below), so it is filled only in a
+conversation with the person (`context.lists: true`) and is `not_checked` for a listener or a
+launched child, whatever they may `look` at. Its shape is closed: `{ public, people: [{ who, level }],
+teams: [{ hostname, level }], pending }`, where `who` is a handle by shape, `level` the grade in the
+service's word, and `pending` a **count** of invitations not yet accepted. No email, no display
+name, no invitation address ever appears (the rules under Lists).
+
 ### `post`
 
 ```json
@@ -121,7 +130,7 @@ not the kind's is refused `unexpected_field`, a missing one `missing_field`, an 
 
 | `request` | Required | Optional | What it does |
 |---|---|---|---|
-| `entry` | `target`, `body` | `reply_to` (one id or a list), `kind` (`post`, `reframe`, `correction`, `mark`), `mark`, `supersedes`, `name`, `summary`, `map`, `tags`, `parent`, `about`, `closed`, `author` | one immutable entry under [`time.md`](time.md). Local: written, then added to history on its own, that one file, never pushed. Hosted (`thread:x_…`): sent, not retried |
+| `entry` | `target`, `body` | `reply_to` (one id or a list), `kind` (`post`, `reframe`, `correction`, `mark`), `mark`, `supersedes`, `to` (who the entry asks: one name or a list), `name`, `summary`, `map`, `tags`, `parent`, `about`, `closed`, `author` | one immutable entry under [`time.md`](time.md). Local: written, then added to history on its own, that one file, never pushed. Hosted (`thread:x_…`): sent, not retried |
 | `start_thread` | `name` | `target` (a folder, or `ideaspaces`), `summary`, `body`, `with` (one person), `parent`, `about`, `map` | opens a Thread: locally its folder, Agreement, README and opening post; on a service, a hosted Thread |
 | `share` | `target`, `with` | `grade` | asks the service to let one person (`with`, a handle or email) read `target`. `grade` is a grantable level the service names ([`access.md`](access.md)); left out, the service grants its **lowest** level; given, it is a word the person said (guard 1). History is never shared by this call |
 | `revoke` | `target`, `from` | — | **take back**: ends what `from` was given on `target`. By the person only (guard 3); the person's own take back is checked against nothing else, so it always works |
@@ -209,6 +218,8 @@ this page.
 | `until` | ISO instant | `limit_reached` | when the refused act is allowed again |
 | `look` | a Content-look target | `look` | the representation, as [`content-look.md`](content-look.md) defines it |
 | `map` | a Map block or handles | `map` | the view, as [`maps.md`](maps.md) and [`map-projection.md`](map-projection.md) define it |
+| `list` | `[{ address, kind, level?, who?, time?, name?, by_others? }]` | `map` from a list start | what is there, as fields only (Lists, below); a `name` is one line, at most 120 characters, and carries `by_others: true` |
+| `access` | `{ public, people: [{ who, level }], teams: [{ hostname, level }], pending }` or `not_checked` | `look` at a service address | who can read the item, only when the person manages it |
 | `page` | `{ total, shown, order, nextCursor? }` | paged `look`, `map` | the page |
 | `warnings` | `[{ field, warning }]` | any | field-tolerant diagnostics, as the reader names them |
 | `reason_code` | `snake_case` | `refused`, `partial` | why, from this page or [`local-effects.md`](local-effects.md) |
@@ -238,6 +249,7 @@ act is the person's alone), `next` is `null` and `said` tells the agent to tell 
 | `person_only` | `revoke` | only the person takes back | `null` |
 | `limit_reached` | the acts that widen who can read | the day's count is used; `until` says when | `null` |
 | `redirected` | `publish` | the Space's own settings would send the push somewhere else (guard 2) | `null` |
+| `no_lists` | `map` from a list start | this conversation may not see lists: a listener or a launched child | `null` |
 | any code of [`local-effects.md`](local-effects.md) | `write`, `post` | the effect's own refusal | as above |
 
 ## The acts that reach other people, and their three guards
@@ -302,6 +314,57 @@ out history. Counting, limits and what the service does are the service's contra
 only that the 201st act in a day answers `limit_reached` with `until`, and that take back is never
 counted.
 
+## Lists, and what they never do
+
+`map` from a list start is a **list**: `map ideaspaces` answers **Personal** (the person's own
+Spaces), **each org** the person belongs to (`hostname:<host>`, with its Spaces), and **Shared with
+you** (what others have shared with the person); `map hostname:<host>` answers that org's Spaces;
+`map person:<handle>` answers what that person shared with the person and the Threads they are both
+in. A list is read under the person's own sign-in and is not counted against any limit. Its items
+are `facts.list`, and these rules are **requirements** on every host that offers a list, each with a
+vector (Security, 2026-11-17, msg_c965c00b; placed by the human, 18:31):
+
+1. **Seeing is not reaching, and a listed name is not one the person said.** Nothing a list returns
+   ever enters `context.reach` or `context.person_named`. After `map ideaspaces` lists `repo:n_X`,
+   `look repo:n_X` is still `out_of_reach`, and a `share` with a handle seen only in a list is still
+   `not_from_person`. The firefly gets to a listed item when the person names it, or a "Shared with
+   you" row puts it into the person's own message. The pure form takes `context.listed`, the host's
+   record of what lists returned, and consults it for nothing: that is the control. The marking of
+   names as others' is a hint to the model, not a control. A pure vector cannot fail this rule in a
+   host, so every host that offers a list carries the test
+   `list_results_never_enter_reach_or_person_named`.
+
+   A list start is checked by shape before anything else: `person:` is followed by a handle and
+   `hostname:` by a host name, else `invalid_field` on `start`, so a list never asks the service
+   whether an email has an account or follows a path.
+2. **Fields only, and names cut and marked.** A list item carries `address`, `kind`, `level`, `who`,
+   `time`, `name` and `by_others`, and no other field: no summary, description or README of an item
+   the person does not own reaches the model through a list. A `name` is one line, cut to 120
+   characters, with every control and format character removed (Unicode `Cc` and `Cf`: line breaks,
+   direction overrides, zero-width characters) and the line and paragraph separators (`Zl`, `Zp`)
+   with them, and it carries `by_others: true` (the check's code for any such character is
+   `list_name_multiline`, named for the common case; it fires for every character in those classes).
+   The fields others write outside `name` have fixed
+   shapes: `address` is a service address, `kind` is one of `space`, `org`, `repo`, `folder`, `note`,
+   `thread`, `person`, `level` is one word (letters, `_`, `-`, at most 32 characters, in the
+   service's own casing), `time` is an ISO instant; a sentence in any of them is refused
+   (`list_invalid`). `said` never quotes a listed name.
+3. **Listeners and launched children get no lists.** A list is read only in a conversation with the
+   person, on any turn; the host says so with `context.lists: true`, and absent reads as false. A
+   listener runs on posts other people wrote with nobody present to correct it; a child has its
+   launch Map and nothing more. A `map` from a list start without it is refused `no_lists`,
+   `next: null`, and `access` on a `look` is `not_checked`; an `access` object in an answer without
+   it fails the check (`access_without_lists`). The host test for both is
+   `listener_and_child_lists_false`.
+4. **Handles may pass, by shape; emails and display names never.** A `who`, in a list or in `access`,
+   is a handle as the service spells it (`@`, then letters, digits, `_` or `-`); anything else is
+   dropped by the host, and `check_answer` refuses it (`who_not_a_handle`), an email included. A
+   person with no handle is "someone without an account". Pending invitations are a count
+   (`access.pending`), never addresses. Display names are free text others wrote and never pass.
+5. **Pending shares stay out.** "Shared with you" carries accepted shares only, until Backend confirms
+   that a stranger cannot put an item into a person's list without their accepting it; a host test,
+   `shared_with_me_lists_accepted_only`, is the proof, and this page does not loosen it.
+
 ## Where the verbs write history
 
 Where `post` and `write` add to history they follow [`../SPEC.md#identity`](../SPEC.md#identity) and
@@ -333,7 +396,9 @@ operations:
   absent reads as `agent`), `person_named`, `person_asked` (guard 1), `reach` (service
   addresses the conversation may name; **absent reads as none**, so a missing reach never widens it;
   the literal `ideaspaces` is allowed as `map.start` and `start_thread.target` without it), and
-  `entries` (`{ path, id, folder }` for the files that are entries).
+  `entries` (`{ path, id, folder }` for the files that are entries), `lists` (true only in a
+  conversation with the person; absent reads as false) and `listed` (what lists returned, consulted
+  for nothing).
 - `check_answer(answer, context)` returns `{ status: "valid" }` or `{ status: "invalid", problems:
   [{ code, field? }] }`. `context.forbidden_words` is the list a `said` sentence must not contain,
   the manifest's `said_forbidden_words` (AX's, [below](#words-said-never-contains));
@@ -371,6 +436,8 @@ operation or required coverage tag rather than skip it. The reference implementa
   the service confirmed it, **`{level}`** the grade the service granted in its own word, **`{until}`**
   and **`{as_of}`** a time in the person's own zone ("Tue 17 Nov 15:57"), never an ISO instant.
   `facts` carries the exact values.
+- **`{n}`, `{m}`, `{k}`, `{o}`, `{t}` and `{p}` are counts**, never names: a list's sentence says how
+  many Spaces, orgs, people or invitations, and never which, because those names are others' text.
 - **"This computer"** is the neutral word; a host that knows the machine may say "this Mac".
 - **`{value}`** in a `not_from_person` sentence is injected text of any length: a renderer shows it
   quoted and cut to 60 characters (Security's review, 2026-11-17).
@@ -407,6 +474,21 @@ operation or required coverage tag rather than skip it. The reference implementa
 | any | a retired name | `refused` | `retired_name` | {old} is retired, so use {verb}, which does the same. |
 | any | the request is not the verb's | `refused` | `missing_field`, `unexpected_field`, `invalid_field` | *Missing:* Not done: {verb} needs {field}. *Unexpected:* Not done: {verb} doesn't take {field}. *Invalid:* Not done: {field} isn't a value {verb} takes. |
 | any | not a verb | `refused` | `unknown_verb` | Not done: {old} isn't a tool here; the four are map, look, post and write. |
+| `map` | `ideaspaces`: Personal, each org, Shared with you | `ok` | — | Listed what the person has on IdeaSpaces: {n} Spaces of their own, {m} in {o} orgs and {k} shared with them, and you can open one once the person names it. |
+| `map` | an org's Spaces (`hostname:`) | `ok` | — | Listed {n} Spaces in that org, and you can open one once the person names it. |
+| `map` | what a person shared (`person:`) | `ok` | — | Listed {n} items {who} shared with the person and {m} Threads they are both in, and you can open one once the person names it. |
+| `map` | a list asked for by a listener or a launched child | `refused` | `no_lists` | Not listed: only a conversation with the person sees what is on IdeaSpaces, so work from what you were given and say in your reply what you would need. |
+| `look` | who can read this item (`access` filled); *not managed:* `access: not_checked` | `ok` | — | *Private:* {name} is private, and {n} people and {t} orgs can read it, with {p} invitations not yet accepted. *Public:* {name} is public, so anyone can read it, and {n} people and {t} orgs have their own access too. *Not managed:* Who can read this isn't shown, because the person doesn't manage it. |
+
+The five `map` and `look` rows above came with the lists (spec/remote-entities). A list's sentence
+gives counts and never quotes a listed name (rule 2), and it ends by saying that seeing is not
+reaching (rule 1), so the agent asks before it opens anything it only saw listed. `{who}` there is
+the handle the request started from. `no_lists` breaks the "tell the person" rule on purpose: a
+listener or a launched child has nobody present to tell, so it says what it would need in its
+reply. The `access` sentence names the item only when the person manages it; an item the person
+does not manage is "this", because its name is others' text. `who_not_a_handle`, `access_invalid`
+and the `list_*` codes are problems `check_answer` finds in a host's answer, never an answer an
+agent reads, so they have no sentence.
 
 The `unknown_verb` row was added to Integrator's 24: it is a refusal with `next: null`, so its
 sentence is the only guide the agent gets. The `redirected` row came with Security's review (round
