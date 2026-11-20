@@ -1,8 +1,29 @@
 ---
 name: Now
-summary: "v0.34.0, draft: the four verbs map, look, post and write under one ideaspaces namespace, one write, answers that say the person's sentence first and the Git facts as named fields, post's request kinds with three guards, and AX's words table. Before it, v0.33.0, not released: time is something a folder keeps, entries set its state by one rule, and as_of/since/newest read it in time; a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
+summary: "v0.35.0, draft: a Map can be about anything, since a Map is about what its carrier is about; about on any Note, carried and beside forms, the invitation's opening Map, and look reporting about and the carried Map. Before it, v0.34.0, draft: the four verbs map, look, post and write under one ideaspaces namespace, one write, answers that say the person's sentence first and the Git facts as named fields, post's request kinds with three guards, and AX's words table. Before it, v0.33.0, not released: time is something a folder keeps, entries set its state by one rule, and as_of/since/newest read it in time; a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
 ---
 # Now
+
+## A Map about anything, v0.35.0 (draft, spec/map-about)
+
+A Map is about what its carrier is about: the Note or entry whose frontmatter holds the `map`
+block. A Note is about its `about` links (one typed link or a list; the same field and parser as a
+post's `about`; the legacy single `attached_to` reads as one link when no `about` is present) and
+about itself when it declares none; a post's Map is the Thread's, and the Thread is about its
+`about`. Two forms and no third: **carried** (a Note's own `map`, a folder's or the root's
+`README.md`, a Thread's current Map) and **beside** (a Note with `map` and `about` naming a thing
+that cannot carry one or that someone else describes). About is declared, never inferred from
+membership or a filename, and grants nothing. A reader finds a beside Map by matching `about`
+among Notes it already holds (`sameEntity`, `aboutMaps`); no index, scan or fetch. The Thread
+opened from an idea carries the idea's Map, pinned, as its opening Map, so the invited person and
+their firefly read the same Map first. Content look reports `about` and the carried `map` from
+`summary` upward and the block at `children` and `full`. The human's words: 2026-11-19 ("Map can be
+attached to anything we have… Any message has one and we start to explore together") and
+2026-11-20 ("map should be something we can attach to (about) to any note/folder or anything").
+The contract is [`schema/map-about.md`](../schema/map-about.md); vectors
+`conformance/maps/about.json` and three Content look vectors; code `src/map-about.ts`. The words a
+person reads are AX's, left as a marked table. The browser (0.9.24) and grants are named as not
+yet. Drafted for the human, AX and Security to read; no tag or release is part of this change.
 
 ## The four verbs, v0.34.0 (draft, spec/four-verbs)
 

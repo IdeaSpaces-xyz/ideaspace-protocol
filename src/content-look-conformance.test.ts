@@ -38,6 +38,10 @@ interface LookVector {
     reference_included?: string[];
     reference_excluded?: string[];
     render_fixture?: string;
+    /** What the target says it is about, as authored. */
+    about?: string[];
+    /** The carried Map's counts; `block` says whether the block itself is present at this rung. */
+    map?: { roots: number; members: number; block: boolean };
   };
 }
 
@@ -131,6 +135,15 @@ describe("Content look conformance vectors", () => {
       }
       if (vector.expected.omitted_children !== undefined) {
         expect(result.target.omittedChildren).toBe(vector.expected.omitted_children);
+      }
+      if (vector.expected.about) {
+        expect(result.target.about).toEqual(vector.expected.about);
+      }
+      if (vector.expected.map) {
+        expect(result.target.map?.roots).toBe(vector.expected.map.roots);
+        expect(result.target.map?.members).toBe(vector.expected.map.members);
+        expect(result.target.map?.block !== undefined).toBe(vector.expected.map.block);
+        if (result.target.map?.block) expect(result.target.map.block.members).toHaveLength(vector.expected.map.members);
       }
       for (const absent of vector.expected.absent ?? []) {
         expect(result.target).not.toHaveProperty(absent);

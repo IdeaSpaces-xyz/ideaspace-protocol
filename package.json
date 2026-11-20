@@ -50,6 +50,7 @@
     "./schema/local-effects": "./schema/local-effects.md",
     "./schema/root-identity": "./schema/root-identity.md",
     "./schema/maps": "./schema/maps.md",
+    "./schema/map-about": "./schema/map-about.md",
     "./schema/map-projection": "./schema/map-projection.md",
     "./schema/content-awareness": "./schema/content-awareness.md",
     "./schema/content-look": "./schema/content-look.md",

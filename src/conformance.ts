@@ -264,6 +264,31 @@ async function checkNote(
     }
   }
 
+  // `about` is a string, or an array of strings, each matching the schema pattern if present.
+  if ("about" in fm) {
+    const value = fm.about;
+    const items = Array.isArray(value) ? value : [value];
+    if (!items.every((item) => typeof item === "string")) {
+      issues.push({
+        level: "error",
+        rule: "about-type",
+        path: rel,
+        detail: "`about` must be a typed link `<type>:<id>` or an array of them",
+      });
+    } else if (constraints.attachedToPattern) {
+      for (const item of items as string[]) {
+        if (!constraints.attachedToPattern.test(item)) {
+          issues.push({
+            level: "error",
+            rule: "about-pattern",
+            path: rel,
+            detail: `\`about: ${item}\` does not match ${constraints.attachedToPattern.source}`,
+          });
+        }
+      }
+    }
+  }
+
   // `attached_to` is a string matching the schema pattern if present.
   if ("attached_to" in fm) {
     const value = fm.attached_to;

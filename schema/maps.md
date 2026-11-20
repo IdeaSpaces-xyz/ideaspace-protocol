@@ -97,6 +97,15 @@ projection. A generic Map reader treats this field as optional metadata; it does
 `roots` and `members` are ordered arrays. Either may be absent and is then empty. Member order is
 curated meaning and MUST be preserved.
 
+## What a Map is about
+
+A Map is about what its carrier is about: the Note or entry whose frontmatter holds the block. A Note
+is about its `about` links when it declares them and about itself when it declares none, so a Note's
+own `map` block is a Map about that Note, and a Note with `about: file:@<root>//data.txt` and a
+`map` block is a Map beside a file that cannot carry one. The field, the two forms (carried and
+beside), how a reader finds a Map from the thing it is about, and how an invitation carries one are
+in [`map-about.md`](map-about.md), with vectors in [`../conformance/maps/about.json`](../conformance/maps/about.json).
+
 ## Roots and optional pins
 
 Each root carries:
@@ -186,8 +195,9 @@ first, and then stripping the leading `_threads/` segment if the branch tree was
 ### Open addresses
 
 A member outside a known repository carries `address` using the same open `<type>:<id>` grammar as
-`attached_to`. That overlap is grammar only: `attached_to` declares what a Note is about; Map
-membership declares what a curator included. URLs naturally use their scheme (`https:...`) and need
+a Note's `about` (and its legacy single form, `attached_to`). That overlap is grammar only: `about`
+declares what a Note, and so the Map it carries, is about ([`map-about.md`](map-about.md)); Map
+membership declares what a curator included. Listing X as a member does not make a Map about X. URLs naturally use their scheme (`https:...`) and need
 no provider registry or member type.
 
 Standard open address types include:

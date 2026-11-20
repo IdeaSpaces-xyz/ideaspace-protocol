@@ -19,11 +19,17 @@ import {
 } from "./markdown-inspection.js";
 import {
   MAP_DEPTHS,
+  parseMap,
+  type MapAddressMember,
+  type MapBlock,
   type MapDepth,
   type MapDisclosure,
+  type MapMember,
+  type MapPositionMember,
 } from "./maps.js";
 import { classifyRepositoryPath } from "./repository-path.js";
 import { readRepositoryImage } from "./repository-image.js";
+import { parseAbout } from "./map-about.js";
 import type { RepositoryImageMediaType, RepositoryImageProblemCode } from "./assets.js";
 import type { ContentRepresentation, ContractSource } from "./agreement.js";
 
@@ -117,6 +123,13 @@ export interface ContentLookTarget {
    * `problem`, never a failed look.
    */
   image?: ContentLookImage;
+  /**
+   * What the target says it is about, as authored (`about`, else the legacy single `attached_to`),
+   * from summary upward. Absent when it declares none: such a Note is about itself.
+   */
+  about?: string[];
+  /** The valid Map the target carries, from summary upward; its block at children and full. */
+  map?: ContentLookCarriedMap;
   /** The target in Map member vocabulary, without fabricating a root ordinal. */
   member: ContentLookProjectedMember;
 }
@@ -124,6 +137,17 @@ export interface ContentLookTarget {
 export type ContentLookImage =
   | { status: "ok"; path: string; mediaType: RepositoryImageMediaType }
   | { status: "problem"; code: RepositoryImageProblemCode; declared?: string; message: string };
+
+/**
+ * The valid Map a Markdown target (or a folder's README) carries: how many roots and members from
+ * `summary` upward, and the block itself at `children` and `full`. A Map is about what its carrier
+ * is about (`schema/map-about.md`); the look reports it and resolves nothing.
+ */
+export interface ContentLookCarriedMap {
+  roots: number;
+  members: number;
+  block?: MapBlock;
+}
 
 export interface ContentLookManifest {
   status: "ok";
@@ -366,6 +390,7 @@ async function readMarkdownTarget(
   const target = baseTarget(path, position, "markdown", depth, name, summary);
   if (warnings?.length) target.warnings = warnings;
   if (post) target.post = post;
+  describeCarried(target, frontmatter);
 
   if (depth === "surface" || depth === "full") {
     target.surface = stripFrontmatter(source);
@@ -556,6 +581,8 @@ async function readDirectoryTarget(
   const name = nonEmptyString(frontmatter?.name) ?? basename(path);
   const summary = readme.content === null ? null : summarizeMarkdown(readme.content);
   const target = baseTarget(path, position, "directory", depth, name, summary);
+  // A folder's README carries the folder's own Map and says what the folder is about.
+  describeCarried(target, frontmatter);
 
   // Only the root README names the repository's image.
   if (position === "." && depth !== "name") {
@@ -630,9 +657,58 @@ function finishTarget(target: ContentLookTarget): ContentLookTarget {
     ...(target.warnings !== undefined ? { warnings: target.warnings } : {}),
     ...(target.post !== undefined ? { post: target.post } : {}),
     ...(target.image !== undefined ? { image: target.image } : {}),
+    ...(target.about !== undefined ? { about: target.about } : {}),
+    ...(target.map !== undefined ? { map: target.map } : {}),
   };
   target.revision = contentRevision(JSON.stringify(represented));
   return target;
+}
+
+/**
+ * What a Markdown target says it is about and the Map it carries, from summary upward. A malformed
+ * `about` or `map` is a warning naming the field, never a failed look; a warning the entry reader
+ * already raised for the same field is not raised twice.
+ */
+function describeCarried(target: ContentLookTarget, frontmatter: Record<string, unknown> | null): void {
+  if (target.depth === "name" || !frontmatter) return;
+  const warnings: NonNullable<ContentLookTarget["warnings"]> = [];
+  const about = parseAbout(frontmatter);
+  if (about.status === "valid" && about.links.length) {
+    target.about = about.links.map((link) => link.raw ?? `${link.kind}:${link.value}`);
+  }
+  for (const warning of about.warnings) warnings.push({ post: target.position, ...warning });
+  if ("map" in frontmatter) {
+    const parsed = parseMap(frontmatter.map);
+    if (parsed.status === "valid") {
+      target.map = {
+        roots: parsed.map.roots.length,
+        members: parsed.map.members.length,
+        ...(target.depth === "children" || target.depth === "full" ? { block: parsed.map } : {}),
+      };
+    } else if (parsed.status === "invalid") {
+      warnings.push({ post: target.position, field: "map", warning: "invalid_map" });
+    }
+  }
+  // The entry reader names a malformed field with its own code (`invalid_map_type`, …); one field, one warning.
+  const fresh = warnings.filter((warning) =>
+    !target.warnings?.some((known) => known.post === warning.post && known.field === warning.field));
+  if (fresh.length) target.warnings = [...(target.warnings ?? []), ...fresh];
+}
+
+/** One member of a carried Map as a line: where it points, its ceiling, and what the curator or the reader said of it. */
+function renderMapMember(member: MapMember, roots: MapBlock["roots"]): string {
+  let where: string;
+  if ("position" in member) {
+    const positioned = member as MapPositionMember;
+    const root = roots[positioned.root];
+    where = `@${root?.root_node_id ?? root?.name ?? positioned.root}//${positioned.position === "." ? "" : positioned.position}`;
+  } else {
+    where = String((member as MapAddressMember).address);
+  }
+  const depth = typeof member.depth === "string" ? ` (${member.depth})` : "";
+  const name = nonEmptyString(member.name) ?? nonEmptyString(member.disclosure?.name);
+  const summary = nonEmptyString(member.summary) ?? nonEmptyString(member.disclosure?.summary);
+  return `  ${where}${depth}${name ? ` ${name}` : ""}${summary ? ` — ${summary}` : ""}`;
 }
 
 async function readDirectoryReadme(
@@ -675,6 +751,8 @@ function renderTarget(target: ContentLookTarget): string {
   if ("summary" in target) lines.push(`  summary: ${target.summary ?? "(none)"}`);
   if (target.image?.status === "ok") lines.push(`  image: ${target.image.path} (${target.image.mediaType})`);
   else if (target.image) lines.push(`  image: not shown (${target.image.code}): ${target.image.message}`);
+  if (target.about) lines.push(`  about: ${target.about.join(", ")}`);
+  if (target.map) lines.push(`  map: ${target.map.members} ${target.map.members === 1 ? "member" : "members"}, ${target.map.roots} ${target.map.roots === 1 ? "root" : "roots"}`);
   if (target.warnings?.length) {
     lines.push("", "Warnings:");
     for (const warning of target.warnings) lines.push(`  ${warning.post}: ${warning.field}: ${warning.warning}`);
@@ -701,6 +779,11 @@ function renderTarget(target: ContentLookTarget): string {
     }
     if (target.omittedChildren) lines.push(`  … and ${target.omittedChildren} more`);
     if (target.page?.nextCursor) lines.push(`  next cursor: ${target.page.nextCursor}`);
+  }
+  if (target.map?.block) {
+    lines.push("", "Map:");
+    if (!target.map.block.members.length) lines.push("  (none)");
+    for (const member of target.map.block.members) lines.push(renderMapMember(member, target.map.block.roots));
   }
   return lines.join("\n");
 }

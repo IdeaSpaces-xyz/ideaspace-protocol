@@ -18,7 +18,10 @@
     "deterministic_render",
     "non_content_absent",
     "reference_agreement_summary",
-    "reference_agreement_full"
+    "reference_agreement_full",
+    "about_links",
+    "carried_map",
+    "carried_map_block"
   ],
   "vectors": [
     {
@@ -178,6 +181,68 @@
       "covers": ["choice_required"],
       "expected": {
         "status": "contract_choice_required"
+      }
+    },
+    {
+      "id": "note-carries-its-own-map",
+      "target": "notes/idea.md",
+      "depth": "summary",
+      "contract_source": "agreement",
+      "covers": ["carried_map"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/idea.md",
+        "name": "Idea",
+        "summary": "A Note that carries its own Map.",
+        "map": { "roots": 1, "members": 2, "block": false },
+        "absent": ["about", "surface", "children"]
+      }
+    },
+    {
+      "id": "note-map-block-at-children",
+      "target": "notes/idea.md",
+      "depth": "children",
+      "contract_source": "agreement",
+      "covers": ["carried_map_block"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/idea.md",
+        "name": "Idea",
+        "child_names": ["Idea"],
+        "map": { "roots": 1, "members": 2, "block": true },
+        "absent": ["about", "surface"]
+      }
+    },
+    {
+      "id": "map-note-beside-a-file",
+      "target": "notes/data.map.md",
+      "depth": "full",
+      "contract_source": "agreement",
+      "covers": ["about_links", "carried_map_block"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/data.map.md",
+        "name": "About the data",
+        "about": ["file:@n_0123456789abcdef01234567//data.txt"],
+        "map": { "roots": 0, "members": 1, "block": true },
+        "render_fixture": "map-note-full-render.txt"
+      }
+    },
+    {
+      "id": "map-at-name-says-nothing-about",
+      "target": "notes/data.map.md",
+      "depth": "name",
+      "contract_source": "agreement",
+      "covers": ["about_links"],
+      "expected": {
+        "status": "ok",
+        "kind": "markdown",
+        "position": "notes/data.map.md",
+        "name": "About the data",
+        "absent": ["about", "map", "summary"]
       }
     },
     {
