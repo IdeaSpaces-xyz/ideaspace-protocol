@@ -107,7 +107,7 @@ The fields are [`content-look.md`](content-look.md)'s: `target` (an address), `d
 `limit`, `order`, `since`, `post`. A service address reads the same five rungs through the host's
 remote path. `look` never writes. From `summary` upward the look carries what the target is about
 and the Map it carries ([`map-about.md`](map-about.md#how-look-and-map-show-it)); the `said`
-sentences for those cases are AX's, in the marked table there.
+sentences for those cases are AX's, in [The words](map-about.md#the-words) there.
 
 ### `post`
 

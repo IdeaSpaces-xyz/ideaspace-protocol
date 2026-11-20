@@ -3,8 +3,8 @@
 > Language-neutral contract for a Map that is **about** one entity: what `about` means, where such
 > a Map lives and how a reader finds it from the thing, how an invitation carries it, how `look` and
 > `map` show it, and what it does not do yet. **Provisional, v0.35.0 (draft).** The sentences a
-> person reads are AX's, in the marked table at the end; the shape here is Integrator's draft for
-> the human, AX and Security to read.
+> person reads are AX's, in [The words](#the-words); the shape here is Integrator's draft for the
+> human, AX and Security to read.
 
 The human, 2026-11-19: "Map can be attached to anything we have. References can be map. To do list
 can be a map. We agree on what is in our shared map. Any message has one and we start to explore
@@ -194,19 +194,44 @@ is about it, the Content tree, which is what is there now. `facts.path` names th
 
 ### The words
 
-> **AX's, pending.** Integrator wrote the lines below so the table has a shape; AX replaces them.
-> They follow the rules of [`verbs.md`](verbs.md#how-a-said-sentence-is-written): one sentence,
-> the person's words, no Git word, `{name}` the item's own name.
+> **AX's, 2026-11-20.** These follow the rules of
+> [`verbs.md`](verbs.md#how-a-said-sentence-is-written): one sentence, the person's words, Space
+> and never Vault, no word of `SAID_FORBIDDEN_WORDS`. A test holds every cell below to that list.
 
-| Verb | Case | Proposed line, for AX |
-|---|---|---|
-| `look` | a Note that carries a Map, at `summary` | {name} points to {n} things. |
-| `look` | a Map beside something, at `summary` | A Map about {entity}: {n} things it points to. |
-| `map` | an entity with a carried Map | Here is what {name} is and what it points to. |
-| `map` | an entity with carried and beside Maps | {k} Maps are about {name}: its own, and {k-1} by others. |
-| `map` | an entity nothing is about yet | Nothing is mapped about {name} yet, so here is what is there. |
-| `post` | a Thread opened from a Note, with its Map | Opened the Thread {thread} about {name}, with its Map, with {who}. |
-| `look` | the Thread an invited person opens | This Thread is about {name}; its Map points to {n} things. |
+Four rules are this page's own:
+
+- **A Map's members are counted, never named.** A member's name and summary are the curator's
+  words, and a person member's handle is what the curator wrote. `said` says how many things, people
+  and fireflies a Map holds and never which, so nothing in a Map reaches the person, or the agent's
+  next act, as if the person had said it. The `Map:` section of a `look` shows the members; `said`
+  does not repeat them.
+- **Being in a Map is not being named by the person.** Wherever `said` counts people, it says so,
+  because an agent that reads `person:@bea` in a Map still cannot share with @bea until the person
+  writes her name.
+- **`{name}` is what the person calls the thing** they are looking at or mapping: their own Note's or
+  Thread's name. When that name is others' text (someone else's Note, a page's title), `said` says
+  `{entity}` instead: the kind of thing, "this file", "this page", "this person", "this Note".
+- **`{who}` is a handle the service confirmed** (`facts.with` or `facts.from`), never the model's
+  spelling and never one read from a Map. `{n}`, `{p}`, `{f}`, `{k}` and `{b}` are counts.
+
+| Verb | Case | `outcome` | `reason_code` | `said` |
+|---|---|---|---|---|
+| `look` | a Note that carries a Map, at `summary` | `ok` | — | {name} has its own Map, which points to {n} things. |
+| `look` | a Map beside something, at `summary` | `ok` | — | This Map is about {entity} and points to {n} things. |
+| `look`, `map` | a Map with people and fireflies in it | `ok` | — | This Map holds {p} people and {f} fireflies, and being in it isn't being named by the person, so ask before you share with any of them. |
+| `map` | an entity with a carried Map | `ok` | — | Read {name}'s own Map: what it is, and the {n} things it points to. |
+| `map` | an entity with carried and beside Maps | `ok` | — | Read {k} Maps about {name}: its own first, then {b} beside it. *None its own:* Read {b} Maps about {entity}, none of them its own. |
+| `map` | an entity nothing is about yet | `ok` | — | Nothing has a Map about {name} yet, so this is what is there now. |
+| `post` | a Thread opened from a Note, with its Map | `ok` | — | Opened the Thread {thread} about {name} with {who}, starting from its Map as it is now. *No Map yet:* Opened the Thread {thread} about {name} with {who}, starting from {name} alone. |
+| `look` | the Thread an invited person opens | `ok` | — | This Thread is about {name}, and its Map holds {n} things, {p} of them people and {f} fireflies. |
+| `post` | an invited person added to the Thread's Map | `ok` | — | Added {who} to this Thread's Map, which records the invitation and gives them nothing on its own. |
+| `post` | a person taken out of the Thread's Map after a take back | `ok` | — | Took {who} out of this Thread's Map, since what they were given was taken back. |
+| `map`, `post` | a person member that is not a handle | `refused` | `who_not_a_handle` | Not added: a person goes into a Map by their handle on IdeaSpaces, never an email or a name, so ask the person for it. |
+| `look`, `map` | a Map whose `about` or `map` does not read | `ok` | — | Read {name}, but its Map didn't read, so it is shown without one. |
+
+The invited person's `look` says "This Thread is about {name}" because the Thread's own name and
+`about` are what the inviting person wrote for them to read. A Map that is about a person is
+`{entity}`, "this person": the handle stays in `facts` and in the `Map:` section.
 
 ## What it does not do yet
 

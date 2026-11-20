@@ -26,7 +26,7 @@ named by the person (Security's list rules of #111). Content look reports `about
 and 2026-11-20 ("map should be something we can attach to (about) to any note/folder or anything").
 The contract is [`schema/map-about.md`](../schema/map-about.md); vectors
 `conformance/maps/about.json` and three Content look vectors; code `src/map-about.ts`. The words a
-person reads are AX's, left as a marked table. The browser (0.9.24) and grants are named as not
+person reads are AX's, in its The words table: counts, never a member's name. The browser (0.9.24) and grants are named as not
 yet. Drafted for the human, AX and Security to read; no tag or release is part of this change.
 
 ## The four verbs, v0.34.0 (draft, spec/four-verbs)

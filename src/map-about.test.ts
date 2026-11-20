@@ -9,6 +9,7 @@ import {
   type AboutMapCarrier,
 } from "./map-about.js";
 import { parseFrontmatter } from "./frontmatter.js";
+import { checkVerbAnswer, SAID_FORBIDDEN_WORDS, type VerbAnswer } from "./verbs.js";
 
 interface ParseAboutVector {
   id: string; operation: "parse_about"; covers: string[]; input: unknown; expected: ReturnType<typeof parseAbout>;
@@ -101,5 +102,32 @@ describe("aboutMaps", () => {
     expect(aboutMaps(`repo:${root}`, carriers)).toEqual({ status: "ok", entity: `repo:${root}`, hits: [], skipped: [] });
     expect(aboutMaps(`repo:${root}`, carriers, { rootNodeId: root }).status).toBe("ok");
     expect((aboutMaps(`repo:${root}`, carriers, { rootNodeId: root }) as { hits: unknown[] }).hits).toHaveLength(1);
+  });
+});
+
+describe("a Map about anything: AX's words pass the said check", () => {
+  const page = readFileSync(new URL("../schema/map-about.md", import.meta.url), "utf-8");
+  const section = page.slice(page.indexOf("### The words"), page.indexOf("## What it does not do yet"));
+  const rows = section
+    .split("\n")
+    .filter((line) => line.startsWith("| `") || line.startsWith("| any"))
+    .map((line) => line.split(" | ").map((cell) => cell.replace(/^\| ?| ?\|$/g, "").trim()));
+
+  it("fills every cell, and each sentence has no forbidden word, hash or command", () => {
+    expect(rows.length).toBe(12);
+    for (const row of rows) {
+      expect(row).toHaveLength(5);
+      const outcome = row[2].replace(/`/g, "") as VerbAnswer["facts"]["outcome"];
+      const facts = outcome === "ok" ? { outcome } : { outcome, reason_code: row[3].replace(/`/g, ""), next: null };
+      const sentences = row[4].split(/\*[^*]+:\*/).map((part) => part.replace(/\{[a-z_]+\}/g, "Plan").trim()).filter(Boolean);
+      expect(sentences.length, row[1]).toBeGreaterThan(0);
+      for (const said of sentences) {
+        expect(checkVerbAnswer({ said, facts }, { forbidden_words: [...SAID_FORBIDDEN_WORDS] }), `${row[1]}: ${said}`).toEqual({ status: "valid" });
+      }
+    }
+  });
+
+  it("names no member: no handle, address or email in any sentence", () => {
+    for (const row of rows) expect(row[4], row[1]).not.toMatch(/@|person:|repo:|agent:|https?:/);
   });
 });
