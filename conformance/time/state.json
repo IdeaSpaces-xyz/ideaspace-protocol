@@ -254,6 +254,110 @@
         { "path": "_threads/t/2026-11-01T14-00-00-000Z-msg_e.md", "content": "---\nid: msg_e\n---\nE\n" }
       ],
       "expected": { "status": "ok", "ids": ["msg_b", "msg_c", "msg_d"], "undated": [] }
+    },
+    {
+      "id": "moved-to-ends-the-folders-time-here",
+      "operation": "inspect",
+      "covers": [
+        "moved_to_set",
+        "moved_to_refuses_writes"
+      ],
+      "sources": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nname: Start\nsummary: Where it began\n---\nOpen\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_move.md",
+          "content": "---\nid: msg_move\nin_reply_to: msg_open\nmoved_to: thread:x_0123456789abcdef01234567\n---\nMoved to IdeaSpaces on the first invite.\n"
+        }
+      ],
+      "expected": {
+        "movedTo": "thread:x_0123456789abcdef01234567",
+        "movedToPost": {
+          "id": "msg_move",
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_move.md",
+          "kind": "post"
+        },
+        "closed": false,
+        "writable": false,
+        "writeRefusal": "This folder moved to thread:x_0123456789abcdef01234567; writes refused. Post to it there.",
+        "readableIds": [
+          "msg_open",
+          "msg_move"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "invalid-moved-to-is-dropped-and-sets-nothing",
+      "operation": "inspect",
+      "covers": [
+        "moved_to_invalid_dropped"
+      ],
+      "sources": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nname: Start\nsummary: Where it began\n---\nOpen\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_bad.md",
+          "content": "---\nid: msg_bad\nin_reply_to: msg_open\nmoved_to: x_notanaddress\n---\nMeant to move.\n"
+        }
+      ],
+      "expected": {
+        "movedTo": null,
+        "movedToPost": null,
+        "writable": true,
+        "readableIds": [
+          "msg_open",
+          "msg_bad"
+        ],
+        "warnings": [
+          {
+            "post": "_threads/t/2026-11-01T11-00-00-000Z-msg_bad.md",
+            "field": "moved_to",
+            "warning": "invalid_moved_to"
+          }
+        ]
+      }
+    },
+    {
+      "id": "the-newest-moved-to-stands",
+      "operation": "inspect",
+      "covers": [
+        "moved_to_newest_readable_wins",
+        "state_newest_readable_wins"
+      ],
+      "sources": [
+        {
+          "path": "_threads/t/2026-11-01T10-00-00-000Z-msg_open.md",
+          "content": "---\nid: msg_open\nname: Start\nsummary: Where it began\n---\nOpen\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T11-00-00-000Z-msg_move.md",
+          "content": "---\nid: msg_move\nin_reply_to: msg_open\nmoved_to: thread:x_0123456789abcdef01234567\n---\nMoved.\n"
+        },
+        {
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_again.md",
+          "content": "---\nid: msg_again\nin_reply_to: msg_move\nmoved_to: thread:x_89abcdef0123456789abcdef\n---\nA writer should have refused this; a reader takes the newest.\n"
+        }
+      ],
+      "expected": {
+        "movedTo": "thread:x_89abcdef0123456789abcdef",
+        "movedToPost": {
+          "id": "msg_again",
+          "path": "_threads/t/2026-11-01T12-00-00-000Z-msg_again.md",
+          "kind": "post"
+        },
+        "writable": false,
+        "readableIds": [
+          "msg_open",
+          "msg_move",
+          "msg_again"
+        ],
+        "warnings": []
+      }
     }
   ]
 }

@@ -35,7 +35,8 @@ host filesystem does not normalize `_Threads/` into the convention. `_Threads/`,
    - **Public:** a filtered fork or main code branch omitting `_threads/`, reaching public readers
      without private discussion.
    - **Beyond the repository:** hosted Threads (`thread:x_...`) with explicit platform access grants.
-   Moving content between tiers is an explicit user action.
+   Moving content between tiers is an explicit user action; a Thread's move to a host is specified
+   below ([Moving a Thread to a host](#moving-a-thread-to-a-host)).
 
 ## Payload
 
@@ -236,6 +237,39 @@ A hosted Thread id is `x_` followed by one or more of `A-Z a-z 0-9 _ -`, as a pa
 which keep it safe in a URL and an argument, and MUST NOT test its length or read anything from its
 form. A host MAY bound the ids it mints; that bound is the host's, not part of this grammar. Vectors
 are in [`../conformance/threads/hosted-ids.json`](../conformance/threads/hosted-ids.json).
+
+### Moving a Thread to a host
+
+A Thread moves from this computer to a host **once**, by the person's explicit act, on the first
+invite: a Thread stays on this computer until someone is invited, and it never moves on its own.
+The move has three parts, and each is a requirement on the writer and the host:
+
+1. **The local Thread's last post names where it went.** The writer appends one post carrying
+   `moved_to: thread:x_<id>`, the hosted Thread's address ([Hosted Thread ids](#hosted-thread-ids));
+   its body may say why. `moved_to` is a state field under the one rule of
+   [`time.md`](time.md#entries-set-state): the newest readable entry that carries it sets it, and it
+   is final, never unset. From that post on the folder accepts no entry: a writer refuses and names
+   the hosted address, and a verb answers `moved` with the `post` to the hosted Thread as `next`
+   ([`verbs.md`](verbs.md)). The local posts stay as they are, immutable and readable, and the local
+   Thread stays where Maps point at it.
+2. **Every post keeps what it claims.** The host takes every readable post as written: `id`,
+   `date`, `kind`, `in_reply_to`, `references`, `supersedes`, `mark`, `map`, `parent`, `about`,
+   `closed`, `name`, `summary`, `tags`, `author`, `actor_ref` and the body. It does not re-date,
+   re-author, renumber or reorder them, and it does not replay them as replies by the person who
+   moved the Thread. Beside each post's claimed `date` and `author` the host records its own fact,
+   `received_at`, once per post, and who moved the Thread once, on the Thread, never on a post. A
+   reader shows the claim as a claim and `received_at` as the host's fact: an `author` on a local
+   post was never a verified identity, and the move does not make it one. An unreadable post does
+   not move; the host names it and the person decides.
+3. **The hosted Thread names where it came from.** It carries `moved_from`: the local Thread's
+   address when its root has identity (`@<root_node_id>//_threads/<thread>`), else its folder name,
+   and the id of the post that carried `moved_to`. A Thread moves once: a second `moved_to`, or a
+   move of a Thread that is already hosted, is refused.
+
+What the host does with the request, who may then read the hosted Thread, and how an invite reaches
+a person are the host's contract; this page fixes only what moves and what each side records. The
+state rule, the write refusal and the vectors are in [`time.md`](time.md) and
+[`../conformance/time/state.json`](../conformance/time/state.json).
 
 ### Map position validation
 

@@ -257,7 +257,7 @@ describe("the four verbs: AX's words in schema/verbs.md pass their own check", (
 
   it("fills every said cell, and each sentence has no forbidden word, hash or command", () => {
     const table = rows("The sentences");
-    expect(table.length).toBe(31);
+    expect(table.length).toBe(32);
     for (const row of table) {
       const cell = row[4];
       expect(cell, row[1]).not.toBe("*AX*");

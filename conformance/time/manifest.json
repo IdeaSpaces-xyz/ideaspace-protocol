@@ -50,6 +50,10 @@
     "memory_supersede",
     "memory_as_of",
     "memory_since",
-    "current_map_skips_notes"
+    "current_map_skips_notes",
+    "moved_to_set",
+    "moved_to_refuses_writes",
+    "moved_to_invalid_dropped",
+    "moved_to_newest_readable_wins"
   ]
 }

@@ -12,6 +12,9 @@
  */
 
 import { parseFrontmatter, stripFrontmatter } from "./frontmatter.js";
+
+/** A hosted Thread address, `thread:` and a hosted Thread id (threads.md, Hosted Thread ids). */
+const MOVED_TO = /^thread:x_[A-Za-z0-9_-]+$/;
 import {
   parseMap,
   type MapBlock,
@@ -84,6 +87,8 @@ export interface EntryFrontmatter {
   supersedes?: string;
   /** Sets the folder's closed state: `true` closes, `false` reopens. A legacy `kind: closure` reads as `true`. */
   closed?: boolean;
+  /** Where the folder went: a hosted Thread address `thread:x_…`. Final; the entry that carries it is the folder's last here. */
+  moved_to?: string;
   /** Optional Map block capturing citations and coordinates. An entry that carries one sets the current Map. */
   map?: MapBuildInput;
   /** Human-readable title or subject. On a `reframe`, the folder's own name. */
@@ -146,6 +151,8 @@ export interface Entry {
   supersedes?: string;
   /** The closed state this entry sets: its boolean `closed` field, else `true` for a legacy `kind: closure`. Absent when it sets none. */
   closed?: boolean;
+  /** Where the folder went, when this entry carries a valid `moved_to`. */
+  movedTo?: string;
   mapResult?: MapParseResult;
   marks?: EntryMark[];
 }
@@ -316,6 +323,13 @@ export function parseEntry(content: string, path: string = "", options: ParseEnt
     closed = true;
   }
 
+  // `moved_to`: a hosted Thread address, and nothing else. A malformed value sets nothing.
+  let movedTo: string | undefined;
+  if ("moved_to" in fm) {
+    if (typeof fm.moved_to === "string" && MOVED_TO.test(fm.moved_to.trim())) movedTo = fm.moved_to.trim();
+    else warnings.push({ field: "moved_to", warning: "invalid_moved_to" });
+  }
+
   let attachedTo: ThreadAttachment | undefined;
   if ("attached_to" in fm) {
     const parsed = parseThreadAttachment(fm.attached_to);
@@ -410,6 +424,7 @@ export function parseEntry(content: string, path: string = "", options: ParseEnt
     ...(attachedTo ? { attachedTo } : {}),
     ...(supersedes ? { supersedes } : {}),
     ...(closed !== undefined ? { closed } : {}),
+    ...(movedTo ? { movedTo } : {}),
     ...(mapResult ? { mapResult } : {}),
   };
 
@@ -606,6 +621,10 @@ export interface EntryInspection {
   closed: boolean | "unknown";
   /** The entry whose `closed` is current. */
   closedPost?: EntryHandle;
+  /** Where the folder went: the `moved_to` of the newest readable entry that carries one; `null` when it has not moved. Final. */
+  movedTo: string | null;
+  /** The entry whose `moved_to` is current. */
+  movedToPost?: EntryHandle;
   /** The folder's own name: the newest readable `reframe` carrying `name`; for a Thread, else the opening's. */
   name: string | null;
   /** The reframe whose `name` is current. */
@@ -617,7 +636,7 @@ export interface EntryInspection {
   /** Ids of readable entries superseded by a readable `correction`, in filename order. */
   superseded: string[];
   writable: boolean;
-  /** Actionable message, only when the opening cannot be read. */
+  /** Actionable message, when the opening cannot be read or the folder moved to a host. */
   writeRefusal?: string;
   /** How the `asOf` cursor resolved, when one was given. */
   asOf?: TimeCursorResolution;
@@ -716,6 +735,11 @@ export function inspectEntries(
     unreadable.some((entry) => path === undefined || compareOrdinal(entry.path, path) > 0);
   const closed: EntryInspection["closed"] = unreadableAfter(closedPost?.path) ? "unknown" : closedPost?.closed ?? false;
 
+  // `moved_to`: the newest readable entry that carries one. A move is never unset, so no exception
+  // for an unreadable newer entry: the value stands and the entry is named like any other.
+  const movedToPost = newestFirst.find((post) => post.movedTo !== undefined);
+  const movedTo = movedToPost?.movedTo ?? null;
+
   const stringField = (post: Entry | undefined, field: "name" | "summary"): string | null => {
     const value = post?.frontmatter[field];
     return typeof value === "string" && value.trim() ? value : null;
@@ -731,7 +755,9 @@ export function inspectEntries(
 
   const writeRefusal = openingUnreadable
     ? `Opening post ${opening?.path ?? "(missing)"} is unreadable; writes refused. Any Thread writer may repair it with a commit explaining why.`
-    : undefined;
+    : movedTo !== null
+      ? `This folder moved to ${movedTo}; writes refused. Post to it there.`
+      : undefined;
   return {
     posts, notes, unreadable, warnings, parent, source,
     ...(parentPost ? { parentPost: handle(parentPost) } : {}),
@@ -739,12 +765,14 @@ export function inspectEntries(
     ...(aboutPost ? { aboutPost: handle(aboutPost) } : {}),
     closed,
     ...(closedPost ? { closedPost: handle(closedPost) } : {}),
+    movedTo,
+    ...(movedToPost ? { movedToPost: handle(movedToPost) } : {}),
     name,
     ...(namePost ? { namePost: handle(namePost) } : {}),
     summary,
     ...(summaryPost ? { summaryPost: handle(summaryPost) } : {}),
     superseded,
-    writable: !openingUnreadable,
+    writable: !openingUnreadable && movedTo === null,
     ...(writeRefusal ? { writeRefusal } : {}),
     ...(asOf ? { asOf } : {}),
   };
