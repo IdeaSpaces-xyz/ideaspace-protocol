@@ -407,6 +407,14 @@ history. Where the verbs write history they follow [Identity](#identity): author
 `Co-authored-by` = the agent, `Conversation:` names the session, no signatures, and a trailer is
 attribution a service never decides by.
 
+`map` from `ideaspaces`, from an org (`hostname:<host>`) or from a person (`person:<handle>`) is a
+**list**: Personal, each org and Shared with you for the account; an org's Spaces; what a person
+shared. A list is read under the person's own sign-in, only in a conversation with the person (never
+by a listener or a launched child), and it is **not reach**: nothing a list returns ever enters what
+the agent may name or touch, its items are fields only with names cut to one line and marked as
+others', and handles pass by shape while emails and display names never do. A `look` at a service
+address carries **`access`**, who can read the item, filled only when the person manages it.
+
 The contract, the fixed field names, the fold of old names, and the table of words AX owns are
 [`schema/verbs.md`](schema/verbs.md); the pure vectors are
 [`conformance/verbs/manifest.json`](conformance/verbs/manifest.json). This section fixes how an act

@@ -157,6 +157,39 @@ describe("the four verbs: reference behaviour beyond the vectors", () => {
     for (const result of [asFactName, asTopName, asLookName]) expect(JSON.stringify(result)).not.toContain("canary");
   });
 
+  it("a list is read only with the person, needs no reach, and what it listed reaches nothing", () => {
+    expect(validateVerbRequest({ verb: "map", start: "ideaspaces" }, { lists: true }).status).toBe("valid");
+    expect(validateVerbRequest({ verb: "map", start: "ideaspaces" }, {})).toMatchObject({ reason_code: "no_lists" });
+    expect(validateVerbRequest({ verb: "map", start: "person:@janis" }, { lists: true, reach: [] }).status).toBe("valid");
+    const listed = { lists: true, listed: ["thread:x_0123456789abcdef01234567"] };
+    expect(validateVerbRequest({ verb: "look", target: "thread:x_0123456789abcdef01234567" }, listed)).toMatchObject({ reason_code: "out_of_reach" });
+    expect(validateVerbRequest({ verb: "look", target: "thread:x_0123456789abcdef01234567" }, { ...listed, reach: ["thread:x_0123456789abcdef01234567"] }).status).toBe("valid");
+  });
+
+  it("a handle is a handle by shape alone", () => {
+    const facts = (who: string) => ({ outcome: "ok" as const, access: { public: false, people: [{ who, level: "Viewer" }], teams: [], pending: 0 } });
+    expect(checkVerbAnswer({ said: "A sentence.", facts: facts("@janis_b-2") }, { lists: true }).status).toBe("valid");
+    for (const bad of ["janis@example.com", "@", "@jānis", "@janis b", ""]) {
+      expect(checkVerbAnswer({ said: "A sentence.", facts: facts(bad) }, { lists: true }), bad).toEqual({ status: "invalid", problems: [{ code: "who_not_a_handle", field: "access.people[0].who" }] });
+    }
+    // Readers are a list: without the person, an access object fails and not_checked passes.
+    expect(checkVerbAnswer({ said: "A sentence.", facts: facts("@janis") })).toEqual({ status: "invalid", problems: [{ code: "access_without_lists", field: "access" }] });
+    expect(checkVerbAnswer({ said: "A sentence.", facts: { outcome: "ok", access: "not_checked" } }).status).toBe("valid");
+  });
+
+  it("a list start is a handle or a host name by shape, and a listed name carries no invisible character", () => {
+    expect(validateVerbRequest({ verb: "map", start: "person:jan@x.com" }, { lists: true })).toMatchObject({ reason_code: "invalid_field", field: "start" });
+    expect(validateVerbRequest({ verb: "map", start: "hostname:../../x" }, { lists: true })).toMatchObject({ reason_code: "invalid_field", field: "start" });
+    expect(validateVerbRequest({ verb: "map", start: "hostname:acme.example" }, { lists: true }).status).toBe("valid");
+    const item = (name: string) => ({ outcome: "ok" as const, list: [{ address: "repo:n_9ffe8bb354f1b10b6fbb059e", kind: "repo", name, by_others: true }] });
+    expect(checkVerbAnswer({ said: "A sentence.", facts: item("Garden plan") }).status).toBe("valid");
+    // A direction override, a zero-width space, a C1 control, a tab, and the line and paragraph separators.
+    const invisible = [0x202e, 0x200b, 0x009b, 0x0009, 0x2028, 0x2029].map((code) => String.fromCharCode(code));
+    for (const character of invisible) {
+      expect(checkVerbAnswer({ said: "A sentence.", facts: item(`Garden ${character}plan`) }), character.charCodeAt(0).toString(16)).toEqual({ status: "invalid", problems: [{ code: "list_name_multiline", field: "list[0].name" }] });
+    }
+  });
+
   it("a Thread opened with nobody in it needs nothing asked; one with someone does", () => {
     expect(validateVerbRequest({ verb: "post", request: "start_thread", name: "Plan" }, { caller: "agent" }).status).toBe("valid");
     expect(validateVerbRequest({ verb: "post", request: "start_thread", name: "Plan", with: "@b" }, { caller: "agent" })).toMatchObject({ reason_code: "not_from_person", field: "request" });
@@ -224,7 +257,7 @@ describe("the four verbs: AX's words in schema/verbs.md pass their own check", (
 
   it("fills every said cell, and each sentence has no forbidden word, hash or command", () => {
     const table = rows("The sentences");
-    expect(table.length).toBe(26);
+    expect(table.length).toBe(31);
     for (const row of table) {
       const cell = row[4];
       expect(cell, row[1]).not.toBe("*AX*");
