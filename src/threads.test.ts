@@ -8,6 +8,7 @@ import {
   THREAD_KINDS,
   parseThreadPost,
   parseAddressees,
+  parseWrittenBy,
   inspectThreadPosts,
   currentThreadMap,
   reconstructThreadTimeline,
@@ -63,6 +64,9 @@ const agreementSchemaVectors = JSON.parse(readFileSync(
 ));
 const addressees = JSON.parse(readFileSync(
   new URL("../conformance/threads/addressees.json", import.meta.url), "utf-8",
+));
+const writtenByVectors = JSON.parse(readFileSync(
+  new URL("../conformance/threads/written-by.json", import.meta.url), "utf-8",
 ));
 const parentVectors = JSON.parse(readFileSync(
   new URL("../conformance/threads/parent.json", import.meta.url), "utf-8",
@@ -131,7 +135,7 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors, ...writtenByVectors.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
@@ -723,7 +727,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors, ...writtenByVectors.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }
@@ -849,5 +853,26 @@ describe("who a post asks", () => {
     expect(parseAddressees(["Scout", " Scout "])).toEqual(["Scout"]);
     expect(parseAddressees([])).toEqual([]);
     expect(parseAddressees({ name: "Scout" })).toBeNull();
+  });
+});
+
+describe("written_by: the firefly that wrote a post", () => {
+  it("is pointed at from the manifest", () => {
+    expect((manifest as any).written_by_vectors).toBe("written-by.json");
+    expect(writtenByVectors.format).toBe("ideaspaces-thread-written-by/v1");
+  });
+
+  it.each(writtenByVectors.vectors)("parses $id", (vector: any) => {
+    const parsed = parseThreadPost(vector.input.content, vector.input.path);
+    expect(parsed.status).toBe(vector.expected.status);
+    if (parsed.status !== "valid") return;
+    expect(parsed.post.writtenBy ?? null).toEqual(vector.expected.written_by);
+    expect(parsed.post.warnings ?? []).toEqual(vector.expected.warnings);
+  });
+
+  it("reads a value the same way outside a post, and never takes a person", () => {
+    expect(parseWrittenBy({ agent: "agent:n_1", name: " Pilot " })).toEqual({ agent: "agent:n_1", name: "Pilot" });
+    expect(parseWrittenBy({ agent: "person:user_2", name: "Anna" })).toBeNull();
+    expect(parseWrittenBy(["agent:n_1", "Pilot"])).toBeNull();
   });
 });

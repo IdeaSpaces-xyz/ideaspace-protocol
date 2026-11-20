@@ -28,6 +28,7 @@ const expected = [
   "conformance/threads/current-map.json",
   "conformance/threads/parent.json",
   "conformance/threads/addressees.json",
+  "conformance/threads/written-by.json",
   "conformance/time/manifest.json",
   "conformance/time/state.json",
   "conformance/time/memory.json",

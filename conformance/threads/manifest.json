@@ -9,6 +9,7 @@
   "current_map_vectors": "current-map.json",
   "parent_vectors": "parent.json",
   "addressee_vectors": "addressees.json",
+  "written_by_vectors": "written-by.json",
   "required_coverage": [
     "parent_field",
     "about_field",
@@ -90,7 +91,13 @@
     "to_any_kind",
     "to_absent",
     "to_invalid_kept_post",
-    "to_limits"
+    "to_limits",
+    "written_by_parsed",
+    "written_by_trimmed",
+    "written_by_extra_keys_ignored",
+    "written_by_absent",
+    "written_by_invalid_kept_post",
+    "written_by_name_limit"
   ],
   "vectors": [
     {

@@ -1,0 +1,215 @@
+{
+  "format": "ideaspaces-thread-written-by/v1",
+  "operation": "parse_post",
+  "rule": "A post's optional written_by names the firefly that wrote it for whoever signs it, as the writer's client reports it: an object with agent, an agent:<id> address with no whitespace and at most 200 characters after agent:, and name, nonempty after trimming, at most 120 code points, with no control, format or line-break character. Both are trimmed; other keys are ignored. Any other value drops the field with warning invalid_written_by and the post stays valid. It is a claim, like author: it grants, refuses and ranks nothing, and a reader never resolves it.",
+  "expected_fields": "status, written_by (null when absent or dropped), warnings (field and warning)",
+  "vectors": [
+    {
+      "id": "a-firefly-and-its-name",
+      "covers": [
+        "written_by_parsed"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": {
+          "agent": "agent:n_0123456789abcdef01234567",
+          "name": "Pilot"
+        }
+      }
+    },
+    {
+      "id": "trimmed",
+      "covers": [
+        "written_by_trimmed"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: \" agent:n_0123456789abcdef01234567 \"\n  name: \"  Pilot  \"\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": {
+          "agent": "agent:n_0123456789abcdef01234567",
+          "name": "Pilot"
+        }
+      }
+    },
+    {
+      "id": "other-keys-ignored",
+      "covers": [
+        "written_by_extra_keys_ignored"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n  person: person:user_2\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": {
+          "agent": "agent:n_0123456789abcdef01234567",
+          "name": "Pilot"
+        }
+      }
+    },
+    {
+      "id": "absent",
+      "covers": [
+        "written_by_absent"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-person-is-not-a-firefly",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: person:user_2\n  name: Anna\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-string",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by: Pilot\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "no-name",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: \"  \"\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-line-break-in-the-name",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: \"Pilot\\nfor everyone\"\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-format-character-in-the-name",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: \"Pil\\u202Eot\"\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "the-name-limit",
+      "covers": [
+        "written_by_name_limit"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": {
+          "agent": "agent:n_0123456789abcdef01234567",
+          "name": "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+        }
+      }
+    },
+    {
+      "id": "over-the-name-limit",
+      "covers": [
+        "written_by_name_limit"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    }
+  ]
+}
