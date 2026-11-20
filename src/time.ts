@@ -87,6 +87,11 @@ export interface EntryFrontmatter {
    * typed `<type>:<id>` address, claimed as `author` is. It grants, notifies and restricts nothing.
    */
   to?: string | string[];
+  /**
+   * The firefly that wrote the entry for whoever signs it, as the writer's client reports it: `agent` an
+   * `agent:<id>` address and `name` its display name. Attribution, claimed as `author` is: it grants, refuses and ranks nothing.
+   */
+  written_by?: { agent: string; name: string };
   /** Sets the folder's closed state: `true` closes, `false` reopens. A legacy `kind: closure` reads as `true`. */
   closed?: boolean;
   /** Optional Map block capturing citations and coordinates. An entry that carries one sets the current Map. */
@@ -151,6 +156,8 @@ export interface Entry {
   supersedes?: string;
   /** Addressees from `to`, trimmed, in authored order without repeats. Absent when no one is named. */
   to?: string[];
+  /** The firefly that wrote it, from `written_by`, trimmed. Absent when the field is absent or malformed. */
+  writtenBy?: WrittenBy;
   /** The closed state this entry sets: its boolean `closed` field, else `true` for a legacy `kind: closure`. Absent when it sets none. */
   closed?: boolean;
   mapResult?: MapParseResult;
@@ -324,6 +331,14 @@ export function parseEntry(content: string, path: string = "", options: ParseEnt
     }
   }
 
+  // `written_by`: the firefly that wrote it. A malformed value drops the field; the entry stays valid.
+  let writtenBy: WrittenBy | undefined;
+  if ("written_by" in fm && fm.written_by !== null && fm.written_by !== undefined) {
+    const by = parseWrittenBy(fm.written_by);
+    if (by) writtenBy = by;
+    else warnings.push({ field: "written_by", warning: "invalid_written_by" });
+  }
+
   // `closed` is the field; `kind: closure` is its legacy form. An entry that carries the field is
   // read by it alone, so a dropped malformed field sets nothing even on a closure.
   let closed: boolean | undefined;
@@ -428,6 +443,7 @@ export function parseEntry(content: string, path: string = "", options: ParseEnt
     ...(attachedTo ? { attachedTo } : {}),
     ...(supersedes ? { supersedes } : {}),
     ...(to ? { to } : {}),
+    ...(writtenBy ? { writtenBy } : {}),
     ...(closed !== undefined ? { closed } : {}),
     ...(mapResult ? { mapResult } : {}),
   };
@@ -456,6 +472,35 @@ export function parseAddressees(value: unknown): string[] | null {
     if (!named.includes(trimmed)) named.push(trimmed);
   }
   return named.length > ADDRESSEES_MAX ? null : named;
+}
+
+/** The firefly that wrote an entry, as `written_by` names it. */
+export interface WrittenBy {
+  /** An `agent:<id>` address. */
+  agent: string;
+  /** Its display name, one line. */
+  name: string;
+}
+
+/** The longest firefly name a reader keeps, in code points: a list name's limit (verbs.md). */
+export const WRITTEN_BY_NAME_MAX = 120;
+const WRITTEN_BY_AGENT = /^agent:[^\s]{1,200}$/;
+const WRITTEN_BY_BREAK = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
+
+/**
+ * Parse an entry's `written_by`: an object whose `agent` is an `agent:<id>` address (no whitespace, at most
+ * 200 characters after `agent:`) and whose `name` is nonempty after trimming, at most
+ * {@link WRITTEN_BY_NAME_MAX} code points, with no control, format or line-break character. Other keys are
+ * ignored. Returns the trimmed pair, or null when the value is not that shape. Pure: a claim, never resolved.
+ */
+export function parseWrittenBy(value: unknown): WrittenBy | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const { agent, name } = value as Record<string, unknown>;
+  if (typeof agent !== "string" || typeof name !== "string") return null;
+  const id = agent.trim(), shown = name.trim();
+  if (!WRITTEN_BY_AGENT.test(id) || WRITTEN_BY_BREAK.test(id)) return null;
+  if (!shown || [...shown].length > WRITTEN_BY_NAME_MAX || WRITTEN_BY_BREAK.test(shown)) return null;
+  return { agent: id, name: shown };
 }
 
 /** One caller-supplied entry file. The protocol never reads the filesystem for these operations. */
