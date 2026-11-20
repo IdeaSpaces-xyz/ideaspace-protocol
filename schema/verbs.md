@@ -340,7 +340,9 @@ vector (Security, 2026-11-17, msg_c965c00b; placed by the human, 18:31):
    the person does not own reaches the model through a list. A `name` is one line, cut to 120
    characters, with every control and format character removed (Unicode `Cc` and `Cf`: line breaks,
    direction overrides, zero-width characters) and the line and paragraph separators (`Zl`, `Zp`)
-   with them, and it carries `by_others: true`. The fields others write outside `name` have fixed
+   with them, and it carries `by_others: true` (the check's code for any such character is
+   `list_name_multiline`, named for the common case; it fires for every character in those classes).
+   The fields others write outside `name` have fixed
    shapes: `address` is a service address, `kind` is one of `space`, `org`, `repo`, `folder`, `note`,
    `thread`, `person`, `level` is one word (letters, `_`, `-`, at most 32 characters, in the
    service's own casing), `time` is an ISO instant; a sentence in any of them is refused

@@ -202,9 +202,9 @@ export type VerbRequestCheck =
 
 const SERVICE_ADDRESS = /^(ideaspaces|repo:n_[0-9a-f]+|thread:x_[0-9a-f]+|x_[0-9a-f]+|person:[^\s]+|hostname:[^\s]+|space:[^\s]+|https:\/\/[^\s]+)$/i;
 const LIST_START = /^(ideaspaces|hostname:[^\s]+|person:[^\s]+)$/i;
-/** A level as the service names it: one word, letters, `_` or `-`, never a sentence. */
+/** A level as the service names it: one word, letters, `_` or `-`, never a sentence. Shape only: the service decides which words exist. */
 const LEVEL = /^[a-z][a-z_-]{0,31}$/i;
-/** An ISO instant, as time.md spells one. */
+/** An ISO instant, as time.md spells one. Shape only: `2026-13-45T…` passes here; calendar validity is the writer's. */
 const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/;
 /** A handle as the service spells it: `@`, then 1 to 39 letters, digits, `_` or `-`. An email or a display name is not one. */
 const HANDLE = /^@[A-Za-z0-9][A-Za-z0-9_-]{0,38}$/;
