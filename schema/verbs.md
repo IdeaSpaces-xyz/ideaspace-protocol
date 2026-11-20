@@ -128,7 +128,7 @@ not the kind's is refused `unexpected_field`, a missing one `missing_field`, an 
 
 | `request` | Required | Optional | What it does |
 |---|---|---|---|
-| `entry` | `target`, `body` | `reply_to` (one id or a list), `kind` (`post`, `reframe`, `correction`, `mark`), `mark`, `supersedes`, `name`, `summary`, `map`, `tags`, `parent`, `about`, `closed`, `author` | one immutable entry under [`time.md`](time.md). Local: written, then added to history on its own, that one file, never pushed. Hosted (`thread:x_…`): sent, not retried |
+| `entry` | `target`, `body` | `reply_to` (one id or a list), `kind` (`post`, `reframe`, `correction`, `mark`), `mark`, `supersedes`, `to` (who the entry asks: one name or a list), `name`, `summary`, `map`, `tags`, `parent`, `about`, `closed`, `author` | one immutable entry under [`time.md`](time.md). Local: written, then added to history on its own, that one file, never pushed. Hosted (`thread:x_…`): sent, not retried |
 | `start_thread` | `name` | `target` (a folder, or `ideaspaces`), `summary`, `body`, `with` (one person), `parent`, `about`, `map` | opens a Thread: locally its folder, Agreement, README and opening post; on a service, a hosted Thread |
 | `share` | `target`, `with` | `grade` | asks the service to let one person (`with`, a handle or email) read `target`. `grade` is a grantable level the service names ([`access.md`](access.md)); left out, the service grants its **lowest** level; given, it is a word the person said (guard 1). History is never shared by this call |
 | `revoke` | `target`, `from` | — | **take back**: ends what `from` was given on `target`. By the person only (guard 3); the person's own take back is checked against nothing else, so it always works |

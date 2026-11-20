@@ -167,6 +167,30 @@ kind adds:
   `kind: snapshot`; it writes the Map on a `post`. A reader keeps a legacy Map-less snapshot and
   warns `snapshot_requires_map`, naming the post; no warning rewrites, hides or blocks anything.
 
+#### Who a post asks (`to`)
+
+Any post may name who it asks, in an optional `to` field ([`time.md`](time.md#entries) carries the
+row). An ask is not a kind of post: a decision, a snapshot or a reply can each ask someone, and the
+post keeps its own kind.
+
+- **Shape.** One string or a list of strings. A reader trims each entry. An entry must be nonempty,
+  one line, and at most 200 UTF-16 code units long. A reader drops repeats and keeps the authored
+  order; at most 20 distinct entries. An absent field, an empty key (`to:`) or an empty list names
+  no one.
+- **Tolerance.** Any other value (a number, a map, a nested list, a blank or multi-line entry, too
+  long or too many) drops the whole field with warning `invalid_to`, and the post stays valid.
+  Readers never keep part of a malformed `to`.
+- **What an entry means.** A name as an `author` would write it, or a typed `<type>:<id>` address.
+  Like `author`, it is the writer's claim: readers compare entries exactly and never resolve them to
+  accounts. A host may map names to its own identities; that is host policy, outside this format.
+- **What it does not do.** `to` grants no access, sends no notification, and does not restrict who
+  may read or reply. Whether an ask is still open, and what wakes its addressee, are reader and host
+  rules built over this field, not part of the post format.
+- **The operation.** `parse_addressees` (`parseAddressees`) reads a `to` value as `parseThreadPost`
+  does: the trimmed addressees in authored order without repeats, an empty list when no one is
+  named, or null for a value of any other shape; a parsed post carries them as `to`, absent when no
+  one is named. Vectors: [`../conformance/threads/addressees.json`](../conformance/threads/addressees.json).
+
 #### Unreadable posts and repair
 
 As in [`time.md`](time.md#unreadable-entries-and-repair). In a Thread a post without an `id` is
@@ -312,7 +336,7 @@ Independent implementations share these portable operations. The time operations
    positive `lookback` cap; returns `status`, the chosen post, the Map, the Map's field warnings,
    `skipped` newest first, `lookback` and `reason`. Pure.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. Every one of them also passes through the time operations, and again on a folder that is not `_threads/`; that rule and the state, selection and memory vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json). The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, addressee cases in `addressees.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. Every one of them also passes through the time operations, and again on a folder that is not `_threads/`; that rule and the state, selection and memory vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json). The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 
@@ -421,6 +445,14 @@ imports from `@ideaspaces/protocol` or `@ideaspaces/protocol/threads` stays.
   `asOf` cursor. New result fields: `notes` (declared folders), `superseded`.
 - **New result fields on `ThreadPostInspection`:** `closedPost`, `name`, `summary`, `namePost`,
   `summaryPost`, `superseded`, `notes`, and `asOf` when a cursor was given. Additive.
+
+## Consumer migration: `to`, who a post asks
+
+Additive. `ThreadPost` (an `Entry`) gains optional `to`, a malformed value warns `invalid_to`, and
+`parseAddressees` with `THREAD_ADDRESSEE_MAX_LENGTH` and `THREAD_ADDRESSEES_MAX` are exported. A
+reader that ignores the field still reads every post; a writer with no way to name an addressee
+keeps writing valid posts. A verb's `post` with `request: entry` takes `to` as one of its fields
+([`verbs.md`](verbs.md)).
 
 ## Format evolution
 

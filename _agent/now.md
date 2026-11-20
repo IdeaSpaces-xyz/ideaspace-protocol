@@ -4,6 +4,17 @@ summary: "v0.34.0, draft: the four verbs map, look, post and write under one ide
 ---
 # Now
 
+## Who a post asks: `to` (rebased from #96)
+
+Any entry may name who it asks in an optional `to` field: one name or a list, each a name as an
+`author` would write it or a typed `<type>:<id>` address, trimmed, one line, at most 200 units,
+repeats dropped, at most 20; a malformed value warns `invalid_to` and the post stays valid. A claim
+like `author`, never resolved; it grants, notifies and restricts nothing. The human, 2026-11-09.
+Approved as #96 on 0.32.0 and rebased onto 0.33.0: the field lives in `time.ts` beside the other
+entry fields, `parseAddressees` is exported under the Thread names too, `verbs.md` lists `to` on a
+`post` entry, and the 18 vectors are unchanged in `conformance/threads/addressees.json`. No tag or
+release.
+
 ## Lists and readers (draft, spec/remote-entities)
 
 `map` from `ideaspaces`, an org (`hostname:<host>`) or a person (`person:<handle>`) is a list:

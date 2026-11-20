@@ -128,7 +128,7 @@ const VERB_FIELDS: Record<Verb, { required: string[]; optional: string[] }> = {
 const POST_FIELDS: Record<PostRequest, { required: string[]; optional: string[] }> = {
   entry: {
     required: ["target", "body"],
-    optional: ["reply_to", "kind", "mark", "supersedes", "name", "summary", "map", "tags", "parent", "about", "closed", "author"],
+    optional: ["reply_to", "kind", "mark", "supersedes", "to", "name", "summary", "map", "tags", "parent", "about", "closed", "author"],
   },
   start_thread: { required: ["name"], optional: ["target", "summary", "body", "with", "parent", "about", "map"] },
   share: { required: ["target", "with"], optional: ["grade"] },
@@ -349,6 +349,7 @@ export function validateVerbRequest(input: unknown, context: VerbContext = {}): 
         if (rest.kind === "mark" && !isNonEmptyString(rest.mark)) return refuse("missing_field", { verb, request: "entry", kind: "mark" }, "mark");
         if (rest.closed !== undefined && typeof rest.closed !== "boolean") return refuse("invalid_field", { verb, request: "entry" }, "closed");
         if (rest.reply_to !== undefined && !isNonEmptyString(rest.reply_to) && !isStringList(rest.reply_to)) return refuse("invalid_field", { verb, request: "entry" }, "reply_to");
+        if (rest.to !== undefined && !isNonEmptyString(rest.to) && !isStringList(rest.to)) return refuse("invalid_field", { verb, request: "entry" }, "to");
         if (isServiceAddress(rest.target) && !inReach(rest.target as string, context)) return refuse("out_of_reach", null, "target");
         return { status: "valid", verb, request: { ...request, request: kind } };
       }
