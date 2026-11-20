@@ -23,7 +23,7 @@
         { "type": "string", "pattern": "^[a-z][a-z0-9_]*:.+$" },
         { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*:.+$" } }
       ],
-      "x-examples": ["note:@n_0123456789abcdef01234567//ideas/x.md", "file:@n_0123456789abcdef01234567//data.txt", "https://example.org/page", ["person:anna", "repo:n_0123456789abcdef01234567"]]
+      "x-examples": ["note:@n_0123456789abcdef01234567//ideas/x.md", "file:@n_0123456789abcdef01234567//data.txt", "https://example.org/page", ["person:@anna", "repo:n_0123456789abcdef01234567"]]
     },
     "attached_to": {
       "type": "string",

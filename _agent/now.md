@@ -16,10 +16,14 @@ that cannot carry one or that someone else describes). About is declared, never 
 membership or a filename, and grants nothing. A reader finds a beside Map by matching `about`
 among Notes it already holds (`sameEntity`, `aboutMaps`); no index, scan or fetch. The Thread
 opened from an idea carries the idea's Map, pinned, as its opening Map, so the invited person and
-their firefly read the same Map first. Content look reports `about` and the carried `map` from
-`summary` upward and the block at `children` and `full`. The human's words: 2026-11-19 ("Map can be
-attached to anything we have… Any message has one and we start to explore together") and
-2026-11-20 ("map should be something we can attach to (about) to any note/folder or anything").
+their firefly read the same Map first. A Thread's Map holds the other players (the human, 10:32:
+"a map of other players, repos, knowledge, pages, people, fireflies, whatever"): a person as
+`person:@<handle>`, a handle by shape and never an email, a firefly as its repository; inviting
+someone adds them to it after the service confirms who, and a member seen in a Map never counts as
+named by the person (Security's list rules of #111). Content look reports `about` and the carried
+`map` from `summary` upward and the block at `children` and `full`. The human's words: 2026-11-19
+("Map can be attached to anything we have… Any message has one and we start to explore together")
+and 2026-11-20 ("map should be something we can attach to (about) to any note/folder or anything").
 The contract is [`schema/map-about.md`](../schema/map-about.md); vectors
 `conformance/maps/about.json` and three Content look vectors; code `src/map-about.ts`. The words a
 person reads are AX's, left as a marked table. The browser (0.9.24) and grants are named as not

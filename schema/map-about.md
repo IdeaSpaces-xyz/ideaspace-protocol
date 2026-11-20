@@ -58,7 +58,8 @@ keeps its post-only grammar ([`threads.md`](threads.md)).
 | a Thread | `thread:x_…` hosted; `thread:@<root>//_threads/<name>` local | its current Map, read from its posts |
 | a post | a post reference, `post:msg_…` or the forms of `threads.md` | the Map it carries is the Thread's |
 | a page | its URL, `https://…` | nothing the protocol reads yet (0.9.24's browser) |
-| a person, an agent | `person:<handle>`, `agent:<id>` | nothing: beside only |
+| a person | `person:@<handle>`, the handle as the service spells it; never an email | nothing: beside only |
+| a firefly | its repository, `repo:n_…`; an agent that is no repository, `agent:<id>` | its root `README.md` |
 
 A position is a [position address](maps.md#position-addresses): `@<root_node_id>//<position>` is
 the canonical form and valid anywhere; `@<name>//<position>` is valid only alongside the Map that
@@ -126,8 +127,54 @@ person and their firefly read the same Map first.
    `map` at it read that Map first; a later post that carries a Map replaces the frame for both.
 4. The copy is a moment. The Note's own Map may move on; a later post carries the new one.
 
+5. The invited person becomes a member of the Thread's Map (below), once the service has confirmed
+   who they are.
+
 Access does not change: a member the invited person cannot read shows as its curator name and
 summary, and they knock. Sharing the Thread shares its Map, never the members' content.
+
+## What a Thread's Map holds: the other players
+
+The human, 2026-11-20, 10:32: "We bring in other actors in Thread. Thread is first window of
+awareness - what is our point of view (firefly), what are we working on (thread), what we are
+looking at and using - a map of other players, repos, knowledge, pages, people, fireflies,
+whatever." A Thread's about-Map is that third part. Its members are the players, written in the
+member language [`maps.md`](maps.md) already has; this page adds no member taxonomy:
+
+| Player | Written as |
+|---|---|
+| a person | an address member `person:@<handle>`: `@`, then letters, digits, `_` or `-`, as the service spells it ([`verbs.md`](verbs.md#lists-and-what-they-never-do), rule 4). `depth` is `name` or `summary`, as for every address |
+| a firefly | its repository: `repo:n_…` as an address member, or a pinned root with position `.` when the Map pins it, with its Agreement's name and summary as disclosure. An agent that is no repository is `agent:<id>` |
+| a repository, a folder, a Note | a position member of a root, or `repo:n_…` |
+| a page | its URL, `https://…` |
+| a Thread inside | `thread:x_…`, or the position member `_threads/<name>/README.md` |
+| an organisation | `hostname:<host>` |
+
+**A person member is a handle and nothing else.** A writer MUST NOT put an email, an invitation
+address or a display name in a `person:` member's address, `name`, `summary` or `disclosure`; the
+curator may write what they call the person, never what the service knows about them. A person
+without an account is not a member: a pending invitation is a count the host keeps
+(`access.pending`), never a Map member. A host that writes a Thread's Map refuses a `person:` member
+that is not a handle by shape (`who_not_a_handle`, the code [`verbs.md`](verbs.md) already has) and
+carries the test `thread_map_person_members_are_handles`. Generic `parseMap` does not enforce this
+in this draft: an open address stays open, and the rule sits on the writer, where the person's
+words are.
+
+**Inviting someone adds them to the Thread's Map.** When the person invites someone (`start_thread`
+with `with`, or `share` of the Thread), the host, after the service confirms who (`facts.with`,
+never the model's spelling), posts one entry carrying a Map: the current Map with the invited person
+added as `person:@<handle>`. So the Thread's Map says who is looking, and the invited person's
+firefly reads a Map that already has them in it. A take back posts a Map without them. The Map
+**records** the invitation and is not the invitation: the act is the person's (guard 1), the
+service's grant is the grant, and a `person:` member gives that person nothing and gives any agent
+no reach to them.
+
+**Security's list rules hold in a Map** ([`verbs.md`](verbs.md#lists-and-what-they-never-do)): a
+member seen in a Map never counts as named by the person. Nothing read from a Map's members enters
+`context.person_named`: an agent that reads `person:@bea` in the Thread's Map still cannot `share`
+with `@bea` until the person writes her name in the conversation. Reach stays the host's launch-Map
+rule and is not widened by this page. `said` never quotes a member's curator name as the person's
+word. Handles pass by shape; emails and display names never.
 
 ## How `look` and `map` show it
 

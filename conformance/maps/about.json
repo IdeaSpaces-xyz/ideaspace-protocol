@@ -52,7 +52,7 @@
       { "position": "other/y.md", "frontmatter": { "about": "note:@n_89abcdef0123456789abcdef//ideas/x.md", "map": { "roots": [], "members": [] } } },
       { "position": "page.map.md", "frontmatter": { "about": "https://example.org/page", "map": { "roots": [], "members": [{ "address": "https://example.org/page/about", "depth": "name" }] } } },
       { "position": "thread.map.md", "frontmatter": { "about": "thread:x_abc", "map": { "roots": [], "members": [] } } },
-      { "position": "elsewhere.md", "frontmatter": { "about": ["person:anna", "note://ideas/x.md"], "map": { "roots": [], "members": [{ "address": "person:anna", "depth": "name" }] } } },
+      { "position": "elsewhere.md", "frontmatter": { "about": ["person:@anna", "note://ideas/x.md"], "map": { "roots": [], "members": [{ "address": "person:@anna", "depth": "name" }] } } },
       { "position": "nomap.md", "frontmatter": { "about": "note:@n_0123456789abcdef01234567//ideas/x.md" } }
     ]
   },
@@ -99,8 +99,8 @@
       "id": "about-new-field-wins-over-legacy",
       "operation": "parse_about",
       "covers": ["about_new_field_wins"],
-      "input": { "about": "person:anna", "attached_to": "agent:x" },
-      "expected": { "status": "valid", "source": "about", "warnings": [], "links": [{ "kind": "person", "value": "anna", "raw": "person:anna" }] }
+      "input": { "about": "person:@anna", "attached_to": "agent:x" },
+      "expected": { "status": "valid", "source": "about", "warnings": [], "links": [{ "kind": "person", "value": "@anna", "raw": "person:@anna" }] }
     },
     {
       "id": "about-invalid-link-dropped-good-ones-kept",
@@ -216,7 +216,7 @@
         "hits": [
           { "position": "ideas/x.md", "form": "carried", "about": [], "map": { "roots": [], "members": [{ "address": "https://example.org/p", "depth": "name" }] } },
           { "position": "maps/x-by-anna.map.md", "form": "beside", "about": ["note:@n_0123456789abcdef01234567//ideas/x.md"], "map": { "roots": [], "members": [{ "address": "hostname:example.org", "depth": "summary" }] } },
-          { "position": "elsewhere.md", "form": "beside", "about": ["person:anna", "note://ideas/x.md"], "map": { "roots": [], "members": [{ "address": "person:anna", "depth": "name" }] } }
+          { "position": "elsewhere.md", "form": "beside", "about": ["person:@anna", "note://ideas/x.md"], "map": { "roots": [], "members": [{ "address": "person:@anna", "depth": "name" }] } }
         ],
         "skipped": [{ "position": "broken.md", "code": "invalid_map" }]
       }
@@ -234,7 +234,7 @@
         "hits": [
           { "position": "ideas/x.md", "form": "carried", "about": [], "map": { "roots": [], "members": [{ "address": "https://example.org/p", "depth": "name" }] } },
           { "position": "maps/x-by-anna.map.md", "form": "beside", "about": ["note:@n_0123456789abcdef01234567//ideas/x.md"], "map": { "roots": [], "members": [{ "address": "hostname:example.org", "depth": "summary" }] } },
-          { "position": "elsewhere.md", "form": "beside", "about": ["person:anna", "note://ideas/x.md"], "map": { "roots": [], "members": [{ "address": "person:anna", "depth": "name" }] } }
+          { "position": "elsewhere.md", "form": "beside", "about": ["person:@anna", "note://ideas/x.md"], "map": { "roots": [], "members": [{ "address": "person:@anna", "depth": "name" }] } }
         ],
         "skipped": [{ "position": "broken.md", "code": "invalid_map" }]
       }
