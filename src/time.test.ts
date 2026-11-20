@@ -71,8 +71,9 @@ function checkInspection(inspection: EntryInspection, expected: any): void {
   if ("closed" in expected) expect(inspection.closed).toBe(expected.closed);
   if ("writable" in expected) expect(inspection.writable).toBe(expected.writable);
   if ("writeRefusal" in expected) expect(inspection.writeRefusal).toBe(expected.writeRefusal);
+  if ("movedTo" in expected) expect(inspection.movedTo).toBe(expected.movedTo);
   if ("source" in expected) expect(inspection.source).toBe(expected.source);
-  for (const handle of ["parentPost", "aboutPost", "closedPost", "namePost", "summaryPost"] as const) {
+  for (const handle of ["parentPost", "aboutPost", "closedPost", "movedToPost", "namePost", "summaryPost"] as const) {
     if (handle in expected) expect(inspection[handle] ?? null).toEqual(expected[handle]);
   }
   if ("about" in expected) expect(inspection.about.map((link) => link.raw)).toEqual(expected.about);

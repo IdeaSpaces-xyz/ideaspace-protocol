@@ -4,7 +4,20 @@ summary: "v0.34.0, draft: the four verbs map, look, post and write under one ide
 ---
 # Now
 
-## Lists and readers (draft, spec/remote-entities)
+## Moving a Thread to a host (draft, spec/thread-move)
+
+A Thread moves from this computer to a host once, on the first invite, by the person's act (the
+human, 2026-11-20 11:41: "1. Yes"). Its last local post carries `moved_to: thread:x_…`, a state
+field under the one rule, final and never unset; the folder is then not writable and the refusal
+names the hosted address (`moved`, with the hosted `post` as `next`). The host keeps every post as
+written, `id`, claimed `author` and `date` included, beside its own `received_at` per post and the
+mover once on the Thread, and the hosted Thread carries `moved_from`. The shape is in
+[`schema/threads.md`](../schema/threads.md#moving-a-thread-to-a-host) and `schema/time.md`, the code
+in `src/time.ts`, the vectors in `conformance/time/state.json`. The server's import and the
+Desktop's confirm are the consumers'. One `said` row is marked for AX. No tag or release is part of
+this change.
+
+## Lists and readers (spec/remote-entities, merged bff9337)
 
 `map` from `ideaspaces`, an org (`hostname:<host>`) or a person (`person:<handle>`) is a list:
 Personal, each org, Shared with you; an org's Spaces; what a person shared. `look` at a service

@@ -248,6 +248,7 @@ act is the person's alone), `next` is `null` and `said` tells the agent to tell 
 | `limit_reached` | the acts that widen who can read | the day's count is used; `until` says when | `null` |
 | `redirected` | `publish` | the Space's own settings would send the push somewhere else (guard 2) | `null` |
 | `no_lists` | `map` from a list start | this conversation may not see lists: a listener or a launched child | `null` |
+| `moved` | `post` with `entry` | the folder moved to a host: its last entry carries `moved_to` ([`threads.md`](threads.md#moving-a-thread-to-a-host)) | `post` to the hosted address |
 | any code of [`local-effects.md`](local-effects.md) | `write`, `post` | the effect's own refusal | as above |
 
 ## The acts that reach other people, and their three guards
@@ -394,7 +395,8 @@ operations:
   absent reads as `agent`), `person_named`, `person_asked` (guard 1), `reach` (service
   addresses the conversation may name; **absent reads as none**, so a missing reach never widens it;
   the literal `ideaspaces` is allowed as `map.start` and `start_thread.target` without it), and
-  `entries` (`{ path, id, folder }` for the files that are entries), `lists` (true only in a
+  `entries` (`{ path, id, folder }` for the files that are entries), `moved` (`{ folder, to }` for
+  the folders whose last entry carries `moved_to`), `lists` (true only in a
   conversation with the person; absent reads as false) and `listed` (what lists returned, consulted
   for nothing).
 - `check_answer(answer, context)` returns `{ status: "valid" }` or `{ status: "invalid", problems:
@@ -462,6 +464,7 @@ operation or required coverage tag rather than skip it. The reference implementa
 | `post` | taken back | `ok` | — | Took back {name} from {who}, who can't read it any more. |
 | `post` | visibility changed | `ok` | — | {name} is public now, and anyone can read it. *Private:* {name} is private now, and only the people it's shared with can read it. |
 | `post` | published (private, with its history) | `ok` | — | Published {name} to IdeaSpaces, private and with its history, which can't be taken back. |
+| `post` | the folder moved to a host, so the entry goes there | `refused` | `moved` | *AX, to write* |
 | `post` | not published: the Space's own settings redirect the push | `refused` | `redirected` | Not published: this Space is set to send its history somewhere other than IdeaSpaces, so tell the person. |
 | `post` | who or what not from the person | `refused` | `not_from_person` | Not done: the person hasn't named {value} in this conversation, and only the person says who and what, so ask them. |
 | `post` | an agent asked to take back | `refused` | `person_only` | Not taken back: only the person can take back {name}, so tell them. |

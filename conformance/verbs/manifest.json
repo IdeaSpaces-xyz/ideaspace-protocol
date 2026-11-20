@@ -17,7 +17,7 @@
   "reason_codes": [
     "unknown_verb", "retired_name", "missing_field", "unexpected_field", "invalid_field", "unknown_request",
     "out_of_reach", "local_only", "keeps_time", "changed_since_read", "no_identity", "not_from_person",
-    "person_only", "limit_reached", "redirected", "no_lists"
+    "person_only", "limit_reached", "redirected", "no_lists", "moved"
   ],
   "words_note": "The said sentences are AX's, from the table in schema/verbs.md (The words), with Plan, @bea and Viewer standing in for {name}, {who} and {level}. said_forbidden_words is AX's list; every check_answer vector that checks words uses it. The vectors check shape and the list, not the wording of each sentence.",
   "said_forbidden_words": [
@@ -103,6 +103,7 @@
     "map_hostname_start_is_a_host",
     "list_name_no_invisible_characters",
     "list_text_outside_name_shaped",
+    "post_moved_folder_refused",
     "answer_short_change",
     "answer_refused_needs_reason_and_next",
     "answer_next_is_verb_call",
@@ -290,6 +291,14 @@
       "context": { "caller": "agent", "lists": true, "listed": ["repo:n_9ffe8bb354f1b10b6fbb059e", "@seen"], "person_asked": ["share"], "person_named": ["notes/plan.md"] },
       "request": { "verb": "post", "target": "notes/plan.md", "request": "share", "with": "@seen" },
       "expected": { "status": "refused", "reason_code": "not_from_person", "field": "with", "next": null }
+    },
+    {
+      "id": "post-to-a-moved-thread",
+      "operation": "validate_request",
+      "covers": ["post_moved_folder_refused"],
+      "context": { "moved": [{ "folder": "_threads/2026-11-17-plan", "to": "thread:x_0123456789abcdef01234567" }] },
+      "request": { "verb": "post", "target": "_threads/2026-11-17-plan", "body": "A reply." },
+      "expected": { "status": "refused", "reason_code": "moved", "field": "target", "next": { "verb": "post", "target": "thread:x_0123456789abcdef01234567" } }
     },
     {
       "id": "look-invalid-depth",

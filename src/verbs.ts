@@ -88,6 +88,7 @@ export const VERB_REASON_CODES = [
   "limit_reached",
   "redirected",
   "no_lists",
+  "moved",
 ] as const;
 export type VerbReasonCode = (typeof VERB_REASON_CODES)[number];
 
@@ -173,6 +174,8 @@ export interface VerbContext {
   reach?: string[];
   /** Files known to be entries. */
   entries?: VerbEntry[];
+  /** Folders whose last entry carries `moved_to`, with the hosted address an entry goes to instead. */
+  moved?: { folder: string; to: string }[];
   /** Words `said` never contains; whole words, case-insensitive. */
   forbidden_words?: string[];
   /** Strings the host holds that must never reach the model: live credentials, a canary in tests. */
@@ -350,6 +353,9 @@ export function validateVerbRequest(input: unknown, context: VerbContext = {}): 
         if (rest.closed !== undefined && typeof rest.closed !== "boolean") return refuse("invalid_field", { verb, request: "entry" }, "closed");
         if (rest.reply_to !== undefined && !isNonEmptyString(rest.reply_to) && !isStringList(rest.reply_to)) return refuse("invalid_field", { verb, request: "entry" }, "reply_to");
         if (isServiceAddress(rest.target) && !inReach(rest.target as string, context)) return refuse("out_of_reach", null, "target");
+        // A folder that moved to a host takes no entry here; the entry goes to the hosted Thread.
+        const moved = context.moved?.find((folder) => folder.folder === (rest.target as string).trim());
+        if (moved) return refuse("moved", { verb: "post", target: moved.to }, "target");
         return { status: "valid", verb, request: { ...request, request: kind } };
       }
       if (kind === "visibility" && typeof rest.public !== "boolean") return refuse("invalid_field", { verb, request: kind }, "public");

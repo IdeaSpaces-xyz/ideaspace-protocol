@@ -64,6 +64,7 @@ An entry MUST declare valid leading YAML frontmatter containing a non-empty stri
 | `summary` | String | The entry's dense summary for search. On a `reframe`, the folder's own summary (below). |
 | `tags` | Array of strings | Retrieval tags, and where an entry's label goes (`delivery`, `decision`). A label changes no reader's behaviour. |
 | `actor_ref` / `author` | String | Optional author identity or human-readable attribution. |
+| `moved_to` | String, a hosted Thread address `thread:x_…` | Optional. Where the folder went: it moved to a host. Final: the entry that carries it is the folder's last entry here, and a writer refuses every later one. A malformed value warns `invalid_moved_to` and is dropped. See [`threads.md`](threads.md#moving-a-thread-to-a-host). |
 
 The Markdown body follows the frontmatter. A reader also exposes the derived `fileDate`: the valid
 filename instant **or day**, independent of the authored `date`. It recognizes
@@ -161,6 +162,7 @@ The state fields are:
 | `closed` | an entry carrying a boolean `closed` | `kind: closure` reads as `closed: true` | `false` |
 | `map` (the current Map) | an entry carrying a valid Map, whatever its kind | `kind: snapshot` | the opening's Map, else none |
 | `name`, `summary` (Threads) | a `reframe` carrying the field | — | the opening's, for a Thread; absent for a declared folder |
+| `moved_to` | an entry carrying a valid `moved_to`, whatever its kind | — | `null`: the folder has not moved |
 
 A reader reports, for each field, the value and the entry it came from (`parentPost`, `aboutPost`,
 `closedPost`, `namePost`, `summaryPost`, the current Map's `post`), and lists every unreadable entry. For `parent`
@@ -172,6 +174,12 @@ refused, a write into an open one is accepted, and the unreadable entry may have
 every other field the newest readable entry's value stands and the unreadable one is named. A folder
 whose `closed` is `unknown` stays writable: a visible misplaced write is preferable to locking out
 every writer. A legacy `kind: closure` entry that also carries `closed` is read by the field.
+
+**`moved_to` ends the folder's time here.** The newest readable entry that carries a valid
+`moved_to` sets it, and a reader reports `movedTo` and `movedToPost`. A moved folder is not
+writable: `writable` is `false` and `writeRefusal` names the hosted address, so the next entry goes
+there. No exception is needed for an unreadable newer entry, because a move is never unset: the
+newest readable value stands, and the unreadable entry is named as for any other field.
 
 **A closed folder accepts one entry: the one that reopens it.** An entry carrying `closed: false`
 may be appended to a closed folder and sets `closed` to `false`; a writer refuses every other entry
