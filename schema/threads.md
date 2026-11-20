@@ -48,6 +48,10 @@ Each thread folder (e.g. `_threads/<thread>/`) contains:
    every direct Markdown file except `README.md` is a post, and one that cannot be read as a post is
    unreadable and named: the stricter rule of a folder that keeps time by placement.
 3. `README.md` — a view of the Thread's current state (below).
+4. `notes/` — optional: Notes about the Thread, such as the one it was opened from. They are
+   ordinary Notes, never posts. Only a Thread's direct Markdown files are posts, so a reader of posts
+   skips every folder in it. A writer puts a Note it keeps inside a Thread here, not loose beside the
+   posts, where it would be read as an unreadable post.
 
 ### Where a Thread sits and what it is about: `parent` and `about`
 

@@ -35,6 +35,15 @@
       "child_names": ["Direction"]
     },
     {
+      "id": "notes-file",
+      "position": "_threads/decision/notes/idea.md",
+      "kind": "markdown",
+      "name": "The idea",
+      "summary": "A Note about this Thread, not one of its posts.",
+      "surface": "# The idea\n\nWritten by the person.\n",
+      "child_names": ["The idea"]
+    },
+    {
       "id": "agent-file",
       "position": "_threads/decision/_agent/agreement.md",
       "kind": "markdown",
