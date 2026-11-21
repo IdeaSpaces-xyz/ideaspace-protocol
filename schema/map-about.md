@@ -2,9 +2,9 @@
 
 > Language-neutral contract for a Map that is **about** one entity: what `about` means, where such
 > a Map lives and how a reader finds it from the thing, how an invitation carries it, how `look` and
-> `map` show it, and what it does not do yet. **Provisional, v0.35.0 (draft).** The sentences a
-> person reads are AX's, in [The words](#the-words); the shape here is Integrator's draft for the
-> human, AX and Security to read.
+> `map` show it, and what it does not do yet. **Provisional, v0.34.0.** The sentences a
+> person reads are AX's, in [The words](#the-words); the shape here is Integrator's, read by the
+> human, AX and Security.
 
 The human, 2026-11-19: "Map can be attached to anything we have. References can be map. To do list
 can be a map. We agree on what is in our shared map. Any message has one and we start to explore

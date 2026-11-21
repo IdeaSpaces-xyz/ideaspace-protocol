@@ -1,10 +1,10 @@
 ---
 name: Now
-summary: "v0.35.0, draft: a Map can be about anything, since a Map is about what its carrier is about; about on any Note, carried and beside forms, the invitation's opening Map, and look reporting about and the carried Map. Before it, v0.34.0, draft: the four verbs map, look, post and write under one ideaspaces namespace, one write, answers that say the person's sentence first and the Git facts as named fields, post's request kinds with three guards, and AX's words table. Before it, v0.33.0, not released: time is something a folder keeps, entries set its state by one rule, and as_of/since/newest read it in time; a Thread's tree edge is parent and its subjects are about; cache-stable ambient Tree text omits recursive file counts while explicit Tree reads retain them. Before it, v0.32.0: a repository's identity image and the current Thread Map; and access version one. No release, engine, or consumer pin change."
+summary: "v0.34.0, released 2026-11-21: who a post asks (`to`); the four verbs map, look, post and write under one ideaspaces namespace, with one answer shape and three guards; lists from the account, an org or a person, and look's access; a Map about anything, carried or beside; a closed folder reopens by one entry, and a declared folder is written to; a Thread's notes/ folder holds Notes. Before it, v0.33.0, released 2026-11-16: time is something a folder keeps and entries set its state by one rule; a Thread's parent and about; cache-stable ambient Tree text; and the 0.32.0 work, a repository's identity image and the current Thread Map, with access version one. The CLI pins v0.34.0."
 ---
 # Now
 
-## A Map about anything, v0.35.0 (draft, spec/map-about)
+## A Map about anything, v0.34.0 (released 2026-11-21, #112)
 
 A Map is about what its carrier is about: the Note or entry whose frontmatter holds the `map`
 block. A Note is about its `about` links (one typed link or a list; the same field and parser as a
@@ -35,9 +35,9 @@ and 2026-11-20 ("map should be something we can attach to (about) to any note/fo
 The contract is [`schema/map-about.md`](../schema/map-about.md); vectors
 `conformance/maps/about.json` and three Content look vectors; code `src/map-about.ts`. The words a
 person reads are AX's, in its The words table: counts, never a member's name. The browser (0.9.24) and grants are named as not
-yet. Drafted for the human, AX and Security to read; no tag or release is part of this change.
+yet. Read by the human, AX and Security; released in v0.34.0, which carried what was drafted as 0.35.0.
 
-## Who a post asks: `to` (rebased from #96)
+## Who a post asks: `to`, v0.34.0 (released 2026-11-21, #96)
 
 Any entry may name who it asks in an optional `to` field: one name or a list, each a name as an
 `author` would write it or a typed `<type>:<id>` address, trimmed, one line, at most 200 units,
@@ -45,10 +45,10 @@ repeats dropped, at most 20; a malformed value warns `invalid_to` and the post s
 like `author`, never resolved; it grants, notifies and restricts nothing. The human, 2026-11-09.
 Approved as #96 on 0.32.0 and rebased onto 0.33.0: the field lives in `time.ts` beside the other
 entry fields, `parseAddressees` is exported under the Thread names too, `verbs.md` lists `to` on a
-`post` entry, and the 18 vectors are unchanged in `conformance/threads/addressees.json`. No tag or
-release.
+`post` entry, and the 18 vectors are unchanged in `conformance/threads/addressees.json`. Released in
+v0.34.0; the CLI writes it with `threads post --to` and reads it in `threads inbox`.
 
-## Lists and readers (draft, spec/remote-entities)
+## Lists and readers, v0.34.0 (released 2026-11-21, #111)
 
 `map` from `ideaspaces`, an org (`hostname:<host>`) or a person (`person:<handle>`) is a list:
 Personal, each org, Shared with you; an org's Spaces; what a person shared. `look` at a service
@@ -60,9 +60,9 @@ name, pending as a count, and accepted shares only. Security's round 2 added: `a
 (`access_without_lists` for a listener or a child), list starts by shape (`person:` a handle,
 `hostname:` a host), names free of every control and format character, fixed shapes for `address`,
 `kind` (a closed set), `level` and `time`, and two named host tests. Scout's additions 1 and 2,
-placed by the human 2026-11-17 18:31. The five new `said` rows are marked for AX. No tag or release is part of this change.
+placed by the human 2026-11-17 18:31. The five new `said` rows are marked for AX. Released in v0.34.0.
 
-## The four verbs, v0.34.0 (spec/four-verbs, merged 03c7e52)
+## The four verbs, v0.34.0 (released 2026-11-21, #110)
 
 An agent works an ideaspace with four verbs, the ones a person names: `map`, `look`, `post`,
 `write`, spelled `ideaspaces <verb>`, `mcp__ideaspaces__<verb>` and `ideaspaces_<verb>` on the
@@ -85,7 +85,7 @@ engine and the plugin must change is named in the PR body, not built here. Secur
 the person's own always working, and the `publish` push conditions with `redirected`. No tag or
 release is part of this change.
 
-## Time and state, v0.33.0 (not released)
+## Time and state, v0.33.0 (released 2026-11-16)
 
 A folder keeps time by placement (`_threads/<thread>/`) or by `keeps_time: true` in its own
 Agreement; in a declared folder a file without an `id` is an ordinary Note, so turning time on for a
@@ -100,9 +100,9 @@ the README is a view of the state and the Agreement the one hand-kept file. `as_
 a consumer imports is removed; Content look pages and selects by id in any folder that keeps time.
 Memory is the fixture: `conformance/time/memory.json`. The human, 2026-11-14 and 2026-11-16. What a
 writer must change (the CLI's `--kind snapshot|closure`, Home's skills, the README view) is named in
-the PR body of the change that brought this, not built here. No tag or release is part of this change.
+the PR body of the change that brought this, not built here. Released in v0.33.0.
 
-## The words: a Space is the place, a Map is the view (not released)
+## The words: a Space is the place, a Map is the view (released in v0.33.0)
 
 Text only. What the protocol called a Vault is a **Space**: the shared place a person or a company
 works in, holding Repos, Threads, and the people and agents there. What it called a Space, a lens of
@@ -111,7 +111,7 @@ references, is a **Map**: a view with a depth and, for a moment, a pin. The huma
 for repository context, `vault` for a Space's ownership, `space` and `homeSpace` for the grants on
 its Map. No format, loading rule or vector changes; the guide skills say the new words.
 
-## Parent and about, v0.33.0 (not released)
+## Parent and about, v0.33.0 (released 2026-11-16)
 
 A Thread's place in the tree is `parent`, one post reference on a post; what it is about or grew out
 of is `about`, any number of open typed links that never make a tree edge. The opening post's
@@ -122,9 +122,9 @@ the newest post's, then the Agreement's, then the origin, and `inspectThreadPost
 as `parent` when it names a post and as `about` otherwise; writers write both during the
 compatibility window. See
 [`schema/threads.md`](../schema/threads.md#where-a-thread-sits-and-what-it-is-about-parent-and-about)
-and `conformance/threads/parent.json`. No tag or release is part of this change.
+and `conformance/threads/parent.json`. Released in v0.33.0.
 
-## Cache-stable ambient Tree text, v0.33.0 (not released)
+## Cache-stable ambient Tree text, v0.33.0 (released 2026-11-16)
 
 The typed awareness Tree still carries total and per-directory Markdown counts. The ambient `head`
 and canonical full render omit those recursive counts, so adding a file beneath an already-listed
@@ -132,7 +132,7 @@ directory does not change the cache-stable section. Explicit Tree sections, focu
 Tree diagnostics retain the counts. The placement conformance fixture and a count-only mutation test
 prove the split. No consumer source change, tag or release is part of this fix.
 
-## A repository's identity image, v0.32.0 (not released)
+## A repository's identity image, v0.32.0 (released in v0.33.0)
 
 A repository MAY name one picture of itself (a repo's icon, an agent's avatar, a person's portrait) with
 `image: _assets/<file>` in its root `README.md` front matter, and nowhere else. It resolves by the
@@ -144,18 +144,18 @@ readers show their default. Remote
 pictures are never fetched. `resolveRepositoryImageDeclaration` and `checkRepositoryImageBytes` are
 pure and browser-safe (`./assets`); `readRepositoryImage` reads the disk; a content look at the repository
 root carries `image` from `summary` up. See [`schema/assets.md`](../schema/assets.md#identity-image)
-and `conformance/assets/repository-image.json`. No tag or release is part of this change.
+and `conformance/assets/repository-image.json`. Released in v0.33.0.
 
-## The current Thread Map, v0.32.0 (not released)
+## The current Thread Map, v0.32.0 (released in v0.33.0)
 
 A Thread's current Map is the Map of its newest post that carries one, whatever its kind: a Map
 belongs to the post it was posted with, and a Thread has many over time. `currentThreadMap` reads
 it from caller-supplied posts: a post without a Map never replaces it, a malformed Map is skipped
 and named, and a capped or partial read reports `stopped`. See
 [`schema/threads.md`](../schema/threads.md#the-current-thread-map) and
-`conformance/threads/current-map.json`. No tag or release is part of this change.
+`conformance/threads/current-map.json`. Released in v0.33.0.
 
-## Access version one (not released)
+## Access version one (released in v0.33.0)
 
 See [`schema/access.md`](../schema/access.md) and `conformance/access/manifest.json`. The pure
 check intersects person, agent grants and session acts; ancestors are derived by the host.
