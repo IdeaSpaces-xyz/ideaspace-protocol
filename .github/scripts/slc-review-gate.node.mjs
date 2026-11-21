@@ -24,6 +24,10 @@ test("a silent or stale run cannot pass without a fresh verdict for the exact he
   assert.equal(verdictForHead([[comment(body)]], head, started)?.user.login, "claude");
   assert.equal(verdictForHead([[comment(`Recommendation: Request Changes\nSLC-Review-Head: ${head}`)]], head, started)?.user.login, "claude");
   assert.equal(verdictForHead([[comment(`Recommendation: Comment\nSLC-Review-Head: ${head}`)]], head, started)?.user.login, "claude");
+  // v23 4.16: bold, or twice and agreeing, is a verdict; two that disagree are not.
+  assert.equal(verdictForHead([[comment(`SLC-Review-Head: ${head}\n**Recommendation:** Approve`)]], head, started)?.user.login, "claude");
+  assert.equal(verdictForHead([[comment(`SLC-Review-Head: ${head}\nRecommendation: Approve\n**Recommendation:** Approve`)]], head, started)?.user.login, "claude");
+  assert.equal(verdictForHead([[comment(`SLC-Review-Head: ${head}\nRecommendation: Approve\nRecommendation: Request Changes`)]], head, started), undefined);
 });
 
 test("postflight exits nonzero on silent success and reports denied tool names", () => {

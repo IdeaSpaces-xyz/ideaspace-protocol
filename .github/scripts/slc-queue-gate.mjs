@@ -10,6 +10,7 @@
 // It assumes the queue's ruleset uses merge method MERGE, one PR per group and ALLGREEN. Squash or
 // rebase would break the two-parent check below and refuse every PR, which is the safe way to fail.
 import { readFileSync } from "node:fs";
+import { verdictOf } from "./slc-verdict.mjs";
 
 const REVIEWER = "claude[bot]";
 const CHECK = "slc-review";
@@ -40,21 +41,20 @@ export function reviewsIn(pages, window) {
     .filter((comment) => time(comment.created_at) >= window.from && time(comment.created_at) <= window.to);
 }
 
-// The label may be bold: "**Recommendation:** Approve."
-// A template left unfilled ("Approve / Request Changes") is not a verdict.
+// The verdict the review states, however it is formatted (slc-verdict.mjs): bold, plain, a heading,
+// or twice. Every statement must agree, and the first sentence must be exactly the verdict.
 export function recommendation(body) {
-  const said = String(body ?? "").split("\n")
-    .map((line) => line.replace(/[*_`]/g, "").trim())
-    .filter((line) => /^recommendation:/i.test(line))
-    .map((line) => line.replace(/^recommendation:\s*/i, ""));
-  if (said.length !== 1) return said.length ? "ambiguous" : "none";
-  const text = said[0].toLowerCase();
-  // The verdict is the first sentence, and it must be exactly "Approve". What follows is notes for
-  // the author. A condition inside the first sentence ("Approve, once CI is green", "Approve with
-  // minor suggestions", "Approve - but fix X") is not a plain Approve, and a gate that nobody reads
-  // can't weigh it, so it refuses. SLC's prompt should end the line at the verdict.
-  const verdict = text.split(/\.(?:\s|$)/)[0].trim();
-  return verdict === "approve" ? "Approve" : verdict === "request changes" ? "Request Changes" : verdict === "comment" ? "Comment" : "ambiguous";
+  return verdictOf(body);
+}
+
+// The head's newest finished review run. A skipped one (a draft, a label) reports success on a
+// required check, but it is not a review: a skipped required job is not a pass (cli #282).
+export function newestRun(checkRuns) {
+  return checkRuns
+    .filter((run) => run.name === CHECK && run.app?.slug === "github-actions" && run.status === "completed")
+    .filter((run) => Number.isFinite(time(run.completed_at)))
+    .sort((a, b) => time(a.completed_at) - time(b.completed_at))
+    .at(-1);
 }
 
 export function decide({ ref, groupParents, pr, checkRuns, pages }) {
@@ -68,6 +68,10 @@ export function decide({ ref, groupParents, pr, checkRuns, pages }) {
   // A verdict counts only for the commit the group really merges.
   if (groupParents?.length !== 2 || groupParents[1] !== head) {
     return { land: false, reason: `group commit does not merge PR #${pr.number}'s head ${head}` };
+  }
+  const newest = newestRun(checkRuns ?? []);
+  if (newest && newest.conclusion !== "success") {
+    return { land: false, reason: `the newest ${CHECK} run for head ${head} was ${newest.conclusion ?? "not a success"}: a skipped or failed review is not a pass. Mark the PR ready or re-run the review, then queue it again.` };
   }
   const window = reviewWindow(checkRuns ?? []);
   if (!window) return { land: false, reason: `no successful ${CHECK} run for head ${head}` };
@@ -83,7 +87,8 @@ export function decide({ ref, groupParents, pr, checkRuns, pages }) {
   }
   const said = recommendation(review.body);
   if (said !== "Approve") {
-    return { land: false, reason: `the SLC verdict for ${head} is not Approve (Recommendation: ${said}): ${review.html_url}` };
+    const why = said === "conflicting" ? "its Recommendation lines disagree" : said === "none" ? "it states no Recommendation" : said === "ambiguous" ? "its Recommendation isn't a plain verdict" : `it says ${said}`;
+    return { land: false, reason: `the SLC verdict for ${head} is not Approve: ${why} (Recommendation: ${said}): ${review.html_url}` };
   }
   return { land: true, reason: `SLC approved ${head}: ${review.html_url}` };
 }
