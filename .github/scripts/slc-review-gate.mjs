@@ -2,6 +2,7 @@
 // A successful Claude invocation is not a PR review. Require a fresh posted verdict
 // for this exact head and report denied tools without exposing raw execution traces.
 import { readFileSync } from "node:fs";
+import { verdictOf } from "./slc-verdict.mjs";
 
 export function verdictForHead(pages, head, started) {
   return pages.flat().find((comment) =>
@@ -9,7 +10,7 @@ export function verdictForHead(pages, head, started) {
     comment.created_at >= started &&
     typeof comment.body === "string" &&
     comment.body.split("\n").some((line) => line.trim() === `SLC-Review-Head: ${head}`) &&
-    comment.body.split("\n").some((line) => /^Recommendation: (Approve|Request Changes|Comment)$/.test(line.trim()))
+    ["Approve", "Request Changes", "Comment"].includes(verdictOf(comment.body))
   );
 }
 
@@ -44,7 +45,7 @@ if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).
   const comments = JSON.parse(readFileSync(commentsPath, "utf8"));
   const verdict = verdictForHead(comments, head, started);
   if (!verdict) {
-    console.error(`SLC: no fresh Approve / Request Changes / Comment verdict from Claude for head ${head}. Failing closed.`);
+    console.error(`SLC: no fresh Approve / Request Changes / Comment verdict from Claude for head ${head}: none stated, or its Recommendation lines disagree or aren't a plain verdict. Failing closed.`);
     process.exitCode = 1;
   } else {
     console.log(`SLC verdict comment for ${head}: ${verdict.html_url}`);

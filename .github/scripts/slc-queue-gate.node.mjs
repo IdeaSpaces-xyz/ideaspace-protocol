@@ -18,6 +18,13 @@ test('accepts only a plain Approve inside the successful head review', () => {
     assert.equal(recommendation(`Recommendation: ${verdict}`), 'ambiguous', verdict);
   }
   assert.equal(recommendation('**Recommendation:** Approve. Notes follow.'), 'Approve');
+  // v23 4.16: the same Approve, bold, plain or twice, is one Approve; two that disagree refuse.
+  for (const body of ['Recommendation: Approve', '**Recommendation:** Approve', 'Recommendation: Approve\n\n**Recommendation:** Approve', '### Recommendation\n**Approve**']) {
+    assert.equal(decide(input({ pages: [[comment(body)]] })).land, true, body);
+  }
+  const conflicting = decide(input({ pages: [[comment('Recommendation: Approve\n**Recommendation:** Request Changes')]] }));
+  assert.equal(conflicting.land, false);
+  assert.match(conflicting.reason, /Recommendation lines disagree/);
 });
 
 test('rejects missing, forged, edited, stale or ambiguous comments', () => {
@@ -40,6 +47,15 @@ test('rejects unsuccessful, skipped, foreign or missing checks; uses newest succ
   const later = { ...run, started_at: '2026-11-07T10:00:00Z', completed_at: '2026-11-07T10:01:00Z' };
   assert.equal(reviewWindow([run, later]).from, Date.parse(later.started_at));
   assert.equal(decide(input({ checkRuns: [run, later] })).land, false);
+});
+
+test('a skipped review newer than a successful one is not a pass (cli #282)', () => {
+  const skipped = { ...run, conclusion: 'skipped', started_at: '2026-11-07T10:00:00Z', completed_at: '2026-11-07T10:00:01Z' };
+  const refused = decide(input({ checkRuns: [run, skipped] }));
+  assert.equal(refused.land, false);
+  assert.match(refused.reason, /was skipped: a skipped or failed review is not a pass/);
+  const failed = decide(input({ checkRuns: [run, { ...skipped, conclusion: 'failure' }] }));
+  assert.match(failed.reason, /was failure/);
 });
 
 test('binds queue ref, PR number, base and group second parent to current head', () => {
