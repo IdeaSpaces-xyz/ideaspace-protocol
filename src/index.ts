@@ -308,6 +308,8 @@ export {
   parseAddressees,
   THREAD_ADDRESSEE_MAX_LENGTH,
   THREAD_ADDRESSEES_MAX,
+  parseWrittenBy,
+  WRITTEN_BY_NAME_MAX,
   reconstructThreadTimeline,
   isThreadPosition,
   resolveThreadGitPath,
@@ -338,6 +340,7 @@ export type {
   CurrentThreadMapSkip,
   ThreadNode,
   ThreadTimeline,
+  WrittenBy,
 } from "./threads.js";
 
 // Time — a folder that keeps time, by placement (a Thread) or by its Agreement's
