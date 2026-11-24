@@ -87,6 +87,11 @@ export interface EntryFrontmatter {
    * typed `<type>:<id>` address, claimed as `author` is. It grants, notifies and restricts nothing.
    */
   to?: string | string[];
+  /**
+   * The firefly that wrote the entry for whoever signs it, as the writer's client reports it: `agent` an
+   * `agent:<id>` address and `name` its display name. Attribution, claimed as `author` is: it grants, refuses and ranks nothing.
+   */
+  written_by?: { agent: string; name: string };
   /** Sets the folder's closed state: `true` closes, `false` reopens. A legacy `kind: closure` reads as `true`. */
   closed?: boolean;
   /** Optional Map block capturing citations and coordinates. An entry that carries one sets the current Map. */
@@ -112,7 +117,10 @@ export interface EntryFieldWarning {
 
 /** Folded mark metadata on a target entry. */
 export interface EntryMark {
+  /** The mark's `author` as written (a legacy `actor_ref` when it has none): the person, when a firefly wrote it. */
   author: string;
+  /** The firefly that wrote the mark, when its `written_by` names one. Marks fold by {@link entryWriter}. */
+  writtenBy?: WrittenBy;
   mark: string;
   id: string;
   date?: string;
@@ -151,6 +159,8 @@ export interface Entry {
   supersedes?: string;
   /** Addressees from `to`, trimmed, in authored order without repeats. Absent when no one is named. */
   to?: string[];
+  /** The firefly that wrote it, from `written_by`, trimmed. Absent when the field is absent or malformed. */
+  writtenBy?: WrittenBy;
   /** The closed state this entry sets: its boolean `closed` field, else `true` for a legacy `kind: closure`. Absent when it sets none. */
   closed?: boolean;
   mapResult?: MapParseResult;
@@ -324,6 +334,14 @@ export function parseEntry(content: string, path: string = "", options: ParseEnt
     }
   }
 
+  // `written_by`: the firefly that wrote it. A malformed value drops the field; the entry stays valid.
+  let writtenBy: WrittenBy | undefined;
+  if ("written_by" in fm && fm.written_by !== null && fm.written_by !== undefined) {
+    const by = parseWrittenBy(fm.written_by);
+    if (by) writtenBy = by;
+    else warnings.push({ field: "written_by", warning: "invalid_written_by" });
+  }
+
   // `closed` is the field; `kind: closure` is its legacy form. An entry that carries the field is
   // read by it alone, so a dropped malformed field sets nothing even on a closure.
   let closed: boolean | undefined;
@@ -428,6 +446,7 @@ export function parseEntry(content: string, path: string = "", options: ParseEnt
     ...(attachedTo ? { attachedTo } : {}),
     ...(supersedes ? { supersedes } : {}),
     ...(to ? { to } : {}),
+    ...(writtenBy ? { writtenBy } : {}),
     ...(closed !== undefined ? { closed } : {}),
     ...(mapResult ? { mapResult } : {}),
   };
@@ -456,6 +475,49 @@ export function parseAddressees(value: unknown): string[] | null {
     if (!named.includes(trimmed)) named.push(trimmed);
   }
   return named.length > ADDRESSEES_MAX ? null : named;
+}
+
+/** The firefly that wrote an entry, as `written_by` names it. */
+export interface WrittenBy {
+  /** An `agent:<id>` address. */
+  agent: string;
+  /** Its display name, one line. */
+  name: string;
+}
+
+/** The longest firefly name a reader keeps, in code points: a list name's limit (verbs.md). */
+export const WRITTEN_BY_NAME_MAX = 120;
+const WRITTEN_BY_AGENT = /^agent:[^\s]{1,200}$/;
+const WRITTEN_BY_BREAK = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
+
+/**
+ * Parse an entry's `written_by`: an object whose `agent` is an `agent:<id>` address (no whitespace, at most
+ * 200 characters after `agent:`) and whose `name` is nonempty after trimming, at most
+ * {@link WRITTEN_BY_NAME_MAX} code points, with no control, format or line-break character. Other keys are
+ * ignored. Returns the trimmed pair, or null when the value is not that shape. Pure: a claim, never resolved.
+ */
+export function parseWrittenBy(value: unknown): WrittenBy | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const { agent, name } = value as Record<string, unknown>;
+  if (typeof agent !== "string" || typeof name !== "string") return null;
+  const id = agent.trim(), shown = name.trim();
+  if (!WRITTEN_BY_AGENT.test(id) || WRITTEN_BY_BREAK.test(id)) return null;
+  if (!shown || [...shown].length > WRITTEN_BY_NAME_MAX || WRITTEN_BY_BREAK.test(shown)) return null;
+  return { agent: id, name: shown };
+}
+
+/**
+ * Who wrote an entry, for "who did this": the firefly its `written_by` names when it names one, else
+ * its `author` (a legacy `actor_ref` when it has no author). Undefined when the entry names nobody.
+ * Two entries have the same writer exactly when this string is equal. A firefly's entry is the
+ * firefly's and never its person's, and two fireflies writing for one person are two writers. The
+ * person stays in `author`: who signs and answers for the entry. Pure: a reading over two claims,
+ * never resolved, and it grants nothing.
+ */
+export function entryWriter(entry: Entry): string | undefined {
+  if (entry.writtenBy) return entry.writtenBy.agent;
+  const { author, actor_ref: actorRef } = entry.frontmatter;
+  return (typeof author === "string" && author) || (typeof actorRef === "string" && actorRef) || undefined;
 }
 
 /** One caller-supplied entry file. The protocol never reads the filesystem for these operations. */
@@ -997,7 +1059,7 @@ export function reconstructTimeline(posts: Entry[]): EntryTimeline {
 
   const superseded = supersededIds(projected);
 
-  // Fold marks onto target entries: collect (author, mark), drop superseded, dedup per author
+  // Fold marks onto target entries: collect (writer, mark), drop superseded, dedup per writer
   const targetMarks = new Map<string, Map<string, EntryMark>>();
   const isFoldable = (post: Entry) => foldableMark(post) &&
     postsById.get(post.inReplyTo[0])?.kind !== "mark" && postsById.has(post.inReplyTo[0]);
@@ -1024,16 +1086,19 @@ export function reconstructTimeline(posts: Entry[]): EntryTimeline {
     const author =
       (typeof markPost.frontmatter.author === "string" ? markPost.frontmatter.author : "") ||
       (typeof markPost.frontmatter.actor_ref === "string" ? markPost.frontmatter.actor_ref : "");
-    // An absent author is not evidence that two marks came from the same author.
-    const authorKey = author ? `${author}\0${markVal}` : `anonymous\0${markPost.id}`;
-    let authorMap = targetMarks.get(targetId);
-    if (!authorMap) {
-      authorMap = new Map();
-      targetMarks.set(targetId, authorMap);
+    // Who wrote the mark: the firefly when `written_by` names one, else the author. A writer who
+    // names nobody is not evidence that two marks came from the same one.
+    const writer = entryWriter(markPost);
+    const writerKey = writer ? `${writer}\0${markVal}` : `anonymous\0${markPost.id}`;
+    let writerMap = targetMarks.get(targetId);
+    if (!writerMap) {
+      writerMap = new Map();
+      targetMarks.set(targetId, writerMap);
     }
-    if (!authorMap.has(authorKey)) {
-      authorMap.set(authorKey, {
+    if (!writerMap.has(writerKey)) {
+      writerMap.set(writerKey, {
         author,
+        ...(markPost.writtenBy ? { writtenBy: markPost.writtenBy } : {}),
         mark: markVal,
         id: markPost.id,
         ...(markPost.date ? { date: markPost.date } : {}),
@@ -1041,10 +1106,10 @@ export function reconstructTimeline(posts: Entry[]): EntryTimeline {
     }
   }
 
-  for (const [targetId, authorMap] of targetMarks.entries()) {
+  for (const [targetId, writerMap] of targetMarks.entries()) {
     const targetPost = postsById.get(targetId);
     if (targetPost) {
-      targetPost.marks = Array.from(authorMap.values());
+      targetPost.marks = Array.from(writerMap.values());
     }
   }
 

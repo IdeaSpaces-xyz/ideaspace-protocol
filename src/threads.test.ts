@@ -8,6 +8,8 @@ import {
   THREAD_KINDS,
   parseThreadPost,
   parseAddressees,
+  parseWrittenBy,
+  threadPostWriter,
   inspectThreadPosts,
   currentThreadMap,
   reconstructThreadTimeline,
@@ -63,6 +65,9 @@ const agreementSchemaVectors = JSON.parse(readFileSync(
 ));
 const addressees = JSON.parse(readFileSync(
   new URL("../conformance/threads/addressees.json", import.meta.url), "utf-8",
+));
+const writtenByVectors = JSON.parse(readFileSync(
+  new URL("../conformance/threads/written-by.json", import.meta.url), "utf-8",
 ));
 const parentVectors = JSON.parse(readFileSync(
   new URL("../conformance/threads/parent.json", import.meta.url), "utf-8",
@@ -131,7 +136,7 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors, ...writtenByVectors.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
@@ -723,7 +728,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors, ...writtenByVectors.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }
@@ -849,5 +854,73 @@ describe("who a post asks", () => {
     expect(parseAddressees(["Scout", " Scout "])).toEqual(["Scout"]);
     expect(parseAddressees([])).toEqual([]);
     expect(parseAddressees({ name: "Scout" })).toBeNull();
+  });
+});
+
+describe("written_by: the firefly that wrote a post", () => {
+  it("is pointed at from the manifest", () => {
+    expect((manifest as any).written_by_vectors).toBe("written-by.json");
+    expect(writtenByVectors.format).toBe("ideaspaces-thread-written-by/v1");
+  });
+
+  const of = (operation: string) => writtenByVectors.vectors.filter((vector: any) => vector.operation === operation);
+  const readable = (vector: any) => vector.input.posts.map(({ content, path }: any) => {
+    const parsed = parseThreadPost(content, path);
+    if (parsed.status !== "valid") throw new Error(`Invalid fixture ${path}`);
+    return parsed.post;
+  });
+
+  it("names an operation on every vector, and no other", () => {
+    expect(new Set(writtenByVectors.vectors.map((vector: any) => vector.operation)))
+      .toEqual(new Set(["parse_post", "post_writers", "reconstruct_timeline"]));
+  });
+
+  it.each(of("parse_post"))("parses $id", (vector: any) => {
+    const parsed = parseThreadPost(vector.input.content, vector.input.path);
+    expect(parsed.status).toBe(vector.expected.status);
+    if (parsed.status !== "valid") return;
+    expect(parsed.post.writtenBy ?? null).toEqual(vector.expected.written_by);
+    expect(parsed.post.warnings ?? []).toEqual(vector.expected.warnings);
+  });
+
+  it.each(of("post_writers"))("says who wrote each post: $id", (vector: any) => {
+    const writers = Object.fromEntries(readable(vector).map((post: any) => [post.id, threadPostWriter(post) ?? null]));
+    expect(writers).toEqual(vector.expected.writers);
+  });
+
+  it.each(of("reconstruct_timeline"))("folds marks by who wrote them: $id", (vector: any) => {
+    const timeline = reconstructThreadTimeline(readable(vector));
+    const marks = (timeline.postsById.get(vector.expected.target)?.marks ?? []).map((mark) => ({
+      id: mark.id,
+      mark: mark.mark,
+      author: mark.author,
+      writer: mark.writtenBy?.agent ?? (mark.author || null),
+    }));
+    expect(marks).toEqual(vector.expected.marks);
+  });
+
+  it("is the two cases the rule was agreed for", () => {
+    const ids = writtenByVectors.vectors.map((vector: any) => vector.id);
+    expect(ids).toContain("two-fireflies-under-one-person-keep-separate-marks");
+    expect(ids).toContain("a-fireflys-reply-is-the-fireflys-not-its-persons");
+    const reply = writtenByVectors.vectors.find((vector: any) => vector.id === "a-fireflys-reply-is-the-fireflys-not-its-persons");
+    const [, firefly, person] = readable(reply);
+    expect(firefly.frontmatter.author).toBe(person.frontmatter.author);
+    expect(threadPostWriter(firefly)).not.toBe(threadPostWriter(person));
+  });
+
+  it("keeps the firefly on a folded mark beside its author, and mutates no caller's post", () => {
+    const vector = writtenByVectors.vectors.find((v: any) => v.id === "two-fireflies-under-one-person-keep-separate-marks");
+    const posts = readable(vector);
+    const marks = reconstructThreadTimeline(posts).postsById.get("msg_open")?.marks ?? [];
+    expect(marks.map((mark) => mark.writtenBy?.name)).toEqual(["Pilot", "Scribe"]);
+    expect(marks.map((mark) => mark.author)).toEqual(["Anna", "Anna"]);
+    expect(posts.every((post: any) => post.marks === undefined)).toBe(true);
+  });
+
+  it("reads a value the same way outside a post, and never takes a person", () => {
+    expect(parseWrittenBy({ agent: "agent:n_1", name: " Pilot " })).toEqual({ agent: "agent:n_1", name: "Pilot" });
+    expect(parseWrittenBy({ agent: "person:user_2", name: "Anna" })).toBeNull();
+    expect(parseWrittenBy(["agent:n_1", "Pilot"])).toBeNull();
   });
 });

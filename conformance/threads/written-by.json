@@ -1,0 +1,358 @@
+{
+  "format": "ideaspaces-thread-written-by/v1",
+  "rule": "A post's optional written_by names the firefly that wrote it for whoever signs it, as the writer's client reports it: an object with agent, an agent:<id> address with no whitespace and at most 200 characters after agent:, and name, nonempty after trimming, at most 120 code points, with no control, format or line-break character. Both are trimmed; other keys are ignored. Any other value drops the field with warning invalid_written_by and the post stays valid. It is a claim, like author: it grants, refuses and ranks nothing, and a reader never resolves it.",
+  "writer_rule": "Who wrote a post, for the question who did this: the firefly its written_by names when it names one (written_by.agent), else its author (a legacy actor_ref when it has no author), else nobody. Two posts have the same writer exactly when that string is equal. So a firefly's post is the firefly's and never its person's, two fireflies writing for one person are two writers, and a written_by dropped as malformed names no firefly. Marks fold by writer: one writer's repeat of a mark value on a target counts once, and a mark whose writer is nobody stays distinct by id. The person stays in author. On a hosted service the signer the service set from the sign-in stands where author stands here. A reading over two claims: it resolves nothing and grants nothing.",
+  "expected_fields": "parse_post: status, written_by (null when absent or dropped), warnings (field and warning). post_writers: writers, each post id with its writer or null for nobody. reconstruct_timeline: target, and marks, the marks folded onto it in fold order, each with id, mark, author (as written, an empty string when absent) and writer (null for nobody).",
+  "vectors": [
+    {
+      "id": "a-firefly-and-its-name",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_parsed"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": {
+          "agent": "agent:n_0123456789abcdef01234567",
+          "name": "Pilot"
+        }
+      }
+    },
+    {
+      "id": "trimmed",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_trimmed"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: \" agent:n_0123456789abcdef01234567 \"\n  name: \"  Pilot  \"\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": {
+          "agent": "agent:n_0123456789abcdef01234567",
+          "name": "Pilot"
+        }
+      }
+    },
+    {
+      "id": "other-keys-ignored",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_extra_keys_ignored"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n  person: person:user_2\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": {
+          "agent": "agent:n_0123456789abcdef01234567",
+          "name": "Pilot"
+        }
+      }
+    },
+    {
+      "id": "absent",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_absent"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-person-is-not-a-firefly",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: person:user_2\n  name: Anna\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-string",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by: Pilot\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "no-name",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: \"  \"\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-line-break-in-the-name",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: \"Pilot\\nfor everyone\"\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-format-character-in-the-name",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_invalid_kept_post"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: \"Pil\\u202Eot\"\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "the-name-limit",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_name_limit"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [],
+        "written_by": {
+          "agent": "agent:n_0123456789abcdef01234567",
+          "name": "PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP"
+        }
+      }
+    },
+    {
+      "id": "over-the-name-limit",
+      "operation": "parse_post",
+      "covers": [
+        "written_by_name_limit"
+      ],
+      "input": {
+        "path": "_threads/t/2026-11-20T15-00-00-000Z-msg_reply.md",
+        "content": "---\nid: msg_reply\nin_reply_to: msg_open\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP\n---\nThank you, I'll read it tonight.\n"
+      },
+      "expected": {
+        "status": "valid",
+        "warnings": [
+          {
+            "field": "written_by",
+            "warning": "invalid_written_by"
+          }
+        ],
+        "written_by": null
+      }
+    },
+    {
+      "id": "a-fireflys-reply-is-the-fireflys-not-its-persons",
+      "operation": "post_writers",
+      "covers": [
+        "writer_firefly_when_named",
+        "writer_author_otherwise",
+        "writer_reply_by_firefly"
+      ],
+      "input": {
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto: Anna\n---\nAnna, can you read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_pilot.md", "content": "---\nid: msg_pilot\nin_reply_to: msg_ask\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nAnna is away until Thursday.\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_anna.md", "content": "---\nid: msg_anna\nin_reply_to: msg_ask\nauthor: Anna\n---\nRead. Go ahead.\n"}
+        ]
+      },
+      "expected": {
+        "writers": {
+          "msg_ask": "Ben",
+          "msg_pilot": "agent:n_0123456789abcdef01234567",
+          "msg_anna": "Anna"
+        }
+      }
+    },
+    {
+      "id": "nobody-a-dropped-claim-and-a-legacy-actor",
+      "operation": "post_writers",
+      "covers": [
+        "writer_nobody",
+        "writer_invalid_written_by_is_author",
+        "writer_legacy_actor_ref"
+      ],
+      "input": {
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_unsigned.md", "content": "---\nid: msg_unsigned\n---\nNo author and no firefly.\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_firefly_only.md", "content": "---\nid: msg_firefly_only\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nA firefly, and no author.\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_dropped.md", "content": "---\nid: msg_dropped\nauthor: Anna\nwritten_by:\n  agent: person:user_2\n  name: Ben\n---\nA person is not a firefly.\n"},
+          {"path": "_threads/t/2026-11-24T10-03-00-000Z-msg_legacy.md", "content": "---\nid: msg_legacy\nactor_ref: person:user_1\n---\nAn older post.\n"}
+        ]
+      },
+      "expected": {
+        "writers": {
+          "msg_unsigned": null,
+          "msg_firefly_only": "agent:n_0123456789abcdef01234567",
+          "msg_dropped": "Anna",
+          "msg_legacy": "person:user_1"
+        }
+      }
+    },
+    {
+      "id": "two-fireflies-under-one-person-keep-separate-marks",
+      "operation": "reconstruct_timeline",
+      "covers": [
+        "marks_two_fireflies_one_person"
+      ],
+      "input": {
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nauthor: Ben\n---\nWho takes the vectors?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_pilot_claims.md", "content": "---\nid: msg_pilot_claims\nkind: mark\nmark: claimed\nin_reply_to: msg_open\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nClaimed\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_scribe_claims.md", "content": "---\nid: msg_scribe_claims\nkind: mark\nmark: claimed\nin_reply_to: msg_open\nauthor: Anna\nwritten_by:\n  agent: agent:n_89abcdef0123456789abcdef\n  name: Scribe\n---\nClaimed\n"}
+        ]
+      },
+      "expected": {
+        "target": "msg_open",
+        "marks": [
+          {"id": "msg_pilot_claims", "mark": "claimed", "author": "Anna", "writer": "agent:n_0123456789abcdef01234567"},
+          {"id": "msg_scribe_claims", "mark": "claimed", "author": "Anna", "writer": "agent:n_89abcdef0123456789abcdef"}
+        ]
+      }
+    },
+    {
+      "id": "a-fireflys-mark-is-not-its-persons",
+      "operation": "reconstruct_timeline",
+      "covers": [
+        "marks_firefly_not_its_person"
+      ],
+      "input": {
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nauthor: Ben\n---\nWho takes the vectors?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_anna_claims.md", "content": "---\nid: msg_anna_claims\nkind: mark\nmark: claimed\nin_reply_to: msg_open\nauthor: Anna\n---\nClaimed\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_pilot_claims.md", "content": "---\nid: msg_pilot_claims\nkind: mark\nmark: claimed\nin_reply_to: msg_open\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nClaimed\n"}
+        ]
+      },
+      "expected": {
+        "target": "msg_open",
+        "marks": [
+          {"id": "msg_anna_claims", "mark": "claimed", "author": "Anna", "writer": "Anna"},
+          {"id": "msg_pilot_claims", "mark": "claimed", "author": "Anna", "writer": "agent:n_0123456789abcdef01234567"}
+        ]
+      }
+    },
+    {
+      "id": "one-firefly-repeating-a-mark-counts-once",
+      "operation": "reconstruct_timeline",
+      "covers": [
+        "marks_one_firefly_once"
+      ],
+      "input": {
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nauthor: Ben\n---\nWho takes the vectors?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_pilot_claims.md", "content": "---\nid: msg_pilot_claims\nkind: mark\nmark: claimed\nin_reply_to: msg_open\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nClaimed\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_pilot_again.md", "content": "---\nid: msg_pilot_again\nkind: mark\nmark: claimed\nin_reply_to: msg_open\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nClaimed\n"},
+          {"path": "_threads/t/2026-11-24T10-03-00-000Z-msg_pilot_done.md", "content": "---\nid: msg_pilot_done\nkind: mark\nmark: done\nin_reply_to: msg_open\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nDone\n"}
+        ]
+      },
+      "expected": {
+        "target": "msg_open",
+        "marks": [
+          {"id": "msg_pilot_claims", "mark": "claimed", "author": "Anna", "writer": "agent:n_0123456789abcdef01234567"},
+          {"id": "msg_pilot_done", "mark": "done", "author": "Anna", "writer": "agent:n_0123456789abcdef01234567"}
+        ]
+      }
+    },
+    {
+      "id": "a-dropped-claim-folds-with-its-author",
+      "operation": "reconstruct_timeline",
+      "covers": [
+        "marks_invalid_written_by_is_author"
+      ],
+      "input": {
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_open.md", "content": "---\nid: msg_open\nauthor: Ben\n---\nWho takes the vectors?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_anna_claims.md", "content": "---\nid: msg_anna_claims\nkind: mark\nmark: claimed\nin_reply_to: msg_open\nauthor: Anna\n---\nClaimed\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_anna_again.md", "content": "---\nid: msg_anna_again\nkind: mark\nmark: claimed\nin_reply_to: msg_open\nauthor: Anna\nwritten_by: Pilot\n---\nClaimed\n"}
+        ]
+      },
+      "expected": {
+        "target": "msg_open",
+        "marks": [
+          {"id": "msg_anna_claims", "mark": "claimed", "author": "Anna", "writer": "Anna"}
+        ]
+      }
+    }
+  ]
+}
