@@ -271,3 +271,5 @@ export { parseAddressees, ADDRESSEE_MAX_LENGTH as THREAD_ADDRESSEE_MAX_LENGTH, A
 export { parseWrittenBy, WRITTEN_BY_NAME_MAX, type WrittenBy } from "./time.js";
 /** Who wrote a post: the firefly `written_by` names when it names one, else the `author`. */
 export { entryWriter as threadPostWriter } from "./time.js";
+/** The asks a Thread's posts hold for one reader: open, answered or withdrawn. */
+export { asksTo, type Ask, type AskState } from "./time.js";

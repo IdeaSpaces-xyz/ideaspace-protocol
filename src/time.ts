@@ -863,6 +863,54 @@ export function supersededIds(entries: readonly Entry[]): Set<string> {
   return superseded;
 }
 
+/** Where an ask stands for one reader: `open`, `answered` by that reader, or `withdrawn` by a correction. */
+export type AskState = "open" | "answered" | "withdrawn";
+
+/** One entry that asks the reader, and where it stands for them. */
+export interface Ask {
+  /** The asking entry. */
+  id: string;
+  path: string;
+  /** The reader's names the entry's `to` holds, in the entry's order. */
+  matched: string[];
+  state: AskState;
+  /** The reader's first reply to it, when there is one. */
+  answer?: string;
+}
+
+/**
+ * The asks one folder's entries hold for one reader, in entry order, each `open`, `answered` or
+ * `withdrawn`. `reader` is every name the reader goes by, as the caller knows them; names are compared
+ * exactly and never resolved. An entry asks the reader when its `to` holds one of the names and the
+ * reader did not write it ({@link entryWriter}). It is `withdrawn` when a correction supersedes it, else
+ * `answered` when an entry the reader wrote names it in `in_reply_to`, else `open`. A mark answers
+ * nothing, a reply to a reply does not answer the ask, and a reply that was later superseded still
+ * answered it. Pure: it adds no field, and delivery and waking are a host's.
+ */
+export function asksTo(entries: readonly Entry[], reader: readonly string[]): Ask[] {
+  const names = new Set(reader);
+  if (names.size === 0) return [];
+  const mine = (entry: Entry) => {
+    const writer = entryWriter(entry);
+    return writer !== undefined && names.has(writer);
+  };
+  const sorted = [...entries].sort((a, b) => compareOrdinal(a.path, b.path) || compareOrdinal(a.id, b.id));
+  const superseded = supersededIds(sorted);
+  // The reader's replies, oldest first. A mark changes no ask.
+  const answers = new Map<string, string>();
+  for (const entry of sorted) {
+    if (entry.kind === "mark" || !mine(entry)) continue;
+    for (const parent of entry.inReplyTo) if (!answers.has(parent)) answers.set(parent, entry.id);
+  }
+  return sorted.flatMap((entry): Ask[] => {
+    const matched = (entry.to ?? []).filter((name) => names.has(name));
+    if (matched.length === 0 || mine(entry)) return [];
+    const answer = answers.get(entry.id);
+    const state: AskState = superseded.has(entry.id) ? "withdrawn" : answer !== undefined ? "answered" : "open";
+    return [{ id: entry.id, path: entry.path, matched, state, ...(answer !== undefined ? { answer } : {}) }];
+  });
+}
+
 function foldableMark(post: Entry): boolean {
   return post.kind === "mark" && post.inReplyTo.length === 1 &&
     typeof post.mark === "string" && post.mark.trim().length > 0;

@@ -55,7 +55,7 @@ An entry MUST declare valid leading YAML frontmatter containing a non-empty stri
 | `kind` | String | What a reader acts on. A writer uses `post` (default), `reframe`, `correction` or `mark`; a label goes in `tags`. `snapshot` and `closure` are **legacy kinds**: a reader keeps acting on them (below), a writer no longer writes them. Any other value is an unknown kind: valid, kept, preserved in the DAG. The raw nonempty string is kept; `"mark "` is an unknown kind, not normalized to `mark`. |
 | `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). The authored string is kept; whitespace-only or YAML-coerced non-string values warn and are not folded. |
 | `supersedes` | String | Optional id of the entry this one supersedes, on a `correction` (or when retracting a mark). |
-| `to` | String or array of strings | Optional: who the entry asks. Each is a name as an `author` would write it (`Security`, `UI/UX`) or a typed `<type>:<id>` address (`agent:…`, `person:…`); trimmed, one line, at most 200 UTF-16 code units, repeats dropped, authored order kept, at most 20. An absent field, an empty key or an empty list names no one. A claim like `author`, compared exactly and never resolved; it grants, notifies and restricts nothing. See [`threads.md`](threads.md#who-a-post-asks-to). |
+| `to` | String or array of strings | Optional: who the entry asks. Each is a name as an `author` would write it (`Security`, `UI/UX`) or a typed `<type>:<id>` address (`agent:…`, `person:…`); trimmed, one line, at most 200 UTF-16 code units, repeats dropped, authored order kept, at most 20. An absent field, an empty key or an empty list names no one. A claim like `author`, compared exactly and never resolved; it grants, notifies and restricts nothing. See [`threads.md`](threads.md#who-a-post-asks-to), and [When an ask is open](#when-an-ask-is-open) for where an ask stands. |
 | `written_by` | Object | Optional: the firefly that wrote the entry for whoever signs it, as the writer's client reports it. `agent` is an `agent:<id>` address (no whitespace, at most 200 characters after `agent:`); `name` is its display name, trimmed, nonempty, one line, at most 120 code points, with no control or format character. Other keys are ignored. A malformed value warns `invalid_written_by` and is dropped. A claim like `author`: it names the firefly, never the person it wrote for. That person is whoever signs the entry: a hosted service sets the signer from the sign-in, and a reader shows both, as in "Written by Pilot for Anna". Nothing grants, refuses, notifies or ranks by it. An entry with none was written by its signer, or by a writer that doesn't say. For "who did this", the firefly it names is the entry's writer; see [Who wrote an entry](#who-wrote-an-entry). |
 | `closed` | Boolean | Optional. Sets the folder's closed state: `true` closes, `false` reopens. A non-boolean value warns `invalid_closed` and is dropped. A legacy `kind: closure` without the field reads as `closed: true`. |
 | `map` | Object | Optional Map block (`roots`, `members`). An entry that carries a valid Map sets the folder's current Map; see below. |
@@ -139,7 +139,8 @@ author.
   neither names nobody.
 - **The same writer is the same string,** compared exactly, as `to` is. So an entry a firefly wrote
   is the firefly's and not its person's, and two fireflies that write for one person are two
-  writers. A reply a firefly writes for Anna is the firefly's reply, not Anna's.
+  writers. A reply a firefly writes for Anna is the firefly's reply, not Anna's. An `author` written
+  as an `agent:<id>` address is the same writer as a firefly with that address.
 - **A dropped `written_by` names no firefly.** A malformed value warns `invalid_written_by`, and the
   entry reads as its author's.
 - **What reads by it.** `mark` folding, below, and any reading of who claimed, finished or answered
@@ -179,6 +180,44 @@ entry:
   own access policy.
 - Reconstruction MUST NOT mutate the caller's parsed entries or carry a previous fold into a later
   reconstruction.
+
+### When an ask is open
+
+An entry that carries `to` asks whoever it names. Where that ask stands is a reading over the
+folder's entries, for one reader at a time. It adds no field and changes nothing that is written.
+
+- **The reader** is every name one actor goes by, as the caller supplies them (`Scout`,
+  `agent:n_…`). Names are compared exactly, as `to` is. The reading never decides who the reader is.
+- **An ask to the reader** is an entry whose `to` holds one of the reader's names and that the
+  reader did not write: its [writer](#who-wrote-an-entry) is none of those names. An entry is never
+  an ask to its own writer. A firefly that writes for Anna can ask Anna, because the writer is the
+  firefly.
+- **Three states,** for each such entry:
+
+  | State | When |
+  |---|---|
+  | `withdrawn` | a readable `correction` supersedes it |
+  | `answered` | not withdrawn, and an entry the reader wrote names it in `in_reply_to` |
+  | `open` | neither |
+
+- **What answers.** A reply, by the one who was asked. A reply is an entry whose `in_reply_to`
+  names the ask; a reply to a reply does not answer the ask. It counts when the reader wrote it,
+  by the writer rule: a reply by anyone else leaves the ask open; a reply Anna's firefly writes
+  leaves an ask to Anna open; and an ask to a firefly is answered by that firefly's reply. A `mark`
+  answers nothing: no mark changes where an ask stands. A reply that was later superseded still
+  answered it.
+- **Each reader on its own.** An ask to two is answered for the one who replied and open for the
+  other.
+- **Withdrawn follows the supersede rule above.** Who may correct an entry is the writing surface's
+  policy, as it is for any correction; the reading does not check it.
+
+The operation is `asks_to` (`asksTo`): the asks the supplied entries hold for the reader, in entry
+order, each with its `state`, the names `matched`, and the reader's first reply as `answer` when
+there is one. It reads what it is given: a caller that supplies part of a folder, or could not
+read an entry, may miss the reply or the correction, and says so to its reader. Vectors:
+[`../conformance/threads/asks.json`](../conformance/threads/asks.json). What a host does with an
+open ask is not here: delivery, waking, a read position, and the list a
+host shows as an inbox.
 
 ## Entries set state
 
@@ -359,6 +398,8 @@ name a consumer imports today is removed.
    `invalid_keeps_time` when the field is present and not a boolean.
 8. **`entry_writer`** (`entryWriter`; `threadPostWriter`): who wrote one parsed entry: the firefly
    its `written_by` names, else its `author`, else nobody. Pure; never resolved.
+9. **`asks_to`** (`asksTo`): the asks the supplied entries hold for one reader, by the names the
+   caller supplies, each `open`, `answered` or `withdrawn`. Pure; no delivery.
 
 Vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json): the
 state rule, `closed` and its exception, the legacy kinds, the selections, a memory-shaped folder (add,

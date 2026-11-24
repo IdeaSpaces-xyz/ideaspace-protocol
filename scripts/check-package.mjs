@@ -29,6 +29,7 @@ const expected = [
   "conformance/threads/parent.json",
   "conformance/threads/addressees.json",
   "conformance/threads/written-by.json",
+  "conformance/threads/asks.json",
   "conformance/time/manifest.json",
   "conformance/time/state.json",
   "conformance/time/memory.json",

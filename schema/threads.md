@@ -184,8 +184,11 @@ post keeps its own kind.
   Like `author`, it is the writer's claim: readers compare entries exactly and never resolve them to
   accounts. A host may map names to its own identities; that is host policy, outside this format.
 - **What it does not do.** `to` grants no access, sends no notification, and does not restrict who
-  may read or reply. Whether an ask is still open, and what wakes its addressee, are reader and host
-  rules built over this field, not part of the post format.
+  may read or reply. What wakes its addressee is a host rule, not part of the post format.
+- **Where an ask stands.** For one reader an ask is open, answered or withdrawn: answered by a
+  reply the one asked wrote, withdrawn when a correction supersedes it
+  ([`time.md`](time.md#when-an-ask-is-open)). It is one reading over the Thread's posts, `asksTo`,
+  with vectors in [`../conformance/threads/asks.json`](../conformance/threads/asks.json).
 - **The operation.** `parse_addressees` (`parseAddressees`) reads a `to` value as `parseThreadPost`
   does: the trimmed addressees in authored order without repeats, an empty list when no one is
   named, or null for a value of any other shape; a parsed post carries them as `to`, absent when no
@@ -365,7 +368,7 @@ Independent implementations share these portable operations. The time operations
    positive `lookback` cap; returns `status`, the chosen post, the Map, the Map's field warnings,
    `skipped` newest first, `lookback` and `reason`. Pure.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, addressee cases in `addressees.json`, `written_by` and who-wrote-a-post cases in `written-by.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. Every one of them also passes through the time operations, and again on a folder that is not `_threads/`; that rule and the state, selection and memory vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json). The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, addressee cases in `addressees.json`, `written_by` and who-wrote-a-post cases in `written-by.json`, open-ask cases in `asks.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. Every one of them also passes through the time operations, and again on a folder that is not `_threads/`; that rule and the state, selection and memory vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json). The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 

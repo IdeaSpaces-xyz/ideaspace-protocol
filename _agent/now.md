@@ -1,8 +1,23 @@
 ---
 name: Now
-summary: "On main and not released: who wrote a post (`written_by`, and the writer a reader takes for who did this). v0.34.0, released 2026-11-21: who a post asks (`to`); the four verbs map, look, post and write under one ideaspaces namespace, with one answer shape and three guards; lists from the account, an org or a person, and look's access; a Map about anything, carried or beside; a closed folder reopens by one entry, and a declared folder is written to; a Thread's notes/ folder holds Notes. Before it, v0.33.0, released 2026-11-16: time is something a folder keeps and entries set its state by one rule; a Thread's parent and about; cache-stable ambient Tree text; and the 0.32.0 work, a repository's identity image and the current Thread Map, with access version one. The CLI pins v0.34.0."
+summary: "On main and not released: who wrote a post (`written_by`, and the writer a reader takes for who did this), and when an ask is open for a reader. v0.34.0, released 2026-11-21: who a post asks (`to`); the four verbs map, look, post and write under one ideaspaces namespace, with one answer shape and three guards; lists from the account, an org or a person, and look's access; a Map about anything, carried or beside; a closed folder reopens by one entry, and a declared folder is written to; a Thread's notes/ folder holds Notes. Before it, v0.33.0, released 2026-11-16: time is something a folder keeps and entries set its state by one rule; a Thread's parent and about; cache-stable ambient Tree text; and the 0.32.0 work, a repository's identity image and the current Thread Map, with access version one. The CLI pins v0.34.0."
 ---
 # Now
+
+## When an ask is open (on main, not released)
+
+Where an ask stands is one reading over a folder's entries, for one reader at a time (the human,
+2026-11-23: "Agreed", in its smallest form). The reader is every name one actor goes by, as the
+caller supplies them. An entry asks the reader when its `to` holds one of those names and the
+reader did not write it. It is `withdrawn` when a correction supersedes it, else `answered` when
+an entry the reader wrote replies to it, else `open`. "Wrote" is the writer rule below, so a reply
+by a person's firefly leaves an ask to the person open, and an ask to a firefly is answered by
+that firefly. A mark answers nothing, a reply to a reply does not answer the ask, and an ask to
+two stands for each on its own. `asksTo` is the reading; ten vectors in
+`conformance/threads/asks.json`. It adds no field and changes nothing that is written. Not in it:
+delivery, waking, a read position, a host's inbox, and a mark that changes an ask. No consumer
+reads it yet and no release carries it. The contract is in
+[`schema/time.md`](../schema/time.md) ("When an ask is open").
 
 ## Who wrote a post: `written_by` and the writer (on main, not released)
 
