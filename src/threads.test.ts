@@ -10,6 +10,7 @@ import {
   parseAddressees,
   parseWrittenBy,
   threadPostWriter,
+  asksTo,
   inspectThreadPosts,
   currentThreadMap,
   reconstructThreadTimeline,
@@ -68,6 +69,9 @@ const addressees = JSON.parse(readFileSync(
 ));
 const writtenByVectors = JSON.parse(readFileSync(
   new URL("../conformance/threads/written-by.json", import.meta.url), "utf-8",
+));
+const askVectors = JSON.parse(readFileSync(
+  new URL("../conformance/threads/asks.json", import.meta.url), "utf-8",
 ));
 const parentVectors = JSON.parse(readFileSync(
   new URL("../conformance/threads/parent.json", import.meta.url), "utf-8",
@@ -136,7 +140,7 @@ describe("portable Thread attachments", () => {
     expect(manifest.attachment_vectors).toBe("attachments.json");
     expect(attachments.format).toBe("ideaspaces-thread-attachments/v1");
     expect(attachments.vectors.length).toBeGreaterThan(0);
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors, ...writtenByVectors.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors, ...writtenByVectors.vectors, ...askVectors.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) expect(covered.has(requirement), requirement).toBe(true);
   });
 
@@ -728,7 +732,7 @@ describe("threads conformance manifest", () => {
   it("has the expected language-neutral format and complete declared coverage", () => {
     expect(manifest.format).toBe("ideaspaces-threads/v1");
     expect(manifest.thread_directory).toBe("_threads");
-    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors, ...writtenByVectors.vectors].flatMap((vector: any) => vector.covers));
+    const covered = new Set([...manifest.vectors, ...attachments.vectors, ...metalayer.vectors, ...postSelection.vectors, ...currentMap.vectors, ...parentVectors.vectors, ...addressees.vectors, ...writtenByVectors.vectors, ...askVectors.vectors].flatMap((vector: any) => vector.covers));
     for (const requirement of manifest.required_coverage) {
       expect(covered.has(requirement), requirement).toBe(true);
     }
@@ -922,5 +926,62 @@ describe("written_by: the firefly that wrote a post", () => {
     expect(parseWrittenBy({ agent: "agent:n_1", name: " Pilot " })).toEqual({ agent: "agent:n_1", name: "Pilot" });
     expect(parseWrittenBy({ agent: "person:user_2", name: "Anna" })).toBeNull();
     expect(parseWrittenBy(["agent:n_1", "Pilot"])).toBeNull();
+  });
+});
+
+describe("when an ask is open, for one reader", () => {
+  const parsed = (vector: any) => vector.input.posts.map(({ content, path }: any) => {
+    const post = parseThreadPost(content, path);
+    if (post.status !== "valid") throw new Error(`Invalid fixture ${path}`);
+    return post.post;
+  });
+  const read = (vector: any, reader: string[] = vector.input.reader) =>
+    asksTo(parsed(vector), reader).map(({ id, state, matched, answer }) => ({ id, state, matched, ...(answer ? { answer } : {}) }));
+  const named = (id: string) => askVectors.vectors.find((vector: any) => vector.id === id);
+
+  it("is pointed at from the manifest", () => {
+    expect((manifest as any).ask_vectors).toBe("asks.json");
+    expect(askVectors.format).toBe("ideaspaces-thread-asks/v1");
+    expect(askVectors.operation).toBe("asks_to");
+  });
+
+  it.each(askVectors.vectors)("reads $id", (vector: any) => {
+    expect(read(vector)).toEqual(vector.expected.asks);
+  });
+
+  it("holds the seven cases the reading was agreed with", () => {
+    const ids = askVectors.vectors.map((vector: any) => vector.id);
+    for (const id of [
+      "an-ask-is-open-until-answered",
+      "a-reply-by-someone-not-asked-leaves-it-open",
+      "a-reply-by-the-persons-firefly-leaves-it-open-for-the-person",
+      "an-ask-to-a-firefly-is-answered-by-that-firefly",
+      "an-ask-to-two-is-open-for-the-one-who-has-not-answered",
+      "a-withdrawn-ask-is-not-open",
+      "a-post-is-not-an-ask-to-its-own-writer",
+    ]) expect(ids).toContain(id);
+  });
+
+  it("reads each reader on its own, in any order of the supplied posts", () => {
+    const two = named("an-ask-to-two-is-open-for-the-one-who-has-not-answered");
+    expect(read(two, ["Anna"])).toEqual([{ id: "msg_ask", state: "answered", matched: ["Anna"], answer: "msg_anna" }]);
+    expect(read(two, ["Ben"])).toEqual([]);
+    expect(read(two, [])).toEqual([]);
+    const firefly = named("a-reply-by-the-persons-firefly-leaves-it-open-for-the-person");
+    expect(read(firefly, ["agent:n_0123456789abcdef01234567"])).toEqual([]);
+    const until = named("an-ask-is-open-until-answered");
+    expect(asksTo([...parsed(until)].reverse(), ["Anna"]).map((ask) => ask.id)).toEqual(["msg_ask", "msg_second"]);
+  });
+
+  it("reports a withdrawn ask as withdrawn even when it was answered first, and mutates nothing", () => {
+    const withdrawn = named("a-withdrawn-ask-is-not-open");
+    const posts = parsed(withdrawn);
+    const reply = parseThreadPost("---\nid: msg_late\nin_reply_to: msg_ask\nauthor: Anna\n---\nRead.\n", "_threads/t/2026-11-24T10-00-30-000Z-msg_late.md");
+    if (reply.status !== "valid") throw new Error("Invalid fixture");
+    const before = JSON.stringify(posts);
+    expect(asksTo([...posts, reply.post], ["Anna"])).toEqual([{
+      id: "msg_ask", path: posts[0].path, matched: ["Anna"], state: "withdrawn", answer: "msg_late",
+    }]);
+    expect(JSON.stringify(posts)).toBe(before);
   });
 });

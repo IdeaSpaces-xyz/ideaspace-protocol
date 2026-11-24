@@ -1,0 +1,198 @@
+{
+  "format": "ideaspaces-thread-asks/v1",
+  "operation": "asks_to",
+  "rule": "Where an ask stands, for one reader. The reader is every name one actor goes by, supplied by the caller and compared exactly. A post asks the reader when its to holds one of those names and the reader did not write it; who wrote a post is the firefly written_by names when it names one, else its author. Such a post is withdrawn when a readable correction supersedes it; else answered when a post the reader wrote names it in in_reply_to; else open. A mark answers nothing. A reply to a reply does not answer the ask. A reply that was later superseded still answered it. An ask to two stands for each reader on its own. A pure reading over the posts of one Thread: it adds no field, and delivery, waking and read positions are a host's.",
+  "expected_fields": "asks: the posts that ask the reader, in post order, each with id, state (open, answered or withdrawn), matched (the reader's names its to holds, in the post's order) and answer (the id of the reader's first reply) when there is one",
+  "vectors": [
+    {
+      "id": "an-ask-is-open-until-answered",
+      "covers": [
+        "ask_open",
+        "ask_answered"
+      ],
+      "input": {
+        "reader": ["Anna"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto: Anna\n---\nAnna, can you read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_second.md", "content": "---\nid: msg_second\nauthor: Ben\nto: Anna\n---\nAnd the budget?\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_reply.md", "content": "---\nid: msg_reply\nin_reply_to: msg_ask\nauthor: Anna\n---\nRead. Go ahead.\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_ask", "state": "answered", "matched": ["Anna"], "answer": "msg_reply"},
+          {"id": "msg_second", "state": "open", "matched": ["Anna"]}
+        ]
+      }
+    },
+    {
+      "id": "a-reply-by-someone-not-asked-leaves-it-open",
+      "covers": [
+        "ask_reply_by_another"
+      ],
+      "input": {
+        "reader": ["Anna"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto: Anna\n---\nAnna, can you read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_carl.md", "content": "---\nid: msg_carl\nin_reply_to: msg_ask\nauthor: Carl\n---\nI read it. Looks fine to me.\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_ask", "state": "open", "matched": ["Anna"]}
+        ]
+      }
+    },
+    {
+      "id": "a-reply-by-the-persons-firefly-leaves-it-open-for-the-person",
+      "covers": [
+        "ask_firefly_reply_not_persons"
+      ],
+      "input": {
+        "reader": ["Anna"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto: Anna\n---\nAnna, can you read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_pilot.md", "content": "---\nid: msg_pilot\nin_reply_to: msg_ask\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nAnna is away until Thursday.\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_ask", "state": "open", "matched": ["Anna"]}
+        ]
+      }
+    },
+    {
+      "id": "an-ask-to-a-firefly-is-answered-by-that-firefly",
+      "covers": [
+        "ask_to_firefly",
+        "ask_reader_names"
+      ],
+      "input": {
+        "reader": ["Pilot", "agent:n_0123456789abcdef01234567"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_by_address.md", "content": "---\nid: msg_by_address\nauthor: Ben\nto: agent:n_0123456789abcdef01234567\n---\nPilot, when is Anna back?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_by_name.md", "content": "---\nid: msg_by_name\nauthor: Ben\nto: Pilot\n---\nPilot, and who covers for her?\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_first.md", "content": "---\nid: msg_first\nin_reply_to: msg_by_address\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nThursday.\n"},
+          {"path": "_threads/t/2026-11-24T10-03-00-000Z-msg_second.md", "content": "---\nid: msg_second\nin_reply_to: msg_by_name\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\n---\nCarl.\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_by_address", "state": "answered", "matched": ["agent:n_0123456789abcdef01234567"], "answer": "msg_first"},
+          {"id": "msg_by_name", "state": "answered", "matched": ["Pilot"], "answer": "msg_second"}
+        ]
+      }
+    },
+    {
+      "id": "an-ask-to-two-is-open-for-the-one-who-has-not-answered",
+      "covers": [
+        "ask_to_two"
+      ],
+      "input": {
+        "reader": ["Carl"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto:\n  - Anna\n  - Carl\n---\nCan you both read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_anna.md", "content": "---\nid: msg_anna\nin_reply_to: msg_ask\nauthor: Anna\n---\nRead. Go ahead.\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_ask", "state": "open", "matched": ["Carl"]}
+        ]
+      }
+    },
+    {
+      "id": "a-withdrawn-ask-is-not-open",
+      "covers": [
+        "ask_withdrawn"
+      ],
+      "input": {
+        "reader": ["Anna"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto: Anna\n---\nAnna, can you read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_never_mind.md", "content": "---\nid: msg_never_mind\nkind: correction\nsupersedes: msg_ask\nin_reply_to: msg_ask\nauthor: Ben\n---\nNever mind, Carl read it.\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_ask", "state": "withdrawn", "matched": ["Anna"]}
+        ]
+      }
+    },
+    {
+      "id": "a-post-is-not-an-ask-to-its-own-writer",
+      "covers": [
+        "ask_not_to_own_writer",
+        "ask_from_own_firefly"
+      ],
+      "input": {
+        "reader": ["Anna"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_note_to_self.md", "content": "---\nid: msg_note_to_self\nauthor: Anna\nto:\n  - Anna\n  - Ben\n---\nFor Ben and me: the draft is in.\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_pilot_asks.md", "content": "---\nid: msg_pilot_asks\nauthor: Anna\nwritten_by:\n  agent: agent:n_0123456789abcdef01234567\n  name: Pilot\nto: Anna\n---\nAnna, may I send the draft to Ben?\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_pilot_asks", "state": "open", "matched": ["Anna"]}
+        ]
+      }
+    },
+    {
+      "id": "a-mark-does-not-answer",
+      "covers": [
+        "ask_mark_no_answer"
+      ],
+      "input": {
+        "reader": ["Anna"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto: Anna\n---\nAnna, can you read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_claimed.md", "content": "---\nid: msg_claimed\nkind: mark\nmark: claimed\nin_reply_to: msg_ask\nauthor: Anna\n---\nClaimed\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_ask", "state": "open", "matched": ["Anna"]}
+        ]
+      }
+    },
+    {
+      "id": "a-reply-to-a-reply-does-not-answer",
+      "covers": [
+        "ask_reply_to_reply"
+      ],
+      "input": {
+        "reader": ["Anna"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto: Anna\n---\nAnna, can you read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_carl.md", "content": "---\nid: msg_carl\nin_reply_to: msg_ask\nauthor: Carl\n---\nI read it. Looks fine to me.\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_anna.md", "content": "---\nid: msg_anna\nin_reply_to: msg_carl\nauthor: Anna\n---\nThanks, Carl.\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_ask", "state": "open", "matched": ["Anna"]}
+        ]
+      }
+    },
+    {
+      "id": "a-corrected-reply-still-answered",
+      "covers": [
+        "ask_corrected_reply"
+      ],
+      "input": {
+        "reader": ["Anna"],
+        "posts": [
+          {"path": "_threads/t/2026-11-24T10-00-00-000Z-msg_ask.md", "content": "---\nid: msg_ask\nauthor: Ben\nto: Anna\n---\nAnna, can you read this before Friday?\n"},
+          {"path": "_threads/t/2026-11-24T10-01-00-000Z-msg_reply.md", "content": "---\nid: msg_reply\nin_reply_to: msg_ask\nauthor: Anna\n---\nRead. Go ahaed.\n"},
+          {"path": "_threads/t/2026-11-24T10-02-00-000Z-msg_fix.md", "content": "---\nid: msg_fix\nkind: correction\nsupersedes: msg_reply\nin_reply_to: msg_reply\nauthor: Anna\n---\nRead. Go ahead.\n"}
+        ]
+      },
+      "expected": {
+        "asks": [
+          {"id": "msg_ask", "state": "answered", "matched": ["Anna"], "answer": "msg_reply"}
+        ]
+      }
+    }
+  ]
+}

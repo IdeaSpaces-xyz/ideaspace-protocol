@@ -10,6 +10,7 @@
   "parent_vectors": "parent.json",
   "addressee_vectors": "addressees.json",
   "written_by_vectors": "written-by.json",
+  "ask_vectors": "asks.json",
   "required_coverage": [
     "parent_field",
     "about_field",
@@ -107,7 +108,20 @@
     "marks_two_fireflies_one_person",
     "marks_firefly_not_its_person",
     "marks_one_firefly_once",
-    "marks_invalid_written_by_is_author"
+    "marks_invalid_written_by_is_author",
+    "ask_open",
+    "ask_answered",
+    "ask_reply_by_another",
+    "ask_firefly_reply_not_persons",
+    "ask_to_firefly",
+    "ask_reader_names",
+    "ask_to_two",
+    "ask_withdrawn",
+    "ask_not_to_own_writer",
+    "ask_from_own_firefly",
+    "ask_mark_no_answer",
+    "ask_reply_to_reply",
+    "ask_corrected_reply"
   ],
   "vectors": [
     {
