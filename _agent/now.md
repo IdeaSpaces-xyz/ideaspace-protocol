@@ -1,8 +1,25 @@
 ---
 name: Now
-summary: "v0.34.0, released 2026-11-21: who a post asks (`to`); the four verbs map, look, post and write under one ideaspaces namespace, with one answer shape and three guards; lists from the account, an org or a person, and look's access; a Map about anything, carried or beside; a closed folder reopens by one entry, and a declared folder is written to; a Thread's notes/ folder holds Notes. Before it, v0.33.0, released 2026-11-16: time is something a folder keeps and entries set its state by one rule; a Thread's parent and about; cache-stable ambient Tree text; and the 0.32.0 work, a repository's identity image and the current Thread Map, with access version one. The CLI pins v0.34.0."
+summary: "On main and not released: who wrote a post (`written_by`, and the writer a reader takes for who did this). v0.34.0, released 2026-11-21: who a post asks (`to`); the four verbs map, look, post and write under one ideaspaces namespace, with one answer shape and three guards; lists from the account, an org or a person, and look's access; a Map about anything, carried or beside; a closed folder reopens by one entry, and a declared folder is written to; a Thread's notes/ folder holds Notes. Before it, v0.33.0, released 2026-11-16: time is something a folder keeps and entries set its state by one rule; a Thread's parent and about; cache-stable ambient Tree text; and the 0.32.0 work, a repository's identity image and the current Thread Map, with access version one. The CLI pins v0.34.0."
 ---
 # Now
+
+## Who wrote a post: `written_by` and the writer (on main, not released)
+
+An entry keeps two facts: `author`, the person who signs it and answers for it, and an optional
+`written_by: { agent: "agent:<id>", name }`, the firefly that did the writing, as the writer's
+client reports it. For "who did this", a reader takes the firefly when one is named, else the
+person (the human, 2026-11-23: "Agreed"). `entryWriter` (Thread name `threadPostWriter`) is that
+reading. Marks fold by it, so two fireflies that write for one person keep separate marks, and a
+reply a firefly writes is the firefly's and not its person's. Whose Map counts for reach stays with
+`author`: a firefly writes on its person's side. A malformed `written_by` warns
+`invalid_written_by` and is dropped, and the entry reads as its author's. Both fields are claims:
+the reading resolves nothing and grants nothing, and on a hosted service the signer from the
+sign-in stands where `author` stands. The contract is in [`schema/time.md`](../schema/time.md)
+("Who wrote an entry") and [`schema/threads.md`](../schema/threads.md); seventeen vectors in
+`conformance/threads/written-by.json` cover the field, who wrote each post, and marks folded by
+writer. Not in this change: the reading "is this ask open", and one address for an actor. No
+release carries it yet.
 
 ## A Map about anything, v0.34.0 (released 2026-11-21, #112)
 

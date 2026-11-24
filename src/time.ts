@@ -117,7 +117,10 @@ export interface EntryFieldWarning {
 
 /** Folded mark metadata on a target entry. */
 export interface EntryMark {
+  /** The mark's `author` as written (a legacy `actor_ref` when it has none): the person, when a firefly wrote it. */
   author: string;
+  /** The firefly that wrote the mark, when its `written_by` names one. Marks fold by {@link entryWriter}. */
+  writtenBy?: WrittenBy;
   mark: string;
   id: string;
   date?: string;
@@ -501,6 +504,20 @@ export function parseWrittenBy(value: unknown): WrittenBy | null {
   if (!WRITTEN_BY_AGENT.test(id) || WRITTEN_BY_BREAK.test(id)) return null;
   if (!shown || [...shown].length > WRITTEN_BY_NAME_MAX || WRITTEN_BY_BREAK.test(shown)) return null;
   return { agent: id, name: shown };
+}
+
+/**
+ * Who wrote an entry, for "who did this": the firefly its `written_by` names when it names one, else
+ * its `author` (a legacy `actor_ref` when it has no author). Undefined when the entry names nobody.
+ * Two entries have the same writer exactly when this string is equal. A firefly's entry is the
+ * firefly's and never its person's, and two fireflies writing for one person are two writers. The
+ * person stays in `author`: who signs and answers for the entry. Pure: a reading over two claims,
+ * never resolved, and it grants nothing.
+ */
+export function entryWriter(entry: Entry): string | undefined {
+  if (entry.writtenBy) return entry.writtenBy.agent;
+  const { author, actor_ref: actorRef } = entry.frontmatter;
+  return (typeof author === "string" && author) || (typeof actorRef === "string" && actorRef) || undefined;
 }
 
 /** One caller-supplied entry file. The protocol never reads the filesystem for these operations. */
@@ -1042,7 +1059,7 @@ export function reconstructTimeline(posts: Entry[]): EntryTimeline {
 
   const superseded = supersededIds(projected);
 
-  // Fold marks onto target entries: collect (author, mark), drop superseded, dedup per author
+  // Fold marks onto target entries: collect (writer, mark), drop superseded, dedup per writer
   const targetMarks = new Map<string, Map<string, EntryMark>>();
   const isFoldable = (post: Entry) => foldableMark(post) &&
     postsById.get(post.inReplyTo[0])?.kind !== "mark" && postsById.has(post.inReplyTo[0]);
@@ -1069,16 +1086,19 @@ export function reconstructTimeline(posts: Entry[]): EntryTimeline {
     const author =
       (typeof markPost.frontmatter.author === "string" ? markPost.frontmatter.author : "") ||
       (typeof markPost.frontmatter.actor_ref === "string" ? markPost.frontmatter.actor_ref : "");
-    // An absent author is not evidence that two marks came from the same author.
-    const authorKey = author ? `${author}\0${markVal}` : `anonymous\0${markPost.id}`;
-    let authorMap = targetMarks.get(targetId);
-    if (!authorMap) {
-      authorMap = new Map();
-      targetMarks.set(targetId, authorMap);
+    // Who wrote the mark: the firefly when `written_by` names one, else the author. A writer who
+    // names nobody is not evidence that two marks came from the same one.
+    const writer = entryWriter(markPost);
+    const writerKey = writer ? `${writer}\0${markVal}` : `anonymous\0${markPost.id}`;
+    let writerMap = targetMarks.get(targetId);
+    if (!writerMap) {
+      writerMap = new Map();
+      targetMarks.set(targetId, writerMap);
     }
-    if (!authorMap.has(authorKey)) {
-      authorMap.set(authorKey, {
+    if (!writerMap.has(writerKey)) {
+      writerMap.set(writerKey, {
         author,
+        ...(markPost.writtenBy ? { writtenBy: markPost.writtenBy } : {}),
         mark: markVal,
         id: markPost.id,
         ...(markPost.date ? { date: markPost.date } : {}),
@@ -1086,10 +1106,10 @@ export function reconstructTimeline(posts: Entry[]): EntryTimeline {
     }
   }
 
-  for (const [targetId, authorMap] of targetMarks.entries()) {
+  for (const [targetId, writerMap] of targetMarks.entries()) {
     const targetPost = postsById.get(targetId);
     if (targetPost) {
-      targetPost.marks = Array.from(authorMap.values());
+      targetPost.marks = Array.from(writerMap.values());
     }
   }
 

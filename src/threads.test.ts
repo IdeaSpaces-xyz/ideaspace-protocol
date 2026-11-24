@@ -9,6 +9,7 @@ import {
   parseThreadPost,
   parseAddressees,
   parseWrittenBy,
+  threadPostWriter,
   inspectThreadPosts,
   currentThreadMap,
   reconstructThreadTimeline,
@@ -862,12 +863,59 @@ describe("written_by: the firefly that wrote a post", () => {
     expect(writtenByVectors.format).toBe("ideaspaces-thread-written-by/v1");
   });
 
-  it.each(writtenByVectors.vectors)("parses $id", (vector: any) => {
+  const of = (operation: string) => writtenByVectors.vectors.filter((vector: any) => vector.operation === operation);
+  const readable = (vector: any) => vector.input.posts.map(({ content, path }: any) => {
+    const parsed = parseThreadPost(content, path);
+    if (parsed.status !== "valid") throw new Error(`Invalid fixture ${path}`);
+    return parsed.post;
+  });
+
+  it("names an operation on every vector, and no other", () => {
+    expect(new Set(writtenByVectors.vectors.map((vector: any) => vector.operation)))
+      .toEqual(new Set(["parse_post", "post_writers", "reconstruct_timeline"]));
+  });
+
+  it.each(of("parse_post"))("parses $id", (vector: any) => {
     const parsed = parseThreadPost(vector.input.content, vector.input.path);
     expect(parsed.status).toBe(vector.expected.status);
     if (parsed.status !== "valid") return;
     expect(parsed.post.writtenBy ?? null).toEqual(vector.expected.written_by);
     expect(parsed.post.warnings ?? []).toEqual(vector.expected.warnings);
+  });
+
+  it.each(of("post_writers"))("says who wrote each post: $id", (vector: any) => {
+    const writers = Object.fromEntries(readable(vector).map((post: any) => [post.id, threadPostWriter(post) ?? null]));
+    expect(writers).toEqual(vector.expected.writers);
+  });
+
+  it.each(of("reconstruct_timeline"))("folds marks by who wrote them: $id", (vector: any) => {
+    const timeline = reconstructThreadTimeline(readable(vector));
+    const marks = (timeline.postsById.get(vector.expected.target)?.marks ?? []).map((mark) => ({
+      id: mark.id,
+      mark: mark.mark,
+      author: mark.author,
+      writer: mark.writtenBy?.agent ?? (mark.author || null),
+    }));
+    expect(marks).toEqual(vector.expected.marks);
+  });
+
+  it("is the two cases the rule was agreed for", () => {
+    const ids = writtenByVectors.vectors.map((vector: any) => vector.id);
+    expect(ids).toContain("two-fireflies-under-one-person-keep-separate-marks");
+    expect(ids).toContain("a-fireflys-reply-is-the-fireflys-not-its-persons");
+    const reply = writtenByVectors.vectors.find((vector: any) => vector.id === "a-fireflys-reply-is-the-fireflys-not-its-persons");
+    const [, firefly, person] = readable(reply);
+    expect(firefly.frontmatter.author).toBe(person.frontmatter.author);
+    expect(threadPostWriter(firefly)).not.toBe(threadPostWriter(person));
+  });
+
+  it("keeps the firefly on a folded mark beside its author, and mutates no caller's post", () => {
+    const vector = writtenByVectors.vectors.find((v: any) => v.id === "two-fireflies-under-one-person-keep-separate-marks");
+    const posts = readable(vector);
+    const marks = reconstructThreadTimeline(posts).postsById.get("msg_open")?.marks ?? [];
+    expect(marks.map((mark) => mark.writtenBy?.name)).toEqual(["Pilot", "Scribe"]);
+    expect(marks.map((mark) => mark.author)).toEqual(["Anna", "Anna"]);
+    expect(posts.every((post: any) => post.marks === undefined)).toBe(true);
   });
 
   it("reads a value the same way outside a post, and never takes a person", () => {

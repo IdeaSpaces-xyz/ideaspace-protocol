@@ -200,15 +200,25 @@ field ([`time.md`](time.md#entries) carries the row): `{ agent: "agent:<id>", na
   person it wrote for is never in the field: that is whoever signs the post. A local post's signer is
   its file's author claim; a hosted service sets the signer from the sign-in and never from the post.
   A reader shows the two together, as in "Written by Pilot for Anna".
+- **Who wrote the post.** For "who did this", a reader takes the firefly when one is named, else
+  the person: the writer is `written_by.agent`, else the `author`
+  ([`time.md`](time.md#who-wrote-an-entry)). Marks fold by that writer, so two fireflies that write
+  for one person keep separate marks, and a reply a firefly writes is the firefly's and not its
+  person's. Whose Map counts for reach is a different question and stays with `author`.
 - **Tolerance.** Any other shape (a string, a list, a person's address as `agent`, a blank, too long
   or multi-line `name`, a control or format character) drops the field with warning
   `invalid_written_by`, and the post stays valid. Other keys in the object are ignored.
 - **What it does not do.** Like `author`, it is a claim. It grants, refuses, notifies and ranks
-  nothing, and no reader resolves it to an account. A reader may use it as a hint, for example to
-  leave a firefly's post out of what wakes another firefly, but never as a control.
-- **The operation.** `parseWrittenBy` reads a `written_by` value as `parseThreadPost` does: the
-  trimmed pair, or null for any other shape. A parsed post carries it as `writtenBy`. Vectors:
-  [`../conformance/threads/written-by.json`](../conformance/threads/written-by.json).
+  nothing, and no reader resolves it to an account. Who wrote a post is a reading over the two
+  claims, as mark folding is, and decides no access. A reader may also use the field as a hint, for
+  example to leave a firefly's post out of what wakes another firefly, but never as a control.
+- **The operations.** `parseWrittenBy` reads a `written_by` value as `parseThreadPost` does: the
+  trimmed pair, or null for any other shape. A parsed post carries it as `writtenBy`.
+  `threadPostWriter` (`entry_writer` in `time.md`) gives a parsed post's writer: the firefly's
+  address, else the author, else nothing. Vectors:
+  [`../conformance/threads/written-by.json`](../conformance/threads/written-by.json): the field
+  (`parse_post`), who wrote each post (`post_writers`) and marks folded by writer
+  (`reconstruct_timeline`).
 
 #### Unreadable posts and repair
 
@@ -334,8 +344,8 @@ Independent implementations share these portable operations. The time operations
    `summary` with `namePost`, the superseded ids, and `writable` with the refusal. An unreadable
    opening means unknown origin and refuses writes, naming the file and repair step; later unreadable
    posts warn, are named by the state rule, and do not block writes. Timeline reconstruction keeps
-   unknown kinds in the DAG, folds marks by `(author, mark)`, drops those retracted by a correction,
-   counts an author's repeat once, and keeps marks out of the linear timeline.
+   unknown kinds in the DAG, folds marks by `(writer, mark)`, drops those retracted by a correction,
+   counts a writer's repeat once, and keeps marks out of the linear timeline.
 
 3. **`parse_thread_attachment` (`parseThreadAttachment`), `parse_thread_agreement_attachment` (`parseThreadAgreementAttachment`) and `resolve_thread_parent` (`resolveThreadParent`)**:
    `parseThreadPost` sets `post.parent` from `parent` (else, when the post has no `parent` field, a legacy post `attached_to`) and `post.about` from `about` (else, when it has no `about` field, a legacy non-post `attached_to` as one link), keeping `attachedTo` as authored. `inspectThreadPosts(sources, agreementAttachment)` orders the supplied canonical post files by code-unit comparison of their paths, the same order that selects the opening and the current Map, and never by authored `date` or the order supplied. The resolver understands `post:` (including the addressed form) and bare `id`/`path` aliases only; all other open types return `none` with the link preserved. An invalid Agreement `parent` or `attached_to` returns absent plus warning rather than rejecting the Agreement; consumers must show that warning. Only post references are tree edges; `isPostReference` is that test. Resolve a post edge against explicitly supplied pinned root snapshots; an addressed post resolves only in the supplied root whose label is the address's root. Report resolved, unresolved, or ambiguous for a post edge; return `none` for a non-post link while keeping its metadata. Never guess or change an ordinary Note's subject binding. `childThreadsOfPost` derives the reverse link using the same resolution.
@@ -355,7 +365,7 @@ Independent implementations share these portable operations. The time operations
    positive `lookback` cap; returns `status`, the chosen post, the Map, the Map's field warnings,
    `skipped` newest first, `lookback` and `reason`. Pure.
 
-Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, addressee cases in `addressees.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. Every one of them also passes through the time operations, and again on a folder that is not `_threads/`; that rule and the state, selection and memory vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json). The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
+Language-neutral Thread-format vectors are published in [`../conformance/threads/manifest.json`](../conformance/threads/manifest.json), including hosted Thread ids in `hosted-ids.json`, field-tolerance, mark and unreadable-post cases in `metalayer.json`, `parent` and `about` cases in `parent.json`, post-id resolution cases in `post-selection.json`, current Thread Map cases in `current-map.json`, addressee cases in `addressees.json`, `written_by` and who-wrote-a-post cases in `written-by.json`, and separate Thread Agreement JSON Schema cases in `agreement-schema.json`. Every one of them also passes through the time operations, and again on a folder that is not `_threads/`; that rule and the state, selection and memory vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json). The five-rung reader and reference focus vectors are in [`../conformance/thread-reader/manifest.json`](../conformance/thread-reader/manifest.json).
 
 ## Consumer migration: parent from the Agreement
 

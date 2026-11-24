@@ -56,7 +56,7 @@ An entry MUST declare valid leading YAML frontmatter containing a non-empty stri
 | `mark` | String | Open mark value when `kind` is `mark` (e.g. `claimed`, `done`, `+1`). The authored string is kept; whitespace-only or YAML-coerced non-string values warn and are not folded. |
 | `supersedes` | String | Optional id of the entry this one supersedes, on a `correction` (or when retracting a mark). |
 | `to` | String or array of strings | Optional: who the entry asks. Each is a name as an `author` would write it (`Security`, `UI/UX`) or a typed `<type>:<id>` address (`agent:…`, `person:…`); trimmed, one line, at most 200 UTF-16 code units, repeats dropped, authored order kept, at most 20. An absent field, an empty key or an empty list names no one. A claim like `author`, compared exactly and never resolved; it grants, notifies and restricts nothing. See [`threads.md`](threads.md#who-a-post-asks-to). |
-| `written_by` | Object | Optional: the firefly that wrote the entry for whoever signs it, as the writer's client reports it. `agent` is an `agent:<id>` address (no whitespace, at most 200 characters after `agent:`); `name` is its display name, trimmed, nonempty, one line, at most 120 code points, with no control or format character. Other keys are ignored. A malformed value warns `invalid_written_by` and is dropped. A claim like `author`: it names the firefly, never the person it wrote for. That person is whoever signs the entry: a hosted service sets the signer from the sign-in, and a reader shows both, as in "Written by Pilot for Anna". Nothing grants, refuses, notifies or ranks by it. An entry with none was written by its signer, or by a writer that doesn't say. |
+| `written_by` | Object | Optional: the firefly that wrote the entry for whoever signs it, as the writer's client reports it. `agent` is an `agent:<id>` address (no whitespace, at most 200 characters after `agent:`); `name` is its display name, trimmed, nonempty, one line, at most 120 code points, with no control or format character. Other keys are ignored. A malformed value warns `invalid_written_by` and is dropped. A claim like `author`: it names the firefly, never the person it wrote for. That person is whoever signs the entry: a hosted service sets the signer from the sign-in, and a reader shows both, as in "Written by Pilot for Anna". Nothing grants, refuses, notifies or ranks by it. An entry with none was written by its signer, or by a writer that doesn't say. For "who did this", the firefly it names is the entry's writer; see [Who wrote an entry](#who-wrote-an-entry). |
 | `closed` | Boolean | Optional. Sets the folder's closed state: `true` closes, `false` reopens. A non-boolean value warns `invalid_closed` and is dropped. A legacy `kind: closure` without the field reads as `closed: true`. |
 | `map` | Object | Optional Map block (`roots`, `members`). An entry that carries a valid Map sets the folder's current Map; see below. |
 | `parent` | String (post reference) | Optional; the Threads kind's tree edge. Grammar and resolution in [`threads.md`](threads.md). An entry that carries it sets the folder's `parent`. |
@@ -77,7 +77,7 @@ filename-only day displays as `YYYY-MM-DD`, never as an invented midnight instan
 
 A reader acts on what it recognises and keeps the rest. An invalid optional field (`map` or one
 member, `references`, `supersedes`, `parent`, `about` or one of its links, `attached_to`,
-`in_reply_to`, `date`, `kind`, `mark`, `closed`, or `to`) is dropped with a warning naming the entry and the
+`in_reply_to`, `date`, `kind`, `mark`, `closed`, `to`, or `written_by`) is dropped with a warning naming the entry and the
 field; the entry stays valid and readable, and sets no state through the dropped field. One bad
 `about` link drops that link and warns `invalid_about`; the good links stay. A numeric-looking mark
 such as `+1` MUST be quoted as a string in YAML (`mark: '+1'`), or YAML may coerce it and the parser
@@ -127,6 +127,36 @@ the folder and in the timeline; a reader lists it as **superseded** and names th
 `supersedes` on any other kind is kept as metadata and supersedes nothing. A correction may itself be
 superseded.
 
+### Who wrote an entry
+
+An entry keeps two facts. `author` is whoever signs the entry and answers for it: the person, when
+a firefly writes for one. `written_by` is the firefly that did the writing, when the entry names
+one. For the question "who did this", a reader takes the firefly when one is named, else the
+author.
+
+- **The rule.** The writer of an entry is `written_by.agent` when the entry carries a valid
+  `written_by`, else its `author` (a legacy `actor_ref` when it has no author). An entry with
+  neither names nobody.
+- **The same writer is the same string,** compared exactly, as `to` is. So an entry a firefly wrote
+  is the firefly's and not its person's, and two fireflies that write for one person are two
+  writers. A reply a firefly writes for Anna is the firefly's reply, not Anna's.
+- **A dropped `written_by` names no firefly.** A malformed value warns `invalid_written_by`, and the
+  entry reads as its author's.
+- **What reads by it.** `mark` folding, below, and any reading of who claimed, finished or answered
+  something. It does not say whose side an entry is on: whose Map counts for reach stays with
+  `author` ([the current Map](#the-current-map)'s `authors`), because a firefly writes on its
+  person's side.
+- **Still two claims.** The reading resolves nothing and grants nothing. On a hosted service the
+  signer comes from the sign-in and never from the entry's text; there the signer stands where
+  `author` stands here, and the reading is otherwise the same.
+- **Entries written before the field** are unchanged: with no `written_by`, the writer is the
+  author, as it always was. A firefly that signed with its own name as `author` and is later named
+  by `written_by` reads as two writers, the name and the address. Nothing is rewritten.
+
+The operation is `entry_writer` (`entryWriter`; Thread name `threadPostWriter`). Vectors:
+[`../conformance/threads/written-by.json`](../conformance/threads/written-by.json), operations
+`post_writers` and `reconstruct_timeline`.
+
 ### `mark` folding
 
 Entries with `kind: mark` attach open-ended status or reaction marks (`claimed`, `done`) to a target
@@ -139,10 +169,14 @@ entry:
   missing in the selected folder or itself a mark) stays visible as an entry with a field warning. The
   missing-target warning needs the folder's entries and appears in inspection and timeline
   reconstruction, not in a standalone entry look.
-- Fold rule: collect `(author, mark)` pairs on each target, drop marks superseded **only by
-  `kind: correction`**, and deduplicate repeated marks by the same named author so one author's repeat
-  counts once. A missing author identifies nobody: anonymous marks stay distinct by id. This is a
-  projection rule, not an authorship policy; a writing surface applies its own access policy.
+- Fold rule: collect `(writer, mark)` pairs on each target, drop marks superseded **only by
+  `kind: correction`**, and deduplicate repeated marks by the same writer so one writer's repeat
+  counts once. The writer is [who wrote the entry](#who-wrote-an-entry): the firefly when
+  `written_by` names one, else the author. So two fireflies that write for one person keep separate
+  marks, and a firefly's mark is not its person's. A folded mark keeps its `author` as written and
+  carries the firefly beside it. A writer who names nobody identifies nobody: anonymous marks stay
+  distinct by id. This is a projection rule, not an authorship policy; a writing surface applies its
+  own access policy.
 - Reconstruction MUST NOT mutate the caller's parsed entries or carry a previous fold into a later
   reconstruction.
 
@@ -314,7 +348,7 @@ name a consumer imports today is removed.
    applies it before computing anything, and reports how it resolved (`ok` with the cursor, or
    `unresolved`, `ambiguous`, `invalid` with a reason, selecting nothing).
 3. **`reconstruct_timeline`** (`reconstructTimeline`; `reconstructThreadTimeline`): the DAG and the
-   linear order, marks folded, superseded marks dropped, nothing mutated.
+   linear order, marks folded by writer, superseded marks dropped, nothing mutated.
 4. **`current_map`** (`currentMap`; `currentThreadMap`): the current Map with `status`, the chosen
    entry, the Map, its field warnings, `skipped` newest first, and `lookback`; pure.
 5. **`select_entries`** (`selectEntries`): `as_of`, `since` and `newest` over parsed entries, with
@@ -323,6 +357,8 @@ name a consumer imports today is removed.
    eight-hex shorthand among supplied entries.
 7. **`keeps_time`** (`readsTime`): whether an Agreement's frontmatter turns time on, and
    `invalid_keeps_time` when the field is present and not a boolean.
+8. **`entry_writer`** (`entryWriter`; `threadPostWriter`): who wrote one parsed entry: the firefly
+   its `written_by` names, else its `author`, else nobody. Pure; never resolved.
 
 Vectors are in [`../conformance/time/manifest.json`](../conformance/time/manifest.json): the
 state rule, `closed` and its exception, the legacy kinds, the selections, a memory-shaped folder (add,

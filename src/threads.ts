@@ -269,3 +269,5 @@ export function resolveThreadGitPath(
 export { parseAddressees, ADDRESSEE_MAX_LENGTH as THREAD_ADDRESSEE_MAX_LENGTH, ADDRESSEES_MAX as THREAD_ADDRESSEES_MAX } from "./time.js";
 /** The firefly that wrote a post (`written_by`): attribution only. */
 export { parseWrittenBy, WRITTEN_BY_NAME_MAX, type WrittenBy } from "./time.js";
+/** Who wrote a post: the firefly `written_by` names when it names one, else the `author`. */
+export { entryWriter as threadPostWriter } from "./time.js";
