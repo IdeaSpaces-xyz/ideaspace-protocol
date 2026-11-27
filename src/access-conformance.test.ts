@@ -73,14 +73,21 @@ describe("portable access conformance", () => {
   it("obeys set laws for every possible canonical capability set", () => {
     const sets = Array.from({ length: 2 ** CAPABILITIES.length }, (_, mask) =>
       CAPABILITIES.filter((_, index) => mask & (1 << index)));
+    // The agent's half closes without Collaborate's history and pull, so intersect(x, x) is x's agent closure.
+    const agentHalf = (x: Capability[]) => intersectAccessCapabilities(x, x);
     for (const a of sets) {
       const closed = expandCapabilities(a);
       expect(expandCapabilities(closed)).toEqual(closed);
-      expect(intersectAccessCapabilities(a, a)).toEqual(closed);
+      expect(agentHalf(a).every((right) => closed.includes(right))).toBe(true);
+      if (!a.includes("edit") || a.includes("pull")) expect(agentHalf(a)).toEqual(closed);
       for (const b of sets) {
         const overlap = intersectAccessCapabilities(a, b);
-        expect(overlap).toEqual(intersectAccessCapabilities(b, a));
-        expect(expandCapabilities(overlap)).toEqual(overlap);
+        expect(overlap).toEqual(closed.filter((right) => agentHalf(b).includes(right)));
+        expect(agentHalf(overlap)).toEqual(overlap);
+        if (!b.includes("pull")) expect(overlap).not.toContain("pull");
+        if (!b.includes("pull") && !b.includes("history")) expect(overlap).not.toContain("history");
+        if (agentHalf(a).length === closed.length && agentHalf(b).length === expandCapabilities(b).length)
+          expect(overlap).toEqual(intersectAccessCapabilities(b, a));
         if (canPassAccess(a, b)) {
           expect(closed).toContain("reshare");
           expect(expandCapabilities(b).every((right) => closed.includes(right))).toBe(true);

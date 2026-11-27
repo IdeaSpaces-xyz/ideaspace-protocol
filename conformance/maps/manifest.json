@@ -4,7 +4,7 @@
   "subject_kinds": ["person", "team", "organisation", "agent", "public"],
   "capability_ladder": ["discover", "view", "comment", "edit"],
   "capability_options": ["history", "fork", "pull", "reshare"],
-  "capability_option_implied_at": { "history": "pull", "fork": "edit" },
+  "capability_option_implied_at": { "history": "edit", "fork": "edit", "pull": "edit" },
   "map_disclosure_capability": "view",
   "about_vectors": "about.json",
   "required_coverage": [

@@ -15,7 +15,8 @@ export type Capability = (typeof CAPABILITIES)[number];
 export const CAPABILITY_LADDER = ["discover", "view", "comment", "edit"] as const;
 export const CAPABILITY_OPTIONS = ["history", "fork", "pull", "reshare"] as const;
 export type CapabilityOption = (typeof CAPABILITY_OPTIONS)[number];
-export const CAPABILITY_OPTION_IMPLIED_AT: Partial<Record<CapabilityOption, Capability>> = { history: "pull", fork: "edit" };
+/** Where a person's grant includes an option: Collaborate (edit) includes history, copy and pull (2026-11-27). */
+export const CAPABILITY_OPTION_IMPLIED_AT: Partial<Record<CapabilityOption, Capability>> = { history: "edit", fork: "edit", pull: "edit" };
 /** Company membership grants discovery, never an implicit content-reading default. */
 export const COMPANY_MEMBER_CAPABILITIES = ["discover"] as const;
 export const MAP_DISCLOSURE_CAPABILITY: Capability = "view";
@@ -44,13 +45,26 @@ export function capabilityRank(capability: string): number {
   return (CAPABILITY_LADDER as readonly string[]).indexOf(capability);
 }
 
-/** Implication closure only, in CAPABILITIES order. Target scope and operation requirements still apply. */
+/** A person's implication closure, in CAPABILITIES order. Target scope and operation requirements still apply. */
 export function expandCapabilities(input: readonly Capability[]): Capability[] {
+  return closeCapabilities(input, true);
+}
+/**
+ * The agent's half (its ceiling grants and its consented acts) names history and pull itself:
+ * there edit includes comment and fork only. Handing out history stays the person's own step.
+ */
+function expandAgentCapabilities(input: readonly Capability[]): Capability[] {
+  return closeCapabilities(input, false);
+}
+function closeCapabilities(input: readonly Capability[], collaborateIncludesHistory: boolean): Capability[] {
   const rights = new Set(input);
-  if (rights.has("edit")) rights.add("comment");
-  for (const [option, impliedAt] of Object.entries(CAPABILITY_OPTION_IMPLIED_AT)) {
-    if (impliedAt && rights.has(impliedAt)) rights.add(option as CapabilityOption);
+  if (rights.has("edit")) {
+    rights.add("comment");
+    for (const [option, impliedAt] of Object.entries(CAPABILITY_OPTION_IMPLIED_AT)) {
+      if (impliedAt === "edit" && (collaborateIncludesHistory || option === "fork")) rights.add(option as CapabilityOption);
+    }
   }
+  if (rights.has("pull")) rights.add("history");
   if (rights.has("history") || rights.has("comment") || rights.has("fork") || rights.has("pull") || rights.has("reshare")) rights.add("view");
   if (rights.has("view")) rights.add("discover");
   return CAPABILITIES.filter((right) => rights.has(right));
@@ -76,7 +90,8 @@ export function accessLevelProfile(
   const capability = { viewer: "view", commenter: "comment", editor: "edit" }[level] as Capability;
   const rights: Capability[] = [capability];
   if (level === "editor" && context.companyVault) rights.push("reshare");
-  return { status: "grantable", capabilities: expandCapabilities(rights) };
+  // Applicable rights only: an Editor of a folder or Note has its past, never Git.
+  return { status: "grantable", capabilities: expandCapabilities(rights).filter((r) => applicableRelations(target).includes(r)) };
 }
 
 export type CopyOperationRequirements =
@@ -100,9 +115,12 @@ export function copyOperationRequirements(
     : { status: "applicable", history: "whole" };
 }
 
-/** Already-resolved sets only. Every open still requires a fresh host access check. */
+/**
+ * Already-resolved sets only. Every open still requires a fresh host access check. The person's
+ * set closes as a person's; the ceiling closes as the agent's half, so the result is not symmetric.
+ */
 export function intersectAccessCapabilities(person: readonly Capability[], ceiling: readonly Capability[]): Capability[] {
-  const agent = new Set(expandCapabilities(ceiling));
+  const agent = new Set(expandAgentCapabilities(ceiling));
   return expandCapabilities(person).filter((right) => agent.has(right));
 }
 /** Tests the rights bound only, not the caller's authority, target state or grant validity. */
@@ -310,7 +328,7 @@ function relationPaths(facts: AccessFacts, object: AccessObject, relation: Acces
     if (parseAccessGrant(grant).status !== "valid" || !subjectMatches(facts, grant.subject, person, agent)) continue;
     const index = chain.findIndex((t) => sameTarget(t, grant.target));
     const applicable = grant.capabilities.filter((r) => applicableRelations(grant.target.kind).includes(r));
-    if (index < 0 || !expandCapabilities(applicable).includes(relation)) continue;
+    if (index < 0 || !(agent ? expandAgentCapabilities : expandCapabilities)(applicable).includes(relation)) continue;
     paths.push({ source: "grant", target: grant.target, subject: grant.subject, via: chain.slice(index) });
   }
   if (!agent && person) {
@@ -337,7 +355,7 @@ function evaluatedPaths(facts: AccessFacts, actor: AccessActor, target: AccessTa
   const person = relationPaths(facts, object, relation, actor.person);
   if (!actor.session) return person;
   const s = actor.session;
-  if (relation === "owner" || !expandCapabilities(s.allowedActs).includes(relation) || !person.length) return [];
+  if (relation === "owner" || !expandAgentCapabilities(s.allowedActs).includes(relation) || !person.length) return [];
   if (object.kind === "thread" && relation !== "discover" && !object.admittedAgents?.includes(s.agent)) return [];
   const ceiling = relationPaths(facts, object, relation, null, s.agent);
   return ceiling.length ? [...person, ...ceiling] : [];

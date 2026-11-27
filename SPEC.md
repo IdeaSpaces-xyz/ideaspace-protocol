@@ -279,8 +279,11 @@ The version-one access contract is [schema/access.md](schema/access.md). Its voc
 is **The access pattern across surfaces**, version one (2026-11-07), **The words of access**;
 this spec does not maintain a second display vocabulary. Machine relations are discover, view,
 history (separate past-version browsing), comment, edit, fork, pull and reshare, plus ownership.
-Editor changes the current state, implying comment and fork but neither Git access nor history.
-Git fetch and push require edit plus pull on the Repo root; pull implies history. Scope never grows.
+Editor (Collaborate) changes the current state and includes its past: edit implies comment, fork,
+history and pull (settled 2026-11-27). Copy (fork) is the snapshot and never implies history.
+Git fetch and push require edit plus pull on the Repo root, so a person's Repo Editor has Git and a
+folder or Note Editor has the past without Git; pull implies history. An agent's ceiling and
+consented acts name history and pull themselves: edit there implies neither. Scope never grows.
 Company content Editor includes sharing.
 
 A Space's Viewer views its Map, its Editor adds items, Allow sharing adds people; no grant on a Space

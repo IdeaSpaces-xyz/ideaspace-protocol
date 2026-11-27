@@ -196,8 +196,12 @@ with a removable org Viewer grant. The Repo owner owns everything below; agents 
 Closing is reserved for 1.1. List and guarded who-with-path share the check. No engine, server
 migration, consumer pin change, tag or release is part of this change. Three product questions
 remain explicitly Open. View is current state only; history is separate.
-The 2026-11-09 decision separates hosted edit from Git:
-edit has no Git/history; Git fetch/push require edit plus pull on the Repo root; pull implies history.
+The 2026-11-27 decision ("Collaborate should include history. Copy is just a snapshot.") reverses
+2026-11-09's for Editor: a person's edit implies history and pull, so a Repo Editor has Git and a
+folder or Note Editor has the past; fork never implies history; Git fetch/push still require edit
+plus pull on the Repo root; pull implies history. The agent's half (ceiling and consent) still names
+history and pull itself. Not fixed, no vector: the legacy combined copy (`copy`, `allow_copying`)
+still reads as fork+pull until its stored rows are counted.
 A Space's Map lists the Space's discoverable items; hosted Threads have no export.
 
 ## Earlier state

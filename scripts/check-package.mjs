@@ -356,7 +356,7 @@ try {
     const access = require("@ideaspaces/protocol/conformance/access");
     require.resolve("@ideaspaces/protocol/schema/access");
     deepStrictEqual(accessRuntime.CAPABILITIES, protocol.CAPABILITIES);
-    deepStrictEqual(accessRuntime.expandCapabilities(["edit"]), ["discover", "view", "comment", "edit", "fork"]);
+    deepStrictEqual(accessRuntime.expandCapabilities(["edit"]), ["discover", "view", "history", "comment", "edit", "fork", "pull"]);
     deepStrictEqual(accessRuntime.expandCapabilities(["pull"]), ["discover", "view", "history", "pull"]);
     deepStrictEqual(accessRuntime.mapLegacyCapability("repo", "git_push"), {status: "mapped", capabilities: ["discover", "view", "history", "comment", "edit", "fork", "pull"]});
     deepStrictEqual(accessRuntime.copyOperationRequirements("repo", "pull", true), {status: "refused", reason: "closed_branch"});
